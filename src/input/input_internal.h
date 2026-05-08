@@ -4,9 +4,9 @@
 
 #include <string>
 
-namespace input::detail {
+namespace sts2::input::detail {
 
 std::string trim(std::string s);
 bool parse_nonneg_int(const std::string& s, int& out);
 
-}
+}  // namespace sts2::input::detail

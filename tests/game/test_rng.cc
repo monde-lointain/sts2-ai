@@ -19,6 +19,7 @@
 
 namespace {
 
+using Rng = sts2::game::Rng;
 using sts2::tests::helpers::ExpectShuffleMatchesPinned;
 using sts2::tests::seeds::kRngFirstUniform_0_INTMAX;
 using sts2::tests::seeds::kRngSecondUniform_0_INTMAX;

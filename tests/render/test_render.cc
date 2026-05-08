@@ -43,6 +43,16 @@ using sts2::tests::helpers::KillEnemy;
 using sts2::tests::helpers::MakeStarterCombat;
 using sts2::tests::seeds::kCombatTestSeed;
 
+using Card    = sts2::game::Card;
+using Combat  = sts2::game::Combat;
+using Enemy   = sts2::game::Enemy;
+using MoveId  = sts2::game::MoveId;
+using Vitals  = sts2::game::Vitals;
+
+namespace ansi = sts2::ansi;
+namespace glyphs = sts2::glyphs;
+namespace render = sts2::render;
+
 // Capture the renderer's output for substring assertions.
 std::string Render(const Combat& c) {
     std::ostringstream os;
@@ -103,7 +113,7 @@ TEST(RenderCombat, T_RND_170_EnemyBlockVisible) {
     e.name = "Block Goblin";
     e.vitals = Vitals{20, 20, 3, {}};
     c.add_enemy(std::move(e));
-    c.start(cards::make_silent_starter_deck());
+    c.start(sts2::cards::make_silent_starter_deck());
 
     const std::string s = Render(c);
 
@@ -201,9 +211,9 @@ TEST(RenderCombat, T_RND_200_NeutralizeDescriptionMultiLine) {
     // Three Neutralize cards; with kBaseHandDraw+RingOfTheSnake=7 and only 3
     // in deck, draw fills hand with all three.
     std::vector<Card> deck;
-    deck.push_back(cards::make_neutralize());
-    deck.push_back(cards::make_neutralize());
-    deck.push_back(cards::make_neutralize());
+    deck.push_back(sts2::cards::make_neutralize());
+    deck.push_back(sts2::cards::make_neutralize());
+    deck.push_back(sts2::cards::make_neutralize());
     c.start(std::move(deck));
     ASSERT_EQ(c.player().hand.size(), 3u);
 

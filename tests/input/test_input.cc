@@ -15,9 +15,9 @@
 
 namespace {
 
-using input::Action;
-using input::read_action;
-using input::read_index;
+using sts2::input::Action;
+using sts2::input::read_action;
+using sts2::input::read_index;
 
 // -------------------------------------------------------------------------
 // 12.1  read_action  (T-INP-005..065)

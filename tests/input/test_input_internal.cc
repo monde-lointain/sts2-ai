@@ -13,8 +13,8 @@
 
 namespace {
 
-using input::detail::parse_nonneg_int;
-using input::detail::trim;
+using sts2::input::detail::parse_nonneg_int;
+using sts2::input::detail::trim;
 
 // -------------------------------------------------------------------------
 // 12.3.1  trim  (T-INP-105..140)

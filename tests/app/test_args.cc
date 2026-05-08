@@ -21,9 +21,9 @@
 namespace {
 
 using ::testing::HasSubstr;
-using app::parse_args;
-using app::parse_uint64;
-using app::random_seed;
+using sts2::app::parse_args;
+using sts2::app::parse_uint64;
+using sts2::app::random_seed;
 
 // Build a char* vector from string literals; the strings live in `storage`
 // (caller-owned) so the returned pointers stay valid for the test scope.

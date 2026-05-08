@@ -4,6 +4,8 @@
 #include "sts2/game/card.h"
 #include "sts2/game/vitals.h"
 
+namespace sts2::game {
+
 struct Player {
     Vitals vitals{70, 70, 0, {}};
     int energy = 0;
@@ -14,3 +16,5 @@ struct Player {
     std::vector<Card> discard_pile;
     std::vector<Card> exhaust_pile;
 };
+
+}  // namespace sts2::game

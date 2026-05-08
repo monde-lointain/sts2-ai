@@ -6,7 +6,7 @@
 
 #include "input/input_internal.h"
 
-namespace input::detail {
+namespace sts2::input::detail {
 
 std::string trim(std::string s) {
     size_t b = 0;
@@ -28,9 +28,9 @@ bool parse_nonneg_int(const std::string& s, int& out) {
     return true;
 }
 
-}
+}  // namespace sts2::input::detail
 
-namespace input {
+namespace sts2::input {
 
 Action read_action(std::istream& in) {
     Action a;
@@ -66,4 +66,4 @@ int read_index(std::istream& in, int max_inclusive) {
     return v;
 }
 
-}
+}  // namespace sts2::input

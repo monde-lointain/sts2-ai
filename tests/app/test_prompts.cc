@@ -28,12 +28,16 @@
 namespace {
 
 using ::testing::HasSubstr;
-using app::prompt_discard;
-using app::prompt_index;
-using app::prompt_target;
+using sts2::app::prompt_discard;
+using sts2::app::prompt_index;
+using sts2::app::prompt_target;
 using sts2::tests::helpers::KillEnemy;
 using sts2::tests::helpers::MakeStarterCombat;
 using sts2::tests::seeds::kCombatTestSeed;
+
+using Card   = sts2::game::Card;
+using Combat = sts2::game::Combat;
+using Rng    = sts2::game::Rng;
 
 // -------------------------------------------------------------------------
 // 13.4  prompt_index  (T-MAIN-095..105)
@@ -92,7 +96,7 @@ TEST(AppPromptTarget, T_MAIN_110_NoEnemiesReturnsMinusOne) {
 TEST(AppPromptTarget, T_MAIN_115_SingleAliveReturnsIndexNoStream) {
     Combat c{kCombatTestSeed};
     Rng enemy_rng{kCombatTestSeed};
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
 
     // If prompt_target wrongly consults the stream, "garbage" would propagate.
     std::istringstream in("garbage\n");
@@ -113,9 +117,9 @@ TEST(AppPromptTarget, T_MAIN_120_TwoAliveUserPicksSecond) {
     // Build a 3-enemy combat: starter (cultist 0, cultist 1) + a third.
     Combat c{kCombatTestSeed};
     Rng enemy_rng{kCombatTestSeed};
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));  // idx 0
-    c.add_enemy(enemies::make_damp_cultist(enemy_rng));       // idx 1 (will die)
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));  // idx 2
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 0
+    c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));       // idx 1 (will die)
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 2
 
     KillEnemy(c, 1);  // alive_indices becomes [0, 2]
 
@@ -130,9 +134,9 @@ TEST(AppPromptTarget, T_MAIN_120_TwoAliveUserPicksSecond) {
 TEST(AppPromptTarget, T_MAIN_125_InvalidThenValid) {
     Combat c{kCombatTestSeed};
     Rng enemy_rng{kCombatTestSeed};
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));  // idx 0
-    c.add_enemy(enemies::make_damp_cultist(enemy_rng));       // idx 1 (die)
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));  // idx 2
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 0
+    c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));       // idx 1 (die)
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 2
 
     KillEnemy(c, 1);
 
@@ -150,12 +154,12 @@ TEST(AppPromptTarget, T_MAIN_125_InvalidThenValid) {
 TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
     Combat c{kCombatTestSeed};
     Rng enemy_rng{kCombatTestSeed};
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
 
     // 1-card deck → start() draws into hand. Ring of the Snake adds 2 to the
     // base draw, but with only 1 card available, hand size becomes 1.
     std::vector<Card> deck;
-    deck.push_back(cards::make_strike());
+    deck.push_back(sts2::cards::make_strike());
     c.start(std::move(deck));
     ASSERT_EQ(c.player().hand.size(), 1u);
 

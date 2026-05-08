@@ -2,7 +2,7 @@
 
 #include <iosfwd>
 
-namespace input {
+namespace sts2::input {
 
 struct Action {
     enum Kind { PlayCard, EndTurn, Quit, Invalid };
@@ -14,4 +14,4 @@ Action read_action(std::istream& in);
 
 int read_index(std::istream& in, int max_inclusive);
 
-}
+}  // namespace sts2::input

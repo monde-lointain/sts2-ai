@@ -10,6 +10,8 @@
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 
+namespace sts2::game {
+
 class Combat {
 public:
     explicit Combat(uint64_t seed);
@@ -55,3 +57,5 @@ private:
 
     friend class CombatTestAccess;
 };
+
+}  // namespace sts2::game

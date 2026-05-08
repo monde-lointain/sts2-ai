@@ -45,19 +45,19 @@ inline constexpr std::uint64_t kDampSeed_hp52 = 0x3ULL;
 inline constexpr std::uint64_t kDampSeed_hp53 = 0x2ULL;
 
 // Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).
-inline constexpr std::array<CardId, 12> kSilentDeckShuffled_C0FFEE = {
-    CardId::Strike,
-    CardId::Strike,
-    CardId::Neutralize,
-    CardId::Survivor,
-    CardId::Defend,
-    CardId::Defend,
-    CardId::Strike,
-    CardId::Strike,
-    CardId::Defend,
-    CardId::Strike,
-    CardId::Defend,
-    CardId::Defend
+inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {
+    sts2::game::CardId::Strike,
+    sts2::game::CardId::Strike,
+    sts2::game::CardId::Neutralize,
+    sts2::game::CardId::Survivor,
+    sts2::game::CardId::Defend,
+    sts2::game::CardId::Defend,
+    sts2::game::CardId::Strike,
+    sts2::game::CardId::Strike,
+    sts2::game::CardId::Defend,
+    sts2::game::CardId::Strike,
+    sts2::game::CardId::Defend,
+    sts2::game::CardId::Defend
 };
 
 // Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.

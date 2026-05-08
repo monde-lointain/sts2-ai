@@ -13,7 +13,7 @@
 #include "sts2/render/glyphs.h"
 #include "render/render_internal.h"
 
-namespace render::detail {
+namespace sts2::render::detail {
 
 std::string repeat_utf8(const char* utf8_glyph, int count) {
     std::string s;
@@ -25,20 +25,20 @@ std::string spaces(std::size_t n) {
     return std::string(n, ' ');
 }
 
-const char* power_color(PowerKind) {
+const char* power_color(sts2::game::PowerKind) {
     return ansi::kReset;
 }
 
-const char* power_name(PowerKind kind) {
+const char* power_name(sts2::game::PowerKind kind) {
     switch (kind) {
-        case PowerKind::Weak:     return "Weak";
-        case PowerKind::Strength: return "Str";
-        case PowerKind::Ritual:   return "Ritual";
+        case sts2::game::PowerKind::Weak:     return "Weak";
+        case sts2::game::PowerKind::Strength: return "Str";
+        case sts2::game::PowerKind::Ritual:   return "Ritual";
     }
     return "";
 }
 
-std::string format_powers(const std::vector<Power>& ps) {
+std::string format_powers(const std::vector<sts2::game::Power>& ps) {
     if (ps.empty()) return {};
     std::ostringstream os;
     bool first = true;
@@ -50,21 +50,21 @@ std::string format_powers(const std::vector<Power>& ps) {
     return os.str();
 }
 
-std::string format_intent(const Enemy& e) {
+std::string format_intent(const sts2::game::Enemy& e) {
     std::ostringstream os;
     switch (e.current_move) {
-        case MoveId::Incantation:
+        case sts2::game::MoveId::Incantation:
             os << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
             break;
-        case MoveId::DarkStrike:
+        case sts2::game::MoveId::DarkStrike:
             os << ansi::kRed << glyphs::kSwords << ' '
-               << damage::compute_outgoing(e.vitals.powers, e.dark_strike_base) << ansi::kReset;
+               << sts2::damage::compute_outgoing(e.vitals.powers, e.dark_strike_base) << ansi::kReset;
             break;
     }
     return os.str();
 }
 
-std::size_t max_enemy_name_len(const std::vector<Enemy>& es) {
+std::size_t max_enemy_name_len(const std::vector<sts2::game::Enemy>& es) {
     std::size_t m = 0;
     for (const auto& e : es) {
         if (e.vitals.hp > 0 && e.name.size() > m) m = e.name.size();
@@ -72,16 +72,16 @@ std::size_t max_enemy_name_len(const std::vector<Enemy>& es) {
     return m;
 }
 
-int total_deck_size(const Player& p) {
+int total_deck_size(const sts2::game::Player& p) {
     return static_cast<int>(p.draw_pile.size() + p.hand.size()
                           + p.discard_pile.size() + p.exhaust_pile.size());
 }
 
-}
+}  // namespace sts2::render::detail
 
-namespace render {
+namespace sts2::render {
 
-void render_combat(const Combat& c, std::ostream& out) {
+void render_combat(const sts2::game::Combat& c, std::ostream& out) {
     out << ansi::kDim << detail::repeat_utf8(glyphs::kSeparator, detail::kSeparatorLen) << ansi::kReset << "\n";
 
     out << "  Round " << c.round()
@@ -109,7 +109,7 @@ void render_combat(const Combat& c, std::ostream& out) {
     std::size_t name_width = detail::max_enemy_name_len(c.enemies());
     std::size_t display_idx = 0;
     for (std::size_t i = 0; i < c.enemies().size(); ++i) {
-        const Enemy& e = c.enemies()[i];
+        const sts2::game::Enemy& e = c.enemies()[i];
         if (e.vitals.hp <= 0) continue;
         out << "  [" << display_idx++ << "] " << ansi::kBold << e.name << ansi::kReset
             << detail::spaces(name_width - e.name.size())
@@ -127,17 +127,17 @@ void render_combat(const Combat& c, std::ostream& out) {
     out << "\n";
 
     for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-        const Card& card = c.player().hand[i];
+        const sts2::game::Card& card = c.player().hand[i];
         bool playable = card.cost <= c.player().energy;
         const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;
         const char* bullet = playable ? glyphs::kBulletFilled : glyphs::kBulletHollow;
-        const char* type_color = (card.type == CardType::Attack) ? ansi::kRed : ansi::kBlue;
+        const char* type_color = (card.type == sts2::game::CardType::Attack) ? ansi::kRed : ansi::kBlue;
         out << "  " << bullet_color << bullet << ansi::kReset
             << " [" << i << "] "
             << type_color << card.name << ansi::kReset
             << " (" << ansi::kCyan << card.cost << ansi::kReset << ") "
             << card.short_stats;
-        if (card.target == TargetType::AnyEnemy) {
+        if (card.target == sts2::game::TargetType::AnyEnemy) {
             out << "  " << ansi::kYellow << glyphs::kArrowRight << ansi::kReset;
         }
         out << "\n";
@@ -148,4 +148,4 @@ void render_combat(const Combat& c, std::ostream& out) {
     out << "\n";
 }
 
-}
+}  // namespace sts2::render

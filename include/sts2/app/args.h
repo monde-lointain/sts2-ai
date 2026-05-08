@@ -6,10 +6,10 @@
 #include <iosfwd>
 #include <string>
 
-namespace app {
+namespace sts2::app {
 
 bool parse_uint64(const std::string& s, std::uint64_t& out);
 bool parse_args(int argc, char** argv, std::uint64_t& seed_out, bool& seed_provided, std::ostream& err);
 std::uint64_t random_seed();
 
-}
+}  // namespace sts2::app

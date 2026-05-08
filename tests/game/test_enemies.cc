@@ -27,6 +27,13 @@ namespace {
 
 using sts2::tests::helpers::ExpectPowersEq;
 using sts2::tests::helpers::MakePower;
+
+using Combat    = sts2::game::Combat;
+using Enemy     = sts2::game::Enemy;
+using MoveId    = sts2::game::MoveId;
+using PowerKind = sts2::game::PowerKind;
+using Rng       = sts2::game::Rng;
+
 using sts2::tests::seeds::kCalcifiedHp_seed42;
 using sts2::tests::seeds::kCalcifiedSeed_hp38;
 using sts2::tests::seeds::kCalcifiedSeed_hp39;
@@ -47,7 +54,7 @@ using sts2::tests::seeds::kDampSeed_hp53;
 // constructor invariants plus the def-use chain hp → max_hp/hp.
 TEST(EnemiesMakeCalcified, T_ENM_005_StableCultistAtSeed42) {
     Rng r{kCultistTestSeed};
-    Enemy e = enemies::make_calcified_cultist(r);
+    Enemy e = sts2::enemies::make_calcified_cultist(r);
 
     EXPECT_EQ(e.name, "Calcified Cultist");
     EXPECT_EQ(e.vitals.max_hp, e.vitals.hp);
@@ -68,22 +75,22 @@ TEST(EnemiesMakeCalcified, T_ENM_005_StableCultistAtSeed42) {
 TEST(EnemiesMakeCalcified, T_ENM_010_AllHpOutcomesReachable) {
     {
         Rng r{kCalcifiedSeed_hp38};
-        Enemy e = enemies::make_calcified_cultist(r);
+        Enemy e = sts2::enemies::make_calcified_cultist(r);
         EXPECT_EQ(e.vitals.hp, 38);
     }
     {
         Rng r{kCalcifiedSeed_hp39};
-        Enemy e = enemies::make_calcified_cultist(r);
+        Enemy e = sts2::enemies::make_calcified_cultist(r);
         EXPECT_EQ(e.vitals.hp, 39);
     }
     {
         Rng r{kCalcifiedSeed_hp40};
-        Enemy e = enemies::make_calcified_cultist(r);
+        Enemy e = sts2::enemies::make_calcified_cultist(r);
         EXPECT_EQ(e.vitals.hp, 40);
     }
     {
         Rng r{kCalcifiedSeed_hp41};
-        Enemy e = enemies::make_calcified_cultist(r);
+        Enemy e = sts2::enemies::make_calcified_cultist(r);
         EXPECT_EQ(e.vitals.hp, 41);
     }
 }
@@ -95,7 +102,7 @@ TEST(EnemiesMakeCalcified, T_ENM_010_AllHpOutcomesReachable) {
 // T-ENM-015 — BP, BV — Mirror of T-ENM-005 for Damp.
 TEST(EnemiesMakeDamp, T_ENM_015_StableCultistAtSeed42) {
     Rng r{kCultistTestSeed};
-    Enemy e = enemies::make_damp_cultist(r);
+    Enemy e = sts2::enemies::make_damp_cultist(r);
 
     EXPECT_EQ(e.name, "Damp Cultist");
     EXPECT_EQ(e.vitals.max_hp, e.vitals.hp);
@@ -114,17 +121,17 @@ TEST(EnemiesMakeDamp, T_ENM_015_StableCultistAtSeed42) {
 TEST(EnemiesMakeDamp, T_ENM_020_AllHpOutcomesReachable) {
     {
         Rng r{kDampSeed_hp51};
-        Enemy e = enemies::make_damp_cultist(r);
+        Enemy e = sts2::enemies::make_damp_cultist(r);
         EXPECT_EQ(e.vitals.hp, 51);
     }
     {
         Rng r{kDampSeed_hp52};
-        Enemy e = enemies::make_damp_cultist(r);
+        Enemy e = sts2::enemies::make_damp_cultist(r);
         EXPECT_EQ(e.vitals.hp, 52);
     }
     {
         Rng r{kDampSeed_hp53};
-        Enemy e = enemies::make_damp_cultist(r);
+        Enemy e = sts2::enemies::make_damp_cultist(r);
         EXPECT_EQ(e.vitals.hp, 53);
     }
 }
@@ -140,7 +147,7 @@ TEST(EnemiesRollNextMove, T_ENM_025_FirstCallLatches) {
     e.current_move = MoveId::Incantation;
     e.performed_first_move = false;
 
-    enemies::roll_next_move(e);
+    sts2::enemies::roll_next_move(e);
 
     EXPECT_TRUE(e.performed_first_move);
     EXPECT_EQ(e.current_move, MoveId::Incantation);
@@ -152,7 +159,7 @@ TEST(EnemiesRollNextMove, T_ENM_030_IncantationToDarkStrike) {
     e.current_move = MoveId::Incantation;
     e.performed_first_move = true;
 
-    enemies::roll_next_move(e);
+    sts2::enemies::roll_next_move(e);
 
     EXPECT_EQ(e.current_move, MoveId::DarkStrike);
 }
@@ -163,7 +170,7 @@ TEST(EnemiesRollNextMove, T_ENM_035_DarkStrikeStays) {
     e.current_move = MoveId::DarkStrike;
     e.performed_first_move = true;
 
-    enemies::roll_next_move(e);
+    sts2::enemies::roll_next_move(e);
 
     EXPECT_EQ(e.current_move, MoveId::DarkStrike);
 }
@@ -178,7 +185,7 @@ TEST(EnemiesRollNextMove, T_ENM_040_SequenceOverFourCalls) {
 
     std::vector<MoveId> seq;
     for (int i = 0; i < 4; ++i) {
-        enemies::roll_next_move(e);
+        sts2::enemies::roll_next_move(e);
         seq.push_back(e.current_move);
     }
 
@@ -206,7 +213,7 @@ TEST(EnemiesAct, T_ENM_045_IncantationAppliesRitualToSelf) {
     e.ritual_amount = 2;
     e.current_move = MoveId::Incantation;
 
-    enemies::act(e, c);
+    sts2::enemies::act(e, c);
 
     ExpectPowersEq(e.vitals.powers,
                    { MakePower(PowerKind::Ritual, 2, true) });
@@ -220,7 +227,7 @@ TEST(EnemiesAct, T_ENM_050_DarkStrikeAttacksPlayer) {
     e.dark_strike_base = 9;
     e.current_move = MoveId::DarkStrike;
 
-    enemies::act(e, c);
+    sts2::enemies::act(e, c);
 
     EXPECT_EQ(c.player().vitals.hp, 61);
 }
@@ -235,7 +242,7 @@ TEST(EnemiesAct, T_ENM_055_DarkStrikeWithStrengthAdds) {
     e.current_move = MoveId::DarkStrike;
     e.vitals.powers = { MakePower(PowerKind::Strength, 2) };
 
-    enemies::act(e, c);
+    sts2::enemies::act(e, c);
 
     EXPECT_EQ(c.player().vitals.hp, 70 - 11);  // 59
 }
@@ -249,7 +256,7 @@ TEST(EnemiesAct, T_ENM_060_DarkStrikeWithWeakHalves) {
     e.current_move = MoveId::DarkStrike;
     e.vitals.powers = { MakePower(PowerKind::Weak, 1) };
 
-    enemies::act(e, c);
+    sts2::enemies::act(e, c);
 
     EXPECT_EQ(c.player().vitals.hp, 70 - 6);  // 64
 }

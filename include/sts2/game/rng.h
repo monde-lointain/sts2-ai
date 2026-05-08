@@ -4,6 +4,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace sts2::game {
+
 class Rng {
 public:
     explicit Rng(uint64_t seed);
@@ -23,3 +25,5 @@ public:
 private:
     std::mt19937_64 engine_;
 };
+
+}  // namespace sts2::game

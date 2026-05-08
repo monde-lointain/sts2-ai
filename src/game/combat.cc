@@ -8,6 +8,8 @@
 #include "sts2/game/enemies.h"
 #include "sts2/game/powers.h"
 
+namespace sts2::game {
+
 namespace {
 constexpr int kMaxHandSize = 10;
 constexpr int kBaseHandDraw = 5;
@@ -28,7 +30,7 @@ void Combat::start(std::vector<Card> starter_deck) {
 
 void Combat::start_player_turn() {
     for (auto& e : enemies_) {
-        if (e.vitals.hp > 0) enemies::roll_next_move(e);
+        if (e.vitals.hp > 0) sts2::enemies::roll_next_move(e);
     }
 
     if (round_ > 1) player_.vitals.block = 0;
@@ -44,7 +46,7 @@ void Combat::end_player_turn() {
         player_.discard_pile.push_back(std::move(player_.hand.back()));
         player_.hand.pop_back();
     }
-    powers::tick_at_turn_end(player_.vitals.powers);
+    sts2::powers::tick_at_turn_end(player_.vitals.powers);
 }
 
 void Combat::enemy_phase() {
@@ -53,11 +55,11 @@ void Combat::enemy_phase() {
     }
     for (auto& e : enemies_) {
         if (e.vitals.hp <= 0) continue;
-        enemies::act(e, *this);
+        sts2::enemies::act(e, *this);
         if (combat_over_) return;
     }
     for (auto& e : enemies_) {
-        if (e.vitals.hp > 0) powers::tick_at_turn_end(e.vitals.powers);
+        if (e.vitals.hp > 0) sts2::powers::tick_at_turn_end(e.vitals.powers);
     }
 }
 
@@ -131,14 +133,14 @@ void Combat::set_pick_discard_callback(std::function<int(const Combat&)> cb) {
 void Combat::deal_damage_to_enemy(int idx, int base_damage) {
     assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
     Enemy& e = enemies_[static_cast<size_t>(idx)];
-    int dmg = damage::compute_outgoing(player_.vitals.powers, base_damage);
-    damage::apply_to_defender(e.vitals, dmg);
+    int dmg = sts2::damage::compute_outgoing(player_.vitals.powers, base_damage);
+    sts2::damage::apply_to_defender(e.vitals, dmg);
     check_win_or_lose();
 }
 
 void Combat::enemy_attack_player(Enemy& source, int base_damage) {
-    int dmg = damage::compute_outgoing(source.vitals.powers, base_damage);
-    damage::apply_to_defender(player_.vitals, dmg);
+    int dmg = sts2::damage::compute_outgoing(source.vitals.powers, base_damage);
+    sts2::damage::apply_to_defender(player_.vitals, dmg);
     check_win_or_lose();
 }
 
@@ -149,11 +151,11 @@ void Combat::gain_player_block(int amt) {
 void Combat::apply_power_to_enemy(int idx, PowerKind kind, int amt) {
     assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
     Enemy& e = enemies_[static_cast<size_t>(idx)];
-    powers::apply(e.vitals.powers, kind, amt);
+    sts2::powers::apply(e.vitals.powers, kind, amt);
 }
 
 void Combat::apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt) {
-    powers::apply(e.vitals.powers, kind, amt);
+    sts2::powers::apply(e.vitals.powers, kind, amt);
 }
 
 void Combat::discard_chosen_from_hand() {
@@ -164,3 +166,5 @@ void Combat::discard_chosen_from_hand() {
     player_.hand.erase(player_.hand.begin() + idx);
     player_.discard_pile.push_back(std::move(chosen));
 }
+
+}  // namespace sts2::game

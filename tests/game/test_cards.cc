@@ -29,13 +29,21 @@ namespace {
 using sts2::tests::helpers::MakeCombatWithEnemy;
 using sts2::tests::seeds::kCombatTestSeed;
 
+using Card       = sts2::game::Card;
+using CardId     = sts2::game::CardId;
+using CardType   = sts2::game::CardType;
+using Combat     = sts2::game::Combat;
+using Power      = sts2::game::Power;
+using PowerKind  = sts2::game::PowerKind;
+using TargetType = sts2::game::TargetType;
+
 // -------------------------------------------------------------------------
 // 8.1  cards::make_strike()
 // -------------------------------------------------------------------------
 
 // T-CRD-005 — BP — Static fields populated as specified; on_play is set.
 TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
-    Card c = cards::make_strike();
+    Card c = sts2::cards::make_strike();
     EXPECT_EQ(c.id, CardId::Strike);
     EXPECT_EQ(c.name, "Strike");
     EXPECT_EQ(c.cost, 1);
@@ -53,7 +61,7 @@ TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
 TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
     Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-    Card card = cards::make_strike();
+    Card card = sts2::cards::make_strike();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
     card.on_play(combat, 0);
 
@@ -66,7 +74,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
 TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
     Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-    Card c1 = cards::make_strike();
+    Card c1 = sts2::cards::make_strike();
     c1.base_damage = 999;
     ASSERT_TRUE(static_cast<bool>(c1.on_play));
     c1.on_play(combat, 0);
@@ -81,7 +89,7 @@ TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
 
 // T-CRD-020 — BP — Static fields populated as specified; on_play is set.
 TEST(CardsMakeDefend, T_CRD_020_StaticFields) {
-    Card c = cards::make_defend();
+    Card c = sts2::cards::make_defend();
     EXPECT_EQ(c.id, CardId::Defend);
     EXPECT_EQ(c.name, "Defend");
     EXPECT_EQ(c.cost, 1);
@@ -98,7 +106,7 @@ TEST(CardsMakeDefend, T_CRD_020_StaticFields) {
 TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
     Combat combat{kCombatTestSeed};
 
-    Card card = cards::make_defend();
+    Card card = sts2::cards::make_defend();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
     card.on_play(combat, -1);
 
@@ -110,7 +118,7 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
 TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
     Combat combat{kCombatTestSeed};
 
-    Card c1 = cards::make_defend();
+    Card c1 = sts2::cards::make_defend();
     c1.base_block = 999;
     ASSERT_TRUE(static_cast<bool>(c1.on_play));
     c1.on_play(combat, -1);
@@ -125,7 +133,7 @@ TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
 
 // T-CRD-035 — BP — Static fields; description has 2 lines.
 TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
-    Card c = cards::make_neutralize();
+    Card c = sts2::cards::make_neutralize();
     EXPECT_EQ(c.id, CardId::Neutralize);
     EXPECT_EQ(c.name, "Neutralize");
     EXPECT_EQ(c.cost, 0);
@@ -144,14 +152,14 @@ TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
 TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
     Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-    Card card = cards::make_neutralize();
+    Card card = sts2::cards::make_neutralize();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
     card.on_play(combat, 0);
 
     ASSERT_EQ(combat.enemies().size(), 1u);
     EXPECT_EQ(combat.enemies()[0].vitals.hp, 37);
 
-    const Power* weak = powers::find(combat.enemies()[0].vitals.powers,
+    const Power* weak = sts2::powers::find(combat.enemies()[0].vitals.powers,
                                      PowerKind::Weak);
     ASSERT_NE(weak, nullptr) << "Weak power not found on enemy 0";
     EXPECT_EQ(weak->amount, 1);
@@ -163,7 +171,7 @@ TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
 
 // T-CRD-045 — BP — Static fields; description has 2 lines.
 TEST(CardsMakeSurvivor, T_CRD_045_StaticFields) {
-    Card c = cards::make_survivor();
+    Card c = sts2::cards::make_survivor();
     EXPECT_EQ(c.id, CardId::Survivor);
     EXPECT_EQ(c.name, "Survivor");
     EXPECT_EQ(c.cost, 1);
@@ -188,15 +196,15 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
     // locks shuffle-order independence for this test. All-Strikes makes the
     // discarded card's id deterministic regardless of post-shuffle order.
     std::vector<Card> deck;
-    deck.push_back(cards::make_strike());
-    deck.push_back(cards::make_strike());
-    deck.push_back(cards::make_strike());
+    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_strike());
     combat.start(std::move(deck));
 
     ASSERT_EQ(combat.player().hand.size(), 3u);
     ASSERT_EQ(combat.player().discard_pile.size(), 0u);
 
-    Card card = cards::make_survivor();
+    Card card = sts2::cards::make_survivor();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
     card.on_play(combat, -1);
 
@@ -214,7 +222,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
     ASSERT_TRUE(combat.player().hand.empty());
     ASSERT_TRUE(combat.player().discard_pile.empty());
 
-    Card card = cards::make_survivor();
+    Card card = sts2::cards::make_survivor();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
     card.on_play(combat, -1);
 
@@ -229,7 +237,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
 
 // T-CRD-060 — BP — Deck size and per-id counts. Covers D1+D2 fall-through.
 TEST(CardsStarterDeck, T_CRD_060_SizeAndCounts) {
-    const std::vector<Card> deck = cards::make_silent_starter_deck();
+    const std::vector<Card> deck = sts2::cards::make_silent_starter_deck();
     ASSERT_EQ(deck.size(), 12u);
 
     int strikes = 0, defends = 0, neutralizes = 0, survivors = 0;
@@ -254,7 +262,7 @@ TEST(CardsStarterDeck, T_CRD_060_SizeAndCounts) {
 // T-CRD-065 — DF — Order of construction: 5 Strike, 5 Defend, Neutralize, Survivor.
 // Pre-shuffle order matters for tests that pin a specific seed's draw sequence.
 TEST(CardsStarterDeck, T_CRD_065_OrderOfConstruction) {
-    const std::vector<Card> deck = cards::make_silent_starter_deck();
+    const std::vector<Card> deck = sts2::cards::make_silent_starter_deck();
     ASSERT_EQ(deck.size(), 12u);
 
     for (std::size_t i = 0; i < 5; ++i) {

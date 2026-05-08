@@ -4,6 +4,8 @@
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
 
+namespace sts2::game {
+
 struct Enemy {
     std::string name;
     Vitals vitals;
@@ -14,3 +16,5 @@ struct Enemy {
     int dark_strike_base = 0;
     int ritual_amount = 0;
 };
+
+}  // namespace sts2::game

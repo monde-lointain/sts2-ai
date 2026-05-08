@@ -6,7 +6,7 @@
 #  include <windows.h>
 #endif
 
-namespace console {
+namespace sts2::console {
 
 void enable_ansi_and_utf8() {
 #ifdef _WIN32
@@ -21,4 +21,4 @@ void enable_ansi_and_utf8() {
 #endif
 }
 
-}
+}  // namespace sts2::console

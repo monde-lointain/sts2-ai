@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ansi {
+namespace sts2::ansi {
 
 inline constexpr const char* kReset      = "\x1b[0m";
 inline constexpr const char* kBold       = "\x1b[1m";
@@ -12,4 +12,4 @@ inline constexpr const char* kBlue       = "\x1b[94m";
 inline constexpr const char* kMagenta    = "\x1b[95m";
 inline constexpr const char* kCyan       = "\x1b[96m";
 
-}
+}  // namespace sts2::ansi

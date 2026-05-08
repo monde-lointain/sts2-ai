@@ -29,16 +29,25 @@ namespace {
 
 using ::testing::HasSubstr;
 
-using render::detail::format_intent;
-using render::detail::format_powers;
-using render::detail::max_enemy_name_len;
-using render::detail::power_color;
-using render::detail::power_name;
-using render::detail::repeat_utf8;
-using render::detail::spaces;
-using render::detail::total_deck_size;
+using sts2::render::detail::format_intent;
+using sts2::render::detail::format_powers;
+using sts2::render::detail::max_enemy_name_len;
+using sts2::render::detail::power_color;
+using sts2::render::detail::power_name;
+using sts2::render::detail::repeat_utf8;
+using sts2::render::detail::spaces;
+using sts2::render::detail::total_deck_size;
 
 using sts2::tests::helpers::MakePower;
+
+namespace ansi = sts2::ansi;
+namespace glyphs = sts2::glyphs;
+
+using Enemy     = sts2::game::Enemy;
+using MoveId    = sts2::game::MoveId;
+using Player    = sts2::game::Player;
+using PowerKind = sts2::game::PowerKind;
+using Vitals    = sts2::game::Vitals;
 
 constexpr PowerKind Weak     = PowerKind::Weak;
 constexpr PowerKind Strength = PowerKind::Strength;
@@ -234,13 +243,13 @@ TEST(RenderInternalMaxEnemyName, T_RND_145_DeadExcluded) {
 // T-RND-150 — BP — Sum across draw + hand + discard + exhaust piles.
 TEST(RenderInternalTotalDeckSize, T_RND_150_SumsAllFourPiles) {
     Player p;
-    p.draw_pile.push_back(cards::make_strike());
-    p.draw_pile.push_back(cards::make_strike());
-    p.hand.push_back(cards::make_defend());
-    p.discard_pile.push_back(cards::make_neutralize());
-    p.discard_pile.push_back(cards::make_neutralize());
-    p.discard_pile.push_back(cards::make_neutralize());
-    p.exhaust_pile.push_back(cards::make_survivor());
+    p.draw_pile.push_back(sts2::cards::make_strike());
+    p.draw_pile.push_back(sts2::cards::make_strike());
+    p.hand.push_back(sts2::cards::make_defend());
+    p.discard_pile.push_back(sts2::cards::make_neutralize());
+    p.discard_pile.push_back(sts2::cards::make_neutralize());
+    p.discard_pile.push_back(sts2::cards::make_neutralize());
+    p.exhaust_pile.push_back(sts2::cards::make_survivor());
 
     EXPECT_EQ(total_deck_size(p), 7);
 }

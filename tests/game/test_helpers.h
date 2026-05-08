@@ -22,8 +22,9 @@
 
 // gtest customization point: print PowerKind by name in failure messages.
 // Test-only; kept out of production headers. `PrintTo` must live in the same
-// namespace as the type for gtest's ADL lookup; `PowerKind` is at global
-// scope (per src/game/types.h), so this overload sits at global scope too.
+// namespace as the type for gtest's ADL lookup; `PowerKind` is in
+// sts2::game (per sts2/game/types.h), so this overload sits there too.
+namespace sts2::game {
 inline void PrintTo(PowerKind k, std::ostream* os) {
     switch (k) {
         case PowerKind::Weak:     *os << "Weak";     break;
@@ -31,6 +32,7 @@ inline void PrintTo(PowerKind k, std::ostream* os) {
         case PowerKind::Ritual:   *os << "Ritual";   break;
     }
 }
+}  // namespace sts2::game
 
 namespace sts2::tests::helpers {
 
@@ -48,17 +50,17 @@ void ExpectShuffleMatchesPinned(const std::vector<T>& shuffled,
 
 // Compact constructor for Power test data; `just_applied` defaults to false
 // because that matches every spec input except T-PWR-105.
-inline constexpr Power MakePower(PowerKind kind, int amount,
-                                 bool just_applied = false) {
-    return Power{kind, amount, just_applied};
+inline constexpr sts2::game::Power MakePower(sts2::game::PowerKind kind, int amount,
+                                             bool just_applied = false) {
+    return sts2::game::Power{kind, amount, just_applied};
 }
 
 // Element-wise comparison of two Power vectors with diagnostic indexing.
 // Implemented as a function (not a macro) so failures land on this line and
 // the debugger can step into it. SCOPED_TRACE attaches call-site context to
 // failures so the gtest report includes vector sizes alongside the helper line.
-inline void ExpectPowersEq(const std::vector<Power>& actual,
-                           const std::vector<Power>& expected) {
+inline void ExpectPowersEq(const std::vector<sts2::game::Power>& actual,
+                           const std::vector<sts2::game::Power>& expected) {
     SCOPED_TRACE(::testing::Message() << "ExpectPowersEq actual.size()="
                                       << actual.size()
                                       << " expected.size()=" << expected.size());
@@ -76,10 +78,10 @@ inline void ExpectPowersEq(const std::vector<Power>& actual,
 
 // Build a Combat with one enemy at given hp (and full block=0, no powers, no name).
 // Used by card tests and (later) Combat tests that need a single damageable target.
-inline Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
-    Combat c{seed};
-    Enemy e{};
-    e.vitals = Vitals{hp, hp, 0, {}};
+inline sts2::game::Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
+    sts2::game::Combat c{seed};
+    sts2::game::Enemy e{};
+    e.vitals = sts2::game::Vitals{hp, hp, 0, {}};
     c.add_enemy(std::move(e));
     return c;
 }
@@ -88,19 +90,19 @@ inline Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
 // main.cc's pattern), pick-discard callback returns 0, started with the full
 // 12-card silent starter deck shuffled by Combat's seeded Rng.
 // Returns post-start state: round 1, hand size 7, energy 3, both enemies alive.
-inline Combat MakeStarterCombat(uint64_t seed) {
-    Combat c{seed};
-    Rng enemy_rng{seed};
-    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));
-    c.add_enemy(enemies::make_damp_cultist(enemy_rng));
-    c.set_pick_discard_callback([](const Combat&) { return 0; });
-    c.start(cards::make_silent_starter_deck());
+inline sts2::game::Combat MakeStarterCombat(uint64_t seed) {
+    sts2::game::Combat c{seed};
+    sts2::game::Rng enemy_rng{seed};
+    c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
+    c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
+    c.set_pick_discard_callback([](const sts2::game::Combat&) { return 0; });
+    c.start(sts2::cards::make_silent_starter_deck());
     return c;
 }
 
 // Kill an enemy through the public API by dealing massive damage.
 // Used in tests that need a "one dead enemy in middle/edge" precondition.
-inline void KillEnemy(Combat& c, int idx) {
+inline void KillEnemy(sts2::game::Combat& c, int idx) {
     c.deal_damage_to_enemy(idx, 99999);
 }
 
@@ -108,12 +110,12 @@ inline void KillEnemy(Combat& c, int idx) {
 // Setup helper for tests of can_play / play_card under the "no energy" branch.
 // Does NOT assert: callers verify drained state themselves. If hand[0] targets
 // AnyEnemy, the first alive enemy is selected; otherwise target = -1.
-inline void DrainPlayerEnergy(Combat& c) {
+inline void DrainPlayerEnergy(sts2::game::Combat& c) {
     int safety = 10;
     while (c.player().energy > 0 && !c.player().hand.empty() && safety-- > 0) {
         const auto& card = c.player().hand[0];
         int target = -1;
-        if (card.target == TargetType::AnyEnemy) {
+        if (card.target == sts2::game::TargetType::AnyEnemy) {
             for (std::size_t i = 0; i < c.enemies().size(); ++i) {
                 if (c.enemies()[i].vitals.hp > 0) {
                     target = static_cast<int>(i);

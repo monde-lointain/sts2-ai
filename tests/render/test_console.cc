@@ -18,7 +18,7 @@ namespace {
 
 // T-CON-005 — Smoke — enable_ansi_and_utf8 does not throw; cout still works.
 TEST(ConsoleSmoke, T_CON_005_EnableAnsiAndUtf8DoesNotCrash) {
-    EXPECT_NO_THROW(console::enable_ansi_and_utf8());
+    EXPECT_NO_THROW(sts2::console::enable_ansi_and_utf8());
 
     // Verify subsequent std::cout writes still operate. We swap rdbuf to a
     // local stringstream so the test does not pollute test runner output.

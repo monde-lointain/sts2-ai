@@ -5,6 +5,8 @@
 #include <vector>
 #include "sts2/game/types.h"
 
+namespace sts2::game {
+
 class Combat;
 
 struct Card {
@@ -19,3 +21,5 @@ struct Card {
     std::vector<std::string> description;
     std::function<void(Combat&, int target_idx)> on_play;
 };
+
+}  // namespace sts2::game

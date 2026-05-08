@@ -4,13 +4,13 @@
 
 #include "sts2/game/card.h"
 
-namespace cards {
+namespace sts2::cards {
 
-Card make_strike();
-Card make_defend();
-Card make_neutralize();
-Card make_survivor();
+game::Card make_strike();
+game::Card make_defend();
+game::Card make_neutralize();
+game::Card make_survivor();
 
-std::vector<Card> make_silent_starter_deck();
+std::vector<game::Card> make_silent_starter_deck();
 
-}
+}  // namespace sts2::cards

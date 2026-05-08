@@ -5,7 +5,7 @@
 #include <random>
 #include <string>
 
-namespace app {
+namespace sts2::app {
 
 bool parse_uint64(const std::string& s, std::uint64_t& out) {
     if (s.empty()) return false;
@@ -50,4 +50,4 @@ std::uint64_t random_seed() {
     return (hi << 32) | lo;
 }
 
-}
+}  // namespace sts2::app

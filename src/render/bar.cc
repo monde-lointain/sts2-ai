@@ -4,7 +4,7 @@
 
 #include "sts2/render/glyphs.h"
 
-namespace render {
+namespace sts2::render {
 
 std::string hp_bar(int current, int maximum, int width) {
     if (width <= 0) return {};
@@ -19,4 +19,4 @@ std::string hp_bar(int current, int maximum, int width) {
     return out;
 }
 
-}
+}  // namespace sts2::render

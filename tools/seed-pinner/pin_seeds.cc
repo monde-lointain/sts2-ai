@@ -29,24 +29,24 @@ namespace {
 // build instead of producing silently-wrong data).
 constexpr std::uint64_t kSeedSearchCap = 1ULL << 20;
 
-const char* card_id_name(CardId id) {
+const char* card_id_name(sts2::game::CardId id) {
     switch (id) {
-        case CardId::None:       return "CardId::None";
-        case CardId::Strike:     return "CardId::Strike";
-        case CardId::Defend:     return "CardId::Defend";
-        case CardId::Neutralize: return "CardId::Neutralize";
-        case CardId::Survivor:   return "CardId::Survivor";
+        case sts2::game::CardId::None:       return "sts2::game::CardId::None";
+        case sts2::game::CardId::Strike:     return "sts2::game::CardId::Strike";
+        case sts2::game::CardId::Defend:     return "sts2::game::CardId::Defend";
+        case sts2::game::CardId::Neutralize: return "sts2::game::CardId::Neutralize";
+        case sts2::game::CardId::Survivor:   return "sts2::game::CardId::Survivor";
     }
-    return "CardId::None";
+    return "sts2::game::CardId::None";
 }
 
 // Returns the first seed in [0, kSeedSearchCap) for which factory(Rng{seed})
 // produces an Enemy with vitals.hp == target_hp; std::nullopt if not found.
 std::optional<std::uint64_t> find_seed_for_hp(
-    Enemy (*factory)(Rng&), int target_hp) {
+    sts2::game::Enemy (*factory)(sts2::game::Rng&), int target_hp) {
     for (std::uint64_t seed = 0; seed < kSeedSearchCap; ++seed) {
-        Rng rng(seed);
-        Enemy e = factory(rng);
+        sts2::game::Rng rng(seed);
+        sts2::game::Enemy e = factory(rng);
         if (e.vitals.hp == target_hp) return seed;
     }
     return std::nullopt;
@@ -85,7 +85,7 @@ int main() {
     // 1. shuffle({1, 2})
     std::array<int, 2> shuffle_2{};
     {
-        Rng rng(kRngTestSeed);
+        sts2::game::Rng rng(kRngTestSeed);
         std::vector<int> v = {1, 2};
         rng.shuffle(v);
         shuffle_2 = {v[0], v[1]};
@@ -94,7 +94,7 @@ int main() {
     // 2. shuffle({0..9})
     std::array<int, 10> shuffle_10{};
     {
-        Rng rng(kRngTestSeed);
+        sts2::game::Rng rng(kRngTestSeed);
         std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         rng.shuffle(v);
         for (size_t i = 0; i < 10; ++i) shuffle_10[i] = v[i];
@@ -103,40 +103,40 @@ int main() {
     // 3. uniform_int(0, 9) x10
     std::array<int, 10> seq_0_9{};
     {
-        Rng rng(kRngTestSeed);
+        sts2::game::Rng rng(kRngTestSeed);
         for (int i = 0; i < 10; ++i) seq_0_9[i] = rng.uniform_int(0, 9);
     }
 
     // 4. make_calcified_cultist HP at seed 0x42
     int calcified_hp_seed42 = 0;
     {
-        Rng rng(kCultistTestSeed);
-        calcified_hp_seed42 = enemies::make_calcified_cultist(rng).vitals.hp;
+        sts2::game::Rng rng(kCultistTestSeed);
+        calcified_hp_seed42 = sts2::enemies::make_calcified_cultist(rng).vitals.hp;
     }
 
     // 5. make_damp_cultist HP at seed 0x42
     int damp_hp_seed42 = 0;
     {
-        Rng rng(kCultistTestSeed);
-        damp_hp_seed42 = enemies::make_damp_cultist(rng).vitals.hp;
+        sts2::game::Rng rng(kCultistTestSeed);
+        damp_hp_seed42 = sts2::enemies::make_damp_cultist(rng).vitals.hp;
     }
 
     // 6. brute-force seeds for calcified HPs 38..41
-    auto s_cal_38 = find_seed_for_hp(&enemies::make_calcified_cultist, 38);
-    auto s_cal_39 = find_seed_for_hp(&enemies::make_calcified_cultist, 39);
-    auto s_cal_40 = find_seed_for_hp(&enemies::make_calcified_cultist, 40);
-    auto s_cal_41 = find_seed_for_hp(&enemies::make_calcified_cultist, 41);
+    auto s_cal_38 = find_seed_for_hp(&sts2::enemies::make_calcified_cultist, 38);
+    auto s_cal_39 = find_seed_for_hp(&sts2::enemies::make_calcified_cultist, 39);
+    auto s_cal_40 = find_seed_for_hp(&sts2::enemies::make_calcified_cultist, 40);
+    auto s_cal_41 = find_seed_for_hp(&sts2::enemies::make_calcified_cultist, 41);
 
     // 7. brute-force seeds for damp HPs 51..53
-    auto s_damp_51 = find_seed_for_hp(&enemies::make_damp_cultist, 51);
-    auto s_damp_52 = find_seed_for_hp(&enemies::make_damp_cultist, 52);
-    auto s_damp_53 = find_seed_for_hp(&enemies::make_damp_cultist, 53);
+    auto s_damp_51 = find_seed_for_hp(&sts2::enemies::make_damp_cultist, 51);
+    auto s_damp_52 = find_seed_for_hp(&sts2::enemies::make_damp_cultist, 52);
+    auto s_damp_53 = find_seed_for_hp(&sts2::enemies::make_damp_cultist, 53);
 
     // 8. shuffled silent starter deck (12 cards)
-    std::array<CardId, 12> deck_shuffled{};
+    std::array<sts2::game::CardId, 12> deck_shuffled{};
     {
-        Rng rng(kCombatTestSeed);
-        std::vector<Card> deck = cards::make_silent_starter_deck();
+        sts2::game::Rng rng(kCombatTestSeed);
+        std::vector<sts2::game::Card> deck = sts2::cards::make_silent_starter_deck();
         rng.shuffle(deck);
         for (size_t i = 0; i < 12; ++i) deck_shuffled[i] = deck[i].id;
     }
@@ -145,7 +145,7 @@ int main() {
     int first_intmax = 0;
     int second_intmax = 0;
     {
-        Rng rng(kRngTestSeed);
+        sts2::game::Rng rng(kRngTestSeed);
         first_intmax  = rng.uniform_int(0, INT_MAX);
         second_intmax = rng.uniform_int(0, INT_MAX);
     }
@@ -199,7 +199,7 @@ int main() {
     emit_seed_or_record_failure(body, failures, "kDampSeed_hp53",      s_damp_53, 53, "make_damp_cultist");
     body << "\n";
     body << "// Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).\n";
-    body << "inline constexpr std::array<CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
+    body << "inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
     for (size_t i = 0; i < deck_shuffled.size(); ++i) {
         body << "    " << card_id_name(deck_shuffled[i]);
         if (i + 1 < deck_shuffled.size()) body << ",";
