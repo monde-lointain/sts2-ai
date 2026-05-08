@@ -143,12 +143,15 @@ TEST(PowersApply, T_PWR_070_NewRitualMarksJustApplied) {
     ExpectPowersEq(v, { MakePower(Ritual, 3, true) });
 }
 
-// T-PWR-075 — BP — Existing non-Ritual → amount accumulates; just_applied unchanged.
+// T-PWR-075 — BP — Existing non-Ritual → amount accumulates and `just_applied`
+// preserved unchanged for non-Ritual. Seeding `just_applied=true` locks the
+// invariant against a buggy `apply` that always writes `just_applied=true`.
 // D1 TRUE; D2 FALSE.
+// Covers: amount accumulation and `just_applied` preserved unchanged for non-Ritual.
 TEST(PowersApply, T_PWR_075_ExistingNonRitualAccumulates) {
-    std::vector<Power> v = { MakePower(Weak, 2, false) };
+    std::vector<Power> v = { MakePower(Weak, 2, true) };
     powers::apply(v, Weak, 1);
-    ExpectPowersEq(v, { MakePower(Weak, 3, false) });
+    ExpectPowersEq(v, { MakePower(Weak, 3, true) });
 }
 
 // T-PWR-080 — BP — Existing Ritual → amount accumulates and just_applied=true.
