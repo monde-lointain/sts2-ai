@@ -31,6 +31,7 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_powers.cpp
     game/test_damage.cpp
     game/test_cards.cpp
+    game/test_enemies.cpp
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
