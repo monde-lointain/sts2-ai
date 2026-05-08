@@ -25,7 +25,7 @@
 namespace {
 
 // Hard cap on brute-force seed search. 2^20 ~= 1M; failure is loud (we emit
-// a static_assert(false, ...) into the header so a regen failure breaks the
+// #error directives at the top of the header so a regen failure breaks the
 // build instead of producing silently-wrong data).
 constexpr std::uint64_t kSeedSearchCap = 1ULL << 20;
 
@@ -52,8 +52,12 @@ std::optional<std::uint64_t> find_seed_for_hp(
     return std::nullopt;
 }
 
-void emit_seed_or_static_assert(
+// Emits a constant if the seed was found. Otherwise emits a comment in-place
+// and appends a failure message to `failures` so the caller can write a
+// matching #error directive at the top of the file (outside any namespace).
+void emit_seed_or_record_failure(
     std::ostringstream& out,
+    std::vector<std::string>& failures,
     const char* name,
     std::optional<std::uint64_t> seed,
     int target_hp,
@@ -64,8 +68,10 @@ void emit_seed_or_static_assert(
     } else {
         out << "// FAILED: no seed in [0, 2^20) produced "
             << factory_label << " hp=" << target_hp << "\n";
-        out << "static_assert(false, \"seed-pinner: no seed for " << name
-            << " in [0, 2^20). Widen kSeedSearchCap or investigate.\");\n";
+        std::ostringstream msg;
+        msg << "seed-pinner: no seed for " << name
+            << " in [0, 2^20). Widen kSeedSearchCap or investigate.";
+        failures.push_back(msg.str());
     }
 }
 
@@ -144,6 +150,69 @@ int main() {
         second_intmax = rng.uniform_int(0, INT_MAX);
     }
 
+    // Body of the header (the namespace block). Failures are recorded here and
+    // surfaced as #error directives written before the namespace opens, so they
+    // sit at file scope and unambiguously fire at preprocessing time of any TU.
+    std::vector<std::string> failures;
+    std::ostringstream body;
+
+    body << "namespace sts2::tests::seeds {\n";
+    body << "\n";
+    body << "inline constexpr std::uint64_t kRngTestSeed     = 0x"
+         << std::hex << kRngTestSeed << std::dec << "ULL;\n";
+    body << "inline constexpr std::uint64_t kCombatTestSeed  = 0x"
+         << std::hex << kCombatTestSeed << std::dec << "ULL;\n";
+    body << "inline constexpr std::uint64_t kCultistTestSeed = 0x"
+         << std::hex << kCultistTestSeed << std::dec << "ULL;\n";
+    body << "\n";
+    body << "// T-RNG-005: 10 successive uniform_int(0, 9) calls on Rng{kRngTestSeed}.\n";
+    body << "inline constexpr std::array<int, 10> kRngSeq_0_9 = {";
+    for (size_t i = 0; i < seq_0_9.size(); ++i) {
+        body << seq_0_9[i];
+        if (i + 1 < seq_0_9.size()) body << ", ";
+    }
+    body << "};\n";
+    body << "\n";
+    body << "// T-RNG-055: shuffle({1, 2}) on Rng{kRngTestSeed}.\n";
+    body << "inline constexpr std::array<int, 2>  kShuffle_2  = {"
+         << shuffle_2[0] << ", " << shuffle_2[1] << "};\n";
+    body << "\n";
+    body << "// T-RNG-060: shuffle({0..9}) on Rng{kRngTestSeed}.\n";
+    body << "inline constexpr std::array<int, 10> kShuffle_10 = {";
+    for (size_t i = 0; i < shuffle_10.size(); ++i) {
+        body << shuffle_10[i];
+        if (i + 1 < shuffle_10.size()) body << ", ";
+    }
+    body << "};\n";
+    body << "\n";
+    body << "// T-ENM-005 / T-ENM-015: cultist HPs from make_*_cultist(Rng{kCultistTestSeed}).\n";
+    body << "inline constexpr int kCalcifiedHp_seed42 = " << calcified_hp_seed42 << ";\n";
+    body << "inline constexpr int kDampHp_seed42      = " << damp_hp_seed42 << ";\n";
+    body << "\n";
+    body << "// T-ENM-010 / T-ENM-020: first seed in [0, 2^20) producing a given HP.\n";
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp38", s_cal_38, 38, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp39", s_cal_39, 39, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp40", s_cal_40, 40, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp41", s_cal_41, 41, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeed_hp51",      s_damp_51, 51, "make_damp_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeed_hp52",      s_damp_52, 52, "make_damp_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeed_hp53",      s_damp_53, 53, "make_damp_cultist");
+    body << "\n";
+    body << "// Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).\n";
+    body << "inline constexpr std::array<CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
+    for (size_t i = 0; i < deck_shuffled.size(); ++i) {
+        body << "    " << card_id_name(deck_shuffled[i]);
+        if (i + 1 < deck_shuffled.size()) body << ",";
+        body << "\n";
+    }
+    body << "};\n";
+    body << "\n";
+    body << "// Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.\n";
+    body << "inline constexpr int kRngFirstUniform_0_INTMAX  = " << first_intmax << ";\n";
+    body << "inline constexpr int kRngSecondUniform_0_INTMAX = " << second_intmax << ";\n";
+    body << "\n";
+    body << "}  // namespace sts2::tests::seeds\n";
+
     std::ostringstream out;
     out << "#pragma once\n";
     out << "\n";
@@ -163,62 +232,16 @@ int main() {
     out << "\n";
     out << "#include \"game/Types.h\"\n";
     out << "\n";
-    out << "namespace sts2::tests::seeds {\n";
-    out << "\n";
-    out << "inline constexpr std::uint64_t kRngTestSeed     = 0x"
-        << std::hex << kRngTestSeed << std::dec << "ULL;\n";
-    out << "inline constexpr std::uint64_t kCombatTestSeed  = 0x"
-        << std::hex << kCombatTestSeed << std::dec << "ULL;\n";
-    out << "inline constexpr std::uint64_t kCultistTestSeed = 0x"
-        << std::hex << kCultistTestSeed << std::dec << "ULL;\n";
-    out << "\n";
-    out << "// T-RNG-005: 10 successive uniform_int(0, 9) calls on Rng{kRngTestSeed}.\n";
-    out << "inline constexpr std::array<int, 10> kRngSeq_0_9 = {";
-    for (size_t i = 0; i < seq_0_9.size(); ++i) {
-        out << seq_0_9[i];
-        if (i + 1 < seq_0_9.size()) out << ", ";
+    // #error directives must sit at column 0 outside any namespace. Emit them
+    // here, before the namespace opens, so a regen failure unambiguously breaks
+    // any translation unit that includes this header.
+    for (const auto& msg : failures) {
+        out << "#error \"" << msg << "\"\n";
     }
-    out << "};\n";
-    out << "\n";
-    out << "// T-RNG-055: shuffle({1, 2}) on Rng{kRngTestSeed}.\n";
-    out << "inline constexpr std::array<int, 2>  kShuffle_2  = {"
-        << shuffle_2[0] << ", " << shuffle_2[1] << "};\n";
-    out << "\n";
-    out << "// T-RNG-060: shuffle({0..9}) on Rng{kRngTestSeed}.\n";
-    out << "inline constexpr std::array<int, 10> kShuffle_10 = {";
-    for (size_t i = 0; i < shuffle_10.size(); ++i) {
-        out << shuffle_10[i];
-        if (i + 1 < shuffle_10.size()) out << ", ";
-    }
-    out << "};\n";
-    out << "\n";
-    out << "// T-ENM-005 / T-ENM-015: cultist HPs from make_*_cultist(Rng{kCultistTestSeed}).\n";
-    out << "inline constexpr int kCalcifiedHp_seed42 = " << calcified_hp_seed42 << ";\n";
-    out << "inline constexpr int kDampHp_seed42      = " << damp_hp_seed42 << ";\n";
-    out << "\n";
-    out << "// T-ENM-010 / T-ENM-020: first seed in [0, 2^20) producing a given HP.\n";
-    emit_seed_or_static_assert(out, "kCalcifiedSeed_hp38", s_cal_38, 38, "make_calcified_cultist");
-    emit_seed_or_static_assert(out, "kCalcifiedSeed_hp39", s_cal_39, 39, "make_calcified_cultist");
-    emit_seed_or_static_assert(out, "kCalcifiedSeed_hp40", s_cal_40, 40, "make_calcified_cultist");
-    emit_seed_or_static_assert(out, "kCalcifiedSeed_hp41", s_cal_41, 41, "make_calcified_cultist");
-    emit_seed_or_static_assert(out, "kDampSeed_hp51",      s_damp_51, 51, "make_damp_cultist");
-    emit_seed_or_static_assert(out, "kDampSeed_hp52",      s_damp_52, 52, "make_damp_cultist");
-    emit_seed_or_static_assert(out, "kDampSeed_hp53",      s_damp_53, 53, "make_damp_cultist");
-    out << "\n";
-    out << "// Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).\n";
-    out << "inline constexpr std::array<CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
-    for (size_t i = 0; i < deck_shuffled.size(); ++i) {
-        out << "    " << card_id_name(deck_shuffled[i]);
-        if (i + 1 < deck_shuffled.size()) out << ",";
+    if (!failures.empty()) {
         out << "\n";
     }
-    out << "};\n";
-    out << "\n";
-    out << "// Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.\n";
-    out << "inline constexpr int kRngFirstUniform_0_INTMAX  = " << first_intmax << ";\n";
-    out << "inline constexpr int kRngSecondUniform_0_INTMAX = " << second_intmax << ";\n";
-    out << "\n";
-    out << "}  // namespace sts2::tests::seeds\n";
+    out << body.str();
 
     std::cout << out.str();
 
