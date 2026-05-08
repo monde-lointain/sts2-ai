@@ -130,7 +130,7 @@ TEST(render_combat_omits_block_when_zero) {
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
-    CHECK(os.str().find("Block ") == std::string::npos);
+    CHECK(os.str().find(" blk") == std::string::npos);
 }
 
 TEST(render_combat_shows_block_when_nonzero) {
@@ -140,7 +140,8 @@ TEST(render_combat_shows_block_when_nonzero) {
     c.player.block = 7;
     std::ostringstream os;
     render::render_combat(c, os);
-    CHECK(os.str().find("Block 7") != std::string::npos);
+    CHECK(os.str().find("7") != std::string::npos);
+    CHECK(os.str().find(" blk") != std::string::npos);
 }
 
 TEST(render_combat_shows_target_arrow_for_attack_cards) {

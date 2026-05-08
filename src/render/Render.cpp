@@ -31,7 +31,7 @@ std::string spaces(size_t n) {
 
 const char* power_color(PowerKind kind) {
     switch (kind) {
-        case PowerKind::Weak:     return ansi::kRed;
+        case PowerKind::Weak:     return ansi::kDim;
         case PowerKind::Strength: return ansi::kGreen;
         case PowerKind::Ritual:   return ansi::kYellow;
     }
@@ -129,7 +129,7 @@ void render_combat(const Combat& c, std::ostream& out) {
         << "  HP " << ansi::kRed << hp_bar(c.player.hp, c.player.max_hp, kPlayerHpBarWidth) << ansi::kReset
         << " " << c.player.hp << "/" << c.player.max_hp;
     if (c.player.block > 0) {
-        out << "  " << ansi::kBlue << "Block " << c.player.block << ansi::kReset;
+        out << "  " << ansi::kBlue << c.player.block << ansi::kReset << " blk";
     }
     out << "  Deck " << total_deck_size(c.player);
     if (!c.player.powers.empty()) {
@@ -149,7 +149,7 @@ void render_combat(const Combat& c, std::ostream& out) {
             << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
             << " " << e.hp << "/" << e.max_hp;
         if (e.block > 0) {
-            out << "  " << ansi::kBlue << "Block " << e.block << ansi::kReset;
+            out << "  " << ansi::kBlue << e.block << ansi::kReset << " blk";
         }
         out << "   " << format_intent(e);
         if (!e.powers.empty() && e.hp > 0) {
@@ -171,7 +171,7 @@ void render_combat(const Combat& c, std::ostream& out) {
             << " (" << ansi::kCyan << card.cost << ansi::kReset << ") "
             << card_inline_stats(card.id);
         if (card.target == TargetType::AnyEnemy) {
-            out << "  " << ansi::kGreen << glyphs::kArrowRight << ansi::kReset;
+            out << "  " << ansi::kYellow << glyphs::kArrowRight << ansi::kReset;
         }
         out << "\n";
         for (const std::string& line : card_description(card.id)) {
