@@ -1,38 +1,56 @@
-# sts2-fight
+# sts2-ai
 
-A C++17 CLI simulator of a single Slay the Spire 2 fight: **The Silent (starter deck + Ring of the Snake) vs CULTISTS_NORMAL (Calcified Cultist + Damp Cultist), Ascension 0.**
+A C++20 command-line simulator of one Slay the Spire 2 fight: **The Silent (starter deck + Ring of the Snake) vs CULTISTS_NORMAL (Calcified Cultist + Damp Cultist), Ascension 0.**
 
-Deterministic per `--seed`. Renders in ANSI/UTF-8 to a standard terminal. Exits silently with code 0 when the fight ends.
+Deterministic per `--seed`. Renders ANSI/UTF-8 to a standard terminal. Exits silently with code 0 when the fight ends.
 
-## Build (Windows)
+## Requirements
 
-Requires CMake 3.16+ and a C++17 compiler. Tested with Clang 18 and MSVC 2022.
+- CMake **3.28** or newer
+- A C++20 compiler — tested with Clang 18 and MSVC 2022
+- Ninja (recommended) or Visual Studio 17 2022
+- On Windows, a shell with the MSVC toolchain on `PATH` (e.g. *x64 Native Tools Command Prompt for VS 2022*)
 
-### Ninja (preferred; needs a VS dev environment)
+## Build
 
-From a "x64 Native Tools Command Prompt for VS 2022" (or any shell where `cl` is on PATH):
+The project ships with `CMakePresets.json`. From the repo root:
 
-```
-cmake -S . -B build -G Ninja
-cmake --build build
-```
-
-### Visual Studio generator (fallback)
+### Ninja (preferred)
 
 ```
-cmake -S . -B build -G "Visual Studio 17 2022"
-cmake --build build --config Debug
+cmake --preset ninja-debug
+cmake --build --preset ninja-debug
 ```
 
-With the VS generator, executables land in `build\Debug\` rather than `build\`.
+### Visual Studio 2022 (multi-config)
+
+```
+cmake --preset vs2022
+cmake --build --preset vs2022-debug
+```
+
+Both presets place binaries under `build\<preset>\<config>\` — e.g. `build\ninja-debug\Debug\sts2_fight.exe`, `build\vs2022\Debug\sts2_fight.exe`.
+
+Other presets: `ninja-release`, `vs2022-release`. List them with `cmake --list-presets`.
+
+### Configure-time options
+
+| Option                    | Default | Effect |
+|---------------------------|---------|--------|
+| `STS2_BUILD_TESTS`        | `ON`    | Build the test executable |
+| `STS2_WARNINGS_AS_ERRORS` | `ON`    | `/WX` (MSVC) or `-Werror` (Clang/GCC) |
+
+Pass via `-D`, e.g.:
+
+```
+cmake --preset ninja-debug -DSTS2_BUILD_TESTS=OFF
+```
 
 ## Run
 
 ```
-build\sts2_fight.exe --seed 42
+build\ninja-debug\Debug\sts2_fight.exe --seed 42
 ```
-
-(VS generator: `build\Debug\sts2_fight.exe --seed 42`)
 
 Without `--seed`, a 64-bit seed is drawn from `std::random_device`.
 
@@ -62,25 +80,32 @@ Each turn the program redraws the full combat state:
 
 Input is line-buffered (type, then Enter):
 
-| Key   | Action                                                              |
-|-------|---------------------------------------------------------------------|
+| Key   | Action |
+|-------|--------|
 | `0..9`| Play the card at that hand index. If it targets an enemy, you'll be prompted for a target index next. |
-| `e`   | End your turn. Discards your hand, runs the enemy phase, draws a new hand. |
-| `q`   | Quit immediately (exit code 0).                                     |
-| EOF   | Same as `q`.                                                         |
+| `e`   | End your turn. Discard the hand, run the enemy phase, draw a new hand. |
+| `q`   | Quit immediately (exit code 0). |
+| EOF   | Same as `q`. |
 
 When the fight ends (player HP reaches 0 or both enemies are slain), the program renders one last frame and exits silently with code 0 — no banner, no summary.
 
 ## Test
 
 ```
-build\sts2_fight_tests.exe
-ctest --test-dir build --output-on-failure
+ctest --preset ninja-debug
 ```
 
-115 unit and integration tests covering the RNG, damage formula, power semantics, card behaviour, cultist state machine, combat loop, renderer, and input parser.
+Or run the binary directly:
+
+```
+build\ninja-debug\Debug\sts2_simulator_tests.exe
+```
+
+122 unit and integration tests cover the RNG, damage formula, power semantics, card behaviour, cultist state machine, combat loop, renderer, and input parser.
 
 ## Architecture
+
+`sts2_simulator` is a single static library that builds the entire `src/` tree. It exports the ALIAS target `sts2::simulator`; the exe and the tests both link against `sts2::simulator`.
 
 - `src/game/` — pure game logic. No I/O. Independently unit-tested.
   - `Rng`, `Types` (enums), `Power`, `Card`, `Player`, `Enemy` — data types
@@ -89,4 +114,4 @@ ctest --test-dir build --output-on-failure
 - `src/input/` — line-buffered action/index parser. Stream-driven, no globals.
 - `src/main.cpp` — wires the layers together: arg parsing, console init, combat setup, prompt loop.
 
-The full design is in `cultists_normal_overview.md` (mechanical reference for the encounter, lifted from the STS2 source).
+The full design — and the encounter mechanics lifted from the STS2 source — is in `cultists_normal_overview.md`.
