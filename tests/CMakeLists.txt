@@ -36,6 +36,11 @@ target_link_libraries(sts2_simulator_tests PRIVATE
     GTest::gtest_main
 )
 
+# Resolves `#include "tests/seeds/expected_values.h"` from test sources.
+target_include_directories(sts2_simulator_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}
+)
+
 # Apply project warnings, then disable warnings-as-errors for tests only:
 # GoogleTest's headers can trip /W4 + /WX on MSVC.
 sts2_apply_warnings(sts2_simulator_tests)

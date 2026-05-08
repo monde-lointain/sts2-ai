@@ -118,4 +118,8 @@ sts2_apply_warnings(sts2_fight)
 if(STS2_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+    # Seed pinner is a manual regenerator for tests/seeds/expected_values.h;
+    # not run automatically. Gated on STS2_BUILD_TESTS so production builds
+    # don't pull it in.
+    add_subdirectory(tools/seed-pinner)
 endif()
