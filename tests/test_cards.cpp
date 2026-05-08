@@ -8,17 +8,8 @@
 #include "game/Power.h"
 #include "game/Powers.h"
 #include "game/Types.h"
+#include "test_helpers.h"
 #include "test_runner.h"
-
-static Combat make_combat_with_one_enemy(int enemy_hp = 50) {
-    Combat c{42};
-    Enemy e;
-    e.name = "Dummy";
-    e.hp = enemy_hp;
-    e.max_hp = enemy_hp;
-    c.enemies.push_back(std::move(e));
-    return c;
-}
 
 TEST(card_strike_factory_fields) {
     Card s = cards::make_strike();
@@ -31,7 +22,7 @@ TEST(card_strike_factory_fields) {
 }
 
 TEST(card_strike_deals_six_damage_to_enemy) {
-    Combat c = make_combat_with_one_enemy(50);
+    Combat c = make_combat_with(make_dummy_enemy(50));
     cards::make_strike().on_play(c, 0);
     CHECK(c.enemies[0].hp == 44);
     CHECK(c.enemies[0].block == 0);
@@ -39,7 +30,7 @@ TEST(card_strike_deals_six_damage_to_enemy) {
 }
 
 TEST(card_strike_respects_block) {
-    Combat c = make_combat_with_one_enemy(50);
+    Combat c = make_combat_with(make_dummy_enemy(50));
     c.enemies[0].block = 10;
     cards::make_strike().on_play(c, 0);
     CHECK(c.enemies[0].hp == 50);
@@ -81,14 +72,14 @@ TEST(card_neutralize_factory_fields) {
 }
 
 TEST(card_neutralize_deals_three_and_applies_weak) {
-    Combat c = make_combat_with_one_enemy(50);
+    Combat c = make_combat_with(make_dummy_enemy(50));
     cards::make_neutralize().on_play(c, 0);
     CHECK(c.enemies[0].hp == 47);
     CHECK(powers::amount(c.enemies[0].powers, PowerKind::Weak) == 1);
 }
 
 TEST(card_neutralize_weak_stacks_on_repeat) {
-    Combat c = make_combat_with_one_enemy(50);
+    Combat c = make_combat_with(make_dummy_enemy(50));
     cards::make_neutralize().on_play(c, 0);
     cards::make_neutralize().on_play(c, 0);
     CHECK(powers::amount(c.enemies[0].powers, PowerKind::Weak) == 2);
@@ -154,7 +145,7 @@ TEST(card_starter_deck_size_and_composition) {
 }
 
 TEST(card_strike_with_strength_two_deals_eight) {
-    Combat c = make_combat_with_one_enemy(50);
+    Combat c = make_combat_with(make_dummy_enemy(50));
     powers::apply(c.player.powers, PowerKind::Strength, 2);
     cards::make_strike().on_play(c, 0);
     CHECK(c.enemies[0].hp == 42);
