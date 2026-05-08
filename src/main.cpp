@@ -67,7 +67,7 @@ int prompt_target(const Combat& c) {
     if (alive == 0) return -1;
     if (alive == 1) return last_alive_idx;
     while (true) {
-        std::cout << "\n> Target enemy [index]: " << std::flush;
+        std::cout << "\n" << ansi::kGreen << ">" << ansi::kReset << " Target enemy [index]: " << std::flush;
         int idx = input::read_index(std::cin, static_cast<int>(c.enemies.size()) - 1);
         if (idx < 0) {
             std::cout << ansi::kRed << "  invalid target." << ansi::kReset << "\n";
@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
         render::render_combat(combat, std::cout);
         if (combat.combat_over) return 0;
 
-        std::cout << "> Play card [index], (e)nd turn, (q)uit: " << std::flush;
+        std::cout << ansi::kGreen << ">" << ansi::kReset << " Play card [index], (e)nd turn, (q)uit: " << std::flush;
         input::Action a = input::read_action(std::cin);
         switch (a.kind) {
             case input::Action::Quit:
