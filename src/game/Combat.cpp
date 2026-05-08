@@ -13,7 +13,9 @@ constexpr int kBaseHandDraw = 5;
 constexpr int kRingOfTheSnakeBonus = 2;
 }
 
-Combat::Combat(uint64_t seed) : rng(seed) {}
+Combat::Combat(uint64_t seed)
+    : rng(seed),
+      on_pick_discard([](const Player&) { return 0; }) {}
 
 void Combat::start(std::vector<Card> starter_deck) {
     player.draw_pile = std::move(starter_deck);
@@ -75,14 +77,15 @@ bool Combat::can_play(int hand_idx) const {
     return card.cost <= player.energy;
 }
 
-void Combat::play_card(int hand_idx, int target_idx) {
-    if (!can_play(hand_idx)) return;
+bool Combat::play_card(int hand_idx, int target_idx) {
+    if (!can_play(hand_idx)) return false;
     Card card = std::move(player.hand[static_cast<size_t>(hand_idx)]);
     player.hand.erase(player.hand.begin() + hand_idx);
     player.energy -= card.cost;
     if (card.on_play) card.on_play(*this, target_idx);
     player.discard_pile.push_back(std::move(card));
     check_win_or_lose();
+    return true;
 }
 
 void Combat::draw(int n) {

@@ -28,7 +28,7 @@ public:
     void end_turn();
 
     bool can_play(int hand_idx) const;
-    void play_card(int hand_idx, int target_idx = -1);
+    bool play_card(int hand_idx, int target_idx = -1);
 
     void draw(int n);
     void reshuffle();

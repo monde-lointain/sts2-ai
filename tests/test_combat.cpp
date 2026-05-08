@@ -126,10 +126,57 @@ TEST(combat_play_card_no_op_when_unplayable) {
     Combat c{1};
     c.player.energy = 0;
     c.player.hand.push_back(cards::make_strike());
-    c.play_card(0, -1);
+    bool ok = c.play_card(0, -1);
+    CHECK(!ok);
     CHECK(c.player.energy == 0);
     CHECK(c.player.hand.size() == 1u);
     CHECK(c.player.discard_pile.empty());
+}
+
+TEST(combat_play_card_returns_true_on_success) {
+    Combat c{1};
+    c.player.energy = 3;
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.player.hand.push_back(cards::make_strike());
+    bool ok = c.play_card(0, 0);
+    CHECK(ok);
+}
+
+TEST(combat_play_two_cards_in_one_turn_deducts_cumulative_energy) {
+    Combat c{1};
+    c.player.energy = 3;
+    c.enemies.push_back(make_dummy_enemy(100));
+    c.player.hand.push_back(cards::make_strike());
+    c.player.hand.push_back(cards::make_defend());
+    c.play_card(0, 0);
+    CHECK(c.player.energy == 2);
+    c.play_card(0, -1);
+    CHECK(c.player.energy == 1);
+    CHECK(c.player.hand.empty());
+    CHECK(c.player.discard_pile.size() == 2u);
+    CHECK(c.player.block == 5);
+    CHECK(c.enemies[0].hp == 94);
+}
+
+TEST(combat_play_survivor_through_play_card_discards_chosen) {
+    Combat c{1};
+    c.player.energy = 3;
+    c.player.hand.push_back(cards::make_strike());
+    c.player.hand.push_back(cards::make_survivor());
+    c.player.hand.push_back(cards::make_defend());
+    c.on_pick_discard = [](const Player& p) -> int {
+        for (size_t i = 0; i < p.hand.size(); ++i) {
+            if (p.hand[i].id == cards::IdStrike) return static_cast<int>(i);
+        }
+        return 0;
+    };
+    bool ok = c.play_card(1, -1);
+    CHECK(ok);
+    CHECK(c.player.energy == 2);
+    CHECK(c.player.block == 8);
+    CHECK(c.player.hand.size() == 1u);
+    CHECK(c.player.hand[0].id == cards::IdDefend);
+    CHECK(c.player.discard_pile.size() == 2u);
 }
 
 TEST(combat_play_strike_kills_low_hp_enemy) {
