@@ -21,11 +21,11 @@ if(NOT _sts2_multi_config AND NOT CMAKE_BUILD_TYPE)
         Debug Release RelWithDebInfo MinSizeRel)
 endif()
 
-# No GNU extensions; standard required. Actual level is set per-target via target_compile_features.
+# No GNU extensions; standard required. Actual level set per-target.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Force ON so IDE/clang-tidy always have compile_commands.json (Ninja/Makefile generators init this as empty cache).
+# Force ON so IDE/clang-tidy always have compile_commands.json.
 if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL
         "Export compile_commands.json" FORCE)
@@ -37,92 +37,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>")
 option(STS2_BUILD_TESTS "Build the unit test executable" ON)
 option(STS2_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 
-# Per-target warnings. Apply with sts2_apply_warnings(<target>).
-function(sts2_apply_warnings target)
-    if(MSVC)
-        target_compile_options(${target} PRIVATE
-            /W4 /permissive- /utf-8 /Zc:__cplusplus
-        )
-        if(STS2_WARNINGS_AS_ERRORS)
-            target_compile_options(${target} PRIVATE /WX)
-        endif()
-    else()
-        target_compile_options(${target} PRIVATE
-            -Wall -Wextra -Wpedantic
-        )
-        if(STS2_WARNINGS_AS_ERRORS)
-            target_compile_options(${target} PRIVATE -Werror)
-        endif()
-    endif()
-endfunction()
+# CMake helper modules.
+include(cmake/CompilerFlags.cmake)
+include(cmake/StaticAnalysis.cmake)
+include(cmake/Formatting.cmake)
+include(cmake/Complexity.cmake)
+include(cmake/Cloc.cmake)
+include(cmake/CodeCoverage.cmake)
 
-# ------------------------------------------------------------------
-# sts2::simulator — combined game/render/input static library
-# ------------------------------------------------------------------
-add_library(sts2_simulator STATIC)
-add_library(sts2::simulator ALIAS sts2_simulator)
+add_subdirectory(src)
 
-target_sources(sts2_simulator PRIVATE
-    # game module
-    src/game/Rng.cpp
-    src/game/Powers.cpp
-    src/game/Damage.cpp
-    src/game/Cards.cpp
-    src/game/Enemies.cpp
-    src/game/Combat.cpp
-    # render module
-    src/render/Bar.cpp
-    src/render/Console.cpp
-    src/render/Render.cpp
-    # input module
-    src/input/Input.cpp
-    # app module
-    src/app/Args.cpp
-    src/app/Prompts.cpp
-    # headers — listed so IDEs surface them in the project view
-    src/game/Types.h
-    src/game/Rng.h
-    src/game/Power.h
-    src/game/Powers.h
-    src/game/Damage.h
-    src/game/Card.h
-    src/game/Cards.h
-    src/game/Vitals.h
-    src/game/Player.h
-    src/game/Enemy.h
-    src/game/Enemies.h
-    src/game/Combat.h
-    src/render/Ansi.h
-    src/render/Bar.h
-    src/render/Console.h
-    src/render/Glyphs.h
-    src/render/Render.h
-    src/render/Render_internal.h
-    src/input/Input.h
-    src/input/Input_internal.h
-    src/app/Args.h
-    src/app/Prompts.h
-)
-
-target_compile_features(sts2_simulator PUBLIC cxx_std_20)
-
-target_include_directories(sts2_simulator PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
-)
-
-sts2_apply_warnings(sts2_simulator)
-
-# ------------------------------------------------------------------
-# sts2_fight — fight simulator executable
-# ------------------------------------------------------------------
-add_executable(sts2_fight src/main.cpp)
-target_link_libraries(sts2_fight PRIVATE sts2::simulator)
-sts2_apply_warnings(sts2_fight)
-
-# ------------------------------------------------------------------
-# Tests
-# ------------------------------------------------------------------
 if(STS2_BUILD_TESTS)
+    include(cmake/Dependencies.cmake)
     enable_testing()
     add_subdirectory(tests)
     # Seed pinner is a manual regenerator for tests/seeds/expected_values.h;
