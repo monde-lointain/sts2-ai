@@ -2,9 +2,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <random>
 #include <string>
 
+// Strict base-10 unsigned: rejects signs, whitespace, prefixes, and partial parses.
 static bool parse_uint64(const char* s, uint64_t& out) {
     if (s == nullptr || *s == '\0') return false;
     std::string str(s);
@@ -51,6 +53,6 @@ int main(int argc, char** argv) {
         seed = (a << 32) | b;
     }
 
-    std::printf("seed=%llu\n", static_cast<unsigned long long>(seed));
+    std::cout << "seed=" << seed << '\n';
     return 0;
 }

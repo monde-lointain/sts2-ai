@@ -32,6 +32,8 @@ With the VS generator, executables land in `build\Debug\` rather than `build\`.
 build\sts2_fight.exe --seed 42
 ```
 
+(VS generator: build\Debug\sts2_fight.exe --seed 42)
+
 Prints `seed=42` and exits 0. Without `--seed`, a 64-bit seed is drawn from `std::random_device`.
 
 ## Test

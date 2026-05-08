@@ -1,32 +1,25 @@
 #pragma once
 
-#include <cstdint>
 #include <random>
 #include <vector>
+#include <cstdint>
 
 class Rng {
 public:
-    explicit Rng(uint64_t seed)
-        : seed_(seed), engine_(seed) {}
-
-    int uniform_int(int lo_inclusive, int hi_inclusive) {
-        std::uniform_int_distribution<int> dist(lo_inclusive, hi_inclusive);
-        return dist(engine_);
-    }
+    explicit Rng(uint64_t seed);
+    int uniform_int(int lo_inclusive, int hi_inclusive);
 
     template <typename T>
     void shuffle(std::vector<T>& v) {
-        const int n = static_cast<int>(v.size());
-        for (int i = n - 1; i >= 1; --i) {
-            int j = uniform_int(0, i);
+        if (v.size() < 2) return;
+        for (size_t i = v.size() - 1; i > 0; --i) {
+            std::uniform_int_distribution<size_t> dist(0, i);
+            size_t j = dist(engine_);
             using std::swap;
-            swap(v[static_cast<size_t>(i)], v[static_cast<size_t>(j)]);
+            swap(v[i], v[j]);
         }
     }
 
-    uint64_t seed() const { return seed_; }
-
 private:
-    uint64_t seed_;
     std::mt19937_64 engine_;
 };

@@ -5,25 +5,33 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(MSVC)
-    add_compile_options(/utf-8 /W4 /permissive-)
-else()
-    add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
+function(sts2_apply_warnings target)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /utf-8 /W4 /permissive-)
+    else()
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endfunction()
 
-set(RNG_SOURCES
+# Future game sources (Card.cpp, Powers.cpp, etc.) go here.
+add_library(sts2_game STATIC
     src/game/Rng.cpp
 )
+target_include_directories(sts2_game PUBLIC src)
+target_compile_features(sts2_game PUBLIC cxx_std_17)
+sts2_apply_warnings(sts2_game)
 
-add_executable(sts2_fight
-    src/main.cpp
-    ${RNG_SOURCES}
-)
+add_executable(sts2_fight src/main.cpp)
+target_link_libraries(sts2_fight PRIVATE sts2_game)
+sts2_apply_warnings(sts2_fight)
 
 add_executable(sts2_fight_tests
-    tests/test_main.cpp
-    ${RNG_SOURCES}
+    tests/main.cpp
+    tests/test_runner.cpp
+    tests/test_rng.cpp
 )
+target_link_libraries(sts2_fight_tests PRIVATE sts2_game)
+sts2_apply_warnings(sts2_fight_tests)
 
 enable_testing()
 add_test(NAME unit COMMAND sts2_fight_tests)
