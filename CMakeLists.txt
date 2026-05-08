@@ -94,6 +94,7 @@ target_sources(sts2_simulator PRIVATE
     src/render/Console.h
     src/render/Glyphs.h
     src/render/Render.h
+    src/render/Render_internal.h
     src/input/Input.h
 )
 
