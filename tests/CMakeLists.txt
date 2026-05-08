@@ -33,6 +33,9 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_cards.cpp
     game/test_enemies.cpp
     game/test_combat.cpp
+    render/test_bar.cpp
+    render/test_render_internal.cpp
+    render/test_render.cpp
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
@@ -42,6 +45,7 @@ target_compile_features(sts2_simulator_tests PRIVATE cxx_std_20)
 target_link_libraries(sts2_simulator_tests PRIVATE
     sts2::simulator
     GTest::gtest_main
+    GTest::gmock
 )
 
 # Resolves `#include "tests/seeds/expected_values.h"` from test sources.
