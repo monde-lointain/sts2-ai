@@ -2,7 +2,9 @@
 
 #include <ostream>
 
-namespace sts2::game { class Combat; }
+namespace sts2::game {
+class Combat;
+}
 
 namespace sts2::render {
 

@@ -1,6 +1,7 @@
 #pragma once
 
-// Internal helpers for main.cc argument parsing. Test-only header. Not part of the public sts2::simulator API.
+// Internal helpers for main.cc argument parsing. Test-only header. Not part of
+// the public sts2::simulator API.
 
 #include <cstdint>
 #include <iosfwd>
@@ -9,7 +10,8 @@
 namespace sts2::app {
 
 bool parse_uint64(const std::string& s, std::uint64_t& out);
-bool parse_args(int argc, char** argv, std::uint64_t& seed_out, bool& seed_provided, std::ostream& err);
+bool parse_args(int argc, char** argv, std::uint64_t& seed_out,
+                bool& seed_provided, std::ostream& err);
 std::uint64_t random_seed();
 
 }  // namespace sts2::app

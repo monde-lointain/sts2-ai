@@ -1,6 +1,7 @@
 #pragma once
 
-// Internal helpers for render.cc. Test-only header. Not part of the public sts2::simulator API.
+// Internal helpers for render.cc. Test-only header. Not part of the public
+// sts2::simulator API.
 
 #include <cstddef>
 #include <string>

@@ -5,9 +5,9 @@
 namespace sts2::input {
 
 struct Action {
-    enum Kind { PlayCard, EndTurn, Quit, Invalid };
-    Kind kind = Invalid;
-    int card_idx = -1;
+  enum Kind { PlayCard, EndTurn, Quit, Invalid };
+  Kind kind = Invalid;
+  int card_idx = -1;
 };
 
 Action read_action(std::istream& in);
