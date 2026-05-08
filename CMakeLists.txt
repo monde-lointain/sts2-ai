@@ -16,6 +16,11 @@ endfunction()
 # Future game sources (Card.cpp, Powers.cpp, etc.) go here.
 add_library(sts2_game STATIC
     src/game/Rng.cpp
+    src/game/Types.h
+    src/game/Power.h
+    src/game/Card.h
+    src/game/Player.h
+    src/game/Enemy.h
 )
 target_include_directories(sts2_game PUBLIC src)
 target_compile_features(sts2_game PUBLIC cxx_std_17)
@@ -29,6 +34,7 @@ add_executable(sts2_fight_tests
     tests/main.cpp
     tests/test_runner.cpp
     tests/test_rng.cpp
+    tests/test_types.cpp
 )
 target_link_libraries(sts2_fight_tests PRIVATE sts2_game)
 sts2_apply_warnings(sts2_fight_tests)
