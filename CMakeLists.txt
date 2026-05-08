@@ -16,8 +16,12 @@ endfunction()
 # Future game sources (Card.cpp, Powers.cpp, etc.) go here.
 add_library(sts2_game STATIC
     src/game/Rng.cpp
+    src/game/Powers.cpp
+    src/game/Damage.cpp
     src/game/Types.h
     src/game/Power.h
+    src/game/Powers.h
+    src/game/Damage.h
     src/game/Card.h
     src/game/Player.h
     src/game/Enemy.h
@@ -35,6 +39,8 @@ add_executable(sts2_fight_tests
     tests/test_runner.cpp
     tests/test_rng.cpp
     tests/test_types.cpp
+    tests/test_powers.cpp
+    tests/test_damage.cpp
 )
 target_link_libraries(sts2_fight_tests PRIVATE sts2_game)
 sts2_apply_warnings(sts2_fight_tests)
