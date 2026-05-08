@@ -36,6 +36,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>")
 
 option(STS2_BUILD_TESTS "Build the unit test executable" ON)
 option(STS2_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
+option(ENABLE_SANITIZERS "Enable AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 
 # CMake helper modules.
 include(cmake/CompilerFlags.cmake)
@@ -44,6 +45,18 @@ include(cmake/Formatting.cmake)
 include(cmake/Complexity.cmake)
 include(cmake/Cloc.cmake)
 include(cmake/CodeCoverage.cmake)
+
+# Sanitizers must apply uniformly across all targets to avoid linker errors
+# when some TUs are instrumented and others aren't.
+if(ENABLE_SANITIZERS)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
+    message(STATUS "Sanitizers enabled")
+  else()
+    message(WARNING "Sanitizers only supported on GCC and Clang")
+  endif()
+endif()
 
 add_subdirectory(src)
 
