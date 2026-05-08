@@ -72,8 +72,6 @@ TEST(RenderCombat, T_RND_155_InitialStateRendersAllBaselineFields) {
     EXPECT_THAT(s, Not(HasSubstr(" blk")));      // no block to display
     EXPECT_THAT(s, Not(HasSubstr("Weak")));      // no powers visible yet
     EXPECT_THAT(s, Not(HasSubstr("Ritual")));
-    // "Str " (Strength display token) must not appear — but skip the bare
-    // "Str" check because it would match "Strike".
     EXPECT_THAT(s, HasSubstr(glyphs::kRelicDiamond));  // Ring of the Snake row
 }
 
@@ -184,6 +182,15 @@ TEST(RenderCombat, T_RND_195_TargetArrowOnAnyEnemyOnly) {
 
     // Defend's line ends right after "5blk" (no arrow before the newline).
     EXPECT_THAT(s, HasSubstr("5blk\n"));
+
+    // Belt-and-braces: the literal "Defend has an arrow" byte sequence must
+    // never appear. Mirrors Render.cpp's emission: short_stats then two
+    // spaces then the yellow arrow run. If a regression ever attaches an
+    // arrow to a Self-target card, this assertion fires.
+    const std::string defend_arrow_pattern =
+        "5blk  " + std::string(ansi::kYellow) + glyphs::kArrowRight;
+    EXPECT_THAT(s, Not(HasSubstr(defend_arrow_pattern)))
+        << "Defend (Self target) must not have target arrow";
 }
 
 // T-RND-200 — BP — Description rendering: each line of card.description

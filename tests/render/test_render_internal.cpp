@@ -99,9 +99,9 @@ TEST(RenderInternalPowerName, T_RND_090_EachKindMapsCorrectly) {
 }
 
 // T-RND-095 — EG — Out-of-enum value → "" (post-switch fall-through return).
-// Casts an int outside the declared enumerators to exercise the implicit
-// default path. Defined behaviour for scoped enums when the value is in the
-// underlying type's range; the post-switch return guards against this.
+// PowerKind has explicit underlying type `int`, so static_cast<PowerKind>(99)
+// is well-defined per [expr.static.cast]. Locks the post-switch return path
+// of power_name() against regressions that drop the fall-through return.
 TEST(RenderInternalPowerName, T_RND_095_OutOfEnumReturnsEmpty) {
     const PowerKind bogus = static_cast<PowerKind>(99);
     EXPECT_STREQ(power_name(bogus), "");
