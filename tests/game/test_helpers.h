@@ -11,9 +11,12 @@
 
 #include <gtest/gtest.h>
 
+#include "game/Cards.h"
 #include "game/Combat.h"
+#include "game/Enemies.h"
 #include "game/Enemy.h"
 #include "game/Power.h"
+#include "game/Rng.h"
 #include "game/Types.h"
 #include "game/Vitals.h"
 
@@ -79,6 +82,26 @@ inline Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
     e.vitals = Vitals{hp, hp, 0, {}};
     c.add_enemy(std::move(e));
     return c;
+}
+
+// Standard "starter" combat: two cultists rolled with a separate Rng (matching
+// main.cpp's pattern), pick-discard callback returns 0, started with the full
+// 12-card silent starter deck shuffled by Combat's seeded Rng.
+// Returns post-start state: round 1, hand size 7, energy 3, both enemies alive.
+inline Combat MakeStarterCombat(uint64_t seed) {
+    Combat c{seed};
+    Rng enemy_rng{seed};
+    c.add_enemy(enemies::make_calcified_cultist(enemy_rng));
+    c.add_enemy(enemies::make_damp_cultist(enemy_rng));
+    c.set_pick_discard_callback([](const Combat&) { return 0; });
+    c.start(cards::make_silent_starter_deck());
+    return c;
+}
+
+// Kill an enemy through the public API by dealing massive damage.
+// Used in tests that need a "one dead enemy in middle/edge" precondition.
+inline void KillEnemy(Combat& c, int idx) {
+    c.deal_damage_to_enemy(idx, 99999);
 }
 
 }  // namespace sts2::tests::helpers
