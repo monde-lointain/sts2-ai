@@ -27,64 +27,62 @@ static int count_substr(const std::string& s, const std::string& needle) {
 }
 
 TEST(bar_full_hp_returns_all_filled) {
-    std::string b = hp_bar(100, 100, 10);
+    std::string b = render::hp_bar(100, 100, 10);
     CHECK(count_substr(b, kFullBlock) == 10);
     CHECK(count_substr(b, kEmptyBlock) == 0);
 }
 
 TEST(bar_zero_hp_returns_all_empty) {
-    std::string b = hp_bar(0, 100, 10);
+    std::string b = render::hp_bar(0, 100, 10);
     CHECK(count_substr(b, kFullBlock) == 0);
     CHECK(count_substr(b, kEmptyBlock) == 10);
 }
 
 TEST(bar_half_hp_returns_half_filled) {
-    std::string b = hp_bar(50, 100, 10);
+    std::string b = render::hp_bar(50, 100, 10);
     CHECK(count_substr(b, kFullBlock) == 5);
     CHECK(count_substr(b, kEmptyBlock) == 5);
 }
 
 TEST(bar_one_of_hundred_shows_at_least_one_filled) {
-    std::string b = hp_bar(1, 100, 10);
+    std::string b = render::hp_bar(1, 100, 10);
     CHECK(count_substr(b, kFullBlock) == 1);
     CHECK(count_substr(b, kEmptyBlock) == 9);
 }
 
 TEST(bar_zero_width_returns_empty) {
-    CHECK(hp_bar(50, 100, 0).empty());
-    CHECK(hp_bar(50, 100, -3).empty());
+    CHECK(render::hp_bar(50, 100, 0).empty());
+    CHECK(render::hp_bar(50, 100, -3).empty());
 }
 
 TEST(bar_zero_max_does_not_divide_by_zero) {
-    std::string b = hp_bar(0, 0, 5);
+    std::string b = render::hp_bar(0, 0, 5);
     CHECK(count_substr(b, kFullBlock) == 0);
     CHECK(count_substr(b, kEmptyBlock) == 5);
 }
 
-TEST(card_inline_stats_returns_expected_strings) {
-    CHECK(render::card_inline_stats(cards::IdStrike) == "6dmg");
-    CHECK(render::card_inline_stats(cards::IdDefend) == "5blk");
-    CHECK(render::card_inline_stats(cards::IdNeutralize) == "3dmg");
-    CHECK(render::card_inline_stats(cards::IdSurvivor) == "8blk");
-    CHECK(render::card_inline_stats(999).empty());
+TEST(card_short_stats_returns_expected_strings) {
+    CHECK(cards::make_strike().short_stats == "6dmg");
+    CHECK(cards::make_defend().short_stats == "5blk");
+    CHECK(cards::make_neutralize().short_stats == "3dmg");
+    CHECK(cards::make_survivor().short_stats == "8blk");
 }
 
 TEST(card_description_returns_expected_lines) {
-    auto strike = render::card_description(cards::IdStrike);
+    auto strike = cards::make_strike().description;
     CHECK(strike.size() == 1u);
     CHECK(strike[0] == "Deal 6 damage.");
-    auto defend = render::card_description(cards::IdDefend);
+    auto defend = cards::make_defend().description;
     CHECK(defend.size() == 1u);
     CHECK(defend[0] == "Gain 5 Block.");
-    auto neutralize = render::card_description(cards::IdNeutralize);
+    auto neutralize = cards::make_neutralize().description;
     CHECK(neutralize.size() == 2u);
     CHECK(neutralize[0] == "Deal 3 damage.");
     CHECK(neutralize[1] == "Apply 1 Weak.");
-    auto survivor = render::card_description(cards::IdSurvivor);
+    auto survivor = cards::make_survivor().description;
     CHECK(survivor.size() == 2u);
     CHECK(survivor[0] == "Gain 8 Block.");
     CHECK(survivor[1] == "Discard 1 card.");
-    CHECK(render::card_description(999).empty());
 }
 
 TEST(render_combat_includes_round_number) {

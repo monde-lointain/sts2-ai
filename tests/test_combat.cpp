@@ -119,7 +119,7 @@ TEST(combat_play_card_deducts_energy_and_moves_to_discard) {
     CHECK(c.player.energy == 2);
     CHECK(c.player.hand.empty());
     CHECK(c.player.discard_pile.size() == 1u);
-    CHECK(c.player.discard_pile[0].id == cards::IdStrike);
+    CHECK(c.player.discard_pile[0].id == CardId::Strike);
 }
 
 TEST(combat_play_card_no_op_when_unplayable) {
@@ -166,7 +166,7 @@ TEST(combat_play_survivor_through_play_card_discards_chosen) {
     c.player.hand.push_back(cards::make_defend());
     c.on_pick_discard = [](const Combat& combat) -> int {
         for (size_t i = 0; i < combat.player.hand.size(); ++i) {
-            if (combat.player.hand[i].id == cards::IdStrike) return static_cast<int>(i);
+            if (combat.player.hand[i].id == CardId::Strike) return static_cast<int>(i);
         }
         return 0;
     };
@@ -175,7 +175,7 @@ TEST(combat_play_survivor_through_play_card_discards_chosen) {
     CHECK(c.player.energy == 2);
     CHECK(c.player.block == 8);
     CHECK(c.player.hand.size() == 1u);
-    CHECK(c.player.hand[0].id == cards::IdDefend);
+    CHECK(c.player.hand[0].id == CardId::Defend);
     CHECK(c.player.discard_pile.size() == 2u);
 }
 

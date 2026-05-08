@@ -13,7 +13,7 @@
 
 TEST(card_strike_factory_fields) {
     Card s = cards::make_strike();
-    CHECK(s.id == cards::IdStrike);
+    CHECK(s.id == CardId::Strike);
     CHECK(s.name == "Strike");
     CHECK(s.cost == 1);
     CHECK(s.type == CardType::Attack);
@@ -39,7 +39,7 @@ TEST(card_strike_respects_block) {
 
 TEST(card_defend_factory_fields) {
     Card d = cards::make_defend();
-    CHECK(d.id == cards::IdDefend);
+    CHECK(d.id == CardId::Defend);
     CHECK(d.name == "Defend");
     CHECK(d.cost == 1);
     CHECK(d.type == CardType::Skill);
@@ -63,7 +63,7 @@ TEST(card_defend_block_stacks) {
 
 TEST(card_neutralize_factory_fields) {
     Card n = cards::make_neutralize();
-    CHECK(n.id == cards::IdNeutralize);
+    CHECK(n.id == CardId::Neutralize);
     CHECK(n.name == "Neutralize");
     CHECK(n.cost == 0);
     CHECK(n.type == CardType::Attack);
@@ -87,7 +87,7 @@ TEST(card_neutralize_weak_stacks_on_repeat) {
 
 TEST(card_survivor_factory_fields) {
     Card s = cards::make_survivor();
-    CHECK(s.id == cards::IdSurvivor);
+    CHECK(s.id == CardId::Survivor);
     CHECK(s.name == "Survivor");
     CHECK(s.cost == 1);
     CHECK(s.type == CardType::Skill);
@@ -103,7 +103,7 @@ TEST(card_survivor_grants_eight_block_and_discards_chosen) {
     c.player.hand.push_back(cards::make_neutralize());
     c.on_pick_discard = [](const Combat& combat) -> int {
         for (size_t i = 0; i < combat.player.hand.size(); ++i) {
-            if (combat.player.hand[i].id == cards::IdDefend) return static_cast<int>(i);
+            if (combat.player.hand[i].id == CardId::Defend) return static_cast<int>(i);
         }
         return 0;
     };
@@ -111,9 +111,9 @@ TEST(card_survivor_grants_eight_block_and_discards_chosen) {
     CHECK(c.player.block == 8);
     CHECK(c.player.hand.size() == 2);
     CHECK(c.player.discard_pile.size() == 1);
-    CHECK(c.player.discard_pile[0].id == cards::IdDefend);
-    CHECK(c.player.hand[0].id == cards::IdStrike);
-    CHECK(c.player.hand[1].id == cards::IdNeutralize);
+    CHECK(c.player.discard_pile[0].id == CardId::Defend);
+    CHECK(c.player.hand[0].id == CardId::Strike);
+    CHECK(c.player.hand[1].id == CardId::Neutralize);
 }
 
 TEST(card_survivor_no_op_discard_when_hand_empty) {
@@ -133,10 +133,10 @@ TEST(card_starter_deck_size_and_composition) {
     CHECK(deck.size() == 12u);
     int strike = 0, defend = 0, neutralize = 0, survivor = 0;
     for (const auto& card : deck) {
-        if (card.id == cards::IdStrike) ++strike;
-        else if (card.id == cards::IdDefend) ++defend;
-        else if (card.id == cards::IdNeutralize) ++neutralize;
-        else if (card.id == cards::IdSurvivor) ++survivor;
+        if (card.id == CardId::Strike) ++strike;
+        else if (card.id == CardId::Defend) ++defend;
+        else if (card.id == CardId::Neutralize) ++neutralize;
+        else if (card.id == CardId::Survivor) ++survivor;
     }
     CHECK(strike == 5);
     CHECK(defend == 5);

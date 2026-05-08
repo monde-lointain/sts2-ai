@@ -41,7 +41,7 @@ TEST(power_default_state) {
 
 TEST(card_default_state) {
     Card c;
-    CHECK(c.id == 0);
+    CHECK(c.id == CardId::None);
     CHECK(c.cost == 0);
     CHECK(c.type == CardType::Skill);
     CHECK(c.target == TargetType::Self);

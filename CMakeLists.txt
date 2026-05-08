@@ -13,7 +13,6 @@ function(sts2_apply_warnings target)
     endif()
 endfunction()
 
-# Future game sources (Card.cpp, Powers.cpp, etc.) go here.
 add_library(sts2_game STATIC
     src/game/Rng.cpp
     src/game/Powers.cpp

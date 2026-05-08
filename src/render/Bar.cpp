@@ -4,6 +4,8 @@
 
 #include "render/Glyphs.h"
 
+namespace render {
+
 std::string hp_bar(int current, int maximum, int width) {
     if (width <= 0) return {};
     if (maximum <= 0) maximum = 1;
@@ -15,4 +17,6 @@ std::string hp_bar(int current, int maximum, int width) {
     for (int i = 0; i < filled_chars; ++i) out += glyphs::kFullBlock;
     for (int i = filled_chars; i < width; ++i) out += glyphs::kEmptyBlock;
     return out;
+}
+
 }

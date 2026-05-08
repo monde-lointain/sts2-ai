@@ -59,6 +59,15 @@ uint64_t random_seed() {
     return (hi << 32) | lo;
 }
 
+int prompt_index(std::ostream& out, std::istream& in, const char* label, int max_inclusive) {
+    while (true) {
+        out << label << std::flush;
+        int idx = input::read_index(in, max_inclusive);
+        if (idx >= 0) return idx;
+        out << ansi::kRed << "  invalid index." << ansi::kReset << "\n";
+    }
+}
+
 int prompt_target(const Combat& c) {
     std::vector<int> alive_indices;
     for (size_t i = 0; i < c.enemies.size(); ++i) {
@@ -66,27 +75,17 @@ int prompt_target(const Combat& c) {
     }
     if (alive_indices.empty()) return -1;
     if (alive_indices.size() == 1) return alive_indices[0];
-    while (true) {
-        std::cout << "\n" << ansi::kGreen << ">" << ansi::kReset << " Target enemy [index]: " << std::flush;
-        int display_idx = input::read_index(std::cin, static_cast<int>(alive_indices.size()) - 1);
-        if (display_idx < 0) {
-            std::cout << ansi::kRed << "  invalid target." << ansi::kReset << "\n";
-            continue;
-        }
-        return alive_indices[static_cast<size_t>(display_idx)];
-    }
+    std::string label = std::string("\n") + ansi::kGreen + ">" + ansi::kReset + " Target enemy [index]: ";
+    int display_idx = prompt_index(std::cout, std::cin, label.c_str(), static_cast<int>(alive_indices.size()) - 1);
+    return alive_indices[static_cast<size_t>(display_idx)];
 }
 
 int prompt_discard(const Combat& combat) {
     const Player& p = combat.player;
     if (p.hand.size() == 1) return 0;
-    while (true) {
-        render::render_combat(combat, std::cout);
-        std::cout << "  Discard which? [0-" << p.hand.size() - 1 << "]: " << std::flush;
-        int idx = input::read_index(std::cin, static_cast<int>(p.hand.size()) - 1);
-        if (idx >= 0) return idx;
-        std::cout << ansi::kRed << "  invalid index." << ansi::kReset << "\n";
-    }
+    render::render_combat(combat, std::cout);
+    std::string label = "  Discard which? [0-" + std::to_string(p.hand.size() - 1) + "]: ";
+    return prompt_index(std::cout, std::cin, label.c_str(), static_cast<int>(p.hand.size()) - 1);
 }
 
 }

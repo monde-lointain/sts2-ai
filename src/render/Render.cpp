@@ -3,7 +3,6 @@
 #include <sstream>
 #include <string>
 
-#include "game/Cards.h"
 #include "game/Combat.h"
 #include "game/Damage.h"
 #include "game/Power.h"
@@ -85,26 +84,6 @@ int total_deck_size(const Player& p) {
 
 namespace render {
 
-std::string card_inline_stats(int card_id) {
-    switch (card_id) {
-        case cards::IdStrike:     return "6dmg";
-        case cards::IdDefend:     return "5blk";
-        case cards::IdNeutralize: return "3dmg";
-        case cards::IdSurvivor:   return "8blk";
-    }
-    return "";
-}
-
-std::vector<std::string> card_description(int card_id) {
-    switch (card_id) {
-        case cards::IdStrike:     return {"Deal 6 damage."};
-        case cards::IdDefend:     return {"Gain 5 Block."};
-        case cards::IdNeutralize: return {"Deal 3 damage.", "Apply 1 Weak."};
-        case cards::IdSurvivor:   return {"Gain 8 Block.", "Discard 1 card."};
-    }
-    return {};
-}
-
 void render_combat(const Combat& c, std::ostream& out) {
     out << ansi::kDim << repeat_utf8(glyphs::kSeparator, kSeparatorLen) << ansi::kReset << "\n";
 
@@ -115,7 +94,7 @@ void render_combat(const Combat& c, std::ostream& out) {
         << "\n";
 
     out << "  " << ansi::kBold << "The Silent" << ansi::kReset
-        << "  HP " << ansi::kRed << hp_bar(c.player.hp, c.player.max_hp, kPlayerHpBarWidth) << ansi::kReset
+        << "  HP " << ansi::kRed << render::hp_bar(c.player.hp, c.player.max_hp, kPlayerHpBarWidth) << ansi::kReset
         << " " << c.player.hp << "/" << c.player.max_hp;
     if (c.player.block > 0) {
         out << "  " << ansi::kBlue << c.player.block << ansi::kReset << " blk";
@@ -137,7 +116,7 @@ void render_combat(const Combat& c, std::ostream& out) {
         if (e.hp <= 0) continue;
         out << "  [" << display_idx++ << "] " << ansi::kBold << e.name << ansi::kReset
             << spaces(name_width - e.name.size())
-            << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
+            << "   HP " << ansi::kRed << render::hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
             << " " << e.hp << "/" << e.max_hp;
         if (e.block > 0) {
             out << "  " << ansi::kBlue << e.block << ansi::kReset << " blk";
@@ -160,12 +139,12 @@ void render_combat(const Combat& c, std::ostream& out) {
             << " [" << i << "] "
             << type_color << card.name << ansi::kReset
             << " (" << ansi::kCyan << card.cost << ansi::kReset << ") "
-            << card_inline_stats(card.id);
+            << card.short_stats;
         if (card.target == TargetType::AnyEnemy) {
             out << "  " << ansi::kYellow << glyphs::kArrowRight << ansi::kReset;
         }
         out << "\n";
-        for (const std::string& line : card_description(card.id)) {
+        for (const std::string& line : card.description) {
             out << "      " << ansi::kDim << line << ansi::kReset << "\n";
         }
     }

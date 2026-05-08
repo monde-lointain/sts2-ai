@@ -2,15 +2,20 @@
 
 #include <functional>
 #include <string>
+#include <vector>
 #include "game/Types.h"
 
 class Combat;
 
 struct Card {
-    int id = 0;
+    CardId id = CardId::None;
     std::string name;
     int cost = 0;
     CardType type = CardType::Skill;
     TargetType target = TargetType::Self;
+    int base_damage = 0;
+    int base_block = 0;
+    std::string short_stats;
+    std::vector<std::string> description;
     std::function<void(Combat&, int target_idx)> on_play;
 };

@@ -10,14 +10,17 @@ namespace cards {
 
 Card make_strike() {
     Card c;
-    c.id = IdStrike;
+    c.id = CardId::Strike;
     c.name = "Strike";
     c.cost = 1;
     c.type = CardType::Attack;
     c.target = TargetType::AnyEnemy;
-    c.on_play = [](Combat& combat, int target_idx) {
+    c.base_damage = 6;
+    c.short_stats = "6dmg";
+    c.description = {"Deal 6 damage."};
+    c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
         Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.powers, 6);
+        int dmg = damage::compute_outgoing(combat.player.powers, base);
         damage::apply_to_defender(e.block, e.hp, dmg);
     };
     return c;
@@ -25,27 +28,33 @@ Card make_strike() {
 
 Card make_defend() {
     Card c;
-    c.id = IdDefend;
+    c.id = CardId::Defend;
     c.name = "Defend";
     c.cost = 1;
     c.type = CardType::Skill;
     c.target = TargetType::Self;
-    c.on_play = [](Combat& combat, int) {
-        combat.player.block += 5;
+    c.base_block = 5;
+    c.short_stats = "5blk";
+    c.description = {"Gain 5 Block."};
+    c.on_play = [base = c.base_block](Combat& combat, int) {
+        combat.player.block += base;
     };
     return c;
 }
 
 Card make_neutralize() {
     Card c;
-    c.id = IdNeutralize;
+    c.id = CardId::Neutralize;
     c.name = "Neutralize";
     c.cost = 0;
     c.type = CardType::Attack;
     c.target = TargetType::AnyEnemy;
-    c.on_play = [](Combat& combat, int target_idx) {
+    c.base_damage = 3;
+    c.short_stats = "3dmg";
+    c.description = {"Deal 3 damage.", "Apply 1 Weak."};
+    c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
         Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.powers, 3);
+        int dmg = damage::compute_outgoing(combat.player.powers, base);
         damage::apply_to_defender(e.block, e.hp, dmg);
         powers::apply(e.powers, PowerKind::Weak, 1);
     };
@@ -54,13 +63,16 @@ Card make_neutralize() {
 
 Card make_survivor() {
     Card c;
-    c.id = IdSurvivor;
+    c.id = CardId::Survivor;
     c.name = "Survivor";
     c.cost = 1;
     c.type = CardType::Skill;
     c.target = TargetType::Self;
-    c.on_play = [](Combat& combat, int) {
-        combat.player.block += 8;
+    c.base_block = 8;
+    c.short_stats = "8blk";
+    c.description = {"Gain 8 Block.", "Discard 1 card."};
+    c.on_play = [base = c.base_block](Combat& combat, int) {
+        combat.player.block += base;
         if (combat.player.hand.empty()) return;
         int idx = combat.on_pick_discard(combat);
         Card chosen = std::move(combat.player.hand[static_cast<size_t>(idx)]);
