@@ -23,7 +23,6 @@ int apply_to_defender(int& defender_block, int& defender_hp, int incoming) {
     defender_block = 0;
     int hp_loss = incoming < defender_hp ? incoming : defender_hp;
     defender_hp -= hp_loss;
-    if (defender_hp < 0) defender_hp = 0;
     return hp_loss;
 }
 

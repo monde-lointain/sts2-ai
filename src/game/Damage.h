@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-struct Power;
+#include "game/Power.h"
 
 namespace damage {
 
