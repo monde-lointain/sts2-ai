@@ -14,6 +14,7 @@
             "name": "ninja-release",
             "inherits": "ninja-debug",
             "displayName": "Ninja Release",
+            "description": "Single-config Ninja build, Release. Requires `cl` on PATH (VS dev shell).",
             "binaryDir": "${sourceDir}/build/ninja-release",
             "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
         },

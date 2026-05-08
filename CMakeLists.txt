@@ -25,9 +25,7 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# IDE / clang-tidy support; honor caller override (CMake auto-creates this
-# cache entry empty for Makefile/Ninja generators, so check the value, not
-# just whether it's defined).
+# Force ON so IDE/clang-tidy always have compile_commands.json (Ninja/Makefile generators init this as empty cache).
 if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL
         "Export compile_commands.json" FORCE)
@@ -138,7 +136,7 @@ if(STS2_BUILD_TESTS)
     )
     target_link_libraries(sts2_simulator_tests PRIVATE sts2::simulator)
     target_include_directories(sts2_simulator_tests PRIVATE
-        ${PROJECT_SOURCE_DIR}/tests
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests>
     )
     sts2_apply_warnings(sts2_simulator_tests)
 
