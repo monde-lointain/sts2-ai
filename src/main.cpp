@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 #include <string>
+#include <vector>
 
 #include "game/Cards.h"
 #include "game/Combat.h"
@@ -59,25 +60,20 @@ uint64_t random_seed() {
 }
 
 int prompt_target(const Combat& c) {
-    int alive = 0;
-    int last_alive_idx = -1;
+    std::vector<int> alive_indices;
     for (size_t i = 0; i < c.enemies.size(); ++i) {
-        if (c.enemies[i].hp > 0) { ++alive; last_alive_idx = static_cast<int>(i); }
+        if (c.enemies[i].hp > 0) alive_indices.push_back(static_cast<int>(i));
     }
-    if (alive == 0) return -1;
-    if (alive == 1) return last_alive_idx;
+    if (alive_indices.empty()) return -1;
+    if (alive_indices.size() == 1) return alive_indices[0];
     while (true) {
         std::cout << "\n" << ansi::kGreen << ">" << ansi::kReset << " Target enemy [index]: " << std::flush;
-        int idx = input::read_index(std::cin, static_cast<int>(c.enemies.size()) - 1);
-        if (idx < 0) {
+        int display_idx = input::read_index(std::cin, static_cast<int>(alive_indices.size()) - 1);
+        if (display_idx < 0) {
             std::cout << ansi::kRed << "  invalid target." << ansi::kReset << "\n";
             continue;
         }
-        if (c.enemies[static_cast<size_t>(idx)].hp <= 0) {
-            std::cout << ansi::kRed << "  that enemy is already dead." << ansi::kReset << "\n";
-            continue;
-        }
-        return idx;
+        return alive_indices[static_cast<size_t>(display_idx)];
     }
 }
 

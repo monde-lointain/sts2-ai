@@ -131,10 +131,11 @@ void render_combat(const Combat& c, std::ostream& out) {
         << "\n\n";
 
     size_t name_width = max_enemy_name_len(c.enemies);
+    size_t display_idx = 0;
     for (size_t i = 0; i < c.enemies.size(); ++i) {
         const Enemy& e = c.enemies[i];
         if (e.hp <= 0) continue;
-        out << "  [" << i << "] " << ansi::kBold << e.name << ansi::kReset
+        out << "  [" << display_idx++ << "] " << ansi::kBold << e.name << ansi::kReset
             << spaces(name_width - e.name.size())
             << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
             << " " << e.hp << "/" << e.max_hp;

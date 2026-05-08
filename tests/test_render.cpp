@@ -208,6 +208,23 @@ TEST(render_combat_omits_dead_enemies) {
     CHECK(out.find("(slain)") == std::string::npos);
 }
 
+TEST(render_combat_renumbers_indices_when_first_enemy_dead) {
+    Combat c{1};
+    Enemy dead = make_dummy_enemy(0);
+    dead.name = "Slain";
+    Enemy alive = make_dummy_enemy(50);
+    alive.name = "Standing";
+    c.enemies.push_back(std::move(dead));
+    c.enemies.push_back(std::move(alive));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    const std::string out = os.str();
+    CHECK(out.find("[0] \x1b[1mStanding") != std::string::npos);
+    CHECK(out.find("[1] \x1b[1mStanding") == std::string::npos);
+    CHECK(out.find("Slain") == std::string::npos);
+}
+
 TEST(render_combat_shows_card_inline_stats) {
     Combat c{1};
     c.enemies.push_back(make_dummy_enemy(50));
