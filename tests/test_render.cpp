@@ -64,9 +64,27 @@ TEST(bar_zero_max_does_not_divide_by_zero) {
 TEST(card_inline_stats_returns_expected_strings) {
     CHECK(render::card_inline_stats(cards::IdStrike) == "6dmg");
     CHECK(render::card_inline_stats(cards::IdDefend) == "5blk");
-    CHECK(render::card_inline_stats(cards::IdNeutralize) == "3dmg + Weak 1");
-    CHECK(render::card_inline_stats(cards::IdSurvivor) == "8blk, discard 1");
+    CHECK(render::card_inline_stats(cards::IdNeutralize) == "3dmg");
+    CHECK(render::card_inline_stats(cards::IdSurvivor) == "8blk");
     CHECK(render::card_inline_stats(999).empty());
+}
+
+TEST(card_description_returns_expected_lines) {
+    auto strike = render::card_description(cards::IdStrike);
+    CHECK(strike.size() == 1u);
+    CHECK(strike[0] == "Deal 6 damage.");
+    auto defend = render::card_description(cards::IdDefend);
+    CHECK(defend.size() == 1u);
+    CHECK(defend[0] == "Gain 5 Block.");
+    auto neutralize = render::card_description(cards::IdNeutralize);
+    CHECK(neutralize.size() == 2u);
+    CHECK(neutralize[0] == "Deal 3 damage.");
+    CHECK(neutralize[1] == "Apply 1 Weak.");
+    auto survivor = render::card_description(cards::IdSurvivor);
+    CHECK(survivor.size() == 2u);
+    CHECK(survivor[0] == "Gain 8 Block.");
+    CHECK(survivor[1] == "Discard 1 card.");
+    CHECK(render::card_description(999).empty());
 }
 
 TEST(render_combat_includes_round_number) {
@@ -85,7 +103,53 @@ TEST(render_combat_includes_player_hp) {
     std::ostringstream os;
     render::render_combat(c, os);
     CHECK(os.str().find("70/70") != std::string::npos);
-    CHECK(os.str().find("Silent") != std::string::npos);
+    CHECK(os.str().find("The Silent") != std::string::npos);
+}
+
+TEST(render_combat_shows_relic_line) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("Ring of the Snake") != std::string::npos);
+}
+
+TEST(render_combat_shows_deck_total) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("Deck 12") != std::string::npos);
+}
+
+TEST(render_combat_omits_block_when_zero) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("Block ") == std::string::npos);
+}
+
+TEST(render_combat_shows_block_when_nonzero) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    c.player.block = 7;
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("Block 7") != std::string::npos);
+}
+
+TEST(render_combat_shows_target_arrow_for_attack_cards) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("\xe2\x86\x92") != std::string::npos);
 }
 
 TEST(render_combat_lists_each_enemy_with_index) {
@@ -113,7 +177,7 @@ TEST(render_combat_shows_attack_intent_for_dark_strike) {
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
-    CHECK(os.str().find("ATK 9") != std::string::npos);
+    CHECK(os.str().find("\xe2\x9a\x94 9") != std::string::npos);
 }
 
 TEST(render_combat_shows_buff_intent_for_incantation) {
@@ -123,7 +187,7 @@ TEST(render_combat_shows_buff_intent_for_incantation) {
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
-    CHECK(os.str().find("BUFF") != std::string::npos);
+    CHECK(os.str().find("\xe2\xac\x86" "Buff") != std::string::npos);
 }
 
 TEST(render_combat_marks_dead_enemies_as_slain) {

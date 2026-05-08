@@ -1,6 +1,5 @@
 #include "render/Render.h"
 
-#include <iomanip>
 #include <sstream>
 #include <string>
 
@@ -16,8 +15,9 @@
 
 namespace {
 
-constexpr int kHpBarWidth = 16;
-constexpr int kSeparatorLen = 56;
+constexpr int kPlayerHpBarWidth = 20;
+constexpr int kEnemyHpBarWidth = 16;
+constexpr int kSeparatorLen = 60;
 
 std::string repeat_utf8(const char* utf8_glyph, int count) {
     std::string s;
@@ -25,11 +25,15 @@ std::string repeat_utf8(const char* utf8_glyph, int count) {
     return s;
 }
 
+std::string spaces(size_t n) {
+    return std::string(n, ' ');
+}
+
 const char* power_color(PowerKind kind) {
     switch (kind) {
         case PowerKind::Weak:     return ansi::kRed;
         case PowerKind::Strength: return ansi::kGreen;
-        case PowerKind::Ritual:   return ansi::kGreen;
+        case PowerKind::Ritual:   return ansi::kYellow;
     }
     return ansi::kReset;
 }
@@ -65,13 +69,27 @@ std::string format_intent(const Enemy& e) {
     }
     switch (e.current_move) {
         case MoveId::Incantation:
-            os << ansi::kMagenta << "BUFF" << ansi::kReset;
+            os << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
             break;
         case MoveId::DarkStrike:
-            os << ansi::kRed << "ATK " << damage::compute_outgoing(e.powers, e.dark_strike_base) << ansi::kReset;
+            os << ansi::kRed << glyphs::kSwords << ' '
+               << damage::compute_outgoing(e.powers, e.dark_strike_base) << ansi::kReset;
             break;
     }
     return os.str();
+}
+
+size_t max_enemy_name_len(const std::vector<Enemy>& es) {
+    size_t m = 0;
+    for (const auto& e : es) {
+        if (e.name.size() > m) m = e.name.size();
+    }
+    return m;
+}
+
+int total_deck_size(const Player& p) {
+    return static_cast<int>(p.draw_pile.size() + p.hand.size()
+                          + p.discard_pile.size() + p.exhaust_pile.size());
 }
 
 }
@@ -82,40 +100,60 @@ std::string card_inline_stats(int card_id) {
     switch (card_id) {
         case cards::IdStrike:     return "6dmg";
         case cards::IdDefend:     return "5blk";
-        case cards::IdNeutralize: return "3dmg + Weak 1";
-        case cards::IdSurvivor:   return "8blk, discard 1";
+        case cards::IdNeutralize: return "3dmg";
+        case cards::IdSurvivor:   return "8blk";
     }
     return "";
+}
+
+std::vector<std::string> card_description(int card_id) {
+    switch (card_id) {
+        case cards::IdStrike:     return {"Deal 6 damage."};
+        case cards::IdDefend:     return {"Gain 5 Block."};
+        case cards::IdNeutralize: return {"Deal 3 damage.", "Apply 1 Weak."};
+        case cards::IdSurvivor:   return {"Gain 8 Block.", "Discard 1 card."};
+    }
+    return {};
 }
 
 void render_combat(const Combat& c, std::ostream& out) {
     out << ansi::kDim << repeat_utf8(glyphs::kSeparator, kSeparatorLen) << ansi::kReset << "\n";
 
     out << "  Round " << c.round
-        << "   " << ansi::kCyan << "Energy " << c.player.energy << "/" << c.player.max_energy << ansi::kReset
-        << "   Draw " << c.player.draw_pile.size()
-        << "   Discard " << c.player.discard_pile.size()
-        << "   Exhaust " << c.player.exhaust_pile.size()
+        << "  " << ansi::kCyan << "Energy " << c.player.energy << "/" << c.player.max_energy << ansi::kReset
+        << "  Draw " << c.player.draw_pile.size()
+        << "  Discard " << c.player.discard_pile.size()
+        << "\n";
+
+    out << "  " << ansi::kBold << "The Silent" << ansi::kReset
+        << "  HP " << ansi::kRed << hp_bar(c.player.hp, c.player.max_hp, kPlayerHpBarWidth) << ansi::kReset
+        << " " << c.player.hp << "/" << c.player.max_hp;
+    if (c.player.block > 0) {
+        out << "  " << ansi::kBlue << "Block " << c.player.block << ansi::kReset;
+    }
+    out << "  Deck " << total_deck_size(c.player);
+    if (!c.player.powers.empty()) {
+        out << "  " << format_powers(c.player.powers);
+    }
+    out << "\n";
+
+    out << "    " << ansi::kYellow << glyphs::kRelicDiamond << " Ring of the Snake" << ansi::kReset
+        << ansi::kDim << ": At the start of each combat, draw 2 additional cards." << ansi::kReset
         << "\n\n";
 
-    out << "  " << ansi::kBold << "Silent" << ansi::kReset
-        << "   HP " << ansi::kRed << hp_bar(c.player.hp, c.player.max_hp, kHpBarWidth) << ansi::kReset
-        << " " << c.player.hp << "/" << c.player.max_hp
-        << "   " << ansi::kBlue << c.player.block << " blk" << ansi::kReset;
-    if (!c.player.powers.empty()) {
-        out << "   " << format_powers(c.player.powers);
-    }
-    out << "\n\n";
-
+    size_t name_width = max_enemy_name_len(c.enemies);
     for (size_t i = 0; i < c.enemies.size(); ++i) {
         const Enemy& e = c.enemies[i];
         out << "  [" << i << "] " << ansi::kBold << e.name << ansi::kReset
-            << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kHpBarWidth) << ansi::kReset
-            << " " << e.hp << "/" << e.max_hp
-            << "   " << ansi::kBlue << e.block << " blk" << ansi::kReset
-            << "   " << format_intent(e);
+            << spaces(name_width - e.name.size())
+            << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
+            << " " << e.hp << "/" << e.max_hp;
+        if (e.block > 0) {
+            out << "  " << ansi::kBlue << "Block " << e.block << ansi::kReset;
+        }
+        out << "   " << format_intent(e);
         if (!e.powers.empty() && e.hp > 0) {
-            out << "   " << format_powers(e.powers);
+            out << "  " << format_powers(e.powers);
         }
         out << "\n";
     }
@@ -129,10 +167,16 @@ void render_combat(const Combat& c, std::ostream& out) {
         const char* type_color = (card.type == CardType::Attack) ? ansi::kRed : ansi::kBlue;
         out << "  " << bullet_color << bullet << ansi::kReset
             << " [" << i << "] "
-            << type_color << std::left << std::setw(12) << card.name << ansi::kReset
+            << type_color << card.name << ansi::kReset
             << " (" << ansi::kCyan << card.cost << ansi::kReset << ") "
-            << card_inline_stats(card.id)
-            << "\n";
+            << card_inline_stats(card.id);
+        if (card.target == TargetType::AnyEnemy) {
+            out << "  " << ansi::kDim << glyphs::kArrowRight << ansi::kReset;
+        }
+        out << "\n";
+        for (const std::string& line : card_description(card.id)) {
+            out << "      " << ansi::kDim << line << ansi::kReset << "\n";
+        }
     }
     out << "\n";
 }

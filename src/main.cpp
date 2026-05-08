@@ -116,7 +116,7 @@ int main(int argc, char** argv) {
         render::render_combat(combat, std::cout);
         if (combat.combat_over) return 0;
 
-        std::cout << "> Action - digit to play, e=end turn, q=quit: " << std::flush;
+        std::cout << "> Play card [index], (e)nd turn, (q)uit: " << std::flush;
         input::Action a = input::read_action(std::cin);
         switch (a.kind) {
             case input::Action::Quit:
