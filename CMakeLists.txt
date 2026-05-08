@@ -18,6 +18,7 @@ add_library(sts2_game STATIC
     src/game/Rng.cpp
     src/game/Powers.cpp
     src/game/Damage.cpp
+    src/game/Cards.cpp
     src/game/Types.h
     src/game/Power.h
     src/game/Powers.h
@@ -25,6 +26,8 @@ add_library(sts2_game STATIC
     src/game/Card.h
     src/game/Player.h
     src/game/Enemy.h
+    src/game/Combat.h
+    src/game/Cards.h
 )
 target_include_directories(sts2_game PUBLIC src)
 target_compile_features(sts2_game PUBLIC cxx_std_17)
@@ -41,6 +44,7 @@ add_executable(sts2_fight_tests
     tests/test_types.cpp
     tests/test_powers.cpp
     tests/test_damage.cpp
+    tests/test_cards.cpp
 )
 target_link_libraries(sts2_fight_tests PRIVATE sts2_game)
 sts2_apply_warnings(sts2_fight_tests)
