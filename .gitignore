@@ -67,3 +67,11 @@ Doxyfile
 # OS files
 .DS_Store
 Thumbs.db
+
+# Virtual environment (Python)
+.venv/
+venv/
+
+# AST analyzer outputs (regenerated on demand)
+tools/ast-analyzer/analysis.json
+docs/test-plan/

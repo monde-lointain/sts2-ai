@@ -1,7 +1,8 @@
 """AST analyzer for sts2-ai. Maps classes, methods, control flow, and def-use.
 
-Run from repo root:
-    .venv\\Scripts\\python.exe tools\\ast-analyzer\\sts2_ast_analyzer.py
+Run from repo root (after creating a venv with ``libclang`` installed):
+    .venv\\Scripts\\python.exe tools\\ast-analyzer\\sts2_ast_analyzer.py    # Windows
+    .venv/bin/python tools/ast-analyzer/sts2_ast_analyzer.py                # Linux/macOS
 
 Outputs JSON to stdout (or --out PATH). The document generator then turns
 that JSON into the analytical report in docs/test-plan/.
@@ -11,6 +12,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
@@ -21,12 +24,55 @@ import clang.cindex as ci
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_DIR = REPO_ROOT / "src"
+INCLUDE_DIR = REPO_ROOT / "include"
+
+
+def _detect_resource_dir() -> Path | None:
+    """Locate clang's builtin header dir (stddef.h, stdarg.h, ...).
+
+    The PyPI ``libclang`` wheel ships only the shared library, not the
+    accompanying ``clang/<ver>/include`` resource directory. Without it,
+    parsing fails on system headers that pull in ``<stddef.h>``. Prefer
+    asking a system ``clang`` for its resource-dir; otherwise probe a few
+    common Linux locations.
+    """
+    clang_bin = shutil.which("clang") or shutil.which("clang++")
+    if clang_bin:
+        try:
+            out = subprocess.check_output(
+                [clang_bin, "-print-resource-dir"],
+                stderr=subprocess.DEVNULL, text=True,
+            ).strip()
+            cand = Path(out) / "include"
+            if (cand / "stddef.h").is_file():
+                return cand
+        except (subprocess.CalledProcessError, OSError):
+            pass
+    for base in ("/usr/lib/llvm-18", "/usr/lib/llvm-17", "/usr/lib/llvm-16",
+                 "/usr/lib/llvm-15", "/usr/lib/llvm-14"):
+        for p in Path(base).glob("lib/clang/*/include/stddef.h"):
+            return p.parent
+    return None
+
 
 CXX_ARGS = [
     "-x", "c++",
     "-std=c++20",
+    f"-I{INCLUDE_DIR}",
     f"-I{SRC_DIR}",
 ]
+_resource_include = _detect_resource_dir()
+if _resource_include is not None:
+    # ``-isystem`` so the builtin headers come ahead of libstdc++ and
+    # don't shadow user includes.
+    CXX_ARGS.extend(["-isystem", str(_resource_include)])
+else:
+    print(
+        "WARN: clang resource-dir not found. System headers may not resolve, "
+        "leading to incomplete AST. Install clang on PATH or add a resource-dir probe "
+        "for your platform in _detect_resource_dir().",
+        file=sys.stderr,
+    )
 
 # Cursor kinds that contribute to cyclomatic complexity / branch coverage.
 LOOP_KINDS = {
@@ -53,11 +99,13 @@ def is_in_project(loc) -> bool:
     if loc.file is None:
         return False
     p = Path(loc.file.name)
-    try:
-        p.relative_to(SRC_DIR)
-    except ValueError:
-        return False
-    return True
+    for root in (SRC_DIR, INCLUDE_DIR):
+        try:
+            p.relative_to(root)
+            return True
+        except ValueError:
+            continue
+    return False
 
 
 def cursor_text(c: ci.Cursor) -> str:
@@ -198,7 +246,11 @@ class WorldModel:
         kind = "class" if c.kind == ci.CursorKind.CLASS_DECL else "struct"
         loc = c.location
         rel = str(Path(loc.file.name).relative_to(REPO_ROOT)).replace("\\", "/")
-        name = c.spelling or c.displayname
+        # Build qualified name (e.g. "sts2::game::Combat") so methods whose
+        # parent_name comes from parent_qualifier match this key.
+        _, parent_qual = parent_qualifier(c)
+        spelling = c.spelling or c.displayname
+        name = f"{parent_qual}::{spelling}" if parent_qual else spelling
         ti = TypeInfo(
             name=name, kind=kind, file=rel, line=loc.line,
             fields=[], methods=[], has_virtual=False, is_polymorphic=False,
@@ -470,17 +522,17 @@ class BodyAnalyzer:
 # Driver
 
 TU_SOURCES = [
-    "src/game/Rng.cpp",
-    "src/game/Powers.cpp",
-    "src/game/Damage.cpp",
-    "src/game/Cards.cpp",
-    "src/game/Enemies.cpp",
-    "src/game/Combat.cpp",
-    "src/render/Bar.cpp",
-    "src/render/Console.cpp",
-    "src/render/Render.cpp",
-    "src/input/Input.cpp",
-    "src/main.cpp",
+    "src/game/rng.cc",
+    "src/game/powers.cc",
+    "src/game/damage.cc",
+    "src/game/cards.cc",
+    "src/game/enemies.cc",
+    "src/game/combat.cc",
+    "src/render/bar.cc",
+    "src/render/console.cc",
+    "src/render/render.cc",
+    "src/input/input.cc",
+    "src/main.cc",
 ]
 
 

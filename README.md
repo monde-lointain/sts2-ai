@@ -101,17 +101,62 @@ Or run the binary directly:
 build\ninja-debug\Debug\sts2_simulator_tests.exe
 ```
 
-122 unit and integration tests cover the RNG, damage formula, power semantics, card behaviour, cultist state machine, combat loop, renderer, and input parser.
+252 active tests (3 skipped) cover RNG, damage formula, power semantics, card behaviour, cultist state machine, combat loop, renderer, and input parser.
 
 ## Architecture
 
-`sts2_simulator` is a single static library that builds the entire `src/` tree. It exports the ALIAS target `sts2::simulator`; the exe and the tests both link against `sts2::simulator`.
+`sts2_simulator` is a single static library covering the whole codebase. It exports ALIAS target `sts2::simulator`; the exe and tests link against it.
 
-- `src/game/` — pure game logic. No I/O. Independently unit-tested.
-  - `Rng`, `Types` (enums), `Power`, `Card`, `Player`, `Enemy` — data types
-  - `Powers`, `Damage`, `Cards`, `Enemies`, `Combat` — behaviour
-- `src/render/` — ANSI/UTF-8 rendering. Reads `Combat`, writes to `std::ostream`.
-- `src/input/` — line-buffered action/index parser. Stream-driven, no globals.
-- `src/main.cpp` — wires the layers together: arg parsing, console init, combat setup, prompt loop.
+Layout:
+
+- Public headers: `include/sts2/<module>/*.h`
+- Implementations: `src/<module>/*.cc`
+- Internal (test-visible only) headers: `src/<module>/*_internal.h`
+
+All code lives under the `sts2::` namespace.
+
+- `sts2::game` — pure game logic, no I/O. Bare types (`Rng`, enums in `types.h`, `Power`, `Card`, `Player`, `Enemy`, `Vitals`) plus module-specific function namespaces (`sts2::cards`, `sts2::powers`, `sts2::damage`, `sts2::enemies`) and the `Combat` class.
+- `sts2::render` — ANSI/UTF-8 rendering. Reads `Combat`, writes to `std::ostream`.
+- `sts2::input` — line-buffered action/index parser. Stream-driven, no globals.
+- `sts2::app` — argv parsing and prompt strings.
+- `src/main.cc` — wires layers: arg parsing, console init, combat setup, prompt loop.
+
+## Tooling
+
+`tools/ast-analyzer/` walks the source tree via libclang and emits an analysis JSON plus a Markdown report. Maintainer tooling — needs a venv:
+
+    python3 -m venv .venv
+    .venv/bin/pip install libclang
+    .venv/bin/python tools/ast-analyzer/sts2_ast_analyzer.py --out tools/ast-analyzer/analysis.json
+    .venv/bin/python tools/ast-analyzer/generate_part1_doc.py
+
+`tools/seed-pinner/` regenerates `tests/seeds/expected_values.h`. Re-run after toolchain change:
+
+    cmake --build build --target sts2_seed_pinner
+    build/$<CONFIG>/sts2_seed_pinner > tests/seeds/expected_values.h
 
 The full design — and the encounter mechanics lifted from the STS2 source — is in `cultists_normal_overview.md`.
+
+## Make wrapper (Linux/macOS)
+
+A top-level `Makefile` wraps the common workflows:
+
+```
+make build                    # configure + build (default Release)
+make test                     # build and run ctest
+make BUILD_TYPE=Debug build   # override config
+make format                   # clang-format in-place
+make tidy                     # clang-tidy
+make cppcheck                 # cppcheck (requires submodules: see below)
+make complexity               # lizard cyclomatic complexity
+make cloc                     # SLOC counts
+make coverage                 # lcov coverage report
+```
+
+Run `make help` for the full target list.
+
+The `cppcheck` target needs the rules submodule:
+
+```
+git submodule update --init external/cppcheck-rules
+```
