@@ -4,7 +4,9 @@
 #include <istream>
 #include <string>
 
-namespace {
+#include "input/Input_internal.h"
+
+namespace input::detail {
 
 std::string trim(std::string s) {
     size_t b = 0;
@@ -37,7 +39,7 @@ Action read_action(std::istream& in) {
         a.kind = Action::Quit;
         return a;
     }
-    line = trim(std::move(line));
+    line = detail::trim(std::move(line));
     if (line.empty()) {
         a.kind = Action::Invalid;
         return a;
@@ -45,7 +47,7 @@ Action read_action(std::istream& in) {
     if (line == "e" || line == "E") { a.kind = Action::EndTurn; return a; }
     if (line == "q" || line == "Q") { a.kind = Action::Quit; return a; }
     int idx = 0;
-    if (parse_nonneg_int(line, idx)) {
+    if (detail::parse_nonneg_int(line, idx)) {
         a.kind = Action::PlayCard;
         a.card_idx = idx;
         return a;
@@ -57,9 +59,9 @@ Action read_action(std::istream& in) {
 int read_index(std::istream& in, int max_inclusive) {
     std::string line;
     if (!std::getline(in, line)) return -1;
-    line = trim(std::move(line));
+    line = detail::trim(std::move(line));
     int v = 0;
-    if (!parse_nonneg_int(line, v)) return -1;
+    if (!detail::parse_nonneg_int(line, v)) return -1;
     if (v > max_inclusive) return -1;
     return v;
 }

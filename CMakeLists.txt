@@ -96,6 +96,7 @@ target_sources(sts2_simulator PRIVATE
     src/render/Render.h
     src/render/Render_internal.h
     src/input/Input.h
+    src/input/Input_internal.h
 )
 
 target_compile_features(sts2_simulator PUBLIC cxx_std_20)
