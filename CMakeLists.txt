@@ -111,3 +111,11 @@ sts2_apply_warnings(sts2_simulator)
 add_executable(sts2_fight src/main.cpp)
 target_link_libraries(sts2_fight PRIVATE sts2::simulator)
 sts2_apply_warnings(sts2_fight)
+
+# ------------------------------------------------------------------
+# Tests
+# ------------------------------------------------------------------
+if(STS2_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
