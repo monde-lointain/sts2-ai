@@ -71,7 +71,7 @@ int prompt_index(std::ostream& out, std::istream& in, const char* label, int max
 int prompt_target(const Combat& c) {
     std::vector<int> alive_indices;
     for (size_t i = 0; i < c.enemies.size(); ++i) {
-        if (c.enemies[i].hp > 0) alive_indices.push_back(static_cast<int>(i));
+        if (c.enemies[i].vitals.hp > 0) alive_indices.push_back(static_cast<int>(i));
     }
     if (alive_indices.empty()) return -1;
     if (alive_indices.size() == 1) return alive_indices[0];

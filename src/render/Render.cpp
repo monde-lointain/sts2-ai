@@ -61,7 +61,7 @@ std::string format_intent(const Enemy& e) {
             break;
         case MoveId::DarkStrike:
             os << ansi::kRed << glyphs::kSwords << ' '
-               << damage::compute_outgoing(e.powers, e.dark_strike_base) << ansi::kReset;
+               << damage::compute_outgoing(e.vitals.powers, e.dark_strike_base) << ansi::kReset;
             break;
     }
     return os.str();
@@ -70,7 +70,7 @@ std::string format_intent(const Enemy& e) {
 size_t max_enemy_name_len(const std::vector<Enemy>& es) {
     size_t m = 0;
     for (const auto& e : es) {
-        if (e.hp > 0 && e.name.size() > m) m = e.name.size();
+        if (e.vitals.hp > 0 && e.name.size() > m) m = e.name.size();
     }
     return m;
 }
@@ -94,14 +94,14 @@ void render_combat(const Combat& c, std::ostream& out) {
         << "\n";
 
     out << "  " << ansi::kBold << "The Silent" << ansi::kReset
-        << "  HP " << ansi::kRed << render::hp_bar(c.player.hp, c.player.max_hp, kPlayerHpBarWidth) << ansi::kReset
-        << " " << c.player.hp << "/" << c.player.max_hp;
-    if (c.player.block > 0) {
-        out << "  " << ansi::kBlue << c.player.block << ansi::kReset << " blk";
+        << "  HP " << ansi::kRed << render::hp_bar(c.player.vitals.hp, c.player.vitals.max_hp, kPlayerHpBarWidth) << ansi::kReset
+        << " " << c.player.vitals.hp << "/" << c.player.vitals.max_hp;
+    if (c.player.vitals.block > 0) {
+        out << "  " << ansi::kBlue << c.player.vitals.block << ansi::kReset << " blk";
     }
     out << "  Deck " << total_deck_size(c.player);
-    if (!c.player.powers.empty()) {
-        out << "  " << format_powers(c.player.powers);
+    if (!c.player.vitals.powers.empty()) {
+        out << "  " << format_powers(c.player.vitals.powers);
     }
     out << "\n";
 
@@ -113,17 +113,17 @@ void render_combat(const Combat& c, std::ostream& out) {
     size_t display_idx = 0;
     for (size_t i = 0; i < c.enemies.size(); ++i) {
         const Enemy& e = c.enemies[i];
-        if (e.hp <= 0) continue;
+        if (e.vitals.hp <= 0) continue;
         out << "  [" << display_idx++ << "] " << ansi::kBold << e.name << ansi::kReset
             << spaces(name_width - e.name.size())
-            << "   HP " << ansi::kRed << render::hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
-            << " " << e.hp << "/" << e.max_hp;
-        if (e.block > 0) {
-            out << "  " << ansi::kBlue << e.block << ansi::kReset << " blk";
+            << "   HP " << ansi::kRed << render::hp_bar(e.vitals.hp, e.vitals.max_hp, kEnemyHpBarWidth) << ansi::kReset
+            << " " << e.vitals.hp << "/" << e.vitals.max_hp;
+        if (e.vitals.block > 0) {
+            out << "  " << ansi::kBlue << e.vitals.block << ansi::kReset << " blk";
         }
         out << "   " << format_intent(e);
-        if (!e.powers.empty()) {
-            out << "  " << format_powers(e.powers);
+        if (!e.vitals.powers.empty()) {
+            out << "  " << format_powers(e.vitals.powers);
         }
         out << "\n";
     }

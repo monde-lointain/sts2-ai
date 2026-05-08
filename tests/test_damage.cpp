@@ -2,6 +2,7 @@
 #include "game/Damage.h"
 #include "game/Power.h"
 #include "game/Types.h"
+#include "game/Vitals.h"
 #include "test_runner.h"
 
 TEST(damage_no_modifiers) {
@@ -33,48 +34,58 @@ TEST(damage_negative_strength_can_zero) {
 }
 
 TEST(damage_apply_to_full_block) {
-    int block = 10, hp = 50;
-    int loss = damage::apply_to_defender(block, hp, 7);
+    Vitals v;
+    v.hp = 50;
+    v.block = 10;
+    int loss = damage::apply_to_defender(v, 7);
     CHECK(loss == 0);
-    CHECK(block == 3);
-    CHECK(hp == 50);
+    CHECK(v.block == 3);
+    CHECK(v.hp == 50);
 }
 
 TEST(damage_apply_partial_block) {
-    int block = 5, hp = 50;
-    int loss = damage::apply_to_defender(block, hp, 7);
+    Vitals v;
+    v.hp = 50;
+    v.block = 5;
+    int loss = damage::apply_to_defender(v, 7);
     CHECK(loss == 2);
-    CHECK(block == 0);
-    CHECK(hp == 48);
+    CHECK(v.block == 0);
+    CHECK(v.hp == 48);
 }
 
 TEST(damage_apply_no_block) {
-    int block = 0, hp = 50;
-    int loss = damage::apply_to_defender(block, hp, 7);
+    Vitals v;
+    v.hp = 50;
+    int loss = damage::apply_to_defender(v, 7);
     CHECK(loss == 7);
-    CHECK(block == 0);
-    CHECK(hp == 43);
+    CHECK(v.block == 0);
+    CHECK(v.hp == 43);
 }
 
 TEST(damage_apply_overkill_clamps_to_zero) {
-    int block = 0, hp = 5;
-    int loss = damage::apply_to_defender(block, hp, 100);
+    Vitals v;
+    v.hp = 5;
+    int loss = damage::apply_to_defender(v, 100);
     CHECK(loss == 5);
-    CHECK(hp == 0);
+    CHECK(v.hp == 0);
 }
 
 TEST(damage_apply_block_kills_remaining) {
-    int block = 5, hp = 5;
-    int loss = damage::apply_to_defender(block, hp, 100);
+    Vitals v;
+    v.hp = 5;
+    v.block = 5;
+    int loss = damage::apply_to_defender(v, 100);
     CHECK(loss == 5);
-    CHECK(block == 0);
-    CHECK(hp == 0);
+    CHECK(v.block == 0);
+    CHECK(v.hp == 0);
 }
 
 TEST(damage_zero_incoming_no_op) {
-    int block = 5, hp = 50;
-    int loss = damage::apply_to_defender(block, hp, 0);
+    Vitals v;
+    v.hp = 50;
+    v.block = 5;
+    int loss = damage::apply_to_defender(v, 0);
     CHECK(loss == 0);
-    CHECK(block == 5);
-    CHECK(hp == 50);
+    CHECK(v.block == 5);
+    CHECK(v.hp == 50);
 }

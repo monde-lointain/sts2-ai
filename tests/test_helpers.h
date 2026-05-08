@@ -22,7 +22,7 @@ inline Combat make_combat_with(std::vector<Enemy> enemies_in, uint64_t seed = 42
 inline Enemy make_dummy_enemy(int hp) {
     Enemy e;
     e.name = "Dummy";
-    e.hp = hp;
-    e.max_hp = hp;
+    e.vitals.hp = hp;
+    e.vitals.max_hp = hp;
     return e;
 }

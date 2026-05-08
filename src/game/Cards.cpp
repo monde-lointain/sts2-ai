@@ -20,8 +20,8 @@ Card make_strike() {
     c.description = {"Deal 6 damage."};
     c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
         Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.powers, base);
-        damage::apply_to_defender(e.block, e.hp, dmg);
+        int dmg = damage::compute_outgoing(combat.player.vitals.powers, base);
+        damage::apply_to_defender(e.vitals, dmg);
     };
     return c;
 }
@@ -37,7 +37,7 @@ Card make_defend() {
     c.short_stats = "5blk";
     c.description = {"Gain 5 Block."};
     c.on_play = [base = c.base_block](Combat& combat, int) {
-        combat.player.block += base;
+        combat.player.vitals.block += base;
     };
     return c;
 }
@@ -54,9 +54,9 @@ Card make_neutralize() {
     c.description = {"Deal 3 damage.", "Apply 1 Weak."};
     c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
         Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.powers, base);
-        damage::apply_to_defender(e.block, e.hp, dmg);
-        powers::apply(e.powers, PowerKind::Weak, 1);
+        int dmg = damage::compute_outgoing(combat.player.vitals.powers, base);
+        damage::apply_to_defender(e.vitals, dmg);
+        powers::apply(e.vitals.powers, PowerKind::Weak, 1);
     };
     return c;
 }
@@ -72,7 +72,7 @@ Card make_survivor() {
     c.short_stats = "8blk";
     c.description = {"Gain 8 Block.", "Discard 1 card."};
     c.on_play = [base = c.base_block](Combat& combat, int) {
-        combat.player.block += base;
+        combat.player.vitals.block += base;
         if (combat.player.hand.empty()) return;
         int idx = combat.on_pick_discard(combat);
         Card chosen = std::move(combat.player.hand[static_cast<size_t>(idx)]);

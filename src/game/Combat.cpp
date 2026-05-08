@@ -27,10 +27,10 @@ void Combat::start(std::vector<Card> starter_deck) {
 
 void Combat::start_player_turn() {
     for (auto& e : enemies) {
-        if (e.hp > 0) enemies::roll_next_move(e);
+        if (e.vitals.hp > 0) enemies::roll_next_move(e);
     }
 
-    if (round > 1) player.block = 0;
+    if (round > 1) player.vitals.block = 0;
 
     player.energy = player.max_energy;
 
@@ -43,21 +43,21 @@ void Combat::end_player_turn() {
         player.discard_pile.push_back(std::move(player.hand.back()));
         player.hand.pop_back();
     }
-    powers::tick_at_turn_end(player.powers);
+    powers::tick_at_turn_end(player.vitals.powers);
 }
 
 void Combat::enemy_phase() {
     for (auto& e : enemies) {
-        if (e.hp > 0) e.block = 0;
+        if (e.vitals.hp > 0) e.vitals.block = 0;
     }
     for (auto& e : enemies) {
-        if (e.hp <= 0) continue;
+        if (e.vitals.hp <= 0) continue;
         enemies::act(e, *this);
         check_win_or_lose();
         if (combat_over) return;
     }
     for (auto& e : enemies) {
-        if (e.hp > 0) powers::tick_at_turn_end(e.powers);
+        if (e.vitals.hp > 0) powers::tick_at_turn_end(e.vitals.powers);
     }
 }
 
@@ -106,11 +106,11 @@ void Combat::reshuffle() {
     rng.shuffle(player.draw_pile);
 }
 
-bool Combat::is_player_dead() const { return player.hp <= 0; }
+bool Combat::is_player_dead() const { return player.vitals.hp <= 0; }
 
 bool Combat::all_enemies_dead() const {
     for (const auto& e : enemies) {
-        if (e.hp > 0) return false;
+        if (e.vitals.hp > 0) return false;
     }
     return !enemies.empty();
 }

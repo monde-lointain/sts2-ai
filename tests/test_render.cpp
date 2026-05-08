@@ -135,7 +135,7 @@ TEST(render_combat_shows_block_when_nonzero) {
     Combat c{1};
     c.enemies.push_back(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
-    c.player.block = 7;
+    c.player.vitals.block = 7;
     std::ostringstream os;
     render::render_combat(c, os);
     CHECK(os.str().find("7") != std::string::npos);

@@ -24,8 +24,8 @@ TEST(combat_start_player_state_defaults) {
     c.enemies.push_back(enemies::make_calcified_cultist(r));
     c.enemies.push_back(enemies::make_damp_cultist(r));
     c.start(cards::make_silent_starter_deck());
-    CHECK(c.player.hp == 70);
-    CHECK(c.player.max_hp == 70);
+    CHECK(c.player.vitals.hp == 70);
+    CHECK(c.player.vitals.max_hp == 70);
     CHECK(c.player.max_energy == 3);
     CHECK(c.player.energy == 3);
     CHECK(c.round == 1);
@@ -62,29 +62,29 @@ TEST(combat_round_two_draws_five) {
 TEST(combat_round_one_does_not_clear_player_block) {
     Combat c{1};
     c.start(cards::make_silent_starter_deck());
-    c.player.block = 5;
-    CHECK(c.player.block == 5);
+    c.player.vitals.block = 5;
+    CHECK(c.player.vitals.block == 5);
 }
 
 TEST(combat_round_two_clears_player_block) {
     Combat c{1};
     c.enemies.push_back(make_dummy_enemy(100));
     c.start(cards::make_silent_starter_deck());
-    c.player.block = 12;
+    c.player.vitals.block = 12;
     c.end_turn();
-    CHECK(c.player.block == 0);
+    CHECK(c.player.vitals.block == 0);
     CHECK(c.round == 2);
 }
 
 TEST(combat_enemy_phase_clears_enemy_block_each_turn) {
     Combat c{1};
     Enemy dummy = make_dummy_enemy(100);
-    dummy.block = 7;
+    dummy.vitals.block = 7;
     c.enemies.push_back(std::move(dummy));
     c.start(cards::make_silent_starter_deck());
     c.end_player_turn();
     c.enemy_phase();
-    CHECK(c.enemies[0].block == 0);
+    CHECK(c.enemies[0].vitals.block == 0);
 }
 
 TEST(combat_can_play_returns_true_for_affordable_card) {
@@ -154,8 +154,8 @@ TEST(combat_play_two_cards_in_one_turn_deducts_cumulative_energy) {
     CHECK(c.player.energy == 1);
     CHECK(c.player.hand.empty());
     CHECK(c.player.discard_pile.size() == 2u);
-    CHECK(c.player.block == 5);
-    CHECK(c.enemies[0].hp == 94);
+    CHECK(c.player.vitals.block == 5);
+    CHECK(c.enemies[0].vitals.hp == 94);
 }
 
 TEST(combat_play_survivor_through_play_card_discards_chosen) {
@@ -173,7 +173,7 @@ TEST(combat_play_survivor_through_play_card_discards_chosen) {
     bool ok = c.play_card(1, -1);
     CHECK(ok);
     CHECK(c.player.energy == 2);
-    CHECK(c.player.block == 8);
+    CHECK(c.player.vitals.block == 8);
     CHECK(c.player.hand.size() == 1u);
     CHECK(c.player.hand[0].id == CardId::Defend);
     CHECK(c.player.discard_pile.size() == 2u);
@@ -185,7 +185,7 @@ TEST(combat_play_strike_kills_low_hp_enemy) {
     c.enemies.push_back(make_dummy_enemy(5));
     c.player.hand.push_back(cards::make_strike());
     c.play_card(0, 0);
-    CHECK(c.enemies[0].hp == 0);
+    CHECK(c.enemies[0].vitals.hp == 0);
     CHECK(c.combat_over);
 }
 
@@ -216,12 +216,12 @@ TEST(combat_enemy_phase_executes_acts) {
     Rng r(5);
     c.enemies.push_back(enemies::make_calcified_cultist(r));
     c.start(cards::make_silent_starter_deck());
-    int hp_before = c.player.hp;
+    int hp_before = c.player.vitals.hp;
     c.end_turn();
-    CHECK(c.player.hp == hp_before);
-    int hp_after_t1 = c.player.hp;
+    CHECK(c.player.vitals.hp == hp_before);
+    int hp_after_t1 = c.player.vitals.hp;
     c.end_turn();
-    CHECK(c.player.hp == hp_after_t1 - 9);
+    CHECK(c.player.vitals.hp == hp_after_t1 - 9);
 }
 
 TEST(combat_enemy_phase_ticks_powers_grants_strength) {
@@ -230,10 +230,10 @@ TEST(combat_enemy_phase_ticks_powers_grants_strength) {
     c.enemies.push_back(enemies::make_calcified_cultist(r));
     c.start(cards::make_silent_starter_deck());
     c.end_turn();
-    CHECK(powers::amount(c.enemies[0].powers, PowerKind::Strength) == 0);
-    CHECK(powers::amount(c.enemies[0].powers, PowerKind::Ritual) == 2);
+    CHECK(powers::amount(c.enemies[0].vitals.powers, PowerKind::Strength) == 0);
+    CHECK(powers::amount(c.enemies[0].vitals.powers, PowerKind::Ritual) == 2);
     c.end_turn();
-    CHECK(powers::amount(c.enemies[0].powers, PowerKind::Strength) == 2);
+    CHECK(powers::amount(c.enemies[0].vitals.powers, PowerKind::Strength) == 2);
 }
 
 TEST(combat_enemy_phase_skips_dead_enemies) {
@@ -247,9 +247,9 @@ TEST(combat_enemy_phase_skips_dead_enemies) {
     c.enemies.push_back(std::move(dead));
     c.enemies.push_back(std::move(alive));
     c.start(cards::make_silent_starter_deck());
-    int hp_before = c.player.hp;
+    int hp_before = c.player.vitals.hp;
     c.end_turn();
-    CHECK(c.player.hp == hp_before - 3);
+    CHECK(c.player.vitals.hp == hp_before - 3);
 }
 
 TEST(combat_player_dies_marks_combat_over) {
@@ -261,7 +261,7 @@ TEST(combat_player_dies_marks_combat_over) {
     c.enemies.push_back(std::move(big));
     c.start(cards::make_silent_starter_deck());
     c.end_turn();
-    CHECK(c.player.hp == 0);
+    CHECK(c.player.vitals.hp == 0);
     CHECK(c.combat_over);
 }
 
@@ -271,7 +271,7 @@ TEST(combat_killing_last_enemy_marks_combat_over) {
     c.player.energy = 3;
     c.player.hand.push_back(cards::make_strike());
     c.play_card(0, 0);
-    CHECK(c.enemies[0].hp == 0);
+    CHECK(c.enemies[0].vitals.hp == 0);
     CHECK(c.all_enemies_dead());
     CHECK(c.combat_over);
 }

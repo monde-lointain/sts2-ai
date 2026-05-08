@@ -14,15 +14,15 @@ int compute_outgoing(const std::vector<Power>& attacker_powers, int base_damage)
     return d < 0 ? 0 : d;
 }
 
-int apply_to_defender(int& defender_block, int& defender_hp, int incoming) {
-    if (incoming <= defender_block) {
-        defender_block -= incoming;
+int apply_to_defender(Vitals& target, int incoming) {
+    if (incoming <= target.block) {
+        target.block -= incoming;
         return 0;
     }
-    incoming -= defender_block;
-    defender_block = 0;
-    int hp_loss = incoming < defender_hp ? incoming : defender_hp;
-    defender_hp -= hp_loss;
+    incoming -= target.block;
+    target.block = 0;
+    int hp_loss = incoming < target.hp ? incoming : target.hp;
+    target.hp -= hp_loss;
     return hp_loss;
 }
 

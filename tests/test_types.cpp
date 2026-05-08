@@ -8,24 +8,24 @@
 
 TEST(player_default_state) {
     Player p;
-    CHECK(p.hp == 70);
-    CHECK(p.max_hp == 70);
-    CHECK(p.block == 0);
+    CHECK(p.vitals.hp == 70);
+    CHECK(p.vitals.max_hp == 70);
+    CHECK(p.vitals.block == 0);
     CHECK(p.energy == 0);
     CHECK(p.max_energy == 3);
     CHECK(p.draw_pile.empty());
     CHECK(p.hand.empty());
     CHECK(p.discard_pile.empty());
     CHECK(p.exhaust_pile.empty());
-    CHECK(p.powers.empty());
+    CHECK(p.vitals.powers.empty());
 }
 
 TEST(enemy_default_state) {
     Enemy e;
-    CHECK(e.hp == 0);
-    CHECK(e.max_hp == 0);
-    CHECK(e.block == 0);
-    CHECK(e.powers.empty());
+    CHECK(e.vitals.hp == 0);
+    CHECK(e.vitals.max_hp == 0);
+    CHECK(e.vitals.block == 0);
+    CHECK(e.vitals.powers.empty());
     CHECK(e.current_move == MoveId::Incantation);
     CHECK(!e.performed_first_move);
     CHECK(e.dark_strike_base == 0);

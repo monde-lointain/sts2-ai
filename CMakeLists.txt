@@ -25,6 +25,7 @@ add_library(sts2_game STATIC
     src/game/Powers.h
     src/game/Damage.h
     src/game/Card.h
+    src/game/Vitals.h
     src/game/Player.h
     src/game/Enemy.h
     src/game/Combat.h
