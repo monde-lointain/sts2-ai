@@ -101,6 +101,8 @@ int main(int argc, char** argv) {
 
     Combat combat{seed};
 
+    // Intentional: enemy rolls use a separate Rng to keep Combat::rng_ private.
+    // Same seed is still deterministic; bit-identical replay across versions is not required.
     Rng enemy_rng{seed};
     combat.add_enemy(enemies::make_calcified_cultist(enemy_rng));
     combat.add_enemy(enemies::make_damp_cultist(enemy_rng));

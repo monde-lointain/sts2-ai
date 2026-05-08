@@ -97,10 +97,11 @@ TEST(card_survivor_factory_fields) {
 
 TEST(card_survivor_grants_eight_block_and_discards_chosen) {
     Combat c{42};
-    CombatTestAccess{c}.player().vitals.block = 0;
-    CombatTestAccess{c}.player().hand.push_back(cards::make_strike());
-    CombatTestAccess{c}.player().hand.push_back(cards::make_defend());
-    CombatTestAccess{c}.player().hand.push_back(cards::make_neutralize());
+    auto& p = CombatTestAccess{c}.player();
+    p.vitals.block = 0;
+    p.hand.push_back(cards::make_strike());
+    p.hand.push_back(cards::make_defend());
+    p.hand.push_back(cards::make_neutralize());
     c.set_pick_discard_callback([](const Combat& combat) -> int {
         for (size_t i = 0; i < combat.player().hand.size(); ++i) {
             if (combat.player().hand[i].id == CardId::Defend) return static_cast<int>(i);

@@ -11,6 +11,7 @@ class CombatTestAccess {
 public:
     explicit CombatTestAccess(Combat& c) : c_(c) {}
     Player& player()                          { return c_.player_; }
+    // Convenience; not in the spec's six-method list but used by several tests.
     Enemy&  enemy(int i)                      { return c_.enemies_[static_cast<size_t>(i)]; }
     std::vector<Enemy>& enemies()             { return c_.enemies_; }
     Rng&    rng()                             { return c_.rng_; }

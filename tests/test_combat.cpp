@@ -144,10 +144,11 @@ TEST(combat_play_card_returns_true_on_success) {
 
 TEST(combat_play_two_cards_in_one_turn_deducts_cumulative_energy) {
     Combat c{1};
-    CombatTestAccess{c}.player().energy = 3;
     c.add_enemy(make_dummy_enemy(100));
-    CombatTestAccess{c}.player().hand.push_back(cards::make_strike());
-    CombatTestAccess{c}.player().hand.push_back(cards::make_defend());
+    auto& p = CombatTestAccess{c}.player();
+    p.energy = 3;
+    p.hand.push_back(cards::make_strike());
+    p.hand.push_back(cards::make_defend());
     c.play_card(0, 0);
     CHECK(c.player().energy == 2);
     c.play_card(0, -1);
@@ -160,10 +161,11 @@ TEST(combat_play_two_cards_in_one_turn_deducts_cumulative_energy) {
 
 TEST(combat_play_survivor_through_play_card_discards_chosen) {
     Combat c{1};
-    CombatTestAccess{c}.player().energy = 3;
-    CombatTestAccess{c}.player().hand.push_back(cards::make_strike());
-    CombatTestAccess{c}.player().hand.push_back(cards::make_survivor());
-    CombatTestAccess{c}.player().hand.push_back(cards::make_defend());
+    auto& p = CombatTestAccess{c}.player();
+    p.energy = 3;
+    p.hand.push_back(cards::make_strike());
+    p.hand.push_back(cards::make_survivor());
+    p.hand.push_back(cards::make_defend());
     c.set_pick_discard_callback([](const Combat& combat) -> int {
         for (size_t i = 0; i < combat.player().hand.size(); ++i) {
             if (combat.player().hand[i].id == CardId::Strike) return static_cast<int>(i);
@@ -278,9 +280,10 @@ TEST(combat_killing_last_enemy_marks_combat_over) {
 
 TEST(combat_reshuffle_when_draw_pile_empty) {
     Combat c{1};
-    CombatTestAccess{c}.player().discard_pile.push_back(cards::make_strike());
-    CombatTestAccess{c}.player().discard_pile.push_back(cards::make_defend());
-    CombatTestAccess{c}.player().discard_pile.push_back(cards::make_neutralize());
+    auto& p = CombatTestAccess{c}.player();
+    p.discard_pile.push_back(cards::make_strike());
+    p.discard_pile.push_back(cards::make_defend());
+    p.discard_pile.push_back(cards::make_neutralize());
     c.draw(3);
     CHECK(c.player().hand.size() == 3u);
     CHECK(c.player().discard_pile.empty());

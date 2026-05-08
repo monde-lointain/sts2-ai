@@ -84,6 +84,7 @@ bool Combat::play_card(int hand_idx, int target_idx) {
     player_.energy -= card.cost;
     if (card.on_play) card.on_play(*this, target_idx);
     player_.discard_pile.push_back(std::move(card));
+    // Backstop: card lambdas may invoke only non-HP-mutating verbs; ensure terminal check.
     check_win_or_lose();
     return true;
 }
