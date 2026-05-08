@@ -27,6 +27,7 @@ add_executable(sts2_simulator_tests)
 
 target_sources(sts2_simulator_tests PRIVATE
     test_smoke.cpp
+    game/test_rng.cpp
 )
 
 target_compile_features(sts2_simulator_tests PRIVATE cxx_std_20)
