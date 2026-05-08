@@ -164,9 +164,9 @@ TEST(combat_play_survivor_through_play_card_discards_chosen) {
     c.player.hand.push_back(cards::make_strike());
     c.player.hand.push_back(cards::make_survivor());
     c.player.hand.push_back(cards::make_defend());
-    c.on_pick_discard = [](const Player& p) -> int {
-        for (size_t i = 0; i < p.hand.size(); ++i) {
-            if (p.hand[i].id == cards::IdStrike) return static_cast<int>(i);
+    c.on_pick_discard = [](const Combat& combat) -> int {
+        for (size_t i = 0; i < combat.player.hand.size(); ++i) {
+            if (combat.player.hand[i].id == cards::IdStrike) return static_cast<int>(i);
         }
         return 0;
     };

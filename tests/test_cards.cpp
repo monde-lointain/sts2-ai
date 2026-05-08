@@ -101,9 +101,9 @@ TEST(card_survivor_grants_eight_block_and_discards_chosen) {
     c.player.hand.push_back(cards::make_strike());
     c.player.hand.push_back(cards::make_defend());
     c.player.hand.push_back(cards::make_neutralize());
-    c.on_pick_discard = [](const Player& p) -> int {
-        for (size_t i = 0; i < p.hand.size(); ++i) {
-            if (p.hand[i].id == cards::IdDefend) return static_cast<int>(i);
+    c.on_pick_discard = [](const Combat& combat) -> int {
+        for (size_t i = 0; i < combat.player.hand.size(); ++i) {
+            if (combat.player.hand[i].id == cards::IdDefend) return static_cast<int>(i);
         }
         return 0;
     };
@@ -120,7 +120,7 @@ TEST(card_survivor_no_op_discard_when_hand_empty) {
     Combat c{42};
     c.player.block = 0;
     bool callback_invoked = false;
-    c.on_pick_discard = [&](const Player&) -> int { callback_invoked = true; return 0; };
+    c.on_pick_discard = [&](const Combat&) -> int { callback_invoked = true; return 0; };
     cards::make_survivor().on_play(c, -1);
     CHECK(c.player.block == 8);
     CHECK(c.player.hand.empty());

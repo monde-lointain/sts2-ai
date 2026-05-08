@@ -62,7 +62,7 @@ Card make_survivor() {
     c.on_play = [](Combat& combat, int) {
         combat.player.block += 8;
         if (combat.player.hand.empty()) return;
-        int idx = combat.on_pick_discard(combat.player);
+        int idx = combat.on_pick_discard(combat);
         Card chosen = std::move(combat.player.hand[static_cast<size_t>(idx)]);
         combat.player.hand.erase(combat.player.hand.begin() + idx);
         combat.player.discard_pile.push_back(std::move(chosen));

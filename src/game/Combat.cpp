@@ -15,7 +15,7 @@ constexpr int kRingOfTheSnakeBonus = 2;
 
 Combat::Combat(uint64_t seed)
     : rng(seed),
-      on_pick_discard([](const Player&) { return 0; }) {}
+      on_pick_discard([](const Combat&) { return 0; }) {}
 
 void Combat::start(std::vector<Card> starter_deck) {
     player.draw_pile = std::move(starter_deck);

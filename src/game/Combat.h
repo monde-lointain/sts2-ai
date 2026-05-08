@@ -14,7 +14,7 @@ public:
     Player player;
     std::vector<Enemy> enemies;
     Rng rng;
-    std::function<int(const Player&)> on_pick_discard;
+    std::function<int(const Combat&)> on_pick_discard;
     int round = 1;
     bool combat_over = false;
 
