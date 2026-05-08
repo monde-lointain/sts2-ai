@@ -1,7 +1,6 @@
 #include "app/Args.h"
 
 #include <cstdint>
-#include <cstdio>
 #include <ostream>
 #include <random>
 #include <string>
@@ -22,23 +21,22 @@ bool parse_uint64(const std::string& s, std::uint64_t& out) {
 }
 
 bool parse_args(int argc, char** argv, std::uint64_t& seed_out, bool& seed_provided, std::ostream& err) {
-    (void)err;
     seed_provided = false;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--seed") {
             if (i + 1 >= argc) {
-                std::fprintf(stderr, "error: --seed requires a value\n");
+                err << "error: --seed requires a value\n";
                 return false;
             }
             if (!parse_uint64(argv[i + 1], seed_out)) {
-                std::fprintf(stderr, "error: --seed value '%s' is not a valid uint64\n", argv[i + 1]);
+                err << "error: --seed value '" << argv[i + 1] << "' is not a valid uint64\n";
                 return false;
             }
             seed_provided = true;
             ++i;
         } else {
-            std::fprintf(stderr, "error: unknown argument '%s'\n", arg.c_str());
+            err << "error: unknown argument '" << arg << "'\n";
             return false;
         }
     }
