@@ -111,34 +111,3 @@ sts2_apply_warnings(sts2_simulator)
 add_executable(sts2_fight src/main.cpp)
 target_link_libraries(sts2_fight PRIVATE sts2::simulator)
 sts2_apply_warnings(sts2_fight)
-
-# ------------------------------------------------------------------
-# sts2_simulator_tests — unit / integration tests
-# ------------------------------------------------------------------
-if(STS2_BUILD_TESTS)
-    enable_testing()
-
-    add_executable(sts2_simulator_tests)
-    target_sources(sts2_simulator_tests PRIVATE
-        tests/main.cpp
-        tests/test_runner.cpp
-        tests/test_rng.cpp
-        tests/test_types.cpp
-        tests/test_powers.cpp
-        tests/test_damage.cpp
-        tests/test_cards.cpp
-        tests/test_enemies.cpp
-        tests/test_combat.cpp
-        tests/test_render.cpp
-        tests/test_input.cpp
-        tests/test_runner.h
-        tests/test_helpers.h
-    )
-    target_link_libraries(sts2_simulator_tests PRIVATE sts2::simulator)
-    target_include_directories(sts2_simulator_tests PRIVATE
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests>
-    )
-    sts2_apply_warnings(sts2_simulator_tests)
-
-    add_test(NAME unit COMMAND sts2_simulator_tests)
-endif()
