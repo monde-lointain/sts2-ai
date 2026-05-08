@@ -8,7 +8,6 @@
 #include "game/Combat.h"
 #include "game/Enemies.h"
 #include "game/Player.h"
-#include "game/Rng.h"
 #include "input/Input.h"
 #include "render/Ansi.h"
 #include "render/Console.h"
@@ -106,9 +105,8 @@ int main(int argc, char** argv) {
 
     Combat combat{seed};
 
-    Rng spawn_rng{seed};
-    combat.enemies.push_back(enemies::make_calcified_cultist(spawn_rng));
-    combat.enemies.push_back(enemies::make_damp_cultist(spawn_rng));
+    combat.enemies.push_back(enemies::make_calcified_cultist(combat.rng));
+    combat.enemies.push_back(enemies::make_damp_cultist(combat.rng));
 
     combat.on_pick_discard = prompt_discard;
 
