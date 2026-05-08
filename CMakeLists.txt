@@ -36,6 +36,7 @@ add_library(sts2_game STATIC
     src/render/Bar.cpp
     src/render/Console.h
     src/render/Console.cpp
+    src/render/Glyphs.h
     src/render/Render.h
     src/render/Render.cpp
 )

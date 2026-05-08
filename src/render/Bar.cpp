@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "render/Glyphs.h"
+
 std::string hp_bar(int current, int maximum, int width) {
     if (width <= 0) return {};
     if (maximum <= 0) maximum = 1;
@@ -10,7 +12,7 @@ std::string hp_bar(int current, int maximum, int width) {
     if (clamped > 0 && filled_chars == 0) filled_chars = 1;
     std::string out;
     out.reserve(static_cast<size_t>(width) * 3);
-    for (int i = 0; i < filled_chars; ++i) out += "\xe2\x96\x88";
-    for (int i = filled_chars; i < width; ++i) out += "\xe2\x96\x91";
+    for (int i = 0; i < filled_chars; ++i) out += glyphs::kFullBlock;
+    for (int i = filled_chars; i < width; ++i) out += glyphs::kEmptyBlock;
     return out;
 }

@@ -144,3 +144,12 @@ TEST(render_combat_shows_card_inline_stats) {
     CHECK(os.str().find("Strike") != std::string::npos);
     CHECK(os.str().find("6dmg") != std::string::npos);
 }
+
+TEST(render_combat_emits_ansi_escape_codes) {
+    Combat c{1};
+    c.enemies.push_back(make_dummy_enemy(50));
+    c.start(cards::make_silent_starter_deck());
+    std::ostringstream os;
+    render::render_combat(c, os);
+    CHECK(os.str().find("\x1b[") != std::string::npos);
+}
