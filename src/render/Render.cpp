@@ -171,7 +171,7 @@ void render_combat(const Combat& c, std::ostream& out) {
             << " (" << ansi::kCyan << card.cost << ansi::kReset << ") "
             << card_inline_stats(card.id);
         if (card.target == TargetType::AnyEnemy) {
-            out << "  " << ansi::kDim << glyphs::kArrowRight << ansi::kReset;
+            out << "  " << ansi::kGreen << glyphs::kArrowRight << ansi::kReset;
         }
         out << "\n";
         for (const std::string& line : card_description(card.id)) {
