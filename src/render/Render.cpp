@@ -56,10 +56,6 @@ std::string format_powers(const std::vector<Power>& ps) {
 
 std::string format_intent(const Enemy& e) {
     std::ostringstream os;
-    if (e.hp <= 0) {
-        os << ansi::kDim << "(slain)" << ansi::kReset;
-        return os.str();
-    }
     switch (e.current_move) {
         case MoveId::Incantation:
             os << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
@@ -75,7 +71,7 @@ std::string format_intent(const Enemy& e) {
 size_t max_enemy_name_len(const std::vector<Enemy>& es) {
     size_t m = 0;
     for (const auto& e : es) {
-        if (e.name.size() > m) m = e.name.size();
+        if (e.hp > 0 && e.name.size() > m) m = e.name.size();
     }
     return m;
 }
@@ -137,6 +133,7 @@ void render_combat(const Combat& c, std::ostream& out) {
     size_t name_width = max_enemy_name_len(c.enemies);
     for (size_t i = 0; i < c.enemies.size(); ++i) {
         const Enemy& e = c.enemies[i];
+        if (e.hp <= 0) continue;
         out << "  [" << i << "] " << ansi::kBold << e.name << ansi::kReset
             << spaces(name_width - e.name.size())
             << "   HP " << ansi::kRed << hp_bar(e.hp, e.max_hp, kEnemyHpBarWidth) << ansi::kReset
@@ -145,7 +142,7 @@ void render_combat(const Combat& c, std::ostream& out) {
             out << "  " << ansi::kBlue << e.block << ansi::kReset << " blk";
         }
         out << "   " << format_intent(e);
-        if (!e.powers.empty() && e.hp > 0) {
+        if (!e.powers.empty()) {
             out << "  " << format_powers(e.powers);
         }
         out << "\n";

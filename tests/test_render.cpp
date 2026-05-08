@@ -191,13 +191,21 @@ TEST(render_combat_shows_buff_intent_for_incantation) {
     CHECK(os.str().find("\xe2\xac\x86" "Buff") != std::string::npos);
 }
 
-TEST(render_combat_marks_dead_enemies_as_slain) {
+TEST(render_combat_omits_dead_enemies) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(0));
+    Enemy alive = make_dummy_enemy(50);
+    alive.name = "Survivor";
+    Enemy dead = make_dummy_enemy(0);
+    dead.name = "Goner";
+    c.enemies.push_back(std::move(alive));
+    c.enemies.push_back(std::move(dead));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
-    CHECK(os.str().find("(slain)") != std::string::npos);
+    const std::string out = os.str();
+    CHECK(out.find("Survivor") != std::string::npos);
+    CHECK(out.find("Goner") == std::string::npos);
+    CHECK(out.find("(slain)") == std::string::npos);
 }
 
 TEST(render_combat_shows_card_inline_stats) {
