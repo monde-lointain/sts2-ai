@@ -5,19 +5,24 @@
 // tests::seeds::kShuffle_2 / kShuffle_10. The pinned values are toolchain-
 // specific (clang-cl + MSVC STL); see tests/seeds/expected_values.h.
 
-#include <algorithm>
 #include <array>
 #include <climits>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "game/Rng.h"
+#include "tests/game/test_helpers.h"
 #include "tests/seeds/expected_values.h"
 
 namespace {
 
+using sts2::tests::helpers::ExpectShuffleMatchesPinned;
+using sts2::tests::seeds::kRngFirstUniform_0_INTMAX;
+using sts2::tests::seeds::kRngSecondUniform_0_INTMAX;
+using sts2::tests::seeds::kRngSeq_0_9;
 using sts2::tests::seeds::kRngTestSeed;
 using sts2::tests::seeds::kShuffle_2;
 using sts2::tests::seeds::kShuffle_10;
@@ -38,6 +43,22 @@ TEST(RngConstructor, T_RNG_005_DeterministicSeeding) {
         sb[static_cast<std::size_t>(i)] = b.uniform_int(0, 1'000'000);
     }
     EXPECT_EQ(sa, sb);
+}
+
+// T-RNG-007 — DF, EG — Pinned reference sequence locks toolchain output.
+// Strategy: Data flow (seed → engine_ → uniform_int output); error guessing (toolchain regression).
+TEST(RngConstructor, T_RNG_007_PinnedReferenceSequence) {
+    Rng r{kRngTestSeed};
+    for (std::size_t i = 0; i < kRngSeq_0_9.size(); ++i) {
+        EXPECT_EQ(r.uniform_int(0, 9), kRngSeq_0_9[i]) << "mismatch at index " << i;
+    }
+}
+
+// T-RNG-008 — DF, EG — Pinned wide-range determinism reference.
+TEST(RngConstructor, T_RNG_008_PinnedWideRange) {
+    Rng r{kRngTestSeed};
+    EXPECT_EQ(r.uniform_int(0, std::numeric_limits<int>::max()), kRngFirstUniform_0_INTMAX);
+    EXPECT_EQ(r.uniform_int(0, std::numeric_limits<int>::max()), kRngSecondUniform_0_INTMAX);
 }
 
 // T-RNG-010 — EG — Differentiated seeds yield different sequences.
@@ -126,13 +147,18 @@ TEST(RngUniformInt, T_RNG_035_MaxWidthPositiveRange) {
 }
 
 // T-RNG-040 — BV — Maximum-width negative bound.
+// Statistical assertion: ≥ 1 sample < INT_MIN/2 across 100 calls.
+// Probability of all samples ≥ INT_MIN/2 is ~2^-100; negligible flake.
 TEST(RngUniformInt, T_RNG_040_MaxWidthNegativeBound) {
     Rng r{kRngTestSeed};
+    int samples_below_half = 0;
     for (int i = 0; i < 100; ++i) {
         const int x = r.uniform_int(INT_MIN, 0);
         ASSERT_LE(x, 0);
         ASSERT_GE(x, INT_MIN);
+        if (x < INT_MIN / 2) ++samples_below_half;
     }
+    EXPECT_GE(samples_below_half, 1) << "Probability of all samples >= INT_MIN/2 is ~2^-100; negligible flake.";
 }
 
 // -------------------------------------------------------------------------
@@ -159,30 +185,19 @@ TEST(RngShuffle, T_RNG_050_SingleElement) {
 // T-RNG-055 — BP, BV — Two elements; pinned to kShuffle_2. (D1 FALSE; D2 single iter.)
 TEST(RngShuffle, T_RNG_055_TwoElementsMatchesPinned) {
     Rng r{kRngTestSeed};
-    std::vector<int> v{1, 2};
+    const std::vector<int> original{1, 2};
+    std::vector<int> v = original;
     r.shuffle(v);
-    ASSERT_EQ(v.size(), kShuffle_2.size());
-    for (std::size_t i = 0; i < v.size(); ++i) {
-        EXPECT_EQ(v[i], kShuffle_2[i]) << "mismatch at index " << i;
-    }
-    // Sanity: still a permutation of {1, 2}.
-    const std::array<int, 2> original{1, 2};
-    EXPECT_TRUE(std::is_permutation(v.begin(), v.end(),
-                                    original.begin(), original.end()));
+    ExpectShuffleMatchesPinned(v, kShuffle_2, original);
 }
 
 // T-RNG-060 — DF — Ten elements; pinned to kShuffle_10.
 TEST(RngShuffle, T_RNG_060_TenElementsMatchesPinned) {
     Rng r{kRngTestSeed};
-    std::vector<int> v{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-    const std::vector<int> original = v;
+    const std::vector<int> original{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int> v = original;
     r.shuffle(v);
-    EXPECT_TRUE(std::is_permutation(v.begin(), v.end(),
-                                    original.begin(), original.end()));
-    ASSERT_EQ(v.size(), kShuffle_10.size());
-    for (std::size_t i = 0; i < v.size(); ++i) {
-        EXPECT_EQ(v[i], kShuffle_10[i]) << "mismatch at index " << i;
-    }
+    ExpectShuffleMatchesPinned(v, kShuffle_10, original);
 }
 
 // T-RNG-065 — EG — Determinism across two Rngs with same seed.
