@@ -29,12 +29,7 @@ std::string spaces(size_t n) {
     return std::string(n, ' ');
 }
 
-const char* power_color(PowerKind kind) {
-    switch (kind) {
-        case PowerKind::Weak:     return ansi::kDim;
-        case PowerKind::Strength: return ansi::kGreen;
-        case PowerKind::Ritual:   return ansi::kYellow;
-    }
+const char* power_color(PowerKind) {
     return ansi::kReset;
 }
 
