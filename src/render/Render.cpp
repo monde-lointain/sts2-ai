@@ -50,14 +50,12 @@ const char* power_name(PowerKind kind) {
 std::string format_powers(const std::vector<Power>& ps) {
     if (ps.empty()) return {};
     std::ostringstream os;
-    os << ansi::kDim << "(";
     bool first = true;
     for (const auto& p : ps) {
         if (!first) os << ", ";
         first = false;
-        os << power_color(p.kind) << power_name(p.kind) << ' ' << p.amount << ansi::kDim;
+        os << power_color(p.kind) << power_name(p.kind) << ' ' << p.amount << ansi::kReset;
     }
-    os << ")" << ansi::kReset;
     return os.str();
 }
 
