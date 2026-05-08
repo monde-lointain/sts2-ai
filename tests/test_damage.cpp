@@ -16,12 +16,10 @@ TEST(damage_strength_additive) {
 
 TEST(damage_weak_multiplicative_truncates) {
     std::vector<Power> attacker = { Power{PowerKind::Weak, 1, false} };
-    CHECK(damage::compute_outgoing(attacker, 6) == 4);   // 6*0.75 = 4.5 -> 4
+    CHECK(damage::compute_outgoing(attacker, 6) == 4);
 }
 
 TEST(damage_weak_then_strength_order) {
-    // Strength applied additively first, then Weak multiplicative:
-    // (6 + 2) * 0.75 = 6
     std::vector<Power> attacker = {
         Power{PowerKind::Strength, 2, false},
         Power{PowerKind::Weak,     1, false}

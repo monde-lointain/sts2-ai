@@ -87,7 +87,7 @@ TEST(powers_tick_ritual_just_applied_skips_strength) {
     CHECK(ps.size() == 1);
     CHECK(ps[0].kind == PowerKind::Ritual);
     CHECK(ps[0].amount == 2);
-    CHECK(!ps[0].just_applied);  // flag cleared
+    CHECK(!ps[0].just_applied);
     CHECK(powers::amount(ps, PowerKind::Strength) == 0);
 }
 
