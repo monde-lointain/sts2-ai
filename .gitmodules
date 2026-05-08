@@ -1,0 +1,3 @@
+[submodule "external/cppcheck-rules"]
+	path = external/cppcheck-rules
+	url = https://github.com/embeddedartistry/cppcheck-rules

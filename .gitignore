@@ -1,8 +1,11 @@
 build/
+build*/
+cmake-build-*/
 out/
 .cache/
 .vs/
 .vscode/
+.idea/
 .claude/
 *.user
 
@@ -15,9 +18,52 @@ obj/
 *.lib
 *.exp
 *.ilk
+*.o
+*.a
+*.so
+*.dylib
+*.out
+
+# Editor swap files
+*.swp
+*.swo
+*~
 
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 CMakeUserPresets.json
 compile_commands.json
+CTestTestfile.cmake
+install_manifest.txt
+
+# Coverage reports
+coverage/
+coverage-report/
+*.gcov
+*.gcda
+*.gcno
+coverage.info
+coverage.info.cleaned
+
+# Static analysis reports
+cppcheck-report.xml
+scan-build-reports/
+complexity-report.xml
+cloc-report.json
+cloc-report-full.json
+
+# Documentation
+docs/html/
+docs/latex/
+Doxyfile
+
+# Package files
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# OS files
+.DS_Store
+Thumbs.db
