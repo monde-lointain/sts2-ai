@@ -4,21 +4,21 @@
 add_executable(sts2_simulator_tests)
 
 target_sources(sts2_simulator_tests PRIVATE
-    test_smoke.cpp
-    game/test_rng.cpp
-    game/test_powers.cpp
-    game/test_damage.cpp
-    game/test_cards.cpp
-    game/test_enemies.cpp
-    game/test_combat.cpp
-    render/test_bar.cpp
-    render/test_render_internal.cpp
-    render/test_render.cpp
-    render/test_console.cpp
-    input/test_input.cpp
-    input/test_input_internal.cpp
-    app/test_args.cpp
-    app/test_prompts.cpp
+    test_smoke.cc
+    game/test_rng.cc
+    game/test_powers.cc
+    game/test_damage.cc
+    game/test_cards.cc
+    game/test_enemies.cc
+    game/test_combat.cc
+    render/test_bar.cc
+    render/test_render_internal.cc
+    render/test_render.cc
+    render/test_console.cc
+    input/test_input.cc
+    input/test_input_internal.cc
+    app/test_args.cc
+    app/test_prompts.cc
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
@@ -31,9 +31,11 @@ target_link_libraries(sts2_simulator_tests PRIVATE
     GTest::gmock
 )
 
-# Resolves `#include "tests/seeds/expected_values.h"` from test sources.
+# Resolves `#include "tests/seeds/expected_values.h"` from test sources, plus
+# `#include "render/render_internal.h"` etc. for internal-header tests.
 target_include_directories(sts2_simulator_tests PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/src
 )
 
 # Apply project warnings, then disable warnings-as-errors for tests only:

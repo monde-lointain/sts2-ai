@@ -4,7 +4,7 @@
 # executable is NOT run automatically: it must be invoked by hand to
 # rebuild the pinned-values header (see tools/seed-pinner/README.md).
 
-add_executable(sts2_seed_pinner pin_seeds.cpp)
+add_executable(sts2_seed_pinner pin_seeds.cc)
 
 target_compile_features(sts2_seed_pinner PRIVATE cxx_std_20)
 

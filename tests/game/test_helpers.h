@@ -11,19 +11,19 @@
 
 #include <gtest/gtest.h>
 
-#include "game/Cards.h"
-#include "game/Combat.h"
-#include "game/Enemies.h"
-#include "game/Enemy.h"
-#include "game/Power.h"
-#include "game/Rng.h"
-#include "game/Types.h"
-#include "game/Vitals.h"
+#include "sts2/game/cards.h"
+#include "sts2/game/combat.h"
+#include "sts2/game/enemies.h"
+#include "sts2/game/enemy.h"
+#include "sts2/game/power.h"
+#include "sts2/game/rng.h"
+#include "sts2/game/types.h"
+#include "sts2/game/vitals.h"
 
 // gtest customization point: print PowerKind by name in failure messages.
 // Test-only; kept out of production headers. `PrintTo` must live in the same
 // namespace as the type for gtest's ADL lookup; `PowerKind` is at global
-// scope (per src/game/Types.h), so this overload sits at global scope too.
+// scope (per src/game/types.h), so this overload sits at global scope too.
 inline void PrintTo(PowerKind k, std::ostream* os) {
     switch (k) {
         case PowerKind::Weak:     *os << "Weak";     break;
@@ -85,7 +85,7 @@ inline Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
 }
 
 // Standard "starter" combat: two cultists rolled with a separate Rng (matching
-// main.cpp's pattern), pick-discard callback returns 0, started with the full
+// main.cc's pattern), pick-discard callback returns 0, started with the full
 // 12-card silent starter deck shuffled by Combat's seeded Rng.
 // Returns post-start state: round 1, hand size 7, energy 3, both enemies alive.
 inline Combat MakeStarterCombat(uint64_t seed) {
