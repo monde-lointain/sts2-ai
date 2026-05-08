@@ -34,6 +34,7 @@ TEST(enemy_default_state) {
 
 TEST(power_default_state) {
     Power p;
+    CHECK(p.kind == PowerKind::Weak);
     CHECK(p.amount == 0);
     CHECK(!p.just_applied);
 }
