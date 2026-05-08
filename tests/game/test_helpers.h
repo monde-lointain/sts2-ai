@@ -104,4 +104,25 @@ inline void KillEnemy(Combat& c, int idx) {
     c.deal_damage_to_enemy(idx, 99999);
 }
 
+// Drain player_.energy to 0 by playing hand[0] up to 10 times.
+// Setup helper for tests of can_play / play_card under the "no energy" branch.
+// Does NOT assert: callers verify drained state themselves. If hand[0] targets
+// AnyEnemy, the first alive enemy is selected; otherwise target = -1.
+inline void DrainPlayerEnergy(Combat& c) {
+    int safety = 10;
+    while (c.player().energy > 0 && !c.player().hand.empty() && safety-- > 0) {
+        const auto& card = c.player().hand[0];
+        int target = -1;
+        if (card.target == TargetType::AnyEnemy) {
+            for (std::size_t i = 0; i < c.enemies().size(); ++i) {
+                if (c.enemies()[i].vitals.hp > 0) {
+                    target = static_cast<int>(i);
+                    break;
+                }
+            }
+        }
+        c.play_card(0, target);
+    }
+}
+
 }  // namespace sts2::tests::helpers

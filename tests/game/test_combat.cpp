@@ -37,6 +37,7 @@
 
 namespace {
 
+using sts2::tests::helpers::DrainPlayerEnergy;
 using sts2::tests::helpers::ExpectPowersEq;
 using sts2::tests::helpers::KillEnemy;
 using sts2::tests::helpers::MakeCombatWithEnemy;
@@ -300,13 +301,9 @@ TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
 }
 
 // T-CMB-085 — BP, BV — Last valid idx, cost > energy → false.
-// Three Strikes (cost 1 each) in hand; we need energy=0. We can't directly
-// drain energy, but we can play two Strikes to spend energy from 3 to 1, then
-// play another Strike action that costs 1 ... no — that leaves energy=0 and
-// hand=2. To get hand of 3 with energy=0, we play Strikes from a larger hand
-// then check can_play. Use a 6-card all-Strike deck → hand=6, draw=0;
-// play 3 strikes (cost 3 total); now hand=3 (some), energy=0. can_play(2) →
-// last valid idx, cost 1 > energy 0 → false.
+// Use a 6-card all-Strike deck so the post-start hand is 6, then drain energy
+// to 0 (each Strike spent removes one card). End state: hand=3, energy=0.
+// can_play(2) → last valid idx, cost 1 > energy 0 → false.
 TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
     Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
     std::vector<Card> deck;
@@ -315,10 +312,7 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
     ASSERT_EQ(c.player().hand.size(), 6u);
     ASSERT_EQ(c.player().energy, 3);
 
-    // Spend all energy by playing three Strikes (each costs 1, deals 6 to enemy).
-    ASSERT_TRUE(c.play_card(0, 0));
-    ASSERT_TRUE(c.play_card(0, 0));
-    ASSERT_TRUE(c.play_card(0, 0));
+    DrainPlayerEnergy(c);
     ASSERT_EQ(c.player().energy, 0);
     ASSERT_EQ(c.player().hand.size(), 3u);
 
@@ -388,10 +382,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
     for (int i = 0; i < 4; ++i) deck.push_back(cards::make_strike());
     c.start(std::move(deck));
     ASSERT_EQ(c.player().hand.size(), 4u);
-    // Spend all 3 energy.
-    ASSERT_TRUE(c.play_card(0, 0));
-    ASSERT_TRUE(c.play_card(0, 0));
-    ASSERT_TRUE(c.play_card(0, 0));
+    DrainPlayerEnergy(c);
     ASSERT_EQ(c.player().energy, 0);
     ASSERT_EQ(c.player().hand.size(), 1u);
     const int hp_before = c.enemies()[0].vitals.hp;
