@@ -36,6 +36,9 @@ target_sources(sts2_simulator_tests PRIVATE
     render/test_bar.cpp
     render/test_render_internal.cpp
     render/test_render.cpp
+    render/test_console.cpp
+    input/test_input.cpp
+    input/test_input_internal.cpp
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
