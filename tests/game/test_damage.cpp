@@ -7,7 +7,6 @@
 
 #include "game/Damage.h"
 #include "game/Power.h"
-#include "game/Powers.h"
 #include "game/Types.h"
 #include "game/Vitals.h"
 #include "tests/game/test_helpers.h"
