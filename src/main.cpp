@@ -1,58 +1,153 @@
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <random>
 #include <string>
 
-// Strict base-10 unsigned: rejects signs, whitespace, prefixes, and partial parses.
-static bool parse_uint64(const char* s, uint64_t& out) {
-    if (s == nullptr || *s == '\0') return false;
-    std::string str(s);
-    for (char c : str) {
-        if (c < '0' || c > '9') return false;
+#include "game/Cards.h"
+#include "game/Combat.h"
+#include "game/Enemies.h"
+#include "game/Player.h"
+#include "game/Rng.h"
+#include "input/Input.h"
+#include "render/Ansi.h"
+#include "render/Console.h"
+#include "render/Render.h"
+
+namespace {
+
+bool parse_uint64(const std::string& s, uint64_t& out) {
+    if (s.empty()) return false;
+    uint64_t v = 0;
+    for (char ch : s) {
+        if (ch < '0' || ch > '9') return false;
+        uint64_t next = v * 10 + static_cast<uint64_t>(ch - '0');
+        if (next < v) return false;
+        v = next;
     }
-    try {
-        size_t idx = 0;
-        unsigned long long v = std::stoull(str, &idx, 10);
-        if (idx != str.size()) return false;
-        out = static_cast<uint64_t>(v);
-        return true;
-    } catch (...) {
-        return false;
+    out = v;
+    return true;
+}
+
+bool parse_args(int argc, char** argv, uint64_t& seed_out, bool& seed_provided) {
+    seed_provided = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--seed") {
+            if (i + 1 >= argc) {
+                std::fprintf(stderr, "error: --seed requires a value\n");
+                return false;
+            }
+            if (!parse_uint64(argv[i + 1], seed_out)) {
+                std::fprintf(stderr, "error: --seed value '%s' is not a valid uint64\n", argv[i + 1]);
+                return false;
+            }
+            seed_provided = true;
+            ++i;
+        } else {
+            std::fprintf(stderr, "error: unknown argument '%s'\n", arg.c_str());
+            return false;
+        }
     }
+    return true;
+}
+
+uint64_t random_seed() {
+    std::random_device rd;
+    uint64_t hi = static_cast<uint64_t>(rd());
+    uint64_t lo = static_cast<uint64_t>(rd());
+    return (hi << 32) | lo;
+}
+
+const Card* card_at(const Combat& c, int hand_idx) {
+    if (hand_idx < 0 || static_cast<size_t>(hand_idx) >= c.player.hand.size()) return nullptr;
+    return &c.player.hand[static_cast<size_t>(hand_idx)];
+}
+
+int prompt_target(const Combat& c) {
+    int alive = 0;
+    int last_alive_idx = -1;
+    for (size_t i = 0; i < c.enemies.size(); ++i) {
+        if (c.enemies[i].hp > 0) { ++alive; last_alive_idx = static_cast<int>(i); }
+    }
+    if (alive == 0) return -1;
+    if (alive == 1) return last_alive_idx;
+    while (true) {
+        std::cout << "  Target enemy [0-" << c.enemies.size() - 1 << "]: " << std::flush;
+        int idx = input::read_index(std::cin, static_cast<int>(c.enemies.size()) - 1);
+        if (idx < 0) {
+            std::cout << ansi::kRed << "  invalid target." << ansi::kReset << "\n";
+            continue;
+        }
+        if (c.enemies[static_cast<size_t>(idx)].hp <= 0) {
+            std::cout << ansi::kRed << "  that enemy is already dead." << ansi::kReset << "\n";
+            continue;
+        }
+        return idx;
+    }
+}
+
+int prompt_discard(const Player& p) {
+    while (true) {
+        std::cout << "  Discard which? [0-" << p.hand.size() - 1 << "]: " << std::flush;
+        int idx = input::read_index(std::cin, static_cast<int>(p.hand.size()) - 1);
+        if (idx >= 0) return idx;
+        std::cout << ansi::kRed << "  invalid index." << ansi::kReset << "\n";
+    }
+}
+
 }
 
 int main(int argc, char** argv) {
     uint64_t seed = 0;
-    bool seed_set = false;
+    bool seed_provided = false;
+    if (!parse_args(argc, argv, seed, seed_provided)) return 1;
+    if (!seed_provided) seed = random_seed();
 
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--seed") == 0) {
-            if (i + 1 >= argc) {
-                std::fprintf(stderr, "error: --seed requires an unsigned 64-bit integer argument\n");
-                return 1;
+    console::enable_ansi_and_utf8();
+
+    Combat combat{seed};
+
+    Rng spawn_rng{seed};
+    combat.enemies.push_back(enemies::make_calcified_cultist(spawn_rng));
+    combat.enemies.push_back(enemies::make_damp_cultist(spawn_rng));
+
+    combat.on_pick_discard = prompt_discard;
+
+    combat.start(cards::make_silent_starter_deck());
+
+    while (true) {
+        render::render_combat(combat, std::cout);
+        if (combat.combat_over) return 0;
+
+        std::cout << "> Action - digit to play, e=end turn, q=quit: " << std::flush;
+        input::Action a = input::read_action(std::cin);
+        switch (a.kind) {
+            case input::Action::Quit:
+                return 0;
+            case input::Action::EndTurn:
+                combat.end_turn();
+                break;
+            case input::Action::PlayCard: {
+                if (!combat.can_play(a.card_idx)) {
+                    std::cout << ansi::kRed << "  unplayable." << ansi::kReset << "\n";
+                    break;
+                }
+                const Card* card = card_at(combat, a.card_idx);
+                int target = -1;
+                if (card && card->target == TargetType::AnyEnemy) {
+                    target = prompt_target(combat);
+                    if (target < 0) {
+                        std::cout << ansi::kRed << "  no valid target." << ansi::kReset << "\n";
+                        break;
+                    }
+                }
+                combat.play_card(a.card_idx, target);
+                break;
             }
-            if (!parse_uint64(argv[i + 1], seed)) {
-                std::fprintf(stderr, "error: --seed value '%s' is not a valid uint64\n", argv[i + 1]);
-                return 1;
-            }
-            seed_set = true;
-            ++i;
-        } else {
-            std::fprintf(stderr, "error: unknown argument '%s'\n", argv[i]);
-            return 1;
+            case input::Action::Invalid:
+                std::cout << ansi::kRed << "  invalid input." << ansi::kReset << "\n";
+                break;
         }
     }
-
-    if (!seed_set) {
-        std::random_device rd;
-        uint64_t a = static_cast<uint64_t>(rd());
-        uint64_t b = static_cast<uint64_t>(rd());
-        seed = (a << 32) | b;
-    }
-
-    std::cout << "seed=" << seed << '\n';
-    return 0;
 }

@@ -39,6 +39,8 @@ add_library(sts2_game STATIC
     src/render/Glyphs.h
     src/render/Render.h
     src/render/Render.cpp
+    src/input/Input.h
+    src/input/Input.cpp
 )
 target_include_directories(sts2_game PUBLIC src)
 target_compile_features(sts2_game PUBLIC cxx_std_17)
@@ -59,6 +61,7 @@ add_executable(sts2_fight_tests
     tests/test_enemies.cpp
     tests/test_combat.cpp
     tests/test_render.cpp
+    tests/test_input.cpp
     tests/test_helpers.h
 )
 target_link_libraries(sts2_fight_tests PRIVATE sts2_game)
