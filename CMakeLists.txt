@@ -76,6 +76,9 @@ target_sources(sts2_simulator PRIVATE
     src/render/Render.cpp
     # input module
     src/input/Input.cpp
+    # app module
+    src/app/Args.cpp
+    src/app/Prompts.cpp
     # headers — listed so IDEs surface them in the project view
     src/game/Types.h
     src/game/Rng.h
@@ -97,6 +100,8 @@ target_sources(sts2_simulator PRIVATE
     src/render/Render_internal.h
     src/input/Input.h
     src/input/Input_internal.h
+    src/app/Args.h
+    src/app/Prompts.h
 )
 
 target_compile_features(sts2_simulator PUBLIC cxx_std_20)

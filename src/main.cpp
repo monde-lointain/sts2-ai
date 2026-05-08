@@ -1,10 +1,9 @@
 #include <cstdint>
-#include <cstdio>
 #include <iostream>
-#include <random>
 #include <string>
-#include <vector>
 
+#include "app/Args.h"
+#include "app/Prompts.h"
 #include "game/Cards.h"
 #include "game/Combat.h"
 #include "game/Enemies.h"
@@ -15,87 +14,11 @@
 #include "render/Console.h"
 #include "render/Render.h"
 
-namespace {
-
-bool parse_uint64(const std::string& s, uint64_t& out) {
-    if (s.empty()) return false;
-    uint64_t v = 0;
-    for (char ch : s) {
-        if (ch < '0' || ch > '9') return false;
-        uint64_t next = v * 10 + static_cast<uint64_t>(ch - '0');
-        if (next < v) return false;
-        v = next;
-    }
-    out = v;
-    return true;
-}
-
-bool parse_args(int argc, char** argv, uint64_t& seed_out, bool& seed_provided) {
-    seed_provided = false;
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "--seed") {
-            if (i + 1 >= argc) {
-                std::fprintf(stderr, "error: --seed requires a value\n");
-                return false;
-            }
-            if (!parse_uint64(argv[i + 1], seed_out)) {
-                std::fprintf(stderr, "error: --seed value '%s' is not a valid uint64\n", argv[i + 1]);
-                return false;
-            }
-            seed_provided = true;
-            ++i;
-        } else {
-            std::fprintf(stderr, "error: unknown argument '%s'\n", arg.c_str());
-            return false;
-        }
-    }
-    return true;
-}
-
-uint64_t random_seed() {
-    std::random_device rd;
-    uint64_t hi = static_cast<uint64_t>(rd());
-    uint64_t lo = static_cast<uint64_t>(rd());
-    return (hi << 32) | lo;
-}
-
-int prompt_index(std::ostream& out, std::istream& in, const char* label, int max_inclusive) {
-    while (true) {
-        out << label << std::flush;
-        int idx = input::read_index(in, max_inclusive);
-        if (idx >= 0) return idx;
-        out << ansi::kRed << "  invalid index." << ansi::kReset << "\n";
-    }
-}
-
-int prompt_target(const Combat& c) {
-    std::vector<int> alive_indices;
-    for (size_t i = 0; i < c.enemies().size(); ++i) {
-        if (c.enemies()[i].vitals.hp > 0) alive_indices.push_back(static_cast<int>(i));
-    }
-    if (alive_indices.empty()) return -1;
-    if (alive_indices.size() == 1) return alive_indices[0];
-    std::string label = std::string("\n") + ansi::kGreen + ">" + ansi::kReset + " Target enemy [index]: ";
-    int display_idx = prompt_index(std::cout, std::cin, label.c_str(), static_cast<int>(alive_indices.size()) - 1);
-    return alive_indices[static_cast<size_t>(display_idx)];
-}
-
-int prompt_discard(const Combat& combat) {
-    const Player& p = combat.player();
-    if (p.hand.size() == 1) return 0;
-    render::render_combat(combat, std::cout);
-    std::string label = "  Discard which? [0-" + std::to_string(p.hand.size() - 1) + "]: ";
-    return prompt_index(std::cout, std::cin, label.c_str(), static_cast<int>(p.hand.size()) - 1);
-}
-
-}
-
 int main(int argc, char** argv) {
     uint64_t seed = 0;
     bool seed_provided = false;
-    if (!parse_args(argc, argv, seed, seed_provided)) return 1;
-    if (!seed_provided) seed = random_seed();
+    if (!app::parse_args(argc, argv, seed, seed_provided, std::cerr)) return 1;
+    if (!seed_provided) seed = app::random_seed();
 
     console::enable_ansi_and_utf8();
 
@@ -107,7 +30,9 @@ int main(int argc, char** argv) {
     combat.add_enemy(enemies::make_calcified_cultist(enemy_rng));
     combat.add_enemy(enemies::make_damp_cultist(enemy_rng));
 
-    combat.set_pick_discard_callback(prompt_discard);
+    combat.set_pick_discard_callback([](const Combat& c) {
+        return app::prompt_discard(c, std::cin, std::cout);
+    });
 
     combat.start(cards::make_silent_starter_deck());
 
@@ -131,7 +56,7 @@ int main(int argc, char** argv) {
                 TargetType target_type = combat.player().hand[static_cast<size_t>(a.card_idx)].target;
                 int target = -1;
                 if (target_type == TargetType::AnyEnemy) {
-                    target = prompt_target(combat);
+                    target = app::prompt_target(combat, std::cin, std::cout);
                     if (target < 0) {
                         std::cout << ansi::kRed << "  no valid target." << ansi::kReset << "\n";
                         break;

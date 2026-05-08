@@ -1,0 +1,55 @@
+#include "app/Args.h"
+
+#include <cstdint>
+#include <cstdio>
+#include <ostream>
+#include <random>
+#include <string>
+
+namespace app {
+
+bool parse_uint64(const std::string& s, std::uint64_t& out) {
+    if (s.empty()) return false;
+    std::uint64_t v = 0;
+    for (char ch : s) {
+        if (ch < '0' || ch > '9') return false;
+        std::uint64_t next = v * 10 + static_cast<std::uint64_t>(ch - '0');
+        if (next < v) return false;
+        v = next;
+    }
+    out = v;
+    return true;
+}
+
+bool parse_args(int argc, char** argv, std::uint64_t& seed_out, bool& seed_provided, std::ostream& err) {
+    (void)err;
+    seed_provided = false;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--seed") {
+            if (i + 1 >= argc) {
+                std::fprintf(stderr, "error: --seed requires a value\n");
+                return false;
+            }
+            if (!parse_uint64(argv[i + 1], seed_out)) {
+                std::fprintf(stderr, "error: --seed value '%s' is not a valid uint64\n", argv[i + 1]);
+                return false;
+            }
+            seed_provided = true;
+            ++i;
+        } else {
+            std::fprintf(stderr, "error: unknown argument '%s'\n", arg.c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+std::uint64_t random_seed() {
+    std::random_device rd;
+    std::uint64_t hi = static_cast<std::uint64_t>(rd());
+    std::uint64_t lo = static_cast<std::uint64_t>(rd());
+    return (hi << 32) | lo;
+}
+
+}
