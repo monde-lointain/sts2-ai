@@ -67,7 +67,7 @@ int prompt_target(const Combat& c) {
     if (alive == 0) return -1;
     if (alive == 1) return last_alive_idx;
     while (true) {
-        std::cout << "  Target enemy [0-" << c.enemies.size() - 1 << "]: " << std::flush;
+        std::cout << "\n> Target enemy [index]: " << std::flush;
         int idx = input::read_index(std::cin, static_cast<int>(c.enemies.size()) - 1);
         if (idx < 0) {
             std::cout << ansi::kRed << "  invalid target." << ansi::kReset << "\n";
