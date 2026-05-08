@@ -9,6 +9,7 @@
 #include "game/Combat.h"
 #include "game/Enemies.h"
 #include "game/Player.h"
+#include "game/Rng.h"
 #include "input/Input.h"
 #include "render/Ansi.h"
 #include "render/Console.h"
@@ -70,8 +71,8 @@ int prompt_index(std::ostream& out, std::istream& in, const char* label, int max
 
 int prompt_target(const Combat& c) {
     std::vector<int> alive_indices;
-    for (size_t i = 0; i < c.enemies.size(); ++i) {
-        if (c.enemies[i].vitals.hp > 0) alive_indices.push_back(static_cast<int>(i));
+    for (size_t i = 0; i < c.enemies().size(); ++i) {
+        if (c.enemies()[i].vitals.hp > 0) alive_indices.push_back(static_cast<int>(i));
     }
     if (alive_indices.empty()) return -1;
     if (alive_indices.size() == 1) return alive_indices[0];
@@ -81,7 +82,7 @@ int prompt_target(const Combat& c) {
 }
 
 int prompt_discard(const Combat& combat) {
-    const Player& p = combat.player;
+    const Player& p = combat.player();
     if (p.hand.size() == 1) return 0;
     render::render_combat(combat, std::cout);
     std::string label = "  Discard which? [0-" + std::to_string(p.hand.size() - 1) + "]: ";
@@ -100,16 +101,17 @@ int main(int argc, char** argv) {
 
     Combat combat{seed};
 
-    combat.enemies.push_back(enemies::make_calcified_cultist(combat.rng));
-    combat.enemies.push_back(enemies::make_damp_cultist(combat.rng));
+    Rng enemy_rng{seed};
+    combat.add_enemy(enemies::make_calcified_cultist(enemy_rng));
+    combat.add_enemy(enemies::make_damp_cultist(enemy_rng));
 
-    combat.on_pick_discard = prompt_discard;
+    combat.set_pick_discard_callback(prompt_discard);
 
     combat.start(cards::make_silent_starter_deck());
 
     while (true) {
         render::render_combat(combat, std::cout);
-        if (combat.combat_over) return 0;
+        if (combat.combat_over()) return 0;
 
         std::cout << ansi::kGreen << ">" << ansi::kReset << " Play card [index], (e)nd turn, (q)uit: " << std::flush;
         input::Action a = input::read_action(std::cin);
@@ -124,7 +126,7 @@ int main(int argc, char** argv) {
                     std::cout << ansi::kRed << "  unplayable." << ansi::kReset << "\n";
                     break;
                 }
-                TargetType target_type = combat.player.hand[static_cast<size_t>(a.card_idx)].target;
+                TargetType target_type = combat.player().hand[static_cast<size_t>(a.card_idx)].target;
                 int target = -1;
                 if (target_type == TargetType::AnyEnemy) {
                     target = prompt_target(combat);

@@ -87,21 +87,21 @@ namespace render {
 void render_combat(const Combat& c, std::ostream& out) {
     out << ansi::kDim << repeat_utf8(glyphs::kSeparator, kSeparatorLen) << ansi::kReset << "\n";
 
-    out << "  Round " << c.round
-        << "  " << ansi::kCyan << "Energy " << c.player.energy << "/" << c.player.max_energy << ansi::kReset
-        << "  Draw " << c.player.draw_pile.size()
-        << "  Discard " << c.player.discard_pile.size()
+    out << "  Round " << c.round()
+        << "  " << ansi::kCyan << "Energy " << c.player().energy << "/" << c.player().max_energy << ansi::kReset
+        << "  Draw " << c.player().draw_pile.size()
+        << "  Discard " << c.player().discard_pile.size()
         << "\n";
 
     out << "  " << ansi::kBold << "The Silent" << ansi::kReset
-        << "  HP " << ansi::kRed << render::hp_bar(c.player.vitals.hp, c.player.vitals.max_hp, kPlayerHpBarWidth) << ansi::kReset
-        << " " << c.player.vitals.hp << "/" << c.player.vitals.max_hp;
-    if (c.player.vitals.block > 0) {
-        out << "  " << ansi::kBlue << c.player.vitals.block << ansi::kReset << " blk";
+        << "  HP " << ansi::kRed << render::hp_bar(c.player().vitals.hp, c.player().vitals.max_hp, kPlayerHpBarWidth) << ansi::kReset
+        << " " << c.player().vitals.hp << "/" << c.player().vitals.max_hp;
+    if (c.player().vitals.block > 0) {
+        out << "  " << ansi::kBlue << c.player().vitals.block << ansi::kReset << " blk";
     }
-    out << "  Deck " << total_deck_size(c.player);
-    if (!c.player.vitals.powers.empty()) {
-        out << "  " << format_powers(c.player.vitals.powers);
+    out << "  Deck " << total_deck_size(c.player());
+    if (!c.player().vitals.powers.empty()) {
+        out << "  " << format_powers(c.player().vitals.powers);
     }
     out << "\n";
 
@@ -109,10 +109,10 @@ void render_combat(const Combat& c, std::ostream& out) {
         << ansi::kDim << ": At the start of each combat, draw 2 additional cards." << ansi::kReset
         << "\n\n";
 
-    size_t name_width = max_enemy_name_len(c.enemies);
+    size_t name_width = max_enemy_name_len(c.enemies());
     size_t display_idx = 0;
-    for (size_t i = 0; i < c.enemies.size(); ++i) {
-        const Enemy& e = c.enemies[i];
+    for (size_t i = 0; i < c.enemies().size(); ++i) {
+        const Enemy& e = c.enemies()[i];
         if (e.vitals.hp <= 0) continue;
         out << "  [" << display_idx++ << "] " << ansi::kBold << e.name << ansi::kReset
             << spaces(name_width - e.name.size())
@@ -129,9 +129,9 @@ void render_combat(const Combat& c, std::ostream& out) {
     }
     out << "\n";
 
-    for (size_t i = 0; i < c.player.hand.size(); ++i) {
-        const Card& card = c.player.hand[i];
-        bool playable = card.cost <= c.player.energy;
+    for (size_t i = 0; i < c.player().hand.size(); ++i) {
+        const Card& card = c.player().hand[i];
+        bool playable = card.cost <= c.player().energy;
         const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;
         const char* bullet = playable ? glyphs::kBulletFilled : glyphs::kBulletHollow;
         const char* type_color = (card.type == CardType::Attack) ? ansi::kRed : ansi::kBlue;

@@ -8,16 +8,10 @@
 #include "game/Enemy.h"
 #include "game/Player.h"
 #include "game/Rng.h"
+#include "game/Types.h"
 
 class Combat {
 public:
-    Player player;
-    std::vector<Enemy> enemies;
-    Rng rng;
-    std::function<int(const Combat&)> on_pick_discard;
-    int round = 1;
-    bool combat_over = false;
-
     explicit Combat(uint64_t seed);
 
     void start(std::vector<Card> starter_deck);
@@ -36,4 +30,28 @@ public:
     bool is_player_dead() const;
     bool all_enemies_dead() const;
     void check_win_or_lose();
+
+    const Player&             player() const       { return player_; }
+    const std::vector<Enemy>& enemies() const      { return enemies_; }
+    int                       round() const        { return round_; }
+    bool                      combat_over() const  { return combat_over_; }
+
+    void add_enemy(Enemy e);
+    void set_pick_discard_callback(std::function<int(const Combat&)> cb);
+    void deal_damage_to_enemy(int idx, int base_damage);
+    void enemy_attack_player(Enemy& source, int base_damage);
+    void gain_player_block(int amt);
+    void apply_power_to_enemy(int idx, PowerKind kind, int amt);
+    void apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt);
+    void discard_chosen_from_hand();
+
+private:
+    Player player_;
+    std::vector<Enemy> enemies_;
+    Rng rng_;
+    std::function<int(const Combat&)> on_pick_discard_;
+    int round_ = 1;
+    bool combat_over_ = false;
+
+    friend class CombatTestAccess;
 };

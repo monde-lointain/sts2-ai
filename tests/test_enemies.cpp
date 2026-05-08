@@ -76,9 +76,9 @@ TEST(enemy_act_incantation_applies_ritual_calcified) {
     Rng r(1);
     Enemy e = enemies::make_calcified_cultist(r);
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(powers::amount(c.enemies[0].vitals.powers, PowerKind::Ritual) == 2);
-    const Power* p = powers::find(c.enemies[0].vitals.powers, PowerKind::Ritual);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(powers::amount(c.enemies()[0].vitals.powers, PowerKind::Ritual) == 2);
+    const Power* p = powers::find(c.enemies()[0].vitals.powers, PowerKind::Ritual);
     CHECK(p != nullptr);
     CHECK(p->just_applied);
 }
@@ -87,8 +87,8 @@ TEST(enemy_act_incantation_applies_ritual_damp) {
     Rng r(1);
     Enemy e = enemies::make_damp_cultist(r);
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(powers::amount(c.enemies[0].vitals.powers, PowerKind::Ritual) == 5);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(powers::amount(c.enemies()[0].vitals.powers, PowerKind::Ritual) == 5);
 }
 
 TEST(enemy_act_dark_strike_calcified_deals_nine) {
@@ -97,9 +97,9 @@ TEST(enemy_act_dark_strike_calcified_deals_nine) {
     e.current_move = MoveId::DarkStrike;
     e.performed_first_move = true;
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(c.player.vitals.hp == 61);
-    CHECK(c.player.vitals.block == 0);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(c.player().vitals.hp == 61);
+    CHECK(c.player().vitals.block == 0);
 }
 
 TEST(enemy_act_dark_strike_damp_deals_one) {
@@ -108,8 +108,8 @@ TEST(enemy_act_dark_strike_damp_deals_one) {
     e.current_move = MoveId::DarkStrike;
     e.performed_first_move = true;
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(c.player.vitals.hp == 69);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(c.player().vitals.hp == 69);
 }
 
 TEST(enemy_act_dark_strike_respects_block) {
@@ -118,10 +118,10 @@ TEST(enemy_act_dark_strike_respects_block) {
     e.current_move = MoveId::DarkStrike;
     e.performed_first_move = true;
     Combat c = make_combat_with(std::move(e));
-    c.player.vitals.block = 12;
-    enemies::act(c.enemies[0], c);
-    CHECK(c.player.vitals.hp == 70);
-    CHECK(c.player.vitals.block == 3);
+    CombatTestAccess{c}.player().vitals.block = 12;
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(c.player().vitals.hp == 70);
+    CHECK(c.player().vitals.block == 3);
 }
 
 TEST(enemy_act_dark_strike_with_strength_calcified) {
@@ -131,33 +131,33 @@ TEST(enemy_act_dark_strike_with_strength_calcified) {
     e.performed_first_move = true;
     powers::apply(e.vitals.powers, PowerKind::Strength, 2);
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(c.player.vitals.hp == 70 - 11);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(c.player().vitals.hp == 70 - 11);
 }
 
 TEST(enemy_calcified_damage_curve_first_three_turns) {
     Rng r(1);
     Enemy e = enemies::make_calcified_cultist(r);
     Combat c = make_combat_with(std::move(e));
-    Enemy& cult = c.enemies[0];
+    Enemy& cult = CombatTestAccess{c}.enemy(0);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70);
+    CHECK(c.player().vitals.hp == 70);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 0);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Ritual) == 2);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70 - 9);
+    CHECK(c.player().vitals.hp == 70 - 9);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 2);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70 - 9 - 11);
+    CHECK(c.player().vitals.hp == 70 - 9 - 11);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 4);
 }
 
@@ -165,24 +165,24 @@ TEST(enemy_damp_damage_curve_first_three_turns) {
     Rng r(1);
     Enemy e = enemies::make_damp_cultist(r);
     Combat c = make_combat_with(std::move(e));
-    Enemy& cult = c.enemies[0];
+    Enemy& cult = CombatTestAccess{c}.enemy(0);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70);
+    CHECK(c.player().vitals.hp == 70);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 0);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70 - 1);
+    CHECK(c.player().vitals.hp == 70 - 1);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 5);
 
     enemies::roll_next_move(cult);
     enemies::act(cult, c);
     powers::tick_at_turn_end(cult.vitals.powers);
-    CHECK(c.player.vitals.hp == 70 - 1 - 6);
+    CHECK(c.player().vitals.hp == 70 - 1 - 6);
     CHECK(powers::amount(cult.vitals.powers, PowerKind::Strength) == 10);
 }
 
@@ -193,6 +193,6 @@ TEST(enemy_dark_strike_with_weak_attacker_truncates) {
     e.performed_first_move = true;
     powers::apply(e.vitals.powers, PowerKind::Weak, 1);
     Combat c = make_combat_with(std::move(e));
-    enemies::act(c.enemies[0], c);
-    CHECK(c.player.vitals.hp == 70 - 6);
+    enemies::act(CombatTestAccess{c}.enemy(0), c);
+    CHECK(c.player().vitals.hp == 70 - 6);
 }

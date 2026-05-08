@@ -87,7 +87,7 @@ TEST(card_description_returns_expected_lines) {
 
 TEST(render_combat_includes_round_number) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -96,7 +96,7 @@ TEST(render_combat_includes_round_number) {
 
 TEST(render_combat_includes_player_hp) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -106,7 +106,7 @@ TEST(render_combat_includes_player_hp) {
 
 TEST(render_combat_shows_relic_line) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -115,7 +115,7 @@ TEST(render_combat_shows_relic_line) {
 
 TEST(render_combat_shows_deck_total) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -124,7 +124,7 @@ TEST(render_combat_shows_deck_total) {
 
 TEST(render_combat_omits_block_when_zero) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -133,9 +133,9 @@ TEST(render_combat_omits_block_when_zero) {
 
 TEST(render_combat_shows_block_when_nonzero) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
-    c.player.vitals.block = 7;
+    CombatTestAccess{c}.player().vitals.block = 7;
     std::ostringstream os;
     render::render_combat(c, os);
     CHECK(os.str().find("7") != std::string::npos);
@@ -144,7 +144,7 @@ TEST(render_combat_shows_block_when_nonzero) {
 
 TEST(render_combat_shows_target_arrow_for_attack_cards) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -154,8 +154,8 @@ TEST(render_combat_shows_target_arrow_for_attack_cards) {
 TEST(render_combat_lists_each_enemy_with_index) {
     Combat c{1};
     Rng r(7);
-    c.enemies.push_back(enemies::make_calcified_cultist(r));
-    c.enemies.push_back(enemies::make_damp_cultist(r));
+    c.add_enemy(enemies::make_calcified_cultist(r));
+    c.add_enemy(enemies::make_damp_cultist(r));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -172,7 +172,7 @@ TEST(render_combat_shows_attack_intent_for_dark_strike) {
     e.dark_strike_base = 9;
     e.current_move = MoveId::DarkStrike;
     e.performed_first_move = true;
-    c.enemies.push_back(std::move(e));
+    c.add_enemy(std::move(e));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -182,7 +182,7 @@ TEST(render_combat_shows_attack_intent_for_dark_strike) {
 TEST(render_combat_shows_buff_intent_for_incantation) {
     Combat c{1};
     Rng r(7);
-    c.enemies.push_back(enemies::make_calcified_cultist(r));
+    c.add_enemy(enemies::make_calcified_cultist(r));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -195,8 +195,8 @@ TEST(render_combat_omits_dead_enemies) {
     alive.name = "Survivor";
     Enemy dead = make_dummy_enemy(0);
     dead.name = "Goner";
-    c.enemies.push_back(std::move(alive));
-    c.enemies.push_back(std::move(dead));
+    c.add_enemy(std::move(alive));
+    c.add_enemy(std::move(dead));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -212,8 +212,8 @@ TEST(render_combat_renumbers_indices_when_first_enemy_dead) {
     dead.name = "Slain";
     Enemy alive = make_dummy_enemy(50);
     alive.name = "Standing";
-    c.enemies.push_back(std::move(dead));
-    c.enemies.push_back(std::move(alive));
+    c.add_enemy(std::move(dead));
+    c.add_enemy(std::move(alive));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -225,7 +225,7 @@ TEST(render_combat_renumbers_indices_when_first_enemy_dead) {
 
 TEST(render_combat_shows_card_inline_stats) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);
@@ -235,7 +235,7 @@ TEST(render_combat_shows_card_inline_stats) {
 
 TEST(render_combat_emits_ansi_escape_codes) {
     Combat c{1};
-    c.enemies.push_back(make_dummy_enemy(50));
+    c.add_enemy(make_dummy_enemy(50));
     c.start(cards::make_silent_starter_deck());
     std::ostringstream os;
     render::render_combat(c, os);

@@ -19,9 +19,7 @@ Card make_strike() {
     c.short_stats = "6dmg";
     c.description = {"Deal 6 damage."};
     c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
-        Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.vitals.powers, base);
-        damage::apply_to_defender(e.vitals, dmg);
+        combat.deal_damage_to_enemy(target_idx, base);
     };
     return c;
 }
@@ -37,7 +35,7 @@ Card make_defend() {
     c.short_stats = "5blk";
     c.description = {"Gain 5 Block."};
     c.on_play = [base = c.base_block](Combat& combat, int) {
-        combat.player.vitals.block += base;
+        combat.gain_player_block(base);
     };
     return c;
 }
@@ -53,10 +51,8 @@ Card make_neutralize() {
     c.short_stats = "3dmg";
     c.description = {"Deal 3 damage.", "Apply 1 Weak."};
     c.on_play = [base = c.base_damage](Combat& combat, int target_idx) {
-        Enemy& e = combat.enemies[static_cast<size_t>(target_idx)];
-        int dmg = damage::compute_outgoing(combat.player.vitals.powers, base);
-        damage::apply_to_defender(e.vitals, dmg);
-        powers::apply(e.vitals.powers, PowerKind::Weak, 1);
+        combat.deal_damage_to_enemy(target_idx, base);
+        combat.apply_power_to_enemy(target_idx, PowerKind::Weak, 1);
     };
     return c;
 }
@@ -72,12 +68,8 @@ Card make_survivor() {
     c.short_stats = "8blk";
     c.description = {"Gain 8 Block.", "Discard 1 card."};
     c.on_play = [base = c.base_block](Combat& combat, int) {
-        combat.player.vitals.block += base;
-        if (combat.player.hand.empty()) return;
-        int idx = combat.on_pick_discard(combat);
-        Card chosen = std::move(combat.player.hand[static_cast<size_t>(idx)]);
-        combat.player.hand.erase(combat.player.hand.begin() + idx);
-        combat.player.discard_pile.push_back(std::move(chosen));
+        combat.gain_player_block(base);
+        combat.discard_chosen_from_hand();
     };
     return c;
 }

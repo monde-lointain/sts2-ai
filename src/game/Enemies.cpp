@@ -42,13 +42,11 @@ void roll_next_move(Enemy& e) {
 void act(Enemy& e, Combat& combat) {
     switch (e.current_move) {
         case MoveId::Incantation:
-            powers::apply(e.vitals.powers, PowerKind::Ritual, e.ritual_amount);
+            combat.apply_power_to_enemy_self(e, PowerKind::Ritual, e.ritual_amount);
             break;
-        case MoveId::DarkStrike: {
-            int dmg = damage::compute_outgoing(e.vitals.powers, e.dark_strike_base);
-            damage::apply_to_defender(combat.player.vitals, dmg);
+        case MoveId::DarkStrike:
+            combat.enemy_attack_player(e, e.dark_strike_base);
             break;
-        }
     }
 }
 
