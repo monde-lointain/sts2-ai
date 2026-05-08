@@ -6,7 +6,6 @@
 // drawn into the starting hand". The fixed seed kCombatTestSeed is used
 // for any Combat construction to match the broader test suite convention.
 
-#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -27,6 +26,7 @@
 
 namespace {
 
+using sts2::tests::helpers::MakeCombatWithEnemy;
 using sts2::tests::seeds::kCombatTestSeed;
 
 // -------------------------------------------------------------------------
@@ -51,10 +51,7 @@ TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
 // T-CRD-010 — DF — on_play deals base_damage to the targeted enemy.
 // Capture `base = 6` is the def, deal_damage_to_enemy(0, base) is the use.
 TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
-    Combat combat{kCombatTestSeed};
-    Enemy e{};
-    e.vitals = Vitals{40, 40, 0, {}};
-    combat.add_enemy(std::move(e));
+    Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
     Card card = cards::make_strike();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
@@ -67,10 +64,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
 // T-CRD-015 — EG — Lambda value-captures `base`; post-construction mutation
 // of `base_damage` does not affect the closure (locks capture-by-copy).
 TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
-    Combat combat{kCombatTestSeed};
-    Enemy e{};
-    e.vitals = Vitals{40, 40, 0, {}};
-    combat.add_enemy(std::move(e));
+    Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
     Card c1 = cards::make_strike();
     c1.base_damage = 999;
@@ -148,10 +142,7 @@ TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
 // T-CRD-040 — DF — on_play deals 3 damage AND applies Weak 1.
 // Locks call ordering (damage before Weak per source order).
 TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
-    Combat combat{kCombatTestSeed};
-    Enemy e{};
-    e.vitals = Vitals{40, 40, 0, {}};
-    combat.add_enemy(std::move(e));
+    Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
     Card card = cards::make_neutralize();
     ASSERT_TRUE(static_cast<bool>(card.on_play));
@@ -193,9 +184,12 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
     Combat combat{kCombatTestSeed};
     combat.set_pick_discard_callback([](const Combat&) { return 0; });
 
+    // Deck size 3 < draw count 7 → hand contains all 3 cards regardless of seed;
+    // locks shuffle-order independence for this test. All-Strikes makes the
+    // discarded card's id deterministic regardless of post-shuffle order.
     std::vector<Card> deck;
     deck.push_back(cards::make_strike());
-    deck.push_back(cards::make_defend());
+    deck.push_back(cards::make_strike());
     deck.push_back(cards::make_strike());
     combat.start(std::move(deck));
 
@@ -208,7 +202,8 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
 
     EXPECT_EQ(combat.player().vitals.block, 8);
     EXPECT_EQ(combat.player().hand.size(), 2u);
-    EXPECT_EQ(combat.player().discard_pile.size(), 1u);
+    ASSERT_EQ(combat.player().discard_pile.size(), 1u);
+    EXPECT_EQ(combat.player().discard_pile[0].id, CardId::Strike);
 }
 
 // T-CRD-055 — EG — on_play with empty hand: block applied, discard no-ops.
@@ -251,6 +246,9 @@ TEST(CardsStarterDeck, T_CRD_060_SizeAndCounts) {
     EXPECT_EQ(defends, 5);
     EXPECT_EQ(neutralizes, 1);
     EXPECT_EQ(survivors, 1);
+    // Catches CardId::None (or any unhandled id) slipping into the deck.
+    EXPECT_EQ(static_cast<std::size_t>(strikes + defends + neutralizes + survivors),
+              deck.size());
 }
 
 // T-CRD-065 — DF — Order of construction: 5 Strike, 5 Defend, Neutralize, Survivor.

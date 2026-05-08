@@ -4,13 +4,18 @@
 #include <array>
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <ostream>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "game/Combat.h"
+#include "game/Enemy.h"
 #include "game/Power.h"
 #include "game/Types.h"
+#include "game/Vitals.h"
 
 // gtest customization point: print PowerKind by name in failure messages.
 // Test-only; kept out of production headers. `PrintTo` must live in the same
@@ -64,6 +69,16 @@ inline void ExpectPowersEq(const std::vector<Power>& actual,
         EXPECT_EQ(actual[i].just_applied, expected[i].just_applied)
             << "just_applied mismatch at index " << i;
     }
+}
+
+// Build a Combat with one enemy at given hp (and full block=0, no powers, no name).
+// Used by card tests and (later) Combat tests that need a single damageable target.
+inline Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
+    Combat c{seed};
+    Enemy e{};
+    e.vitals = Vitals{hp, hp, 0, {}};
+    c.add_enemy(std::move(e));
+    return c;
 }
 
 }  // namespace sts2::tests::helpers
