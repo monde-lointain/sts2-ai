@@ -26,10 +26,6 @@ std::string repeat_utf8(const char* utf8_glyph, int count) {
 // NOLINTNEXTLINE(modernize-return-braced-init-list)
 std::string spaces(std::size_t n) { return std::string(n, ' '); }
 
-const char* power_color(sts2::game::PowerKind /*unused*/) {
-  return ansi::kReset;
-}
-
 const char* power_name(sts2::game::PowerKind kind) {
   switch (kind) {
     case sts2::game::PowerKind::kWeak:
@@ -53,7 +49,7 @@ std::string format_powers(const std::vector<sts2::game::Power>& ps) {
       os << ", ";
     }
     first = false;
-    os << power_color(p.kind) << power_name(p.kind) << ' ' << p.amount
+    os << ansi::kReset << power_name(p.kind) << ' ' << p.amount
        << ansi::kReset;
   }
   return os.str();

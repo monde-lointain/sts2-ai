@@ -54,8 +54,6 @@ class Combat {
   std::function<int(const Combat&)> on_pick_discard_;
   int round_ = 1;
   bool combat_over_ = false;
-
-  friend class CombatTestAccess;
 };
 
 }  // namespace sts2::game

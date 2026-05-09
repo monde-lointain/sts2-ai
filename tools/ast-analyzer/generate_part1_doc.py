@@ -345,9 +345,6 @@ def render_testability_notes() -> list[str]:
         "closure that calls `Combat` mutators. Branch coverage of those "
         "closures is reached by playing the corresponding card in a `Combat` "
         "fixture; they have CC=1 but the data-flow goes through `Combat`.",
-        "- **Friend `CombatTestAccess`** is forward-declared in "
-        "`include/sts2/game/combat.h`. The friend hook is the intended "
-        "white-box seam.",
         "- **TU-local helpers** in anonymous namespaces (e.g. "
         "`render.cc::format_powers`, `input.cc::trim`) are not directly "
         "linkable from outside their TU. They are exposed for tests via "

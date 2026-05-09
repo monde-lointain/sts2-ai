@@ -31,7 +31,6 @@ using ::testing::HasSubstr;
 using sts2::render::detail::format_intent;
 using sts2::render::detail::format_powers;
 using sts2::render::detail::max_enemy_name_len;
-using sts2::render::detail::power_color;
 using sts2::render::detail::power_name;
 using sts2::render::detail::repeat_utf8;
 using sts2::render::detail::spaces;
@@ -81,19 +80,6 @@ TEST(RenderInternalRepeat, T_RND_075_NegativeCountEmpty) {
 TEST(RenderInternalSpaces, T_RND_080_ZeroAndFive) {
   EXPECT_EQ(spaces(0), "");
   EXPECT_EQ(spaces(5), "     ");
-}
-
-// -------------------------------------------------------------------------
-// 11.2.3  power_color  (T-RND-085)
-// -------------------------------------------------------------------------
-
-// T-RND-085 — BP — Returns ansi::kReset for any PowerKind. Locks the current
-// "no per-kind colour" behaviour so later refactors that introduce per-power
-// colouring trip this assertion intentionally.
-TEST(RenderInternalPowerColor, T_RND_085_AlwaysReset) {
-  EXPECT_STREQ(power_color(Weak), ansi::kReset);
-  EXPECT_STREQ(power_color(Strength), ansi::kReset);
-  EXPECT_STREQ(power_color(Ritual), ansi::kReset);
 }
 
 // -------------------------------------------------------------------------

@@ -9,10 +9,10 @@
 // via the public API (e.g. enemies()[0].vitals.hp) without re-pinning concrete
 // numbers.
 //
-// Public-API constraint: per the test plan §0, the friend hook
-// CombatTestAccess (combat.h:56) is intentionally unused. A handful of spec
-// items reach private state that no public method exposes — those are
-// documented inline (T-CMB-110) or use GTEST_SKIP with a §14.3 reference.
+// Public-API constraint: tests exercise Combat through its public surface
+// only. A handful of spec items reach private state that no public method
+// exposes — those are documented inline (T-CMB-110) or use GTEST_SKIP with a
+// §14.3 reference.
 
 #include <gtest/gtest.h>
 
@@ -423,8 +423,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
 }
 
 // T-CMB-110 — Documented unreachable branch (every cards::make_* sets on_play).
-// See test plan §14.3 U-1; CombatTestAccess friend hook is intentionally
-// unused per §0. Skipped for traceability.
+// See test plan §14.3 U-1. Skipped for traceability.
 TEST(CombatPlayCard, T_CMB_110_OnPlayFalsyUnreachable) {
   GTEST_SKIP() << "Unreachable via public API; see test plan §14.3 U-1";
 }

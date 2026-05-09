@@ -19,7 +19,6 @@ inline constexpr int kSeparatorLen = 60;
 
 std::string repeat_utf8(const char* utf8_glyph, int count);
 std::string spaces(std::size_t n);
-const char* power_color(sts2::game::PowerKind kind);
 const char* power_name(sts2::game::PowerKind kind);
 std::string format_powers(const std::vector<sts2::game::Power>& ps);
 std::string format_intent(const sts2::game::Enemy& e);
