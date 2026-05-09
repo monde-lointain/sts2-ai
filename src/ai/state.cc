@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "sts2/ai/card_metadata.h"
 #include "sts2/game/card.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
@@ -18,23 +19,8 @@ namespace {
 
 void tally(CardCounts& counts, const std::vector<sts2::game::Card>& pile) {
   for (const auto& c : pile) {
-    switch (c.id) {
-      case sts2::game::CardId::kStrike:
-        ++counts.strike;
-        break;
-      case sts2::game::CardId::kDefend:
-        ++counts.defend;
-        break;
-      case sts2::game::CardId::kNeutralize:
-        ++counts.neutralize;
-        break;
-      case sts2::game::CardId::kSurvivor:
-        ++counts.survivor;
-        break;
-      case sts2::game::CardId::kNone:
-        assert(false && "kNone in pile");
-        break;
-    }
+    assert(c.id != sts2::game::CardId::kNone && "kNone in pile");
+    ++(counts.*card_metadata_for(c.id).count_field);
   }
 }
 

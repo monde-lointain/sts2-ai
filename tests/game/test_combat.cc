@@ -1151,4 +1151,141 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   EXPECT_EQ(c.player().discard_pile[0].id, pre1);
 }
 
+// -------------------------------------------------------------------------
+// 10.12  Query helpers (T3 refactor): is_enemy_alive, alive_enemy_indices,
+//        card_target_kind, hand_size, find_card_in_hand
+// -------------------------------------------------------------------------
+
+using TargetType = sts2::game::TargetType;
+
+// is_enemy_alive: -1 → false (negative-index guard).
+TEST(CombatIsEnemyAlive, NegativeIndexFalse) {
+  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  EXPECT_FALSE(c.is_enemy_alive(-1));
+}
+
+// is_enemy_alive: in-range alive → true.
+TEST(CombatIsEnemyAlive, AliveTrue) {
+  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  EXPECT_TRUE(c.is_enemy_alive(0));
+}
+
+// is_enemy_alive: in-range dead → false (hp <= 0 guard).
+TEST(CombatIsEnemyAlive, DeadFalse) {
+  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  KillEnemy(c, 0);
+  ASSERT_LE(c.enemies()[0].vitals.hp, 0);
+  EXPECT_FALSE(c.is_enemy_alive(0));
+}
+
+// is_enemy_alive: out-of-range → false (size guard).
+TEST(CombatIsEnemyAlive, OutOfRangeFalse) {
+  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  EXPECT_FALSE(c.is_enemy_alive(1));
+  EXPECT_FALSE(c.is_enemy_alive(99));
+}
+
+// alive_enemy_indices: empty enemies vector → empty.
+TEST(CombatAliveEnemyIndices, EmptyVectorEmpty) {
+  Combat c{kCombatTestSeed};
+  ASSERT_TRUE(c.enemies().empty());
+  EXPECT_TRUE(c.alive_enemy_indices().empty());
+}
+
+// alive_enemy_indices: zero alive → empty.
+TEST(CombatAliveEnemyIndices, ZeroAliveEmpty) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  KillEnemy(c, 0);
+  KillEnemy(c, 1);
+  EXPECT_TRUE(c.alive_enemy_indices().empty());
+}
+
+// alive_enemy_indices: one alive in middle → returns its slot index.
+TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  KillEnemy(c, 0);
+  ASSERT_GT(c.enemies()[1].vitals.hp, 0);
+  EXPECT_EQ(c.alive_enemy_indices(), (std::vector<int>{1}));
+}
+
+// alive_enemy_indices: both alive → returns both slot indices in slot order.
+TEST(CombatAliveEnemyIndices, BothAliveReturnsBothInOrder) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  EXPECT_EQ(c.alive_enemy_indices(), (std::vector<int>{0, 1}));
+}
+
+// card_target_kind: -1 → kNoTarget (negative-index guard).
+TEST(CombatCardTargetKind, NegativeIndexNoTarget) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  EXPECT_EQ(c.card_target_kind(-1), TargetType::kNoTarget);
+}
+
+// card_target_kind: out-of-range → kNoTarget (size guard).
+TEST(CombatCardTargetKind, OutOfRangeNoTarget) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  EXPECT_EQ(c.card_target_kind(static_cast<int>(c.hand_size())),
+            TargetType::kNoTarget);
+  EXPECT_EQ(c.card_target_kind(99), TargetType::kNoTarget);
+}
+
+// card_target_kind: in-range Strike → kAnyEnemy; Defend → kSelf.
+// Strike and Defend exist somewhere in the starter hand; locate by id.
+TEST(CombatCardTargetKind, InRangeReturnsCardTarget) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  const int strike_idx = FindHandIndex(c, CardId::kStrike);
+  ASSERT_GE(strike_idx, 0);
+  EXPECT_EQ(c.card_target_kind(strike_idx), TargetType::kAnyEnemy);
+
+  const int defend_idx = FindHandIndex(c, CardId::kDefend);
+  ASSERT_GE(defend_idx, 0);
+  EXPECT_EQ(c.card_target_kind(defend_idx), TargetType::kSelf);
+}
+
+// hand_size: empty hand → 0.
+TEST(CombatHandSize, EmptyZero) {
+  Combat c{kCombatTestSeed};
+  ASSERT_TRUE(c.player().hand.empty());
+  EXPECT_EQ(c.hand_size(), 0U);
+}
+
+// hand_size: populated → matches player().hand.size().
+TEST(CombatHandSize, PopulatedMatchesHand) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  EXPECT_EQ(c.hand_size(), c.player().hand.size());
+  EXPECT_EQ(c.hand_size(), 7U);
+}
+
+// find_card_in_hand: present → returns index of first match.
+TEST(CombatFindCardInHand, PresentReturnsIndex) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  const int strike_idx = c.find_card_in_hand(CardId::kStrike);
+  ASSERT_GE(strike_idx, 0);
+  EXPECT_EQ(c.player().hand[static_cast<std::size_t>(strike_idx)].id,
+            CardId::kStrike);
+}
+
+// find_card_in_hand: absent → returns -1.
+TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
+  Combat c{kCombatTestSeed};
+  std::vector<Card> deck;
+  deck.push_back(sts2::cards::make_strike());
+  c.start(std::move(deck));
+  ASSERT_EQ(c.player().hand.size(), 1U);
+  EXPECT_EQ(c.find_card_in_hand(CardId::kNeutralize), -1);
+}
+
+// find_card_in_hand: multiple matches → returns FIRST hand index.
+TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
+  Combat c{kCombatTestSeed};
+  std::vector<Card> deck;
+  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_strike());
+  c.start(std::move(deck));
+  ASSERT_EQ(c.player().hand.size(), 3U);
+
+  const int idx = c.find_card_in_hand(CardId::kStrike);
+  EXPECT_EQ(idx, 0);
+}
+
 }  // namespace

@@ -6,6 +6,7 @@
 #include <ostream>
 #include <vector>
 
+#include "sts2/ai/card_metadata.h"
 #include "sts2/ai/recommend.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
@@ -17,40 +18,25 @@ namespace sts2::render {
 
 namespace {
 
+// Display string for a CardId. Handles kNone (which the metadata table does
+// not cover) so callers like the survivor-discard path can print "(none)".
 const char* card_id_name(sts2::game::CardId id) {
-  switch (id) {
-    case sts2::game::CardId::kStrike:
-      return "Strike";
-    case sts2::game::CardId::kDefend:
-      return "Defend";
-    case sts2::game::CardId::kNeutralize:
-      return "Neutralize";
-    case sts2::game::CardId::kSurvivor:
-      return "Survivor";
-    case sts2::game::CardId::kNone:
-      return "(none)";
-  }
-  return "?";
+  if (id == sts2::game::CardId::kNone) return "(none)";
+  return sts2::ai::card_metadata_for(id).name.data();
 }
 
 bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
-  if (idx < 0) return false;
-  const auto& es = combat.enemies();
-  if (static_cast<std::size_t>(idx) >= es.size()) return false;
-  return es[static_cast<std::size_t>(idx)].vitals.hp > 0;
+  return combat.is_enemy_alive(idx);
 }
 
 // Convert an engine slot index into the display index used by the battle UI,
 // which renumbers alive enemies starting from 0. Returns -1 if the slot is
 // dead, out of range, or negative.
 int display_index_for_slot(const sts2::game::Combat& combat, int slot_idx) {
-  if (slot_idx < 0) return -1;
-  const auto& es = combat.enemies();
-  if (static_cast<std::size_t>(slot_idx) >= es.size()) return -1;
-  if (es[static_cast<std::size_t>(slot_idx)].vitals.hp <= 0) return -1;
+  if (!combat.is_enemy_alive(slot_idx)) return -1;
   int display = 0;
   for (int i = 0; i < slot_idx; ++i) {
-    if (es[static_cast<std::size_t>(i)].vitals.hp > 0) ++display;
+    if (combat.is_enemy_alive(i)) ++display;
   }
   return display;
 }
