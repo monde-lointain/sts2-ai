@@ -40,14 +40,43 @@ bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
   return es[static_cast<std::size_t>(idx)].vitals.hp > 0;
 }
 
-void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step) {
+// Convert an engine slot index into the display index used by the battle UI,
+// which renumbers alive enemies starting from 0. Returns -1 if the slot is
+// dead, out of range, or negative.
+int display_index_for_slot(const sts2::game::Combat& combat, int slot_idx) {
+  if (slot_idx < 0) return -1;
+  const auto& es = combat.enemies();
+  if (static_cast<std::size_t>(slot_idx) >= es.size()) return -1;
+  if (es[static_cast<std::size_t>(slot_idx)].vitals.hp <= 0) return -1;
+  int display = 0;
+  for (int i = 0; i < slot_idx; ++i) {
+    if (es[static_cast<std::size_t>(i)].vitals.hp > 0) ++display;
+  }
+  return display;
+}
+
+void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
+                   const sts2::game::Combat& combat) {
   if (step.kind == sts2::ai::PvStep::kEndTurn) {
     out << "EndTurn";
     return;
   }
   out << card_id_name(step.card_id);
   if (step.target_idx >= 0) {
-    out << "->" << step.target_idx;
+    const auto& es = combat.enemies();
+    if (static_cast<std::size_t>(step.target_idx) < es.size()) {
+      const int disp = display_index_for_slot(combat, step.target_idx);
+      if (disp >= 0) {
+        out << " -> [" << disp << "] "
+            << es[static_cast<std::size_t>(step.target_idx)].name;
+      } else {
+        // Slot is dead in current state; fall back to slot index for diagnostics.
+        out << " -> [" << step.target_idx << "] "
+            << es[static_cast<std::size_t>(step.target_idx)].name;
+      }
+    } else {
+      out << " -> " << step.target_idx;
+    }
   }
   if (step.survivor_discard_id != sts2::game::CardId::kNone) {
     out << " (drop " << card_id_name(step.survivor_discard_id) << ")";
@@ -80,7 +109,8 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     if (target_is_live_enemy(combat, rec.target_idx)) {
       const auto& enemy =
           combat.enemies()[static_cast<std::size_t>(rec.target_idx)];
-      out << " -> " << enemy.name << " [" << rec.target_idx << "]";
+      const int disp = display_index_for_slot(combat, rec.target_idx);
+      out << " -> [" << disp << "] " << enemy.name;
     }
     if (rec.survivor_discard_id != sts2::game::CardId::kNone) {
       out << "  (suggest discarding " << card_id_name(rec.survivor_discard_id)
@@ -104,7 +134,7 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     for (const auto& step : rec.principal_variation) {
       if (!first) out << ", ";
       first = false;
-      write_pv_step(out, step);
+      write_pv_step(out, step, combat);
     }
     if (rec.principal_variation.back().kind == sts2::ai::PvStep::kEndTurn) {
       out << " (then chance)";

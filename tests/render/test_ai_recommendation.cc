@@ -25,6 +25,7 @@ using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Not;
 
+using sts2::tests::helpers::KillEnemy;
 using sts2::tests::helpers::MakeStarterCombat;
 using sts2::tests::seeds::kCombatTestSeed;
 
@@ -71,9 +72,30 @@ TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
   EXPECT_THAT(s, HasSubstr("E[HP]=42.7"));
   EXPECT_THAT(s, HasSubstr("E[turns]=8.2"));
   EXPECT_THAT(s, HasSubstr("PV:"));
-  EXPECT_THAT(s, HasSubstr("Strike->0"));
+  EXPECT_THAT(s, HasSubstr("Strike -> [0]"));
   EXPECT_THAT(s, HasSubstr("EndTurn"));
   EXPECT_THAT(s, HasSubstr("(then chance)"));
+}
+
+TEST(RenderAiRecommendation, PostDeath_RenumberAliveEnemies) {
+  Combat c = MakeStarterCombat(kCombatTestSeed);
+  // Kill Calcified Cultist (slot 0); Damp Cultist (slot 1) is now display [0].
+  KillEnemy(c, 0);
+  ASSERT_LE(c.enemies()[0].vitals.hp, 0);
+  ASSERT_GT(c.enemies()[1].vitals.hp, 0);
+
+  Recommendation rec;
+  rec.action = Action{Action::kPlayCard, 0};
+  rec.target_idx = 1;  // engine slot for Damp
+  rec.expected_hp = 30.0;
+  rec.expected_rounds = 4.0;
+  rec.principal_variation.push_back(
+      PvStep{PvStep::kPlayCard, CardId::kStrike, 1, CardId::kNone});
+
+  const std::string s = Render(rec, c);
+
+  EXPECT_THAT(s, HasSubstr("[0] Damp Cultist"));
+  EXPECT_THAT(s, Not(HasSubstr("[1] Damp Cultist")));
 }
 
 TEST(RenderAiRecommendation, EndTurnRendersEndTurnText) {
