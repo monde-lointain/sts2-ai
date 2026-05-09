@@ -150,20 +150,19 @@ bool apply_player_action(CompactState& state, const Action& action) {
 namespace {
 
 void enemy_act(CompactState& s, EnemyState& e) {
-  switch (e.current_move) {
-    case sts2::game::MoveId::kIncantation:
-      // Mirrors powers::apply for kRitual: amount accumulates on the Power,
-      // but in v1 Ritual is applied once -> Power.amount stays at ritual_amount.
-      // We model the dynamic Ritual state purely via just_applied_ritual.
-      e.just_applied_ritual = true;
-      break;
-    case sts2::game::MoveId::kDarkStrike: {
-      const int dmg =
-          sts2::damage::compute_outgoing(e.dark_strike_base.value(), e.strength.value(), e.weak.value());
-      apply_damage(s.player_hp, s.player_block, dmg);
-      break;
-    }
-  }
+  sts2::game::move_calc::act_on_intent(
+      e.current_move,
+      [&]() {
+        // Mirrors powers::apply for kRitual: amount accumulates on the Power,
+        // but in v1 Ritual is applied once -> Power.amount stays at ritual_amount.
+        // We model the dynamic Ritual state purely via just_applied_ritual.
+        e.just_applied_ritual = true;
+      },
+      [&]() {
+        const int dmg = sts2::damage::compute_outgoing(
+            e.dark_strike_base.value(), e.strength.value(), e.weak.value());
+        apply_damage(s.player_hp, s.player_block, dmg);
+      });
 }
 
 void enemy_tick_powers(EnemyState& e) {
@@ -177,11 +176,7 @@ void enemy_tick_powers(EnemyState& e) {
 }
 
 void roll_next_move(EnemyState& e) {
-  if (!e.performed_first_move) {
-    e.performed_first_move = true;
-    return;
-  }
-  e.current_move = sts2::game::move_calc::next_move(e.current_move);
+  sts2::game::move_calc::advance_intent(e.performed_first_move, e.current_move);
 }
 
 }  // namespace
