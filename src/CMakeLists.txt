@@ -12,6 +12,7 @@ target_sources(sts2_simulator PRIVATE
     game/cards.cc
     game/enemies.cc
     game/deck.cc
+    game/hand.cc
     game/combat.cc
     # render module
     render/bar.cc

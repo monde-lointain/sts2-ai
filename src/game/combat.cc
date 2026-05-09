@@ -2,19 +2,19 @@
 
 #include <algorithm>
 #include <cassert>
-#include <utility>
 
 #include "sts2/game/damage.h"
 #include "sts2/game/enemies.h"
+#include "sts2/game/hand.h"
 #include "sts2/game/powers.h"
 #include "sts2/game/turn_calc.h"
 
 namespace sts2::game {
 
 namespace {
-constexpr int kMaxHandSize = 10;
 static_assert(Combat::kPlayerMaxEnergy == turn_calc::kPlayerStartingEnergy,
               "energy constant drift");
+static_assert(Hand::kMaxSize == 10, "Hand::kMaxSize must match game rules");
 }  // namespace
 
 Combat::Combat(uint64_t seed)
@@ -44,10 +44,7 @@ void Combat::start_player_turn() {
 }
 
 void Combat::end_player_turn() {
-  while (!player_.hand.empty()) {
-    player_.deck.discard(std::move(player_.hand.back()));
-    player_.hand.pop_back();
-  }
+  player_.hand.dump_into(player_.deck);
   sts2::powers::tick_at_turn_end(player_.vitals.powers);
 }
 
@@ -88,20 +85,17 @@ void Combat::end_turn() {
 }
 
 bool Combat::can_play(HandIndex idx) const {
-  if (!idx.in_range(player_.hand)) {
+  if (!player_.hand.valid(idx)) {
     return false;
   }
-  const Card& card = idx.at(player_.hand);
-  return card.cost <= player_.energy;
+  return player_.hand.at(idx).cost <= player_.energy;
 }
 
 bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
   if (!can_play(hand_idx)) {
     return false;
   }
-  const auto i = static_cast<std::size_t>(hand_idx.raw());
-  Card card = std::move(player_.hand[i]);
-  player_.hand.erase(player_.hand.begin() + static_cast<std::ptrdiff_t>(i));
+  Card card = player_.hand.play(hand_idx);
   player_.energy -= card.cost;
   if (card.on_play) {
     card.on_play(*this, target);
@@ -113,18 +107,7 @@ bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
   return true;
 }
 
-void Combat::draw(int n) {
-  for (int i = 0; i < n; ++i) {
-    if (static_cast<int>(player_.hand.size()) >= kMaxHandSize) {
-      return;
-    }
-    auto card = player_.deck.draw_one(rng_);
-    if (!card) {
-      return;
-    }
-    player_.hand.push_back(std::move(*card));
-  }
-}
+void Combat::draw(int n) { player_.hand.draw_from(player_.deck, rng_, n); }
 
 void Combat::reshuffle() { player_.deck.reshuffle(rng_); }
 
@@ -146,21 +129,16 @@ std::vector<EnemySlot> Combat::alive_enemy_indices() const {
 }
 
 TargetType Combat::card_target_kind(HandIndex idx) const {
-  if (!idx.in_range(player_.hand)) {
+  if (!player_.hand.valid(idx)) {
     return TargetType::kNoTarget;
   }
-  return idx.at(player_.hand).target;
+  return player_.hand.at(idx).target;
 }
 
 std::size_t Combat::hand_size() const { return player_.hand.size(); }
 
 HandIndex Combat::find_card_in_hand(CardId id) const {
-  for (std::size_t i = 0; i < player_.hand.size(); ++i) {
-    if (player_.hand[i].id == id) {
-      return HandIndex{static_cast<int>(i)};
-    }
-  }
-  return HandIndex::none();
+  return player_.hand.find(id);
 }
 
 int Combat::player_hp() const { return player_.vitals.hp; }
@@ -173,8 +151,7 @@ std::span<const Power> Combat::player_powers() const {
 }
 
 const Card& Combat::player_hand_at(HandIndex idx) const {
-  assert(idx.in_range(player_.hand));
-  return idx.at(player_.hand);
+  return player_.hand.at(idx);
 }
 
 std::size_t Combat::draw_pile_size() const {
@@ -258,13 +235,9 @@ void Combat::discard_chosen_from_hand() {
     return;
   }
   HandIndex idx = on_pick_discard_(*this);
-  if (!idx.in_range(player_.hand)) {
-    return;
+  if (player_.hand.valid(idx)) {
+    player_.deck.discard(player_.hand.discard_at(idx));
   }
-  const auto i = static_cast<std::size_t>(idx.raw());
-  Card chosen = std::move(player_.hand[i]);
-  player_.hand.erase(player_.hand.begin() + static_cast<std::ptrdiff_t>(i));
-  player_.deck.discard(std::move(chosen));
 }
 
 }  // namespace sts2::game

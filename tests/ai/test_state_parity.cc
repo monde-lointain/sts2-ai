@@ -44,16 +44,12 @@ Action pick_random_action(const CompactState& s, std::mt19937& rng) {
 }
 
 int find_hand_index(const sts2::game::Combat& combat, CardId id) {
-  const auto& hand = combat.player().hand;
-  for (std::size_t i = 0; i < hand.size(); ++i) {
-    if (hand[i].id == id) return static_cast<int>(i);
-  }
-  return -1;
+  return combat.find_card_in_hand(id).raw();
 }
 
 CardCounts hand_to_counts(const sts2::game::Combat& combat) {
   CardCounts c;
-  for (const auto& card : combat.player().hand) {
+  for (const auto& card : combat.player().hand.cards()) {
     if (card.id == CardId::kNone) continue;
     ++c[card.id];
   }
@@ -73,12 +69,8 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
         [&last_action](const sts2::game::Combat& c) -> sts2::game::HandIndex {
           if (last_action.survivor_discard_id == CardId::kNone)
             return sts2::game::HandIndex{0};
-          for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-            if (c.player().hand[i].id == last_action.survivor_discard_id) {
-              return sts2::game::HandIndex{static_cast<int>(i)};
-            }
-          }
-          return sts2::game::HandIndex{0};
+          const auto idx = c.find_card_in_hand(last_action.survivor_discard_id);
+          return idx.valid() ? idx : sts2::game::HandIndex{0};
         });
 
     std::mt19937 sampler_rng(static_cast<std::uint_fast32_t>(

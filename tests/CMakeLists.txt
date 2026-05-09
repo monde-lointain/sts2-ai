@@ -12,6 +12,7 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_cards.cc
     game/test_enemies.cc
     game/test_deck.cc
+    game/test_hand.cc
     game/test_combat.cc
     game/test_index_types.cc
     game/test_stat.cc

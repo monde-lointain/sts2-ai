@@ -75,8 +75,9 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
   } else if (rec.action.kind == sts2::input::Action::kPlayCard) {
     out << "Play ";
     const sts2::game::HandIndex card_idx = rec.action.card_idx;
-    if (card_idx.in_range(combat.player().hand)) {
-      out << card_idx.at(combat.player().hand).name;
+    if (card_idx.valid() &&
+        static_cast<std::size_t>(card_idx.raw()) < combat.hand_size()) {
+      out << combat.player_hand_at(card_idx).name;
     } else {
       out << "(none)";
     }

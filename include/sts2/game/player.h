@@ -1,9 +1,7 @@
 #pragma once
 
-#include <vector>
-
-#include "sts2/game/card.h"
 #include "sts2/game/deck.h"
+#include "sts2/game/hand.h"
 #include "sts2/game/vitals.h"
 
 namespace sts2::game {
@@ -13,7 +11,7 @@ struct Player {
   int energy = 0;
 
   Deck deck;
-  std::vector<Card> hand;
+  Hand hand;
 };
 
 }  // namespace sts2::game

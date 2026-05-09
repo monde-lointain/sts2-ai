@@ -45,13 +45,7 @@ std::string Render(const Recommendation& rec, const Combat& c) {
 TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   // Find a Strike in hand for a realistic kPlayCard hand_idx.
-  int strike_idx = -1;
-  for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-    if (c.player().hand[i].id == CardId::kStrike) {
-      strike_idx = static_cast<int>(i);
-      break;
-    }
-  }
+  const int strike_idx = c.find_card_in_hand(CardId::kStrike).raw();
   ASSERT_GE(strike_idx, 0);
 
   Recommendation rec;

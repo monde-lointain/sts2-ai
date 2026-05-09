@@ -68,13 +68,7 @@ std::vector<Card> MakeStrikeDefendDeck7() {
 
 // Find the first hand index of a card with the given id; returns -1 if absent.
 int FindHandIndex(const Combat& c, CardId id) {
-  const auto& h = c.player().hand;
-  for (std::size_t i = 0; i < h.size(); ++i) {
-    if (h[i].id == id) {
-      return static_cast<int>(i);
-    }
-  }
-  return -1;
+  return c.find_card_in_hand(id).raw();
 }
 
 // -------------------------------------------------------------------------
@@ -152,9 +146,9 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
   c.start(std::move(deck));
 
   ASSERT_EQ(c.player().hand.size(), 3U);
-  const Card pre_idx0 = c.player().hand[0];  // copy for later id comparison
-  const Card pre_idx1 = c.player().hand[1];
-  const Card pre_idx2 = c.player().hand[2];
+  const Card pre_idx0 = c.player().hand.cards()[0];  // copy for later id comparison
+  const Card pre_idx1 = c.player().hand.cards()[1];
+  const Card pre_idx2 = c.player().hand.cards()[2];
 
   c.discard_chosen_from_hand();
 
@@ -162,8 +156,8 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
   ASSERT_EQ(c.player().deck.discard_size(), 1U);
   EXPECT_EQ(c.player().deck.discard_pile()[0].id, pre_idx1.id);
   // Pre-call indices 0 and 2 remain in the hand, in order.
-  EXPECT_EQ(c.player().hand[0].id, pre_idx0.id);
-  EXPECT_EQ(c.player().hand[1].id, pre_idx2.id);
+  EXPECT_EQ(c.player().hand.cards()[0].id, pre_idx0.id);
+  EXPECT_EQ(c.player().hand.cards()[1].id, pre_idx2.id);
 }
 
 // T-CMB-030 — BP — gain_player_block(5) adds 5; successive calls accumulate.
@@ -418,7 +412,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
 
   EXPECT_FALSE(ok);
   EXPECT_EQ(c.player().hand.size(), 1U);
-  EXPECT_EQ(c.player().hand[0].id, CardId::kStrike);
+  EXPECT_EQ(c.player().hand.cards()[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 0);
   EXPECT_EQ(c.enemies()[0].vitals.hp, hp_before);
   EXPECT_EQ(c.player().deck.discard_size(), discard_size_before);
@@ -459,12 +453,9 @@ TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
 TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   Combat c{kCombatTestSeed};
   c.set_pick_discard_callback([](const Combat& cc) {
-    for (std::size_t i = 0; i < cc.player().hand.size(); ++i) {
-      if (cc.player().hand[i].id == CardId::kStrike) {
-        return sts2::game::HandIndex{static_cast<int>(i)};
-      }
-    }
-    return sts2::game::HandIndex{0};
+    return cc.find_card_in_hand(CardId::kStrike).valid()
+               ? cc.find_card_in_hand(CardId::kStrike)
+               : sts2::game::HandIndex{0};
   });
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_survivor());
@@ -480,7 +471,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
 
   EXPECT_TRUE(ok);
   ASSERT_EQ(c.player().hand.size(), 1U);
-  EXPECT_EQ(c.player().hand[0].id, CardId::kDefend);
+  EXPECT_EQ(c.player().hand.cards()[0].id, CardId::kDefend);
   ASSERT_EQ(c.player().deck.discard_size(), 2U);
   EXPECT_EQ(c.player().deck.discard_pile()[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().deck.discard_pile()[1].id, CardId::kSurvivor);
@@ -696,9 +687,9 @@ TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   ASSERT_EQ(c.player().hand.size(), 3U);
 
   // Snapshot pre-end hand ids in their current order.
-  const CardId h0 = c.player().hand[0].id;
-  const CardId h1 = c.player().hand[1].id;
-  const CardId h2 = c.player().hand[2].id;
+  const CardId h0 = c.player().hand.cards()[0].id;
+  const CardId h1 = c.player().hand.cards()[1].id;
+  const CardId h2 = c.player().hand.cards()[2].id;
 
   c.end_player_turn();
 
@@ -1144,15 +1135,15 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
-  const CardId pre0 = c.player().hand[0].id;
-  const CardId pre1 = c.player().hand[1].id;
-  const CardId pre2 = c.player().hand[2].id;
+  const CardId pre0 = c.player().hand.cards()[0].id;
+  const CardId pre1 = c.player().hand.cards()[1].id;
+  const CardId pre2 = c.player().hand.cards()[2].id;
 
   c.discard_chosen_from_hand();
 
   ASSERT_EQ(c.player().hand.size(), 2U);
-  EXPECT_EQ(c.player().hand[0].id, pre0);
-  EXPECT_EQ(c.player().hand[1].id, pre2);
+  EXPECT_EQ(c.player().hand.cards()[0].id, pre0);
+  EXPECT_EQ(c.player().hand.cards()[1].id, pre2);
   ASSERT_EQ(c.player().deck.discard_size(), 1U);
   EXPECT_EQ(c.player().deck.discard_pile()[0].id, pre1);
 }
@@ -1266,7 +1257,7 @@ TEST(CombatFindCardInHand, PresentReturnsIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   const sts2::game::HandIndex strike_idx = c.find_card_in_hand(CardId::kStrike);
   ASSERT_TRUE(strike_idx.valid());
-  EXPECT_EQ(strike_idx.at(c.player().hand).id, CardId::kStrike);
+  EXPECT_EQ(c.player_hand_at(strike_idx).id, CardId::kStrike);
 }
 
 // find_card_in_hand: absent → returns -1.
@@ -1346,8 +1337,8 @@ TEST(CombatPlayerHandAccessors, PlayerHandAtMatchesDirectAccess) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   ASSERT_EQ(c.hand_size(), 7U);
   for (std::size_t i = 0; i < c.hand_size(); ++i) {
-    EXPECT_EQ(c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}).id, c.player().hand[i].id);
-    EXPECT_EQ(&c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}), &c.player().hand[i]);
+    EXPECT_EQ(c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}).id, c.player().hand.cards()[i].id);
+    EXPECT_EQ(&c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}), &c.player().hand.cards()[i]);
   }
 }
 

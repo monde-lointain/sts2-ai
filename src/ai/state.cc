@@ -98,7 +98,7 @@ CompactState from_combat(const sts2::game::Combat& combat) {
     s.enemies[i] = build_enemy_state(es[i]);
   }
 
-  tally(s.hand, p.hand);
+  tally(s.hand, p.hand.cards());
   tally(s.draw, p.deck.draw_pile());
   tally(s.discard, p.deck.discard_pile());
 

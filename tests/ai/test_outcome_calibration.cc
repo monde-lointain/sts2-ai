@@ -142,12 +142,8 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
         [&last_rec](const Combat& c) -> sts2::game::HandIndex {
           if (last_rec.survivor_discard_id == CardId::kNone)
             return sts2::game::HandIndex{0};
-          for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-            if (c.player().hand[i].id == last_rec.survivor_discard_id) {
-              return sts2::game::HandIndex{static_cast<int>(i)};
-            }
-          }
-          return sts2::game::HandIndex{0};
+          const auto idx = c.find_card_in_hand(last_rec.survivor_discard_id);
+          return idx.valid() ? idx : sts2::game::HandIndex{0};
         });
 
     // Capture this trial's root expected_hp before stepping.
