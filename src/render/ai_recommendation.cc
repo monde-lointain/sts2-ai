@@ -1,6 +1,7 @@
 #include "sts2/render/ai_recommendation.h"
 
 #include <cstddef>
+#include <ios>
 #include <iomanip>
 #include <ostream>
 #include <vector>
@@ -29,7 +30,7 @@ const char* card_id_name(sts2::game::CardId id) {
     case sts2::game::CardId::kNone:
       return "(none)";
   }
-  return "(none)";
+  return "?";
 }
 
 bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
@@ -69,12 +70,13 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     out << "End turn";
   } else if (rec.action.kind == sts2::input::Action::kPlayCard) {
     const auto& hand = combat.player().hand;
-    sts2::game::CardId played_id = sts2::game::CardId::kNone;
+    out << "Play ";
     if (rec.action.card_idx >= 0 &&
         static_cast<std::size_t>(rec.action.card_idx) < hand.size()) {
-      played_id = hand[static_cast<std::size_t>(rec.action.card_idx)].id;
+      out << hand[static_cast<std::size_t>(rec.action.card_idx)].name;
+    } else {
+      out << "(none)";
     }
-    out << "Play " << card_id_name(played_id);
     if (target_is_live_enemy(combat, rec.target_idx)) {
       const auto& enemy =
           combat.enemies()[static_cast<std::size_t>(rec.target_idx)];
@@ -86,9 +88,13 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     }
   }
 
+  const std::ios::fmtflags saved_flags = out.flags();
+  const std::streamsize saved_precision = out.precision();
   out << "   " << ansi::kYellow << std::fixed << std::setprecision(1)
       << "E[HP]=" << rec.expected_hp << "  E[turns]=" << rec.expected_rounds
       << ansi::kReset << "\n";
+  out.flags(saved_flags);
+  out.precision(saved_precision);
 
   out << "  PV: ";
   if (rec.principal_variation.empty()) {

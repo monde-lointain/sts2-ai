@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     std::cout << sts2::ansi::kCyan << "Analyzing combat..." << sts2::ansi::kReset
               << std::flush;
     sts2::ai::Recommendation rec = ai.recommend(combat);
-    std::cout << "\r                   \r";
+    std::cout << "\x1b[2K\r" << std::flush;
     sts2::render::render_ai_recommendation(rec, combat, std::cout);
 
     std::cout << sts2::ansi::kGreen << ">" << sts2::ansi::kReset
