@@ -8,6 +8,7 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_rng.cc
     game/test_powers.cc
     game/test_damage.cc
+    game/test_card_effects.cc
     game/test_cards.cc
     game/test_enemies.cc
     game/test_combat.cc

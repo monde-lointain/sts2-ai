@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cstdint>
 
-#include "sts2/ai/card_metadata.h"
+#include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/move_calc.h"
@@ -15,6 +15,8 @@ namespace {
 
 using sts2::game::CardId;
 using sts2::game::TargetType;
+using sts2::game::card_effects::card_effect_for;
+using sts2::game::card_effects::kCountedCardIds;
 
 // Adapter: bridge uint8_t hp/block fields to the canonical int& overload in
 // sts2::damage.
@@ -44,10 +46,10 @@ std::vector<Action> legal_actions(const CompactState& state) {
 
   for (CardId id : kCountedCardIds) {
     if (state.hand[id] == 0) continue;
-    const auto& meta = card_metadata_for(id);
-    if (meta.cost > state.energy) continue;
+    const auto& fx = card_effect_for(id);
+    if (fx.cost > state.energy) continue;
 
-    const TargetType tgt = meta.target;
+    const TargetType tgt = fx.target;
     if (tgt == TargetType::kAnyEnemy) {
       for (uint8_t i = 0; i < 2; ++i) {
         if (!state.enemies[i].alive) continue;
@@ -57,7 +59,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
         a.target_idx = i;
         actions.push_back(a);
       }
-    } else if (id == CardId::kSurvivor) {
+    } else if (fx.requires_discard) {
       CardCounts post = state.hand;
       assert(post[CardId::kSurvivor] > 0);
       --post[CardId::kSurvivor];
@@ -105,49 +107,38 @@ bool apply_player_action(CompactState& state, const Action& action) {
 
   assert(action.card_id != CardId::kNone);
   const CardId id = action.card_id;
-  const auto& meta = card_metadata_for(id);
-  if (meta.cost > state.energy) return false;
+  const auto& fx = card_effect_for(id);
+  if (fx.cost > state.energy) return false;
   if (state.hand[id] == 0) return false;
 
-  if (meta.target == TargetType::kAnyEnemy) {
+  if (fx.target == TargetType::kAnyEnemy) {
     if (action.target_idx >= 2) return false;
     if (!state.enemies[action.target_idx].alive) return false;
   }
 
   --state.hand[id];
-  state.energy = static_cast<uint8_t>(state.energy - meta.cost);
+  state.energy = static_cast<uint8_t>(state.energy - fx.cost);
 
-  // Card costs/effects mirror src/game/cards.cc make_*() factories; keep in sync.
-  switch (id) {
-    case CardId::kStrike: {
-      EnemyState& e = state.enemies[action.target_idx];
-      damage_enemy(e, state.player_strength, state.player_weak, 6);
-      break;
+  if (fx.base_damage) {
+    EnemyState& e = state.enemies[action.target_idx];
+    damage_enemy(e, state.player_strength, state.player_weak, fx.base_damage);
+  }
+  if (fx.base_block) {
+    state.player_block =
+        static_cast<uint8_t>(state.player_block + fx.base_block);
+  }
+  if (fx.weak_to_target) {
+    EnemyState& e = state.enemies[action.target_idx];
+    e.weak = static_cast<uint8_t>(e.weak + fx.weak_to_target);
+  }
+  if (fx.requires_discard) {
+    if (state.hand.total() == 0) {
+      assert(action.survivor_discard_id == CardId::kNone);
+    } else if (action.survivor_discard_id != CardId::kNone) {
+      assert(state.hand[action.survivor_discard_id] > 0);
+      --state.hand[action.survivor_discard_id];
+      ++state.discard[action.survivor_discard_id];
     }
-    case CardId::kDefend: {
-      state.player_block = static_cast<uint8_t>(state.player_block + 5);
-      break;
-    }
-    case CardId::kNeutralize: {
-      EnemyState& e = state.enemies[action.target_idx];
-      damage_enemy(e, state.player_strength, state.player_weak, 3);
-      e.weak = static_cast<uint8_t>(e.weak + 1);
-      break;
-    }
-    case CardId::kSurvivor: {
-      state.player_block = static_cast<uint8_t>(state.player_block + 8);
-      if (state.hand.total() == 0) {
-        assert(action.survivor_discard_id == sts2::game::CardId::kNone);
-      } else if (action.survivor_discard_id != CardId::kNone) {
-        assert(state.hand[action.survivor_discard_id] > 0);
-        --state.hand[action.survivor_discard_id];
-        ++state.discard[action.survivor_discard_id];
-      }
-      break;
-    }
-    case CardId::kNone:
-      assert(false && "unreachable");
-      break;
   }
 
   ++state.discard[id];

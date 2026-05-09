@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <vector>
 
-#include "sts2/ai/card_metadata.h"
 #include "sts2/game/card.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
