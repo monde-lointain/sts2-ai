@@ -20,7 +20,7 @@ namespace {
 void tally(CardCounts& counts, const std::vector<sts2::game::Card>& pile) {
   for (const auto& c : pile) {
     assert(c.id != sts2::game::CardId::kNone && "kNone in pile");
-    ++(counts.*card_metadata_for(c.id).count_field);
+    ++counts[c.id];
   }
 }
 
@@ -45,8 +45,32 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
 
 }  // namespace
 
+CardCounts& CardCounts::operator+=(const CardCounts& o) noexcept {
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    counts[i] = static_cast<uint8_t>(counts[i] + o.counts[i]);
+  }
+  return *this;
+}
+
+CardCounts& CardCounts::operator-=(const CardCounts& o) noexcept {
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    assert(counts[i] >= o.counts[i] && "CardCounts::operator-= underflow");
+    counts[i] = static_cast<uint8_t>(counts[i] - o.counts[i]);
+  }
+  return *this;
+}
+
+bool CardCounts::covers(const CardCounts& subset) const noexcept {
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    if (counts[i] < subset.counts[i]) return false;
+  }
+  return true;
+}
+
 int CardCounts::total() const noexcept {
-  return strike + defend + neutralize + survivor;
+  int sum = 0;
+  for (uint8_t c : counts) sum += c;
+  return sum;
 }
 
 CompactState from_combat(const sts2::game::Combat& combat) {

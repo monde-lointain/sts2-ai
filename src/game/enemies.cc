@@ -1,6 +1,7 @@
 #include "sts2/game/enemies.h"
 
 #include "sts2/game/combat.h"
+#include "sts2/game/move_calc.h"
 #include "sts2/game/rng.h"
 
 namespace sts2::enemies {
@@ -32,9 +33,7 @@ void roll_next_move(sts2::game::Enemy& e) {
     e.performed_first_move = true;
     return;
   }
-  if (e.current_move == sts2::game::MoveId::kIncantation) {
-    e.current_move = sts2::game::MoveId::kDarkStrike;
-  }
+  e.current_move = sts2::game::move_calc::next_move(e.current_move);
 }
 
 void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {

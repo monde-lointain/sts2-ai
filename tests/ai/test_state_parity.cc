@@ -54,13 +54,8 @@ int find_hand_index(const sts2::game::Combat& combat, CardId id) {
 CardCounts hand_to_counts(const sts2::game::Combat& combat) {
   CardCounts c;
   for (const auto& card : combat.player().hand) {
-    switch (card.id) {
-      case CardId::kStrike:     ++c.strike;     break;
-      case CardId::kDefend:     ++c.defend;     break;
-      case CardId::kNeutralize: ++c.neutralize; break;
-      case CardId::kSurvivor:   ++c.survivor;   break;
-      case CardId::kNone:                       break;
-    }
+    if (card.id == CardId::kNone) continue;
+    ++c[card.id];
   }
   return c;
 }

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <cassert>
+#include <cstddef>
 #include <cstdint>
 
 #include "sts2/game/types.h"
@@ -12,10 +14,29 @@ class Combat;
 namespace sts2::ai {
 
 struct CardCounts {
-  uint8_t strike = 0;
-  uint8_t defend = 0;
-  uint8_t neutralize = 0;
-  uint8_t survivor = 0;
+  std::array<uint8_t, 4> counts{};
+
+  // CardId is 1-indexed; kNone=0 is an assert-only sentinel, so we offset by 1
+  // to map kStrike..kSurvivor onto array indices 0..3.
+  static constexpr std::size_t to_index(sts2::game::CardId id) noexcept {
+    assert(id != sts2::game::CardId::kNone);
+    return static_cast<std::size_t>(id) - 1;
+  }
+
+  uint8_t& operator[](sts2::game::CardId id) noexcept {
+    return counts[to_index(id)];
+  }
+  uint8_t operator[](sts2::game::CardId id) const noexcept {
+    return counts[to_index(id)];
+  }
+
+  CardCounts& operator+=(const CardCounts& o) noexcept;
+  CardCounts& operator-=(const CardCounts& o) noexcept;
+  friend CardCounts operator+(CardCounts a, const CardCounts& b) noexcept {
+    return a += b;
+  }
+
+  [[nodiscard]] bool covers(const CardCounts& subset) const noexcept;
   [[nodiscard]] int total() const noexcept;
   bool operator==(const CardCounts&) const = default;
 };

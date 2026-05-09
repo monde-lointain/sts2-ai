@@ -17,7 +17,7 @@
 #include "render/render_internal.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/enemy.h"
-#include "sts2/game/player.h"
+#include "sts2/game/power.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
 #include "sts2/render/ansi.h"
@@ -34,7 +34,6 @@ using sts2::render::detail::max_enemy_name_len;
 using sts2::render::detail::power_name;
 using sts2::render::detail::repeat_utf8;
 using sts2::render::detail::spaces;
-using sts2::render::detail::total_deck_size;
 
 using sts2::tests::helpers::MakePower;
 
@@ -43,7 +42,7 @@ namespace glyphs = sts2::glyphs;
 
 using Enemy = sts2::game::Enemy;
 using MoveId = sts2::game::MoveId;
-using Player = sts2::game::Player;
+using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
 using Vitals = sts2::game::Vitals;
 
@@ -106,15 +105,17 @@ TEST(RenderInternalPowerName, T_RND_095_OutOfEnumReturnsEmpty) {
 // 11.2.5  format_powers  (T-RND-100..115)
 // -------------------------------------------------------------------------
 
-// T-RND-100 — BP, BV — Empty vector → empty string (D1 TRUE early return).
-TEST(RenderInternalFormatPowers, T_RND_100_EmptyVectorEmpty) {
-  EXPECT_EQ(format_powers({}), "");
+// T-RND-100 — BP, BV — Empty span → empty string (D1 TRUE early return).
+TEST(RenderInternalFormatPowers, T_RND_100_EmptySpanEmpty) {
+  const std::vector<Power> ps;
+  EXPECT_EQ(format_powers(ps), "");
 }
 
 // T-RND-105 — BP — Single power: no leading separator (D3 short-circuits on
 // first iter via the `first` flag).
 TEST(RenderInternalFormatPowers, T_RND_105_SingleNoSeparator) {
-  const std::string s = format_powers({MakePower(Weak, 2)});
+  const std::vector<Power> ps = {MakePower(Weak, 2)};
+  const std::string s = format_powers(ps);
   const std::string expected =
       std::string(ansi::kReset) + "Weak 2" + ansi::kReset;
   EXPECT_EQ(s, expected);
@@ -122,8 +123,8 @@ TEST(RenderInternalFormatPowers, T_RND_105_SingleNoSeparator) {
 
 // T-RND-110 — BP — Two powers: exactly one ", " separator between them.
 TEST(RenderInternalFormatPowers, T_RND_110_TwoWithSeparator) {
-  const std::string s =
-      format_powers({MakePower(Weak, 2), MakePower(Strength, 3)});
+  const std::vector<Power> ps = {MakePower(Weak, 2), MakePower(Strength, 3)};
+  const std::string s = format_powers(ps);
   const std::string expected = std::string(ansi::kReset) + "Weak 2" +
                                ansi::kReset + ", " + std::string(ansi::kReset) +
                                "Str 3" + ansi::kReset;
@@ -134,8 +135,9 @@ TEST(RenderInternalFormatPowers, T_RND_110_TwoWithSeparator) {
 // Counts ", " occurrences explicitly so a regression that drops or doubles
 // separators is caught even if individual tokens still match.
 TEST(RenderInternalFormatPowers, T_RND_115_ThreeSeparatorsAreNMinusOne) {
-  const std::string s = format_powers(
-      {MakePower(Weak, 1), MakePower(Strength, 2), MakePower(Ritual, 3)});
+  const std::vector<Power> ps = {MakePower(Weak, 1), MakePower(Strength, 2),
+                                 MakePower(Ritual, 3)};
+  const std::string s = format_powers(ps);
 
   std::size_t count = 0;
   for (std::size_t pos = 0; (pos = s.find(", ", pos)) != std::string::npos;
@@ -229,24 +231,6 @@ TEST(RenderInternalMaxEnemyName, T_RND_145_DeadExcluded) {
   const std::vector<Enemy> es = {a, b};
 
   EXPECT_EQ(max_enemy_name_len(es), 1U);
-}
-
-// -------------------------------------------------------------------------
-// 11.2.8  total_deck_size  (T-RND-150)
-// -------------------------------------------------------------------------
-
-// T-RND-150 — BP — Sum across draw + hand + discard + exhaust piles.
-TEST(RenderInternalTotalDeckSize, T_RND_150_SumsAllFourPiles) {
-  Player p;
-  p.draw_pile.push_back(sts2::cards::make_strike());
-  p.draw_pile.push_back(sts2::cards::make_strike());
-  p.hand.push_back(sts2::cards::make_defend());
-  p.discard_pile.push_back(sts2::cards::make_neutralize());
-  p.discard_pile.push_back(sts2::cards::make_neutralize());
-  p.discard_pile.push_back(sts2::cards::make_neutralize());
-  p.exhaust_pile.push_back(sts2::cards::make_survivor());
-
-  EXPECT_EQ(total_deck_size(p), 7);
 }
 
 }  // namespace

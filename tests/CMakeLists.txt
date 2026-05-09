@@ -11,6 +11,7 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_cards.cc
     game/test_enemies.cc
     game/test_combat.cc
+    game/test_move_calc.cc
     render/test_bar.cc
     render/test_render_internal.cc
     render/test_render.cc
@@ -29,6 +30,7 @@ target_sources(sts2_simulator_tests PRIVATE
     ai/test_outcome_calibration.cc
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
+    ai/test_helpers.h
 )
 
 target_compile_features(sts2_simulator_tests PRIVATE cxx_std_20)

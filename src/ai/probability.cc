@@ -3,9 +3,13 @@
 #include <array>
 #include <cassert>
 
+#include "sts2/game/types.h"
+
 namespace sts2::ai::probability {
 
 namespace {
+
+using sts2::game::CardId;
 
 constexpr int kMaxN = 12;
 
@@ -32,8 +36,9 @@ uint64_t binom(int n, int r) noexcept {
 std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
   assert(pool.total() <= kMaxN);
   assert(k >= 0 && k <= pool.total());
-  assert(pool.strike <= kMaxN && pool.defend <= kMaxN &&
-         pool.neutralize <= kMaxN && pool.survivor <= kMaxN);
+  assert(pool[CardId::kStrike] <= kMaxN && pool[CardId::kDefend] <= kMaxN &&
+         pool[CardId::kNeutralize] <= kMaxN &&
+         pool[CardId::kSurvivor] <= kMaxN);
 
   std::vector<Outcome> out;
   if (k == 0) {
@@ -45,25 +50,25 @@ std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
   const uint64_t denom = binom(total, k);
   const double inv_denom = 1.0 / static_cast<double>(denom);
 
-  for (int s = 0; s <= pool.strike; ++s) {
+  for (int s = 0; s <= pool[CardId::kStrike]; ++s) {
     if (s > k) break;
-    const uint64_t cs = binom(pool.strike, s);
-    for (int d = 0; d <= pool.defend; ++d) {
+    const uint64_t cs = binom(pool[CardId::kStrike], s);
+    for (int d = 0; d <= pool[CardId::kDefend]; ++d) {
       const int sd = s + d;
       if (sd > k) break;
-      const uint64_t csd = cs * binom(pool.defend, d);
-      for (int n = 0; n <= pool.neutralize; ++n) {
+      const uint64_t csd = cs * binom(pool[CardId::kDefend], d);
+      for (int n = 0; n <= pool[CardId::kNeutralize]; ++n) {
         const int sdn = sd + n;
         if (sdn > k) break;
-        const uint64_t csdn = csd * binom(pool.neutralize, n);
+        const uint64_t csdn = csd * binom(pool[CardId::kNeutralize], n);
         const int v = k - sdn;
-        if (v < 0 || v > pool.survivor) continue;
-        const uint64_t num = csdn * binom(pool.survivor, v);
+        if (v < 0 || v > pool[CardId::kSurvivor]) continue;
+        const uint64_t num = csdn * binom(pool[CardId::kSurvivor], v);
         Outcome o;
-        o.hand.strike = static_cast<uint8_t>(s);
-        o.hand.defend = static_cast<uint8_t>(d);
-        o.hand.neutralize = static_cast<uint8_t>(n);
-        o.hand.survivor = static_cast<uint8_t>(v);
+        o.hand[CardId::kStrike] = static_cast<uint8_t>(s);
+        o.hand[CardId::kDefend] = static_cast<uint8_t>(d);
+        o.hand[CardId::kNeutralize] = static_cast<uint8_t>(n);
+        o.hand[CardId::kSurvivor] = static_cast<uint8_t>(v);
         o.weight = static_cast<double>(num) * inv_denom;
         out.push_back(o);
       }
