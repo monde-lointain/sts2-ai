@@ -52,7 +52,8 @@ Combat MakeTinyCombat(uint64_t seed, int enemy_hp) {
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
   c.add_enemy(std::move(e));
-  c.set_pick_discard_callback([](const Combat&) { return 0; });
+  c.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
   c.start(MakeTinyStrikeDeck());
   return c;
 }
@@ -67,7 +68,7 @@ TEST(Recommend, FreshStarter_ReturnsLegalAction) {
     ASSERT_FALSE(r.combat_over) << "seed=" << seed;
     if (r.action.kind == Action::kPlayCard) {
       EXPECT_TRUE(combat.can_play(r.action.card_idx))
-          << "seed=" << seed << " card_idx=" << r.action.card_idx;
+          << "seed=" << seed << " card_idx=" << r.action.card_idx.raw();
     } else {
       EXPECT_EQ(r.action.kind, Action::kEndTurn) << "seed=" << seed;
     }
@@ -101,11 +102,11 @@ TEST(Recommend, PvAdvancesCorrectly_LethalPosition) {
 
   // First step is the killing Strike at target 0.
   EXPECT_EQ(r.action.kind, Action::kPlayCard);
-  EXPECT_EQ(r.target_idx, 0);
+  EXPECT_EQ(r.target_idx, sts2::game::EnemySlot{0});
   const PvStep& first = r.principal_variation.front();
   EXPECT_EQ(first.kind, PvStep::kPlayCard);
   EXPECT_EQ(first.card_id, CardId::kStrike);
-  EXPECT_EQ(first.target_idx, 0);
+  EXPECT_EQ(first.target_idx, sts2::game::EnemySlot{0});
 
   // PV truncates at first chance event (EndTurn must be last if present).
   for (std::size_t i = 0; i + 1 < r.principal_variation.size(); ++i) {

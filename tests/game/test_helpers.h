@@ -15,6 +15,7 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/enemy.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/power.h"
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
@@ -87,15 +88,16 @@ inline sts2::game::Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
 }
 
 // Standard "starter" combat: two cultists rolled with a separate Rng (matching
-// main.cc's pattern), pick-discard callback returns 0, started with the full
-// 12-card silent starter deck shuffled by Combat's seeded Rng.
+// main.cc's pattern), pick-discard callback returns HandIndex{0}, started with
+// the full 12-card silent starter deck shuffled by Combat's seeded Rng.
 // Returns post-start state: round 1, hand size 7, energy 3, both enemies alive.
 inline sts2::game::Combat MakeStarterCombat(uint64_t seed) {
     sts2::game::Combat c{seed};
     sts2::game::Rng enemy_rng{seed};
     c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
     c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
-    c.set_pick_discard_callback([](const sts2::game::Combat&) { return 0; });
+    c.set_pick_discard_callback(
+        [](const sts2::game::Combat&) { return sts2::game::HandIndex{0}; });
     c.start(sts2::cards::make_silent_starter_deck());
     return c;
 }
@@ -103,27 +105,27 @@ inline sts2::game::Combat MakeStarterCombat(uint64_t seed) {
 // Kill an enemy through the public API by dealing massive damage.
 // Used in tests that need a "one dead enemy in middle/edge" precondition.
 inline void KillEnemy(sts2::game::Combat& c, int idx) {
-    c.deal_damage_to_enemy(idx, 99999);
+    c.deal_damage_to_enemy(sts2::game::EnemySlot{idx}, 99999);
 }
 
 // Drain player_.energy to 0 by playing hand[0] up to 10 times.
 // Setup helper for tests of can_play / play_card under the "no energy" branch.
 // Does NOT assert: callers verify drained state themselves. If hand[0] targets
-// AnyEnemy, the first alive enemy is selected; otherwise target = -1.
+// AnyEnemy, the first alive enemy is selected; otherwise EnemySlot::none().
 inline void DrainPlayerEnergy(sts2::game::Combat& c) {
     int safety = 10;
-    while (c.player().energy > 0 && !c.player().hand.empty() && safety-- > 0) {
-        const auto& card = c.player().hand[0];
-        int target = -1;
+    while (c.player().energy > 0 && c.hand_size() > 0 && safety-- > 0) {
+        const auto& card = c.player_hand_at(sts2::game::HandIndex{0});
+        sts2::game::EnemySlot target = sts2::game::EnemySlot::none();
         if (card.target == sts2::game::TargetType::kAnyEnemy) {
             for (std::size_t i = 0; i < c.enemies().size(); ++i) {
                 if (c.enemies()[i].vitals.hp > 0) {
-                    target = static_cast<int>(i);
+                    target = sts2::game::EnemySlot{static_cast<int>(i)};
                     break;
                 }
             }
         }
-        c.play_card(0, target);
+        c.play_card(sts2::game::HandIndex{0}, target);
     }
 }
 

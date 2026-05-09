@@ -13,6 +13,7 @@
 
 #include "sts2/ai/recommend.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/types.h"
 #include "sts2/input/input.h"
 #include "sts2/render/ai_recommendation.h"
@@ -44,23 +45,19 @@ std::string Render(const Recommendation& rec, const Combat& c) {
 TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   // Find a Strike in hand for a realistic kPlayCard hand_idx.
-  int strike_idx = -1;
-  for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-    if (c.player().hand[i].id == CardId::kStrike) {
-      strike_idx = static_cast<int>(i);
-      break;
-    }
-  }
+  const int strike_idx = c.find_card_in_hand(CardId::kStrike).raw();
   ASSERT_GE(strike_idx, 0);
 
   Recommendation rec;
-  rec.action = Action{Action::kPlayCard, strike_idx};
-  rec.target_idx = 0;
+  rec.action = Action{Action::kPlayCard, sts2::game::HandIndex{strike_idx}};
+  rec.target_idx = sts2::game::EnemySlot{0};
   rec.expected_hp = 42.7;
   rec.expected_rounds = 8.2;
   rec.principal_variation.push_back(
-      PvStep{PvStep::kPlayCard, CardId::kStrike, 0, CardId::kNone});
-  rec.principal_variation.push_back(PvStep{PvStep::kEndTurn, CardId::kNone, -1,
+      PvStep{PvStep::kPlayCard, CardId::kStrike, sts2::game::EnemySlot{0},
+             CardId::kNone});
+  rec.principal_variation.push_back(PvStep{PvStep::kEndTurn, CardId::kNone,
+                                           sts2::game::EnemySlot::none(),
                                            CardId::kNone});
 
   const std::string s = Render(rec, c);
@@ -85,12 +82,13 @@ TEST(RenderAiRecommendation, PostDeath_RenumberAliveEnemies) {
   ASSERT_GT(c.enemies()[1].vitals.hp, 0);
 
   Recommendation rec;
-  rec.action = Action{Action::kPlayCard, 0};
-  rec.target_idx = 1;  // engine slot for Damp
+  rec.action = Action{Action::kPlayCard, sts2::game::HandIndex{0}};
+  rec.target_idx = sts2::game::EnemySlot{1};  // engine slot for Damp
   rec.expected_hp = 30.0;
   rec.expected_rounds = 4.0;
   rec.principal_variation.push_back(
-      PvStep{PvStep::kPlayCard, CardId::kStrike, 1, CardId::kNone});
+      PvStep{PvStep::kPlayCard, CardId::kStrike, sts2::game::EnemySlot{1},
+             CardId::kNone});
 
   const std::string s = Render(rec, c);
 
@@ -102,11 +100,12 @@ TEST(RenderAiRecommendation, EndTurnRendersEndTurnText) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
 
   Recommendation rec;
-  rec.action = Action{Action::kEndTurn, -1};
+  rec.action = Action{Action::kEndTurn, sts2::game::HandIndex::none()};
   rec.expected_hp = 50.0;
   rec.expected_rounds = 3.0;
   rec.principal_variation.push_back(
-      PvStep{PvStep::kEndTurn, CardId::kNone, -1, CardId::kNone});
+      PvStep{PvStep::kEndTurn, CardId::kNone, sts2::game::EnemySlot::none(),
+             CardId::kNone});
 
   const std::string s = Render(rec, c);
 
@@ -124,8 +123,8 @@ TEST(RenderAiRecommendation, SurvivorIncludesDiscardSuggestion) {
   // known index, we exercise the survivor_discard_id branch directly and
   // accept whatever the action card name resolves to (the discard hint is
   // what the test checks).
-  rec.action = Action{Action::kPlayCard, 0};
-  rec.target_idx = -1;
+  rec.action = Action{Action::kPlayCard, sts2::game::HandIndex{0}};
+  rec.target_idx = sts2::game::EnemySlot::none();
   rec.survivor_discard_id = CardId::kDefend;
   rec.expected_hp = 60.0;
   rec.expected_rounds = 5.5;
@@ -140,11 +139,12 @@ TEST(RenderAiRecommendation, PvSurvivorStepIncludesDropAnnotation) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
 
   Recommendation rec;
-  rec.action = Action{Action::kEndTurn, -1};
+  rec.action = Action{Action::kEndTurn, sts2::game::HandIndex::none()};
   rec.expected_hp = 1.0;
   rec.expected_rounds = 1.0;
   rec.principal_variation.push_back(
-      PvStep{PvStep::kPlayCard, CardId::kSurvivor, -1, CardId::kStrike});
+      PvStep{PvStep::kPlayCard, CardId::kSurvivor,
+             sts2::game::EnemySlot::none(), CardId::kStrike});
 
   const std::string s = Render(rec, c);
 
@@ -159,7 +159,7 @@ TEST(RenderAiRecommendation, CombatOverRendersShortLineNoPv) {
 
   Recommendation rec;
   rec.combat_over = true;
-  rec.action = Action{Action::kEndTurn, -1};
+  rec.action = Action{Action::kEndTurn, sts2::game::HandIndex::none()};
   rec.expected_hp = 70.0;
 
   const std::string s = Render(rec, c);

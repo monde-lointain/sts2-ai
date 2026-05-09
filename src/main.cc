@@ -7,6 +7,7 @@
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/rng.h"
 #include "sts2/input/input.h"
 #include "sts2/render/ai_recommendation.h"
@@ -70,12 +71,11 @@ int main(int argc, char** argv) {
                     << "\n";
           break;
         }
-        sts2::game::TargetType target_type =
-            combat.card_target_kind(a.card_idx);
-        int target = -1;
+        sts2::game::TargetType target_type = combat.card_target_kind(a.card_idx);
+        sts2::game::EnemySlot target = sts2::game::EnemySlot::none();
         if (target_type == sts2::game::TargetType::kAnyEnemy) {
           target = sts2::app::prompt_target(combat, std::cin, std::cout);
-          if (target < 0) {
+          if (!target.valid()) {
             std::cout << sts2::ansi::kRed << "  no valid target."
                       << sts2::ansi::kReset << "\n";
             break;

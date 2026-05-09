@@ -8,7 +8,7 @@ namespace sts2::damage {
 
 // Canonical outgoing-damage formula: base + strength, scaled 0.75 if weak>0,
 // clamped to >=0. Pure; no allocation.
-[[nodiscard]] inline int compute_outgoing(int base, int strength, int weak) {
+[[nodiscard]] inline int compute_outgoing(int base, int strength, int weak) noexcept {
   int d = base + strength;
   if (weak > 0) {
     d = static_cast<int>(d * 0.75);
@@ -18,7 +18,7 @@ namespace sts2::damage {
 
 // Canonical block-then-hp absorption. Mutates hp/block in place; returns the
 // hp lost (>=0). Caller is responsible for any death/cleanup logic.
-inline int apply_to_defender(int& hp, int& block, int incoming) {
+[[nodiscard]] inline int apply_to_defender(int& hp, int& block, int incoming) noexcept {
   if (incoming <= block) {
     block -= incoming;
     return 0;

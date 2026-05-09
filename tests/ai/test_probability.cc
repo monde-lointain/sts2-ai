@@ -138,7 +138,8 @@ TEST(Probability, EngineDistributionMonteCarlo) {
     sts2::game::Rng enemy_rng{static_cast<uint64_t>(seed)};
     c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
     c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
-    c.set_pick_discard_callback([](const sts2::game::Combat&) { return 0; });
+    c.set_pick_discard_callback(
+        [](const sts2::game::Combat&) { return sts2::game::HandIndex{0}; });
     c.start(sts2::cards::make_silent_starter_deck());
     const auto snap = sts2::ai::from_combat(c);
     ASSERT_EQ(snap.hand.total(), k);

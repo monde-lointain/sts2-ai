@@ -52,7 +52,8 @@ Combat MakeLethalCombat(uint64_t seed) {
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
   c.add_enemy(std::move(e));
-  c.set_pick_discard_callback([](const Combat&) { return 0; });
+  c.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
   c.start(MakeTinyStrikeDeck());
   return c;
 }
@@ -67,7 +68,7 @@ TEST(RecommendCalibration, KnownLethalPosition_ExpectedHpExact) {
   ASSERT_FALSE(r.combat_over);
 
   EXPECT_EQ(r.action.kind, Action::kPlayCard);
-  EXPECT_EQ(r.target_idx, 0);
+  EXPECT_EQ(r.target_idx, sts2::game::EnemySlot{0});
   EXPECT_NEAR(r.expected_hp, static_cast<double>(starting_hp),
               sts2::ai::Score::kEps);
   EXPECT_NEAR(r.expected_rounds, 0.0, sts2::ai::Score::kEps);
@@ -100,7 +101,8 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
     sts2::game::Rng enemy_rng{kEnemySeed};
     c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
     c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
-    c.set_pick_discard_callback([](const Combat&) { return 0; });
+    c.set_pick_discard_callback(
+        [](const Combat&) { return sts2::game::HandIndex{0}; });
     c.start(sts2::cards::make_silent_starter_deck());
     return c;
   };
@@ -137,14 +139,11 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
     // synchronously inside play_card) sees the most-recent recommendation.
     Recommendation last_rec;
     combat.set_pick_discard_callback(
-        [&last_rec](const Combat& c) -> int {
-          if (last_rec.survivor_discard_id == CardId::kNone) return 0;
-          for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-            if (c.player().hand[i].id == last_rec.survivor_discard_id) {
-              return static_cast<int>(i);
-            }
-          }
-          return 0;
+        [&last_rec](const Combat& c) -> sts2::game::HandIndex {
+          if (last_rec.survivor_discard_id == CardId::kNone)
+            return sts2::game::HandIndex{0};
+          const auto idx = c.find_card_in_hand(last_rec.survivor_discard_id);
+          return idx.valid() ? idx : sts2::game::HandIndex{0};
         });
 
     // Capture this trial's root expected_hp before stepping.
@@ -160,9 +159,8 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
         combat.end_turn();
       } else {
         ASSERT_EQ(last_rec.action.kind, Action::kPlayCard);
-        const int target =
-            (last_rec.target_idx < 0) ? -1 : last_rec.target_idx;
-        const bool ok = combat.play_card(last_rec.action.card_idx, target);
+        const bool ok = combat.play_card(last_rec.action.card_idx,
+                                         last_rec.target_idx);
         ASSERT_TRUE(ok) << "engine rejected AI play; trial=" << trial
                         << " step=" << steps;
       }

@@ -7,6 +7,7 @@
 #include "render/render_internal.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/damage.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/power.h"
 #include "sts2/game/types.h"
 #include "sts2/render/ansi.h"
@@ -91,7 +92,8 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
       << ansi::kReset << "\n";
 
   out << "  Round " << c.round() << "  " << ansi::kCyan << "Energy "
-      << c.player_energy() << "/" << c.player_max_energy() << ansi::kReset
+      << c.player_energy() << "/" << sts2::game::Combat::kPlayerMaxEnergy
+      << ansi::kReset
       << "  Draw " << c.draw_pile_size() << "  Discard "
       << c.discard_pile_size() << "\n";
 
@@ -117,7 +119,7 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
 
   std::size_t name_width = detail::max_enemy_name_len(c.enemies());
   std::size_t display_idx = 0;
-  for (int slot : c.alive_enemy_indices()) {
+  for (sts2::game::EnemySlot slot : c.alive_enemy_indices()) {
     const sts2::game::Enemy& e = c.enemy_at(slot);
     out << "  [" << display_idx++ << "] " << ansi::kBold << e.name
         << ansi::kReset << detail::spaces(name_width - e.name.size())
@@ -137,7 +139,7 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
   out << "\n";
 
   for (std::size_t i = 0; i < c.hand_size(); ++i) {
-    const sts2::game::Card& card = c.player_hand_at(i);
+    const sts2::game::Card& card = c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)});
     bool playable = card.cost <= c.player_energy();
     const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;
     const char* bullet =

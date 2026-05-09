@@ -17,6 +17,7 @@
 #include "sts2/app/prompts.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/rng.h"
 #include "tests/game/test_helpers.h"
@@ -84,7 +85,7 @@ TEST(AppPromptTarget, T_MAIN_110_NoEnemiesReturnsMinusOne) {
   std::istringstream in;      // never read
   std::ostringstream out;     // never written
 
-  EXPECT_EQ(prompt_target(c, in, out), -1);
+  EXPECT_EQ(prompt_target(c, in, out), sts2::game::EnemySlot::none());
   EXPECT_TRUE(out.str().empty());
 }
 
@@ -99,7 +100,7 @@ TEST(AppPromptTarget, T_MAIN_115_SingleAliveReturnsIndexNoStream) {
   std::istringstream in("garbage\n");
   std::ostringstream out;
 
-  EXPECT_EQ(prompt_target(c, in, out), 0);
+  EXPECT_EQ(prompt_target(c, in, out), sts2::game::EnemySlot{0});
   EXPECT_TRUE(out.str().empty());
   // Stream was untouched; "garbage\n" is still pending.
   std::string remaining;
@@ -122,7 +123,7 @@ TEST(AppPromptTarget, T_MAIN_120_TwoAliveUserPicksSecond) {
 
   std::istringstream in("1\n");
   std::ostringstream out;
-  EXPECT_EQ(prompt_target(c, in, out), 2);
+  EXPECT_EQ(prompt_target(c, in, out), sts2::game::EnemySlot{2});
 }
 
 // T-MAIN-125 — EG — Invalid then valid input — verifies the prompt_index
@@ -139,7 +140,7 @@ TEST(AppPromptTarget, T_MAIN_125_InvalidThenValid) {
 
   std::istringstream in("abc\n0\n");
   std::ostringstream out;
-  EXPECT_EQ(prompt_target(c, in, out), 0);
+  EXPECT_EQ(prompt_target(c, in, out), sts2::game::EnemySlot{0});
   EXPECT_THAT(out.str(), HasSubstr("invalid index"));
 }
 
@@ -162,7 +163,7 @@ TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
 
   std::istringstream in("garbage\n");
   std::ostringstream out;
-  EXPECT_EQ(prompt_discard(c, in, out), 0);
+  EXPECT_EQ(prompt_discard(c, in, out), sts2::game::HandIndex{0});
   EXPECT_TRUE(out.str().empty());
   // Stream untouched.
   std::string remaining;
@@ -180,7 +181,7 @@ TEST(AppPromptDiscard, T_MAIN_135_MultiCardRendersAndPrompts) {
   const int max_idx = static_cast<int>(c.player().hand.size()) - 1;
   std::istringstream in("0\n");
   std::ostringstream out;
-  EXPECT_EQ(prompt_discard(c, in, out), 0);
+  EXPECT_EQ(prompt_discard(c, in, out), sts2::game::HandIndex{0});
 
   const std::string s = out.str();
   // render_combat output: HP bar / hand list contains "HP" or card names.
