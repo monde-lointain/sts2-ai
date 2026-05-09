@@ -137,6 +137,42 @@ void Combat::reshuffle() {
   rng_.shuffle(player_.draw_pile);
 }
 
+bool Combat::is_enemy_alive(int idx) const {
+  if (idx < 0 || static_cast<std::size_t>(idx) >= enemies_.size()) {
+    return false;
+  }
+  return enemies_[static_cast<std::size_t>(idx)].vitals.hp > 0;
+}
+
+std::vector<int> Combat::alive_enemy_indices() const {
+  std::vector<int> out;
+  for (std::size_t i = 0; i < enemies_.size(); ++i) {
+    if (enemies_[i].vitals.hp > 0) {
+      out.push_back(static_cast<int>(i));
+    }
+  }
+  return out;
+}
+
+TargetType Combat::card_target_kind(int hand_idx) const {
+  if (hand_idx < 0 ||
+      static_cast<std::size_t>(hand_idx) >= player_.hand.size()) {
+    return TargetType::kNoTarget;
+  }
+  return player_.hand[static_cast<std::size_t>(hand_idx)].target;
+}
+
+std::size_t Combat::hand_size() const { return player_.hand.size(); }
+
+int Combat::find_card_in_hand(CardId id) const {
+  for (std::size_t i = 0; i < player_.hand.size(); ++i) {
+    if (player_.hand[i].id == id) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
 bool Combat::is_player_dead() const { return player_.vitals.hp <= 0; }
 
 bool Combat::all_enemies_dead() const {

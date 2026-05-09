@@ -1,12 +1,12 @@
 #include "sts2/app/prompts.h"
 
+#include <cstddef>
 #include <istream>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include "sts2/game/combat.h"
-#include "sts2/game/player.h"
 #include "sts2/input/input.h"
 #include "sts2/render/ansi.h"
 #include "sts2/render/render.h"
@@ -27,12 +27,7 @@ int prompt_index(std::ostream& out, std::istream& in, const char* label,
 
 int prompt_target(const sts2::game::Combat& c, std::istream& in,
                   std::ostream& out) {
-  std::vector<int> alive_indices;
-  for (std::size_t i = 0; i < c.enemies().size(); ++i) {
-    if (c.enemies()[i].vitals.hp > 0) {
-      alive_indices.push_back(static_cast<int>(i));
-    }
-  }
+  const std::vector<int> alive_indices = c.alive_enemy_indices();
   if (alive_indices.empty()) {
     return -1;
   }
@@ -48,15 +43,14 @@ int prompt_target(const sts2::game::Combat& c, std::istream& in,
 
 int prompt_discard(const sts2::game::Combat& combat, std::istream& in,
                    std::ostream& out) {
-  const sts2::game::Player& p = combat.player();
-  if (p.hand.size() == 1) {
+  const std::size_t hand = combat.hand_size();
+  if (hand == 1) {
     return 0;
   }
   sts2::render::render_combat(combat, out);
   std::string label =
-      "  Discard which? [0-" + std::to_string(p.hand.size() - 1) + "]: ";
-  return prompt_index(out, in, label.c_str(),
-                      static_cast<int>(p.hand.size()) - 1);
+      "  Discard which? [0-" + std::to_string(hand - 1) + "]: ";
+  return prompt_index(out, in, label.c_str(), static_cast<int>(hand) - 1);
 }
 
 }  // namespace sts2::app

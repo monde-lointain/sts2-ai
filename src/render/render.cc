@@ -122,10 +122,9 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
 
   std::size_t name_width = detail::max_enemy_name_len(c.enemies());
   std::size_t display_idx = 0;
-  for (const auto& e : c.enemies()) {
-    if (e.vitals.hp <= 0) {
-      continue;
-    }
+  for (int slot : c.alive_enemy_indices()) {
+    const sts2::game::Enemy& e =
+        c.enemies()[static_cast<std::size_t>(slot)];
     out << "  [" << display_idx++ << "] " << ansi::kBold << e.name
         << ansi::kReset << detail::spaces(name_width - e.name.size())
         << "   HP " << ansi::kRed

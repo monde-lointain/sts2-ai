@@ -1,7 +1,7 @@
 #include "sts2/ai/recommend.h"
 
 #include <cassert>
-#include <cstddef>
+#include <cstdint>
 
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
@@ -13,15 +13,6 @@
 namespace sts2::ai {
 
 namespace {
-
-int find_hand_index(const sts2::game::Combat& combat,
-                    sts2::game::CardId card_id) {
-  const auto& hand = combat.player().hand;
-  for (std::size_t i = 0; i < hand.size(); ++i) {
-    if (hand[i].id == card_id) return static_cast<int>(i);
-  }
-  return -1;
-}
 
 int normalize_target(uint8_t target) {
   return (target == transition::kNoTarget) ? -1 : static_cast<int>(target);
@@ -46,7 +37,7 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
   if (best.kind == transition::ActionKind::kEndTurn) {
     rec.action = sts2::input::Action{sts2::input::Action::kEndTurn, -1};
   } else {
-    const int hand_idx = find_hand_index(combat, best.card_id);
+    const int hand_idx = combat.find_card_in_hand(best.card_id);
     assert(hand_idx >= 0 && "search returned a card not in engine hand");
     rec.action = sts2::input::Action{sts2::input::Action::kPlayCard, hand_idx};
   }

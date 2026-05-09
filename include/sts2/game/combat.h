@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -37,6 +38,13 @@ class Combat {
   [[nodiscard]] const std::vector<Enemy>& enemies() const { return enemies_; }
   [[nodiscard]] int round() const { return round_; }
   [[nodiscard]] bool combat_over() const { return combat_over_; }
+
+  // Query helpers — adapt callers off direct vector/struct poking.
+  [[nodiscard]] bool is_enemy_alive(int idx) const;
+  [[nodiscard]] std::vector<int> alive_enemy_indices() const;
+  [[nodiscard]] TargetType card_target_kind(int hand_idx) const;
+  [[nodiscard]] std::size_t hand_size() const;
+  [[nodiscard]] int find_card_in_hand(CardId id) const;
 
   void add_enemy(Enemy e);
   void set_pick_discard_callback(std::function<int(const Combat&)> cb);

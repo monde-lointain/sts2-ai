@@ -26,25 +26,18 @@ const char* card_id_name(sts2::game::CardId id) {
 }
 
 bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
-  if (idx < 0) return false;
-  const auto& es = combat.enemies();
-  if (static_cast<std::size_t>(idx) >= es.size()) return false;
-  return es[static_cast<std::size_t>(idx)].vitals.hp > 0;
+  return combat.is_enemy_alive(idx);
 }
 
 // Convert an engine slot index into the display index used by the battle UI,
 // which renumbers alive enemies starting from 0. Returns -1 if the slot is
 // dead, out of range, or negative.
 int display_index_for_slot(const sts2::game::Combat& combat, int slot_idx) {
-  if (slot_idx < 0) return -1;
-  const auto& es = combat.enemies();
-  if (static_cast<std::size_t>(slot_idx) >= es.size()) return -1;
-  if (es[static_cast<std::size_t>(slot_idx)].vitals.hp <= 0) return -1;
-  int display = 0;
-  for (int i = 0; i < slot_idx; ++i) {
-    if (es[static_cast<std::size_t>(i)].vitals.hp > 0) ++display;
+  const std::vector<int> alive = combat.alive_enemy_indices();
+  for (std::size_t i = 0; i < alive.size(); ++i) {
+    if (alive[i] == slot_idx) return static_cast<int>(i);
   }
-  return display;
+  return -1;
 }
 
 void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
