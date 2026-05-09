@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <span>
 #include <vector>
 
 #include "sts2/game/card.h"
@@ -16,7 +17,7 @@ namespace sts2::ai {
 
 namespace {
 
-void tally(CardCounts& counts, const std::vector<sts2::game::Card>& pile) {
+void tally(CardCounts& counts, std::span<const sts2::game::Card> pile) {
   for (const auto& c : pile) {
     assert(c.id != sts2::game::CardId::kNone && "kNone in pile");
     ++counts[c.id];
@@ -98,8 +99,8 @@ CompactState from_combat(const sts2::game::Combat& combat) {
   }
 
   tally(s.hand, p.hand);
-  tally(s.draw, p.draw_pile);
-  tally(s.discard, p.discard_pile);
+  tally(s.draw, p.deck.draw_pile());
+  tally(s.discard, p.deck.discard_pile());
 
   return s;
 }

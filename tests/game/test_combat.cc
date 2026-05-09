@@ -93,9 +93,9 @@ TEST(CombatConstruction, T_CMB_005_DefaultState) {
   EXPECT_EQ(c.player().vitals.hp, 70);
   EXPECT_EQ(c.player().vitals.max_hp, 70);
   EXPECT_TRUE(c.enemies().empty());
-  EXPECT_TRUE(c.player().draw_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 0U);
   EXPECT_TRUE(c.player().hand.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-010 — BP, DF — start(deck) shuffles and triggers start_player_turn,
@@ -111,8 +111,8 @@ TEST(CombatConstruction, T_CMB_010_StartTriggersStartPlayerTurn) {
   EXPECT_EQ(c.round(), 1);
   EXPECT_FALSE(c.combat_over());
   EXPECT_EQ(c.player().hand.size(), 7U);
-  EXPECT_TRUE(c.player().draw_pile.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 0U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
   EXPECT_EQ(c.player().energy, 3);
 }
 
@@ -121,7 +121,7 @@ TEST(CombatConstruction, T_CMB_015_StarterDeckRingDrawsSeven) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
 
   EXPECT_EQ(c.player().hand.size(), 7U);
-  EXPECT_EQ(c.player().draw_pile.size(), 5U);
+  EXPECT_EQ(c.player().deck.draw_size(), 5U);
 }
 
 // T-CMB-020 — BP — add_enemy appends; multiple appends preserve order.
@@ -159,8 +159,8 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
   c.discard_chosen_from_hand();
 
   ASSERT_EQ(c.player().hand.size(), 2U);
-  ASSERT_EQ(c.player().discard_pile.size(), 1U);
-  EXPECT_EQ(c.player().discard_pile[0].id, pre_idx1.id);
+  ASSERT_EQ(c.player().deck.discard_size(), 1U);
+  EXPECT_EQ(c.player().deck.discard_pile()[0].id, pre_idx1.id);
   // Pre-call indices 0 and 2 remain in the hand, in order.
   EXPECT_EQ(c.player().hand[0].id, pre_idx0.id);
   EXPECT_EQ(c.player().hand[1].id, pre_idx2.id);
@@ -412,7 +412,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   ASSERT_EQ(c.player().energy, 0);
   ASSERT_EQ(c.player().hand.size(), 1U);
   const int hp_before = c.enemies()[0].vitals.hp;
-  const std::size_t discard_size_before = c.player().discard_pile.size();
+  const std::size_t discard_size_before = c.player().deck.discard_size();
 
   bool ok = c.play_card(sts2::game::HandIndex{0}, sts2::game::EnemySlot{0});
 
@@ -421,7 +421,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   EXPECT_EQ(c.player().hand[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 0);
   EXPECT_EQ(c.enemies()[0].vitals.hp, hp_before);
-  EXPECT_EQ(c.player().discard_pile.size(), discard_size_before);
+  EXPECT_EQ(c.player().deck.discard_size(), discard_size_before);
 }
 
 // T-CMB-110 — Documented unreachable branch (every cards::make_* sets on_play).
@@ -444,8 +444,8 @@ TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
 
   EXPECT_TRUE(ok);
   EXPECT_TRUE(c.player().hand.empty());
-  ASSERT_EQ(c.player().discard_pile.size(), 1U);
-  EXPECT_EQ(c.player().discard_pile[0].id, CardId::kStrike);
+  ASSERT_EQ(c.player().deck.discard_size(), 1U);
+  EXPECT_EQ(c.player().deck.discard_pile()[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 2);
   EXPECT_EQ(c.enemies()[0].vitals.hp, 34);
   EXPECT_FALSE(c.combat_over());
@@ -481,9 +481,9 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   EXPECT_TRUE(ok);
   ASSERT_EQ(c.player().hand.size(), 1U);
   EXPECT_EQ(c.player().hand[0].id, CardId::kDefend);
-  ASSERT_EQ(c.player().discard_pile.size(), 2U);
-  EXPECT_EQ(c.player().discard_pile[0].id, CardId::kStrike);
-  EXPECT_EQ(c.player().discard_pile[1].id, CardId::kSurvivor);
+  ASSERT_EQ(c.player().deck.discard_size(), 2U);
+  EXPECT_EQ(c.player().deck.discard_pile()[0].id, CardId::kStrike);
+  EXPECT_EQ(c.player().deck.discard_pile()[1].id, CardId::kSurvivor);
   EXPECT_EQ(c.player().vitals.block, 8);
 }
 
@@ -511,14 +511,14 @@ TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
 TEST(CombatDraw, T_CMB_130_DrawZeroNoOp) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   const std::size_t hand_before = c.player().hand.size();
-  const std::size_t draw_before = c.player().draw_pile.size();
-  const std::size_t discard_before = c.player().discard_pile.size();
+  const std::size_t draw_before = c.player().deck.draw_size();
+  const std::size_t discard_before = c.player().deck.discard_size();
 
   c.draw(0);
 
   EXPECT_EQ(c.player().hand.size(), hand_before);
-  EXPECT_EQ(c.player().draw_pile.size(), draw_before);
-  EXPECT_EQ(c.player().discard_pile.size(), discard_before);
+  EXPECT_EQ(c.player().deck.draw_size(), draw_before);
+  EXPECT_EQ(c.player().deck.discard_size(), discard_before);
 }
 
 // T-CMB-135 — BP, EP — draw(3) from a populated draw pile: hand grows by 3,
@@ -527,14 +527,14 @@ TEST(CombatDraw, T_CMB_130_DrawZeroNoOp) {
 TEST(CombatDraw, T_CMB_135_DrawThreeFromPopulatedDeck) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_EQ(c.player().draw_pile.size(), 5U);
-  ASSERT_TRUE(c.player().discard_pile.empty());
+  ASSERT_EQ(c.player().deck.draw_size(), 5U);
+  ASSERT_EQ(c.player().deck.discard_size(), 0U);
 
   c.draw(3);
 
   EXPECT_EQ(c.player().hand.size(), 10U);
-  EXPECT_EQ(c.player().draw_pile.size(), 2U);
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 2U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-140 — BV — Hand cap clamp. start draws 7 (5+ring 2). Then draw(3)
@@ -543,12 +543,12 @@ TEST(CombatDraw, T_CMB_140_HandCapClamp) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   c.draw(3);
   ASSERT_EQ(c.player().hand.size(), 10U);
-  const std::size_t draw_before = c.player().draw_pile.size();
+  const std::size_t draw_before = c.player().deck.draw_size();
 
   c.draw(2);
 
   EXPECT_EQ(c.player().hand.size(), 10U);
-  EXPECT_EQ(c.player().draw_pile.size(), draw_before);
+  EXPECT_EQ(c.player().deck.draw_size(), draw_before);
 }
 
 // T-CMB-145 — BP, EG — Reshuffle when draw empties mid-loop.
@@ -565,19 +565,19 @@ TEST(CombatDraw, T_CMB_145_ReshuffleMidLoop) {
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_EQ(c.player().draw_pile.size(), 1U);
-  ASSERT_TRUE(c.player().discard_pile.empty());
+  ASSERT_EQ(c.player().deck.draw_size(), 1U);
+  ASSERT_EQ(c.player().deck.discard_size(), 0U);
 
   ASSERT_TRUE(c.play_card(sts2::game::HandIndex{0}, sts2::game::EnemySlot::none()));
   ASSERT_EQ(c.player().hand.size(), 6U);
-  ASSERT_EQ(c.player().discard_pile.size(), 1U);
-  ASSERT_EQ(c.player().draw_pile.size(), 1U);
+  ASSERT_EQ(c.player().deck.discard_size(), 1U);
+  ASSERT_EQ(c.player().deck.draw_size(), 1U);
 
   c.draw(2);
 
   EXPECT_EQ(c.player().hand.size(), 8U);
-  EXPECT_TRUE(c.player().draw_pile.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 0U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-150 — EG — Empty draw + empty discard short-circuits (D3 TRUE,
@@ -587,14 +587,14 @@ TEST(CombatDraw, T_CMB_150_EmptyDrawAndDiscardShortCircuits) {
   Combat c{kCombatTestSeed};
   c.start(MakeStrikeDefendDeck7());
   ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_TRUE(c.player().draw_pile.empty());
-  ASSERT_TRUE(c.player().discard_pile.empty());
+  ASSERT_EQ(c.player().deck.draw_size(), 0U);
+  ASSERT_EQ(c.player().deck.discard_size(), 0U);
 
   c.draw(3);
 
   EXPECT_EQ(c.player().hand.size(), 7U);
-  EXPECT_TRUE(c.player().draw_pile.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 0U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // -------------------------------------------------------------------------
@@ -606,15 +606,15 @@ TEST(CombatDraw, T_CMB_150_EmptyDrawAndDiscardShortCircuits) {
 TEST(CombatReshuffle, T_CMB_155_EmptyDiscardNoOp) {
   Combat c{kCombatTestSeed};
   c.start(MakeStrikeDefendDeck7());
-  ASSERT_TRUE(c.player().discard_pile.empty());
-  ASSERT_TRUE(c.player().draw_pile.empty());
+  ASSERT_EQ(c.player().deck.discard_size(), 0U);
+  ASSERT_EQ(c.player().deck.draw_size(), 0U);
   const std::size_t hand_before = c.player().hand.size();
 
   c.reshuffle();
 
   EXPECT_EQ(c.player().hand.size(), hand_before);
-  EXPECT_TRUE(c.player().draw_pile.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.draw_size(), 0U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-160 — BP, DF — Non-empty discard → drained into draw and shuffled.
@@ -630,27 +630,27 @@ TEST(CombatReshuffle, T_CMB_160_NonEmptyDiscardDrainedAndShuffled) {
     ASSERT_NE(idx, -1);
     ASSERT_TRUE(c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
   }
-  ASSERT_EQ(c.player().discard_pile.size(), 3U);
-  const std::size_t pre_draw = c.player().draw_pile.size();
-  const std::size_t pre_discard = c.player().discard_pile.size();
+  ASSERT_EQ(c.player().deck.discard_size(), 3U);
+  const std::size_t pre_draw = c.player().deck.draw_size();
+  const std::size_t pre_discard = c.player().deck.discard_size();
 
   // Capture id multiset of pre-draw ∪ pre-discard.
   std::vector<CardId> expected_ids;
-  for (const Card& cc : c.player().draw_pile) {
+  for (const Card& cc : c.player().deck.draw_pile()) {
     expected_ids.push_back(cc.id);
   }
-  for (const Card& cc : c.player().discard_pile) {
+  for (const Card& cc : c.player().deck.discard_pile()) {
     expected_ids.push_back(cc.id);
   }
   std::sort(expected_ids.begin(), expected_ids.end());
 
   c.reshuffle();
 
-  EXPECT_TRUE(c.player().discard_pile.empty());
-  EXPECT_EQ(c.player().draw_pile.size(), pre_draw + pre_discard);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
+  EXPECT_EQ(c.player().deck.draw_size(), pre_draw + pre_discard);
 
   std::vector<CardId> got_ids;
-  for (const Card& cc : c.player().draw_pile) {
+  for (const Card& cc : c.player().deck.draw_pile()) {
     got_ids.push_back(cc.id);
   }
   std::sort(got_ids.begin(), got_ids.end());
@@ -671,13 +671,13 @@ TEST(CombatReshuffle, T_CMB_160_NonEmptyDiscardDrainedAndShuffled) {
 TEST(CombatEndPlayerTurn, T_CMB_165_EmptyHandTicksPowers) {
   Combat c{kCombatTestSeed};
   ASSERT_TRUE(c.player().hand.empty());
-  ASSERT_TRUE(c.player().discard_pile.empty());
+  ASSERT_EQ(c.player().deck.discard_size(), 0U);
   ASSERT_TRUE(c.player().vitals.powers.empty());
 
   c.end_player_turn();
 
   EXPECT_TRUE(c.player().hand.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
   EXPECT_TRUE(c.player().vitals.powers.empty());
 }
 
@@ -703,11 +703,11 @@ TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   c.end_player_turn();
 
   EXPECT_TRUE(c.player().hand.empty());
-  ASSERT_EQ(c.player().discard_pile.size(), 3U);
+  ASSERT_EQ(c.player().deck.discard_size(), 3U);
   // Discard is LIFO: last hand element pushed first.
-  EXPECT_EQ(c.player().discard_pile[0].id, h2);
-  EXPECT_EQ(c.player().discard_pile[1].id, h1);
-  EXPECT_EQ(c.player().discard_pile[2].id, h0);
+  EXPECT_EQ(c.player().deck.discard_pile()[0].id, h2);
+  EXPECT_EQ(c.player().deck.discard_pile()[1].id, h1);
+  EXPECT_EQ(c.player().deck.discard_pile()[2].id, h0);
 }
 
 // -------------------------------------------------------------------------
@@ -1095,7 +1095,7 @@ TEST(CombatDiscardChosen, T_CMB_275_EmptyHandNoOpNoCallback) {
 
   EXPECT_FALSE(called);
   EXPECT_TRUE(c.player().hand.empty());
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-280 — BP — Callback returns -1 → no-op (D2 TRUE via left of `||`).
@@ -1111,7 +1111,7 @@ TEST(CombatDiscardChosen, T_CMB_280_CallbackNegativeNoOp) {
   c.discard_chosen_from_hand();
 
   EXPECT_EQ(c.player().hand.size(), 1U);
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-285 — BP — Callback returns out-of-range index → no-op
@@ -1129,7 +1129,7 @@ TEST(CombatDiscardChosen, T_CMB_285_CallbackOutOfRangeNoOp) {
   c.discard_chosen_from_hand();
 
   EXPECT_EQ(c.player().hand.size(), 2U);
-  EXPECT_TRUE(c.player().discard_pile.empty());
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // T-CMB-290 — BP, DF — Callback returns valid index → moves hand[idx] to
@@ -1153,8 +1153,8 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   ASSERT_EQ(c.player().hand.size(), 2U);
   EXPECT_EQ(c.player().hand[0].id, pre0);
   EXPECT_EQ(c.player().hand[1].id, pre2);
-  ASSERT_EQ(c.player().discard_pile.size(), 1U);
-  EXPECT_EQ(c.player().discard_pile[0].id, pre1);
+  ASSERT_EQ(c.player().deck.discard_size(), 1U);
+  EXPECT_EQ(c.player().deck.discard_pile()[0].id, pre1);
 }
 
 // -------------------------------------------------------------------------

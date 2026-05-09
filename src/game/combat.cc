@@ -21,8 +21,7 @@ Combat::Combat(uint64_t seed)
     : rng_(seed), on_pick_discard_([](const Combat&) { return HandIndex{0}; }) {}
 
 void Combat::start(std::vector<Card> starter_deck) {
-  player_.draw_pile = std::move(starter_deck);
-  rng_.shuffle(player_.draw_pile);
+  player_.deck.load_starter(std::move(starter_deck), rng_);
   round_ = 1;
   combat_over_ = false;
   start_player_turn();
@@ -46,7 +45,7 @@ void Combat::start_player_turn() {
 
 void Combat::end_player_turn() {
   while (!player_.hand.empty()) {
-    player_.discard_pile.push_back(std::move(player_.hand.back()));
+    player_.deck.discard(std::move(player_.hand.back()));
     player_.hand.pop_back();
   }
   sts2::powers::tick_at_turn_end(player_.vitals.powers);
@@ -107,7 +106,7 @@ bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
   if (card.on_play) {
     card.on_play(*this, target);
   }
-  player_.discard_pile.push_back(std::move(card));
+  player_.deck.discard(std::move(card));
   // Backstop: card lambdas may invoke only non-HP-mutating verbs; ensure
   // terminal check.
   check_win_or_lose();
@@ -119,24 +118,15 @@ void Combat::draw(int n) {
     if (static_cast<int>(player_.hand.size()) >= kMaxHandSize) {
       return;
     }
-    if (player_.draw_pile.empty()) {
-      reshuffle();
-    }
-    if (player_.draw_pile.empty()) {
+    auto card = player_.deck.draw_one(rng_);
+    if (!card) {
       return;
     }
-    player_.hand.push_back(std::move(player_.draw_pile.back()));
-    player_.draw_pile.pop_back();
+    player_.hand.push_back(std::move(*card));
   }
 }
 
-void Combat::reshuffle() {
-  while (!player_.discard_pile.empty()) {
-    player_.draw_pile.push_back(std::move(player_.discard_pile.back()));
-    player_.discard_pile.pop_back();
-  }
-  rng_.shuffle(player_.draw_pile);
-}
+void Combat::reshuffle() { player_.deck.reshuffle(rng_); }
 
 bool Combat::is_enemy_alive(EnemySlot slot) const {
   if (!slot.in_range(enemies_)) {
@@ -187,14 +177,15 @@ const Card& Combat::player_hand_at(HandIndex idx) const {
   return idx.at(player_.hand);
 }
 
-std::size_t Combat::draw_pile_size() const { return player_.draw_pile.size(); }
+std::size_t Combat::draw_pile_size() const {
+  return player_.deck.draw_size();
+}
 std::size_t Combat::discard_pile_size() const {
-  return player_.discard_pile.size();
+  return player_.deck.discard_size();
 }
 
 int Combat::total_deck_size() const {
-  return static_cast<int>(player_.draw_pile.size() + player_.hand.size() +
-                          player_.discard_pile.size());
+  return static_cast<int>(player_.deck.total_size() + player_.hand.size());
 }
 
 const Enemy& Combat::enemy_at(EnemySlot slot) const {
@@ -273,7 +264,7 @@ void Combat::discard_chosen_from_hand() {
   const auto i = static_cast<std::size_t>(idx.raw());
   Card chosen = std::move(player_.hand[i]);
   player_.hand.erase(player_.hand.begin() + static_cast<std::ptrdiff_t>(i));
-  player_.discard_pile.push_back(std::move(chosen));
+  player_.deck.discard(std::move(chosen));
 }
 
 }  // namespace sts2::game

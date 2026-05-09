@@ -202,7 +202,7 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
   combat.start(std::move(deck));
 
   ASSERT_EQ(combat.player().hand.size(), 3U);
-  ASSERT_EQ(combat.player().discard_pile.size(), 0U);
+  ASSERT_EQ(combat.player().deck.discard_size(), 0U);
 
   Card card = sts2::cards::make_survivor();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
@@ -210,8 +210,8 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
 
   EXPECT_EQ(combat.player().vitals.block, 8);
   EXPECT_EQ(combat.player().hand.size(), 2U);
-  ASSERT_EQ(combat.player().discard_pile.size(), 1U);
-  EXPECT_EQ(combat.player().discard_pile[0].id, CardId::kStrike);
+  ASSERT_EQ(combat.player().deck.discard_size(), 1U);
+  EXPECT_EQ(combat.player().deck.discard_pile()[0].id, CardId::kStrike);
 }
 
 // T-CRD-055 — EG — on_play with empty hand: block applied, discard no-ops.
@@ -220,7 +220,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
   Combat combat{kCombatTestSeed};
 
   ASSERT_TRUE(combat.player().hand.empty());
-  ASSERT_TRUE(combat.player().discard_pile.empty());
+  ASSERT_EQ(combat.player().deck.discard_size(), 0U);
 
   Card card = sts2::cards::make_survivor();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
@@ -228,7 +228,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
 
   EXPECT_EQ(combat.player().vitals.block, 8);
   EXPECT_TRUE(combat.player().hand.empty());
-  EXPECT_TRUE(combat.player().discard_pile.empty());
+  EXPECT_EQ(combat.player().deck.discard_size(), 0U);
 }
 
 // -------------------------------------------------------------------------
