@@ -4,7 +4,9 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 
+#include "sts2/game/card_effects.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/types.h"
 
@@ -15,7 +17,10 @@ class Combat;
 namespace sts2::ai {
 
 struct CardCounts {
-  std::array<uint8_t, 4> counts{};
+  std::array<uint8_t, std::size(sts2::game::card_effects::kCountedCardIds)>
+      counts{};
+  static_assert(std::size(sts2::game::card_effects::kCountedCardIds) <= 8,
+                "pack_counts uint64 packing limit (8 bits per slot)");
 
   // CardId is 1-indexed; kNone=0 is an assert-only sentinel, so we offset by 1
   // to map kStrike..kSurvivor onto array indices 0..3.
