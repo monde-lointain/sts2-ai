@@ -13,6 +13,7 @@ target_sources(sts2_simulator_tests PRIVATE
     game/test_enemies.cc
     game/test_combat.cc
     game/test_move_calc.cc
+    game/test_turn_calc.cc
     render/test_bar.cc
     render/test_render_internal.cc
     render/test_render.cc

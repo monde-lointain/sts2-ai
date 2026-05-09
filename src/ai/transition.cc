@@ -8,6 +8,7 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/move_calc.h"
+#include "sts2/game/turn_calc.h"
 
 namespace sts2::ai::transition {
 
@@ -147,9 +148,6 @@ bool apply_player_action(CompactState& state, const Action& action) {
 
 namespace {
 
-constexpr int kBaseHandDraw = 5;
-constexpr int kRingOfTheSnakeBonus = 2;
-
 void enemy_act(CompactState& s, EnemyState& e) {
   switch (e.current_move) {
     case sts2::game::MoveId::kIncantation:
@@ -194,7 +192,7 @@ bool is_terminal(const CompactState& s) noexcept {
 }
 
 int draw_count(const CompactState& s) noexcept {
-  return kBaseHandDraw + (s.round == 1 ? kRingOfTheSnakeBonus : 0);
+  return sts2::game::turn_calc::hand_draw_size(s.round);
 }
 
 void resolve_end_turn_pre_draw(CompactState& state) {
@@ -226,10 +224,10 @@ void resolve_end_turn_pre_draw(CompactState& state) {
     if (e.alive) roll_next_move(e);
   }
 
-  if (state.round > 1) {
+  if (sts2::game::turn_calc::round_resets_block(state.round)) {
     state.player_block = 0;
   }
-  state.energy = static_cast<uint8_t>(sts2::game::Combat::kPlayerMaxEnergy);
+  state.energy = static_cast<uint8_t>(sts2::game::turn_calc::starting_energy());
   // Phase already kAtChanceDraw; the draw step is the chance node.
 }
 

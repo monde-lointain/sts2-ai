@@ -7,13 +7,14 @@
 #include "sts2/game/damage.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/powers.h"
+#include "sts2/game/turn_calc.h"
 
 namespace sts2::game {
 
 namespace {
 constexpr int kMaxHandSize = 10;
-constexpr int kBaseHandDraw = 5;
-constexpr int kRingOfTheSnakeBonus = 2;
+static_assert(Combat::kPlayerMaxEnergy == turn_calc::kPlayerStartingEnergy,
+              "energy constant drift");
 }  // namespace
 
 Combat::Combat(uint64_t seed)
@@ -34,14 +35,13 @@ void Combat::start_player_turn() {
     }
   }
 
-  if (round_ > 1) {
+  if (turn_calc::round_resets_block(round_)) {
     player_.vitals.block = 0;
   }
 
-  player_.energy = kPlayerMaxEnergy;
+  player_.energy = turn_calc::starting_energy();
 
-  int draw_count = kBaseHandDraw + (round_ == 1 ? kRingOfTheSnakeBonus : 0);
-  draw(draw_count);
+  draw(turn_calc::hand_draw_size(round_));
 }
 
 void Combat::end_player_turn() {

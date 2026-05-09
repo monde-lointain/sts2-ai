@@ -11,13 +11,14 @@
 #include "sts2/game/player.h"
 #include "sts2/game/power.h"
 #include "sts2/game/rng.h"
+#include "sts2/game/turn_calc.h"
 #include "sts2/game/types.h"
 
 namespace sts2::game {
 
 class Combat {
  public:
-  static constexpr int kPlayerMaxEnergy = 3;
+  static constexpr int kPlayerMaxEnergy = turn_calc::kPlayerStartingEnergy;
 
   explicit Combat(uint64_t seed);
 
