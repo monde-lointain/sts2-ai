@@ -87,6 +87,10 @@ std::size_t CompactStateHash::operator()(const CompactState& s) const noexcept {
 }
 
 SearchResult Search::solve(const CompactState& state) {
+  // No depth/time limit: search relies on the state machine terminating.
+  // Production enemies' positive dark_strike_base + Ritual ramp force
+  // termination within finite rounds; default-zero-damage enemies would recurse
+  // forever (test fixtures use non-zero values).
   if (transition::is_terminal(state)) {
     SearchResult r;
     r.score = Score{static_cast<double>(state.player_hp), 0.0};

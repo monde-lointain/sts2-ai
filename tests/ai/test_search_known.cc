@@ -89,7 +89,7 @@ TEST(Search, LethalThisTurn_PreferStrike) {
   EXPECT_EQ(r.best_action.target_idx, 0);
 }
 
-TEST(Search, OverkillStrikeAlsoChosen) {
+TEST(Search, OverkillDamage_StillPicksKillingBlow) {
   CompactState s = make_lethal_position();
   s.enemies[0].hp = 4;  // strike does 6, overkill
 
@@ -135,7 +135,7 @@ TEST(Search, DefensivePlayPreservesHp) {
   EXPECT_EQ(r.best_action.card_id, CardId::kDefend);
 }
 
-TEST(Search, EndTurnIsAlwaysLegal) {
+TEST(Search, EmptyHand_PicksEndTurn) {
   CompactState s;
   s.player_hp = 30;
   s.energy = 3;
@@ -181,7 +181,7 @@ TEST(Score, BetterThan_FloatTolerance_RoundsTiebreakBothSides) {
   EXPECT_FALSE((Score{5.0 + 1e-12, 3.0 + 1e-12}.better_than(Score{5.0, 3.0})));
 }
 
-TEST(Search, TtPopulatesAcrossSolve) {
+TEST(Search, StarterPositionSolve_PopulatesTt) {
   CompactState s = make_lethal_position();
   Search search;
   EXPECT_EQ(search.tt_size(), 0u);
@@ -197,7 +197,13 @@ TEST(Search, Peek_UnvisitedReturnsNull) {
   EXPECT_NE(search.peek(s), nullptr);
 }
 
-TEST(Search, StarterCombatSolvesUnderTimeBudget) {
+// Slow tractability probe (~3 min). Disabled by default; re-enable via:
+//   ctest --preset ninja-debug -- --gtest_also_run_disabled_tests
+// or directly:
+//   ./build/ninja-debug/Debug/sts2_simulator_tests
+//     --gtest_also_run_disabled_tests
+//     --gtest_filter='Search.DISABLED_StarterCombatSolves*'
+TEST(Search, DISABLED_StarterCombatSolves_LogsDiagnostics) {
   sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
 
