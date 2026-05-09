@@ -3,11 +3,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <vector>
 
 #include "sts2/game/card.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/player.h"
+#include "sts2/game/power.h"
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 
@@ -45,6 +47,20 @@ class Combat {
   [[nodiscard]] TargetType card_target_kind(int hand_idx) const;
   [[nodiscard]] std::size_t hand_size() const;
   [[nodiscard]] int find_card_in_hand(CardId id) const;
+
+  [[nodiscard]] int player_hp() const;
+  [[nodiscard]] int player_max_hp() const;
+  [[nodiscard]] int player_block() const;
+  [[nodiscard]] int player_energy() const;
+  [[nodiscard]] int player_max_energy() const;
+  [[nodiscard]] std::span<const Power> player_powers() const;
+  [[nodiscard]] std::size_t player_hand_size() const;
+  [[nodiscard]] const Card& player_hand_at(std::size_t i) const;
+  [[nodiscard]] std::size_t draw_pile_size() const;
+  [[nodiscard]] std::size_t discard_pile_size() const;
+  [[nodiscard]] int total_deck_size() const;
+  [[nodiscard]] const Enemy& enemy_at(int slot) const;
+  [[nodiscard]] int display_index_of(int slot) const;
 
   void add_enemy(Enemy e);
   void set_pick_discard_callback(std::function<int(const Combat&)> cb);

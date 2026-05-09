@@ -29,18 +29,6 @@ bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
   return combat.is_enemy_alive(idx);
 }
 
-// Convert an engine slot index into the display index used by the battle UI,
-// which renumbers alive enemies starting from 0. Returns -1 if the slot is
-// dead, out of range, or negative.
-int display_index_for_slot(const sts2::game::Combat& combat, int slot_idx) {
-  if (!combat.is_enemy_alive(slot_idx)) return -1;
-  int display = 0;
-  for (int i = 0; i < slot_idx; ++i) {
-    if (combat.is_enemy_alive(i)) ++display;
-  }
-  return display;
-}
-
 void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
                    const sts2::game::Combat& combat) {
   if (step.kind == sts2::ai::PvStep::kEndTurn) {
@@ -51,7 +39,7 @@ void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
   if (step.target_idx >= 0) {
     const auto& es = combat.enemies();
     if (static_cast<std::size_t>(step.target_idx) < es.size()) {
-      const int disp = display_index_for_slot(combat, step.target_idx);
+      const int disp = combat.display_index_of(step.target_idx);
       if (disp >= 0) {
         out << " -> [" << disp << "] "
             << es[static_cast<std::size_t>(step.target_idx)].name;
@@ -84,18 +72,19 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
   if (rec.action.kind == sts2::input::Action::kEndTurn) {
     out << "End turn";
   } else if (rec.action.kind == sts2::input::Action::kPlayCard) {
-    const auto& hand = combat.player().hand;
     out << "Play ";
     if (rec.action.card_idx >= 0 &&
-        static_cast<std::size_t>(rec.action.card_idx) < hand.size()) {
-      out << hand[static_cast<std::size_t>(rec.action.card_idx)].name;
+        static_cast<std::size_t>(rec.action.card_idx) <
+            combat.player_hand_size()) {
+      out << combat
+                 .player_hand_at(static_cast<std::size_t>(rec.action.card_idx))
+                 .name;
     } else {
       out << "(none)";
     }
     if (target_is_live_enemy(combat, rec.target_idx)) {
-      const auto& enemy =
-          combat.enemies()[static_cast<std::size_t>(rec.target_idx)];
-      const int disp = display_index_for_slot(combat, rec.target_idx);
+      const auto& enemy = combat.enemy_at(rec.target_idx);
+      const int disp = combat.display_index_of(rec.target_idx);
       out << " -> [" << disp << "] " << enemy.name;
     }
     if (rec.survivor_discard_id != sts2::game::CardId::kNone) {

@@ -173,6 +173,52 @@ int Combat::find_card_in_hand(CardId id) const {
   return -1;
 }
 
+int Combat::player_hp() const { return player_.vitals.hp; }
+int Combat::player_max_hp() const { return player_.vitals.max_hp; }
+int Combat::player_block() const { return player_.vitals.block; }
+int Combat::player_energy() const { return player_.energy; }
+int Combat::player_max_energy() const { return player_.max_energy; }
+
+std::span<const Power> Combat::player_powers() const {
+  return player_.vitals.powers;
+}
+
+std::size_t Combat::player_hand_size() const { return player_.hand.size(); }
+
+const Card& Combat::player_hand_at(std::size_t i) const {
+  assert(i < player_.hand.size());
+  return player_.hand[i];
+}
+
+std::size_t Combat::draw_pile_size() const { return player_.draw_pile.size(); }
+std::size_t Combat::discard_pile_size() const {
+  return player_.discard_pile.size();
+}
+
+int Combat::total_deck_size() const {
+  return static_cast<int>(player_.draw_pile.size() + player_.hand.size() +
+                          player_.discard_pile.size() +
+                          player_.exhaust_pile.size());
+}
+
+const Enemy& Combat::enemy_at(int slot) const {
+  assert(slot >= 0 && static_cast<std::size_t>(slot) < enemies_.size());
+  return enemies_[static_cast<std::size_t>(slot)];
+}
+
+int Combat::display_index_of(int slot) const {
+  if (!is_enemy_alive(slot)) {
+    return -1;
+  }
+  int display = 0;
+  for (int i = 0; i < slot; ++i) {
+    if (is_enemy_alive(i)) {
+      ++display;
+    }
+  }
+  return display;
+}
+
 bool Combat::is_player_dead() const { return player_.vitals.hp <= 0; }
 
 bool Combat::all_enemies_dead() const {
