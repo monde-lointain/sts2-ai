@@ -88,12 +88,18 @@ void Combat::end_turn() {
   check_win_or_lose();
 }
 
+bool Combat::can_play(HandIndex idx) const { return can_play(idx.raw()); }
+
 bool Combat::can_play(int hand_idx) const {
   if (hand_idx < 0 || static_cast<size_t>(hand_idx) >= player_.hand.size()) {
     return false;
   }
   const Card& card = player_.hand[static_cast<size_t>(hand_idx)];
   return card.cost <= player_.energy;
+}
+
+bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
+  return play_card(hand_idx.raw(), target.raw());
 }
 
 bool Combat::play_card(int hand_idx, int target_idx) {
@@ -137,6 +143,10 @@ void Combat::reshuffle() {
   rng_.shuffle(player_.draw_pile);
 }
 
+bool Combat::is_enemy_alive(EnemySlot slot) const {
+  return is_enemy_alive(slot.raw());
+}
+
 bool Combat::is_enemy_alive(int idx) const {
   if (idx < 0 || static_cast<std::size_t>(idx) >= enemies_.size()) {
     return false;
@@ -152,6 +162,10 @@ std::vector<int> Combat::alive_enemy_indices() const {
     }
   }
   return out;
+}
+
+TargetType Combat::card_target_kind(HandIndex idx) const {
+  return card_target_kind(idx.raw());
 }
 
 TargetType Combat::card_target_kind(int hand_idx) const {
@@ -182,6 +196,10 @@ std::span<const Power> Combat::player_powers() const {
   return player_.vitals.powers;
 }
 
+const Card& Combat::player_hand_at(HandIndex idx) const {
+  return player_hand_at(static_cast<std::size_t>(idx.raw()));
+}
+
 const Card& Combat::player_hand_at(std::size_t i) const {
   assert(i < player_.hand.size());
   return player_.hand[i];
@@ -197,9 +215,17 @@ int Combat::total_deck_size() const {
                           player_.discard_pile.size());
 }
 
+const Enemy& Combat::enemy_at(EnemySlot slot) const {
+  return enemy_at(slot.raw());
+}
+
 const Enemy& Combat::enemy_at(int slot) const {
   assert(slot >= 0 && static_cast<std::size_t>(slot) < enemies_.size());
   return enemies_[static_cast<std::size_t>(slot)];
+}
+
+int Combat::display_index_of(EnemySlot slot) const {
+  return display_index_of(slot.raw());
 }
 
 int Combat::display_index_of(int slot) const {
@@ -235,6 +261,10 @@ void Combat::set_pick_discard_callback(std::function<int(const Combat&)> cb) {
   on_pick_discard_ = std::move(cb);
 }
 
+void Combat::deal_damage_to_enemy(EnemySlot slot, int base_damage) {
+  deal_damage_to_enemy(slot.raw(), base_damage);
+}
+
 void Combat::deal_damage_to_enemy(int idx, int base_damage) {
   assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
   Enemy& e = enemies_[static_cast<size_t>(idx)];
@@ -250,6 +280,10 @@ void Combat::enemy_attack_player(const Enemy& source, int base_damage) {
 }
 
 void Combat::gain_player_block(int amt) { player_.vitals.block += amt; }
+
+void Combat::apply_power_to_enemy(EnemySlot slot, PowerKind kind, int amt) {
+  apply_power_to_enemy(slot.raw(), kind, amt);
+}
 
 void Combat::apply_power_to_enemy(int idx, PowerKind kind, int amt) {
   assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
