@@ -33,11 +33,12 @@ bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
 // which renumbers alive enemies starting from 0. Returns -1 if the slot is
 // dead, out of range, or negative.
 int display_index_for_slot(const sts2::game::Combat& combat, int slot_idx) {
-  const std::vector<int> alive = combat.alive_enemy_indices();
-  for (std::size_t i = 0; i < alive.size(); ++i) {
-    if (alive[i] == slot_idx) return static_cast<int>(i);
+  if (!combat.is_enemy_alive(slot_idx)) return -1;
+  int display = 0;
+  for (int i = 0; i < slot_idx; ++i) {
+    if (combat.is_enemy_alive(i)) ++display;
   }
-  return -1;
+  return display;
 }
 
 void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
