@@ -30,7 +30,7 @@ using sts2::tests::helpers::MakeStarterCombat;
 
 constexpr int kSeedCount = 200;
 constexpr int kMaxStepsPerSeed = 100;
-constexpr uint64_t kSamplerSalt = 0x9E3779B97F4A7C15ULL;
+constexpr uint64_t kSamplerSalt = 0x9E3779B97F4A7C15ULL;  // golden-ratio constant, distinct from Combat's RNG seed
 
 Action pick_random_action(const CompactState& s, std::mt19937& rng) {
   const auto actions = legal_actions(s);
@@ -105,6 +105,9 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
 
         if (is_terminal(compact)) {
           combat.end_turn();
+          ASSERT_TRUE(combat.combat_over())
+              << "compact terminal but engine not; seed=" << seed
+              << " step=" << step;
           ++steps_executed;
           break;
         }
@@ -140,15 +143,14 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
       ++steps_executed;
 
       ASSERT_EQ(from_combat(combat), compact)
-          << "post-step divergence; seed=" << seed << " step=" << step;
+          << "post-step divergence;"
+          << " seed=" << seed << " step=" << step
+          << " kind=" << static_cast<int>(action.kind)
+          << " card=" << static_cast<int>(action.card_id)
+          << " target=" << static_cast<int>(action.target_idx);
     }
 
     EXPECT_GE(steps_executed, 1) << "no steps ran; seed=" << seed;
-
-    if (!combat.combat_over() && !is_terminal(compact)) {
-      EXPECT_EQ(from_combat(combat), compact)
-          << "final divergence; seed=" << seed;
-    }
   }
 }
 
