@@ -24,11 +24,11 @@ std::size_t hash_u64(uint64_t v) noexcept { return std::hash<uint64_t>{}(v); }
 
 uint64_t pack_player(const CompactState& s) noexcept {
   uint64_t v = 0;
-  v |= static_cast<uint64_t>(s.player_hp.raw());
-  v |= static_cast<uint64_t>(s.player_block.raw()) << 8;
-  v |= static_cast<uint64_t>(s.player_strength.raw()) << 16;
-  v |= static_cast<uint64_t>(s.player_weak.raw()) << 24;
-  v |= static_cast<uint64_t>(s.energy.raw()) << 32;
+  v |= static_cast<uint64_t>(s.player_hp.pack8());
+  v |= static_cast<uint64_t>(s.player_block.pack8()) << 8;
+  v |= static_cast<uint64_t>(s.player_strength.pack8()) << 16;
+  v |= static_cast<uint64_t>(s.player_weak.pack8()) << 24;
+  v |= static_cast<uint64_t>(s.energy.pack8()) << 32;
   v |= static_cast<uint64_t>(s.round) << 40;
   v |= static_cast<uint64_t>(static_cast<uint8_t>(s.phase)) << 56;
   return v;
@@ -36,12 +36,12 @@ uint64_t pack_player(const CompactState& s) noexcept {
 
 uint64_t pack_enemy(const EnemyState& e) noexcept {
   uint64_t v = 0;
-  v |= static_cast<uint64_t>(e.hp.raw());
-  v |= static_cast<uint64_t>(e.block.raw()) << 8;
-  v |= static_cast<uint64_t>(e.strength.raw()) << 16;
-  v |= static_cast<uint64_t>(e.weak.raw()) << 24;
-  v |= static_cast<uint64_t>(e.dark_strike_base.raw()) << 32;
-  v |= static_cast<uint64_t>(e.ritual_amount.raw()) << 40;
+  v |= static_cast<uint64_t>(e.hp.pack8());
+  v |= static_cast<uint64_t>(e.block.pack8()) << 8;
+  v |= static_cast<uint64_t>(e.strength.pack8()) << 16;
+  v |= static_cast<uint64_t>(e.weak.pack8()) << 24;
+  v |= static_cast<uint64_t>(e.dark_strike_base.pack8()) << 32;
+  v |= static_cast<uint64_t>(e.ritual_amount.pack8()) << 40;
   v |= static_cast<uint64_t>(e.just_applied_ritual ? 1u : 0u) << 48;
   v |= static_cast<uint64_t>(e.performed_first_move ? 1u : 0u) << 49;
   v |= static_cast<uint64_t>(e.alive ? 1u : 0u) << 50;
