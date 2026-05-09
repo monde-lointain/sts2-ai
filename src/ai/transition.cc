@@ -10,6 +10,10 @@ namespace {
 using sts2::game::CardId;
 using sts2::game::TargetType;
 
+constexpr CardId kAllCards[] = {CardId::kStrike, CardId::kDefend,
+                                CardId::kNeutralize, CardId::kSurvivor};
+
+// Mirrors src/game/damage.cc compute_outgoing/apply_to_defender; keep in sync.
 int compute_outgoing(int strength, int weak, int base) {
   int d = base + strength;
   if (weak > 0) {
@@ -76,6 +80,7 @@ uint8_t count_in_hand(const CardCounts& hand, CardId id) {
     case CardId::kNone:
       break;
   }
+  assert(false && "count_in_hand: invalid CardId");
   return 0;
 }
 
@@ -137,8 +142,6 @@ std::vector<Action> legal_actions(const CompactState& state) {
   assert(state.phase == Phase::kPlayerActing);
 
   std::vector<Action> actions;
-  constexpr CardId kAllCards[] = {CardId::kStrike, CardId::kDefend,
-                                  CardId::kNeutralize, CardId::kSurvivor};
 
   for (CardId id : kAllCards) {
     if (count_in_hand(state.hand, id) == 0) continue;
@@ -162,7 +165,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
         Action a;
         a.kind = ActionKind::kPlayCard;
         a.card_id = CardId::kSurvivor;
-        a.target_idx = 0xFF;
+        a.target_idx = kNoTarget;
         a.survivor_discard_id = CardId::kNone;
         actions.push_back(a);
       } else {
@@ -172,7 +175,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
           Action a;
           a.kind = ActionKind::kPlayCard;
           a.card_id = CardId::kSurvivor;
-          a.target_idx = 0xFF;
+          a.target_idx = kNoTarget;
           a.survivor_discard_id = other;
           actions.push_back(a);
         }
@@ -181,7 +184,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
       Action a;
       a.kind = ActionKind::kPlayCard;
       a.card_id = id;
-      a.target_idx = 0xFF;
+      a.target_idx = kNoTarget;
       actions.push_back(a);
     }
   }
@@ -215,6 +218,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
   dec_count(state.hand, id);
   state.energy = static_cast<uint8_t>(state.energy - cost);
 
+  // Card costs/effects mirror src/game/cards.cc make_*() factories; keep in sync.
   switch (id) {
     case CardId::kStrike: {
       EnemyState& e = state.enemies[action.target_idx];
@@ -233,8 +237,9 @@ bool apply_player_action(CompactState& state, const Action& action) {
     }
     case CardId::kSurvivor: {
       state.player_block = static_cast<uint8_t>(state.player_block + 8);
-      if (state.hand.total() > 0 &&
-          action.survivor_discard_id != CardId::kNone) {
+      if (state.hand.total() == 0) {
+        assert(action.survivor_discard_id == sts2::game::CardId::kNone);
+      } else if (action.survivor_discard_id != CardId::kNone) {
         assert(count_in_hand(state.hand, action.survivor_discard_id) > 0);
         dec_count(state.hand, action.survivor_discard_id);
         inc_count(state.discard, action.survivor_discard_id);
