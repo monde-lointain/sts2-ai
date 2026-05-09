@@ -2,6 +2,7 @@
 
 #include "sts2/game/combat.h"
 #include "sts2/game/move_calc.h"
+#include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
 
 namespace sts2::enemies {
@@ -36,8 +37,8 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
   sts2::game::move_calc::act_on_intent(
       e.current_move,
       [&]() {
-        sts2::game::Combat::apply_power_to_enemy_self(
-            e, sts2::game::PowerKind::kRitual, e.ritual_amount);
+        sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kRitual,
+                            e.ritual_amount);
       },
       [&]() {
         combat.enemy_attack_player(e, e.dark_strike_base);
