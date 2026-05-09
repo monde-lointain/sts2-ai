@@ -15,6 +15,7 @@ target_sources(sts2_simulator_tests PRIVATE
     render/test_render_internal.cc
     render/test_render.cc
     render/test_console.cc
+    render/test_ai_recommendation.cc
     input/test_input.cc
     input/test_input_internal.cc
     app/test_args.cc

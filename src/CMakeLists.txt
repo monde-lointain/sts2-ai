@@ -16,6 +16,7 @@ target_sources(sts2_simulator PRIVATE
     render/bar.cc
     render/console.cc
     render/render.cc
+    render/ai_recommendation.cc
     render/render_internal.h
     # input module
     input/input.cc
@@ -62,5 +63,5 @@ sts2_apply_warnings(sts2_ai)
 # sts2_fight — fight simulator executable
 # ------------------------------------------------------------------
 add_executable(sts2_fight main.cc)
-target_link_libraries(sts2_fight PRIVATE sts2::simulator)
+target_link_libraries(sts2_fight PRIVATE sts2::simulator sts2::ai)
 sts2_apply_warnings(sts2_fight)

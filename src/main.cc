@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <iostream>
 
+#include "sts2/ai/recommend.h"
 #include "sts2/app/args.h"
 #include "sts2/app/prompts.h"
 #include "sts2/game/cards.h"
@@ -9,6 +10,7 @@
 #include "sts2/game/player.h"
 #include "sts2/game/rng.h"
 #include "sts2/input/input.h"
+#include "sts2/render/ai_recommendation.h"
 #include "sts2/render/ansi.h"
 #include "sts2/render/console.h"
 #include "sts2/render/render.h"
@@ -40,11 +42,19 @@ int main(int argc, char** argv) {
 
   combat.start(sts2::cards::make_silent_starter_deck());
 
+  sts2::ai::Recommender ai;
+
   while (true) {
     sts2::render::render_combat(combat, std::cout);
     if (combat.combat_over()) {
       return 0;
     }
+
+    std::cout << sts2::ansi::kCyan << "Analyzing combat..." << sts2::ansi::kReset
+              << std::flush;
+    sts2::ai::Recommendation rec = ai.recommend(combat);
+    std::cout << "\r                   \r";
+    sts2::render::render_ai_recommendation(rec, combat, std::cout);
 
     std::cout << sts2::ansi::kGreen << ">" << sts2::ansi::kReset
               << " Play card [index], (e)nd turn, (q)uit: " << std::flush;
