@@ -45,16 +45,14 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
 
 }  // namespace
 
-CardCounts& CardCounts::operator+=(const CardCounts& o) {
+CardCounts& CardCounts::operator+=(const CardCounts& o) noexcept {
   for (std::size_t i = 0; i < counts.size(); ++i) {
-    const int sum = counts[i] + o.counts[i];
-    assert(sum <= 0xFF && "CardCounts::operator+= overflow");
-    counts[i] = static_cast<uint8_t>(sum);
+    counts[i] = static_cast<uint8_t>(counts[i] + o.counts[i]);
   }
   return *this;
 }
 
-CardCounts& CardCounts::operator-=(const CardCounts& o) {
+CardCounts& CardCounts::operator-=(const CardCounts& o) noexcept {
   for (std::size_t i = 0; i < counts.size(); ++i) {
     assert(counts[i] >= o.counts[i] && "CardCounts::operator-= underflow");
     counts[i] = static_cast<uint8_t>(counts[i] - o.counts[i]);

@@ -16,19 +16,23 @@ namespace sts2::ai {
 struct CardCounts {
   std::array<uint8_t, 4> counts{};
 
-  static constexpr std::size_t to_index(sts2::game::CardId id) {
+  // CardId is 1-indexed; kNone=0 is an assert-only sentinel, so we offset by 1
+  // to map kStrike..kSurvivor onto array indices 0..3.
+  static constexpr std::size_t to_index(sts2::game::CardId id) noexcept {
     assert(id != sts2::game::CardId::kNone);
     return static_cast<std::size_t>(id) - 1;
   }
 
-  uint8_t& operator[](sts2::game::CardId id) { return counts[to_index(id)]; }
-  uint8_t operator[](sts2::game::CardId id) const {
+  uint8_t& operator[](sts2::game::CardId id) noexcept {
+    return counts[to_index(id)];
+  }
+  uint8_t operator[](sts2::game::CardId id) const noexcept {
     return counts[to_index(id)];
   }
 
-  CardCounts& operator+=(const CardCounts& o);
-  CardCounts& operator-=(const CardCounts& o);
-  friend CardCounts operator+(CardCounts a, const CardCounts& b) {
+  CardCounts& operator+=(const CardCounts& o) noexcept;
+  CardCounts& operator-=(const CardCounts& o) noexcept;
+  friend CardCounts operator+(CardCounts a, const CardCounts& b) noexcept {
     return a += b;
   }
 
