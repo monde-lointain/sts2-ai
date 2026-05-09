@@ -111,69 +111,18 @@ void Combat::draw(int n) { player_.hand.draw_from(player_.deck, rng_, n); }
 
 void Combat::reshuffle() { player_.deck.reshuffle(rng_); }
 
-bool Combat::is_enemy_alive(EnemySlot slot) const {
-  if (!slot.in_range(enemies_)) {
-    return false;
-  }
-  return slot.at(enemies_).vitals.hp > 0;
-}
-
 std::vector<EnemySlot> Combat::alive_enemy_indices() const {
   std::vector<EnemySlot> out;
   for (std::size_t i = 0; i < enemies_.size(); ++i) {
-    if (enemies_[i].vitals.hp > 0) {
+    if (is_alive(enemies_[i])) {
       out.push_back(EnemySlot{static_cast<int>(i)});
     }
   }
   return out;
 }
 
-std::size_t Combat::hand_size() const { return player_.hand.size(); }
-
 HandIndex Combat::find_card_in_hand(CardId id) const {
   return player_.hand.find(id);
-}
-
-int Combat::player_hp() const { return player_.vitals.hp; }
-int Combat::player_max_hp() const { return player_.vitals.max_hp; }
-int Combat::player_block() const { return player_.vitals.block; }
-int Combat::player_energy() const { return player_.energy; }
-
-std::span<const Power> Combat::player_powers() const {
-  return player_.vitals.powers;
-}
-
-const Card& Combat::player_hand_at(HandIndex idx) const {
-  return player_.hand.at(idx);
-}
-
-std::size_t Combat::draw_pile_size() const {
-  return player_.deck.draw_size();
-}
-std::size_t Combat::discard_pile_size() const {
-  return player_.deck.discard_size();
-}
-
-int Combat::total_deck_size() const {
-  return static_cast<int>(player_.deck.total_size() + player_.hand.size());
-}
-
-const Enemy& Combat::enemy_at(EnemySlot slot) const {
-  assert(slot.in_range(enemies_));
-  return slot.at(enemies_);
-}
-
-int Combat::display_index_of(EnemySlot slot) const {
-  if (!is_enemy_alive(slot)) {
-    return -1;
-  }
-  int display = 0;
-  for (int i = 0; i < slot.raw(); ++i) {
-    if (is_enemy_alive(EnemySlot{i})) {
-      ++display;
-    }
-  }
-  return display;
 }
 
 bool Combat::is_player_dead() const { return player_.vitals.hp <= 0; }
@@ -181,7 +130,7 @@ bool Combat::is_player_dead() const { return player_.vitals.hp <= 0; }
 bool Combat::all_enemies_dead() const {
   return !enemies_.empty() &&
          std::all_of(enemies_.begin(), enemies_.end(),
-                     [](const Enemy& e) { return e.vitals.hp <= 0; });
+                     [](const Enemy& e) { return !is_alive(e); });
 }
 
 void Combat::check_win_or_lose() {

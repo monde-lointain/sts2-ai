@@ -31,6 +31,7 @@
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
+#include "render/render_internal.h"
 #include "tests/game/test_helpers.h"
 #include "tests/seeds/expected_values.h"
 
@@ -1149,37 +1150,41 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
 }
 
 // -------------------------------------------------------------------------
-// 10.12  Query helpers (T3 refactor): is_enemy_alive, alive_enemy_indices,
-//        hand_size, find_card_in_hand
+// 10.12  Query helpers: alive_enemy_indices, find_card_in_hand
+//        is_alive (free helper in enemy.h)
 // -------------------------------------------------------------------------
 
 using TargetType = sts2::game::TargetType;
 
-// is_enemy_alive: -1 → false (negative-index guard).
+// is_alive: negative-index guard — slot not in range → not alive.
 TEST(CombatIsEnemyAlive, NegativeIndexFalse) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
-  EXPECT_FALSE(c.is_enemy_alive(sts2::game::EnemySlot{-1}));
+  const sts2::game::EnemySlot slot{-1};
+  EXPECT_FALSE(slot.in_range(c.enemies()));
 }
 
-// is_enemy_alive: in-range alive → true.
+// is_alive: in-range alive enemy → true.
 TEST(CombatIsEnemyAlive, AliveTrue) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
-  EXPECT_TRUE(c.is_enemy_alive(sts2::game::EnemySlot{0}));
+  const sts2::game::EnemySlot slot{0};
+  ASSERT_TRUE(slot.in_range(c.enemies()));
+  EXPECT_TRUE(sts2::game::is_alive(slot.at(c.enemies())));
 }
 
-// is_enemy_alive: in-range dead → false (hp <= 0 guard).
+// is_alive: in-range dead enemy → false.
 TEST(CombatIsEnemyAlive, DeadFalse) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
   KillEnemy(c, 0);
   ASSERT_LE(c.enemies()[0].vitals.hp, 0);
-  EXPECT_FALSE(c.is_enemy_alive(sts2::game::EnemySlot{0}));
+  const sts2::game::EnemySlot slot{0};
+  EXPECT_FALSE(sts2::game::is_alive(slot.at(c.enemies())));
 }
 
-// is_enemy_alive: out-of-range → false (size guard).
+// is_alive: out-of-range slot → not in range (size guard).
 TEST(CombatIsEnemyAlive, OutOfRangeFalse) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
-  EXPECT_FALSE(c.is_enemy_alive(sts2::game::EnemySlot{1}));
-  EXPECT_FALSE(c.is_enemy_alive(sts2::game::EnemySlot{99}));
+  EXPECT_FALSE(sts2::game::EnemySlot{1}.in_range(c.enemies()));
+  EXPECT_FALSE(sts2::game::EnemySlot{99}.in_range(c.enemies()));
 }
 
 // alive_enemy_indices: empty enemies vector → empty.
@@ -1211,18 +1216,17 @@ TEST(CombatAliveEnemyIndices, BothAliveReturnsBothInOrder) {
   EXPECT_EQ(c.alive_enemy_indices(), (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{0}, sts2::game::EnemySlot{1}}));
 }
 
-// hand_size: empty hand → 0.
+// hand size: empty hand → 0.
 TEST(CombatHandSize, EmptyZero) {
   Combat c{kCombatTestSeed};
   ASSERT_TRUE(c.player().hand.empty());
-  EXPECT_EQ(c.hand_size(), 0U);
+  EXPECT_EQ(c.player().hand.size(), 0U);
 }
 
-// hand_size: populated → matches player().hand.size().
-TEST(CombatHandSize, PopulatedMatchesHand) {
+// hand size: populated starter combat has 7 cards.
+TEST(CombatHandSize, PopulatedSeven) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.hand_size(), c.player().hand.size());
-  EXPECT_EQ(c.hand_size(), 7U);
+  EXPECT_EQ(c.player().hand.size(), 7U);
 }
 
 // find_card_in_hand: present → returns index of first match.
@@ -1230,7 +1234,7 @@ TEST(CombatFindCardInHand, PresentReturnsIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   const sts2::game::HandIndex strike_idx = c.find_card_in_hand(CardId::kStrike);
   ASSERT_TRUE(strike_idx.valid());
-  EXPECT_EQ(c.player_hand_at(strike_idx).id, CardId::kStrike);
+  EXPECT_EQ(c.player().hand.at(strike_idx).id, CardId::kStrike);
 }
 
 // find_card_in_hand: absent → returns -1.
@@ -1258,135 +1262,122 @@ TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
 }
 
 // -------------------------------------------------------------------------
-// 10.13  Player/enemy/deck query helpers (T9 refactor): player_hp,
-//        player_max_hp, player_block, player_energy,
-//        player_powers, player_hand_at, draw_pile_size,
-//        discard_pile_size, total_deck_size, enemy_at, display_index_of
+// 10.13  Player/enemy/deck vitals (via player() / enemies() direct access)
 // -------------------------------------------------------------------------
 
-// player_hp / player_max_hp: defaults — fresh combat.
+// player vitals: defaults — fresh combat.
 TEST(CombatPlayerVitalsAccessors, PlayerHpDefaults) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player_hp(), 70);
-  EXPECT_EQ(c.player_max_hp(), 70);
+  EXPECT_EQ(c.player().vitals.hp, 70);
+  EXPECT_EQ(c.player().vitals.max_hp, 70);
 }
 
-// player_hp: reflects damage applied via enemy_attack_player.
+// player vitals: reflects damage applied via enemy_attack_player.
 TEST(CombatPlayerVitalsAccessors, PlayerHpAfterDamage) {
   Combat c{kCombatTestSeed};
   Enemy attacker{};
   attacker.vitals = Vitals{1, 1, 0, {}};
   c.enemy_attack_player(attacker, 5);
-  EXPECT_EQ(c.player_hp(), 65);
-  EXPECT_EQ(c.player_max_hp(), 70);
+  EXPECT_EQ(c.player().vitals.hp, 65);
+  EXPECT_EQ(c.player().vitals.max_hp, 70);
 }
 
-// player_block: starts at 0; gain_player_block accumulates.
+// player block: starts at 0; gain_player_block accumulates.
 TEST(CombatPlayerVitalsAccessors, PlayerBlockAccumulates) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player_block(), 0);
+  EXPECT_EQ(c.player().vitals.block, 0);
   c.gain_player_block(7);
-  EXPECT_EQ(c.player_block(), 7);
+  EXPECT_EQ(c.player().vitals.block, 7);
 }
 
-// player_energy: 0 pre-start, kPlayerMaxEnergy post-start.
+// player energy: 0 pre-start, kPlayerMaxEnergy post-start.
 TEST(CombatPlayerVitalsAccessors, PlayerEnergyAccessors) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player_energy(), 0);
+  EXPECT_EQ(c.player().energy, 0);
 
   c.start(MakeStrikeDefendDeck7());
-  EXPECT_EQ(c.player_energy(), Combat::kPlayerMaxEnergy);
+  EXPECT_EQ(c.player().energy, Combat::kPlayerMaxEnergy);
 }
 
-// player_powers: empty by default; matches player().vitals.powers when populated.
-TEST(CombatPlayerVitalsAccessors, PlayerPowersEmptyAndPopulated) {
+// player powers: empty by default.
+TEST(CombatPlayerVitalsAccessors, PlayerPowersEmptyByDefault) {
   Combat c{kCombatTestSeed};
-  EXPECT_TRUE(c.player_powers().empty());
-  EXPECT_EQ(c.player_powers().size(), c.player().vitals.powers.size());
+  EXPECT_TRUE(c.player().vitals.powers.empty());
 }
 
-// player_hand_at: returns the same Card as direct access at every valid index.
-TEST(CombatPlayerHandAccessors, PlayerHandAtMatchesDirectAccess) {
+// hand.at: returns the same Card as cards() at every valid index.
+TEST(CombatPlayerHandAccessors, HandAtMatchesCardsAccess) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_EQ(c.hand_size(), 7U);
-  for (std::size_t i = 0; i < c.hand_size(); ++i) {
-    EXPECT_EQ(c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}).id, c.player().hand.cards()[i].id);
-    EXPECT_EQ(&c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)}), &c.player().hand.cards()[i]);
+  ASSERT_EQ(c.player().hand.size(), 7U);
+  for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
+    const auto idx = sts2::game::HandIndex{static_cast<int>(i)};
+    EXPECT_EQ(c.player().hand.at(idx).id, c.player().hand.cards()[i].id);
+    EXPECT_EQ(&c.player().hand.at(idx), &c.player().hand.cards()[i]);
   }
 }
 
-// draw_pile_size / discard_pile_size: starter combat sees 12-card deck split
-// into 7 hand + 5 draw + 0 discard at R1 start.
+// draw/discard pile sizes: starter combat — 7 hand + 5 draw + 0 discard at R1.
 TEST(CombatPileSizeAccessors, StarterCombatPilesAtR1Start) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.draw_pile_size(), 5U);
-  EXPECT_EQ(c.discard_pile_size(), 0U);
+  EXPECT_EQ(c.player().deck.draw_size(), 5U);
+  EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
-// draw_pile_size / discard_pile_size: after playing a card, discard grows.
+// discard pile grows after playing a card.
 TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  const std::size_t pre_discard = c.discard_pile_size();
+  const std::size_t pre_discard = c.player().deck.discard_size();
   int idx = FindHandIndex(c, CardId::kDefend);
   ASSERT_NE(idx, -1);
   ASSERT_TRUE(c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
-  EXPECT_EQ(c.discard_pile_size(), pre_discard + 1);
+  EXPECT_EQ(c.player().deck.discard_size(), pre_discard + 1);
 }
 
-// total_deck_size: sums draw + hand + discard piles.
+// total deck size: draw + hand + discard.
 TEST(CombatTotalDeckSize, SumsAllPiles) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  // Silent starter deck has 12 cards; at R1 start: 7 hand + 5 draw, 0 elsewhere.
-  EXPECT_EQ(c.total_deck_size(), 12);
+  // 12-card deck; R1: 7 hand + 5 draw + 0 discard.
+  EXPECT_EQ(static_cast<int>(c.player().deck.total_size() + c.player().hand.size()), 12);
 }
 
-// total_deck_size: zero when no cards anywhere.
+// total deck size: zero when no cards anywhere.
 TEST(CombatTotalDeckSize, ZeroWhenEmpty) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.total_deck_size(), 0);
+  EXPECT_EQ(static_cast<int>(c.player().deck.total_size() + c.player().hand.size()), 0);
 }
 
-// enemy_at: returns the Enemy at the given slot.
-TEST(CombatEnemyAt, ReturnsEnemyAtSlot) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_EQ(c.enemies().size(), 2U);
-  EXPECT_EQ(c.enemy_at(sts2::game::EnemySlot{0}).name, c.enemies()[0].name);
-  EXPECT_EQ(c.enemy_at(sts2::game::EnemySlot{1}).name, c.enemies()[1].name);
-  EXPECT_EQ(&c.enemy_at(sts2::game::EnemySlot{0}), &c.enemies()[0]);
-}
-
-// display_index_of: negative slot → -1.
+// display_index_of (render helper): negative slot → -1.
 TEST(CombatDisplayIndexOf, NegativeSlotMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{-1}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{-1}), -1);
 }
 
 // display_index_of: out-of-range slot → -1.
 TEST(CombatDisplayIndexOf, OutOfRangeMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{2}), -1);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{99}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{2}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{99}), -1);
 }
 
 // display_index_of: dead enemy slot → -1.
 TEST(CombatDisplayIndexOf, DeadSlotMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{0}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}), -1);
 }
 
 // display_index_of: both alive — slot indices map identity-wise.
 TEST(CombatDisplayIndexOf, BothAliveIdentity) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{0}), 0);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{1}), 1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}), 0);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}), 1);
 }
 
 // display_index_of: enemy 0 dead — slot 1 collapses to display 0.
 TEST(CombatDisplayIndexOf, FrontDeadCollapsesIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  EXPECT_EQ(c.display_index_of(sts2::game::EnemySlot{1}), 0);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}), 0);
 }
 
 }  // namespace

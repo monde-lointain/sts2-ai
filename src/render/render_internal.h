@@ -8,7 +8,9 @@
 #include <string>
 #include <vector>
 
+#include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/power.h"
 
 namespace sts2::render::detail {
@@ -23,5 +25,7 @@ const char* power_name(sts2::game::PowerKind kind);
 std::string format_powers(std::span<const sts2::game::Power> ps);
 std::string format_intent(const sts2::game::Enemy& e);
 std::size_t max_enemy_name_len(const std::vector<sts2::game::Enemy>& es);
+int display_index_of(const sts2::game::Combat& combat,
+                     sts2::game::EnemySlot slot);
 
 }  // namespace sts2::render::detail
