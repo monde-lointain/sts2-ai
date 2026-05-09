@@ -29,23 +29,19 @@ sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
 }
 
 void roll_next_move(sts2::game::Enemy& e) {
-  if (!e.performed_first_move) {
-    e.performed_first_move = true;
-    return;
-  }
-  e.current_move = sts2::game::move_calc::next_move(e.current_move);
+  sts2::game::move_calc::advance_intent(e.performed_first_move, e.current_move);
 }
 
 void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
-  switch (e.current_move) {
-    case sts2::game::MoveId::kIncantation:
-      sts2::game::Combat::apply_power_to_enemy_self(
-          e, sts2::game::PowerKind::kRitual, e.ritual_amount);
-      break;
-    case sts2::game::MoveId::kDarkStrike:
-      combat.enemy_attack_player(e, e.dark_strike_base);
-      break;
-  }
+  sts2::game::move_calc::act_on_intent(
+      e.current_move,
+      [&]() {
+        sts2::game::Combat::apply_power_to_enemy_self(
+            e, sts2::game::PowerKind::kRitual, e.ritual_amount);
+      },
+      [&]() {
+        combat.enemy_attack_player(e, e.dark_strike_base);
+      });
 }
 
 }  // namespace sts2::enemies

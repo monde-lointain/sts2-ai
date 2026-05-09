@@ -114,8 +114,8 @@ inline void KillEnemy(sts2::game::Combat& c, int idx) {
 // AnyEnemy, the first alive enemy is selected; otherwise EnemySlot::none().
 inline void DrainPlayerEnergy(sts2::game::Combat& c) {
     int safety = 10;
-    while (c.player().energy > 0 && c.hand_size() > 0 && safety-- > 0) {
-        const auto& card = c.player_hand_at(sts2::game::HandIndex{0});
+    while (c.player().energy > 0 && c.player().hand.size() > 0 && safety-- > 0) {
+        const auto& card = c.player().hand.at(sts2::game::HandIndex{0});
         sts2::game::EnemySlot target = sts2::game::EnemySlot::none();
         if (card.target == sts2::game::TargetType::kAnyEnemy) {
             for (std::size_t i = 0; i < c.enemies().size(); ++i) {

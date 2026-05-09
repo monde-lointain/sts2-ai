@@ -25,4 +25,35 @@ namespace sts2::game::move_calc {
   return true;
 }
 
+// Advance the enemy's intent state for the next turn. On the first call
+// (performed_first_move == false) marks the intent as performed without
+// changing it; on subsequent calls advances current_move via next_move().
+inline void advance_intent(bool& performed_first_move,
+                           MoveId& current_move) noexcept {
+  if (!performed_first_move) {
+    performed_first_move = true;
+    return;
+  }
+  current_move = next_move(current_move);
+}
+
+// Dispatch the enemy's intent to per-effect callables. Sharing this switch
+// is the load-bearing T18c guarantee: adding a new MoveId is a one-place
+// header change. Each layer supplies lambdas that perform its own effects.
+template <typename OnRitual, typename OnDarkStrike>
+void act_on_intent(MoveId move, OnRitual&& on_ritual,
+                   OnDarkStrike&& on_dark_strike)
+    noexcept(noexcept(on_ritual()) && noexcept(on_dark_strike())) {
+  // NOTE: adding a MoveId here is not a compile-time call-site signal —
+  // grep act_on_intent users to verify they handle the new case.
+  switch (move) {
+    case MoveId::kIncantation:
+      on_ritual();
+      break;
+    case MoveId::kDarkStrike:
+      on_dark_strike();
+      break;
+  }
+}
+
 }  // namespace sts2::game::move_calc

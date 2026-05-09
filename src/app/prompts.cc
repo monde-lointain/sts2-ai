@@ -44,7 +44,7 @@ sts2::game::EnemySlot prompt_target(const sts2::game::Combat& c,
 
 sts2::game::HandIndex prompt_discard(const sts2::game::Combat& combat,
                                      std::istream& in, std::ostream& out) {
-  const std::size_t hand = combat.hand_size();
+  const std::size_t hand = combat.player().hand.size();
   if (hand == 1) {
     return sts2::game::HandIndex{0};
   }

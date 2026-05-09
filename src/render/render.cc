@@ -82,6 +82,22 @@ std::size_t max_enemy_name_len(const std::vector<sts2::game::Enemy>& es) {
   return m;
 }
 
+int display_index_of(const sts2::game::Combat& combat,
+                     sts2::game::EnemySlot slot) {
+  if (!sts2::game::is_alive(combat.enemies(), slot)) {
+    return -1;
+  }
+  int display = 0;
+  for (int i = 0; i < slot.raw(); ++i) {
+    const sts2::game::EnemySlot s{i};
+    if (s.in_range(combat.enemies()) &&
+        sts2::game::is_alive(s.at(combat.enemies()))) {
+      ++display;
+    }
+  }
+  return display;
+}
+
 }  // namespace sts2::render::detail
 
 namespace sts2::render {
@@ -92,21 +108,21 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
       << ansi::kReset << "\n";
 
   out << "  Round " << c.round() << "  " << ansi::kCyan << "Energy "
-      << c.player_energy() << "/" << sts2::game::Combat::kPlayerMaxEnergy
+      << c.player().energy << "/" << sts2::game::Combat::kPlayerMaxEnergy
       << ansi::kReset
-      << "  Draw " << c.draw_pile_size() << "  Discard "
-      << c.discard_pile_size() << "\n";
+      << "  Draw " << c.player().deck.draw_size() << "  Discard "
+      << c.player().deck.discard_size() << "\n";
 
   out << "  " << ansi::kBold << "The Silent" << ansi::kReset << "  HP "
       << ansi::kRed
-      << render::hp_bar(c.player_hp(), c.player_max_hp(),
+      << render::hp_bar(c.player().vitals.hp, c.player().vitals.max_hp,
                         detail::kPlayerHpBarWidth)
-      << ansi::kReset << " " << c.player_hp() << "/" << c.player_max_hp();
-  if (c.player_block() > 0) {
-    out << "  " << ansi::kBlue << c.player_block() << ansi::kReset << " blk";
+      << ansi::kReset << " " << c.player().vitals.hp << "/" << c.player().vitals.max_hp;
+  if (c.player().vitals.block > 0) {
+    out << "  " << ansi::kBlue << c.player().vitals.block << ansi::kReset << " blk";
   }
-  out << "  Deck " << c.total_deck_size();
-  const auto player_powers = c.player_powers();
+  out << "  Deck " << static_cast<int>(c.player().deck.total_size() + c.player().hand.size());
+  const auto player_powers = c.player().vitals.powers;
   if (!player_powers.empty()) {
     out << "  " << detail::format_powers(player_powers);
   }
@@ -120,7 +136,7 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
   std::size_t name_width = detail::max_enemy_name_len(c.enemies());
   std::size_t display_idx = 0;
   for (sts2::game::EnemySlot slot : c.alive_enemy_indices()) {
-    const sts2::game::Enemy& e = c.enemy_at(slot);
+    const sts2::game::Enemy& e = slot.at(c.enemies());
     out << "  [" << display_idx++ << "] " << ansi::kBold << e.name
         << ansi::kReset << detail::spaces(name_width - e.name.size())
         << "   HP " << ansi::kRed
@@ -138,9 +154,9 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
   }
   out << "\n";
 
-  for (std::size_t i = 0; i < c.hand_size(); ++i) {
-    const sts2::game::Card& card = c.player_hand_at(sts2::game::HandIndex{static_cast<int>(i)});
-    bool playable = card.cost <= c.player_energy();
+  for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
+    const sts2::game::Card& card = c.player().hand.at(sts2::game::HandIndex{static_cast<int>(i)});
+    bool playable = card.cost <= c.player().energy;
     const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;
     const char* bullet =
         playable ? glyphs::kBulletFilled : glyphs::kBulletHollow;
