@@ -22,6 +22,7 @@ target_sources(sts2_simulator_tests PRIVATE
     ai/test_state.cc
     ai/test_probability.cc
     ai/test_transition.cc
+    ai/test_state_parity.cc
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
