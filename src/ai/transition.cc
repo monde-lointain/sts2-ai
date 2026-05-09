@@ -4,6 +4,8 @@
 #include <cassert>
 #include <cstdint>
 
+#include "sts2/game/damage_calc.h"
+
 namespace sts2::ai::transition {
 
 namespace {
@@ -14,24 +16,14 @@ using sts2::game::TargetType;
 constexpr CardId kAllCards[] = {CardId::kStrike, CardId::kDefend,
                                 CardId::kNeutralize, CardId::kSurvivor};
 
-// Mirrors src/game/damage.cc compute_outgoing/apply_to_defender; keep in sync.
-int compute_outgoing(int strength, int weak, int base) {
-  int d = base + strength;
-  if (weak > 0) {
-    d = static_cast<int>(d * 0.75);
-  }
-  return d < 0 ? 0 : d;
-}
-
-void apply_to_defender(uint8_t& hp, uint8_t& block, int incoming) {
-  if (incoming <= block) {
-    block = static_cast<uint8_t>(block - incoming);
-    return;
-  }
-  incoming -= block;
-  block = 0;
-  int loss = incoming < hp ? incoming : hp;
-  hp = static_cast<uint8_t>(hp - loss);
+// Adapter: bridge uint8_t hp/block fields to the canonical int& overload in
+// sts2::damage.
+void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
+  int hp_i = hp;
+  int block_i = block;
+  sts2::damage::apply_to_defender(hp_i, block_i, incoming);
+  hp = static_cast<uint8_t>(hp_i);
+  block = static_cast<uint8_t>(block_i);
 }
 
 int card_cost(CardId id) {
@@ -130,8 +122,8 @@ void inc_count(CardCounts& counts, CardId id) {
 }
 
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
-  const int dmg = compute_outgoing(strength, weak, base);
-  apply_to_defender(enemy.hp, enemy.block, dmg);
+  const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
+  apply_damage_u8(enemy.hp, enemy.block, dmg);
   if (enemy.hp == 0) {
     enemy.alive = false;
   }
@@ -280,8 +272,9 @@ void enemy_act(CompactState& s, EnemyState& e) {
       e.just_applied_ritual = true;
       break;
     case sts2::game::MoveId::kDarkStrike: {
-      const int dmg = compute_outgoing(e.strength, e.weak, e.dark_strike_base);
-      apply_to_defender(s.player_hp, s.player_block, dmg);
+      const int dmg =
+          sts2::damage::compute_outgoing(e.dark_strike_base, e.strength, e.weak);
+      apply_damage_u8(s.player_hp, s.player_block, dmg);
       break;
     }
   }
