@@ -45,6 +45,7 @@ target_sources(sts2_ai PRIVATE
     ai/probability.cc
     ai/transition.cc
     ai/search.cc
+    ai/recommend.cc
 )
 
 target_compile_features(sts2_ai PUBLIC cxx_std_20)
