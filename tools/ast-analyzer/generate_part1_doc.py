@@ -336,15 +336,17 @@ def render_testability_notes() -> list[str]:
         "",
         "- **`Combat` — non-deterministic external state.** It owns an `Rng` "
         "by value (`rng_`) seeded in the constructor. Tests targeting "
-        "`Combat::draw`, `Combat::reshuffle`, `Combat::start` must seed "
-        "deterministically and read pile state through the public accessors.",
+        "`Combat::start`, `Combat::start_player_turn`, `Combat::end_turn` "
+        "must seed deterministically and read pile state through the public "
+        "accessors.",
         "- **`Rng::shuffle` is a function template.** Coverage for the "
         "non-trivial path requires instantiating it with at least one "
         "concrete `T` (`Card` is the canonical caller).",
-        "- **Lambdas in `cards::make_*`.** Each `Card::on_play` is a small "
-        "closure that calls `Combat` mutators. Branch coverage of those "
-        "closures is reached by playing the corresponding card in a `Combat` "
-        "fixture; they have CC=1 but the data-flow goes through `Combat`.",
+        "- **Lambda in `cards::make_card`.** `Card::on_play` is a small "
+        "closure that calls `Combat` mutators based on `CardEffect` flags. "
+        "Branch coverage is reached by playing each card in a `Combat` "
+        "fixture; the closure has CC=1 but the data-flow goes through "
+        "`Combat`.",
         "- **TU-local helpers** in anonymous namespaces (e.g. "
         "`render.cc::format_powers`, `input.cc::trim`) are not directly "
         "linkable from outside their TU. They are exposed for tests via "
