@@ -19,6 +19,7 @@ target_sources(sts2_simulator_tests PRIVATE
     input/test_input_internal.cc
     app/test_args.cc
     app/test_prompts.cc
+    ai/test_state.cc
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
 )
@@ -27,6 +28,7 @@ target_compile_features(sts2_simulator_tests PRIVATE cxx_std_20)
 
 target_link_libraries(sts2_simulator_tests PRIVATE
     sts2::simulator
+    sts2::ai
     GTest::gtest_main
     GTest::gmock
 )

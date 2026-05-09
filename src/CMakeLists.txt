@@ -35,6 +35,26 @@ target_include_directories(sts2_simulator
 sts2_apply_warnings(sts2_simulator)
 
 # ------------------------------------------------------------------
+# sts2::ai — battle recommender library
+# ------------------------------------------------------------------
+add_library(sts2_ai STATIC)
+add_library(sts2::ai ALIAS sts2_ai)
+
+target_sources(sts2_ai PRIVATE
+    ai/state.cc
+)
+
+target_compile_features(sts2_ai PUBLIC cxx_std_20)
+
+target_include_directories(sts2_ai
+    PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    PRIVATE ${PROJECT_SOURCE_DIR}/src)
+
+target_link_libraries(sts2_ai PUBLIC sts2::simulator)
+
+sts2_apply_warnings(sts2_ai)
+
+# ------------------------------------------------------------------
 # sts2_fight — fight simulator executable
 # ------------------------------------------------------------------
 add_executable(sts2_fight main.cc)
