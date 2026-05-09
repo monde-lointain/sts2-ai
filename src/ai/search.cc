@@ -173,7 +173,7 @@ SearchResult Search::solve_chance(CompactState state) {
       exp_rounds += o.weight * child.score.expected_rounds;
     }
   } else if (draw_total + discard_total <= k) {
-    // Engine semantics (Combat::draw): when both piles run dry, draw stops
+    // Engine semantics (Hand::draw_from): when both piles run dry, draw stops
     // early. Player deterministically gets every remaining card.
     CompactState next = state;
     const CardCounts everything = state.draw + state.discard;
