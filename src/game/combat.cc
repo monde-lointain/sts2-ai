@@ -38,7 +38,7 @@ void Combat::start_player_turn() {
     player_.vitals.block = 0;
   }
 
-  player_.energy = player_.max_energy;
+  player_.energy = kPlayerMaxEnergy;
 
   int draw_count = kBaseHandDraw + (round_ == 1 ? kRingOfTheSnakeBonus : 0);
   draw(draw_count);
@@ -177,7 +177,6 @@ int Combat::player_hp() const { return player_.vitals.hp; }
 int Combat::player_max_hp() const { return player_.vitals.max_hp; }
 int Combat::player_block() const { return player_.vitals.block; }
 int Combat::player_energy() const { return player_.energy; }
-int Combat::player_max_energy() const { return player_.max_energy; }
 
 std::span<const Power> Combat::player_powers() const {
   return player_.vitals.powers;
@@ -195,8 +194,7 @@ std::size_t Combat::discard_pile_size() const {
 
 int Combat::total_deck_size() const {
   return static_cast<int>(player_.draw_pile.size() + player_.hand.size() +
-                          player_.discard_pile.size() +
-                          player_.exhaust_pile.size());
+                          player_.discard_pile.size());
 }
 
 const Enemy& Combat::enemy_at(int slot) const {

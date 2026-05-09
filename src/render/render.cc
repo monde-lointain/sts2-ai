@@ -91,7 +91,8 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
       << ansi::kReset << "\n";
 
   out << "  Round " << c.round() << "  " << ansi::kCyan << "Energy "
-      << c.player_energy() << "/" << c.player_max_energy() << ansi::kReset
+      << c.player_energy() << "/" << sts2::game::Combat::kPlayerMaxEnergy
+      << ansi::kReset
       << "  Draw " << c.draw_pile_size() << "  Discard "
       << c.discard_pile_size() << "\n";
 

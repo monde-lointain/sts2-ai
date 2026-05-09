@@ -1290,7 +1290,7 @@ TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
 
 // -------------------------------------------------------------------------
 // 10.13  Player/enemy/deck query helpers (T9 refactor): player_hp,
-//        player_max_hp, player_block, player_energy, player_max_energy,
+//        player_max_hp, player_block, player_energy,
 //        player_powers, player_hand_at, draw_pile_size,
 //        discard_pile_size, total_deck_size, enemy_at, display_index_of
 // -------------------------------------------------------------------------
@@ -1320,15 +1320,13 @@ TEST(CombatPlayerVitalsAccessors, PlayerBlockAccumulates) {
   EXPECT_EQ(c.player_block(), 7);
 }
 
-// player_energy / player_max_energy: defaults pre-start; populated post-start.
+// player_energy: 0 pre-start, kPlayerMaxEnergy post-start.
 TEST(CombatPlayerVitalsAccessors, PlayerEnergyAccessors) {
   Combat c{kCombatTestSeed};
   EXPECT_EQ(c.player_energy(), 0);
-  EXPECT_EQ(c.player_max_energy(), 3);
 
   c.start(MakeStrikeDefendDeck7());
-  EXPECT_EQ(c.player_energy(), 3);
-  EXPECT_EQ(c.player_max_energy(), 3);
+  EXPECT_EQ(c.player_energy(), Combat::kPlayerMaxEnergy);
 }
 
 // player_powers: empty by default; matches player().vitals.powers when populated.
@@ -1366,8 +1364,8 @@ TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
   EXPECT_EQ(c.discard_pile_size(), pre_discard + 1);
 }
 
-// total_deck_size: sums draw + hand + discard + exhaust piles.
-TEST(CombatTotalDeckSize, SumsAllFourPiles) {
+// total_deck_size: sums draw + hand + discard piles.
+TEST(CombatTotalDeckSize, SumsAllPiles) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   // Silent starter deck has 12 cards; at R1 start: 7 hand + 5 draw, 0 elsewhere.
   EXPECT_EQ(c.total_deck_size(), 12);

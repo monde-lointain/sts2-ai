@@ -17,6 +17,8 @@ namespace sts2::game {
 
 class Combat {
  public:
+  static constexpr int kPlayerMaxEnergy = 3;
+
   explicit Combat(uint64_t seed);
 
   void start(std::vector<Card> starter_deck);
@@ -52,7 +54,6 @@ class Combat {
   [[nodiscard]] int player_max_hp() const;
   [[nodiscard]] int player_block() const;
   [[nodiscard]] int player_energy() const;
-  [[nodiscard]] int player_max_energy() const;
   [[nodiscard]] std::span<const Power> player_powers() const;
   [[nodiscard]] const Card& player_hand_at(std::size_t i) const;
   [[nodiscard]] std::size_t draw_pile_size() const;

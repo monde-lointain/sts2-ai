@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "sts2/ai/card_metadata.h"
+#include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/move_calc.h"
 
@@ -20,7 +21,8 @@ using sts2::game::TargetType;
 void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
   int hp_i = hp;
   int block_i = block;
-  sts2::damage::apply_to_defender(hp_i, block_i, incoming);
+  // hp loss unused; caller observes hp_i directly
+  (void)sts2::damage::apply_to_defender(hp_i, block_i, incoming);
   hp = static_cast<uint8_t>(hp_i);
   block = static_cast<uint8_t>(block_i);
 }
@@ -236,7 +238,7 @@ void resolve_end_turn_pre_draw(CompactState& state) {
   if (state.round > 1) {
     state.player_block = 0;
   }
-  state.energy = 3;
+  state.energy = static_cast<uint8_t>(sts2::game::Combat::kPlayerMaxEnergy);
   // Phase already kAtChanceDraw; the draw step is the chance node.
 }
 
