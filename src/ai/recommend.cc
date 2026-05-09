@@ -21,7 +21,7 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
     rec.combat_over = true;
     rec.action = sts2::input::Action{sts2::input::Action::kEndTurn,
                                      sts2::game::HandIndex::none()};
-    rec.expected_hp = static_cast<double>(state.player_hp);
+    rec.expected_hp = static_cast<double>(state.player_hp.value());
     return rec;
   }
 

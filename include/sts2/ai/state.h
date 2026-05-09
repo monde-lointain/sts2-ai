@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "sts2/game/stat.h"
 #include "sts2/game/types.h"
 
 namespace sts2::game {
@@ -42,12 +43,12 @@ struct CardCounts {
 };
 
 struct EnemyState {
-  uint8_t hp = 0;
-  uint8_t block = 0;
-  uint8_t strength = 0;
-  uint8_t weak = 0;
-  uint8_t dark_strike_base = 0;
-  uint8_t ritual_amount = 0;
+  sts2::game::Stat hp;
+  sts2::game::Stat block;
+  sts2::game::Stat strength;
+  sts2::game::Stat weak;
+  sts2::game::Stat dark_strike_base;
+  sts2::game::Stat ritual_amount;
   bool just_applied_ritual = false;
   bool performed_first_move = false;
   sts2::game::MoveId current_move = sts2::game::MoveId::kIncantation;
@@ -58,11 +59,11 @@ struct EnemyState {
 enum class Phase : uint8_t { kPlayerActing, kAtChanceDraw };
 
 struct CompactState {
-  uint8_t player_hp = 0;
-  uint8_t player_block = 0;
-  uint8_t player_strength = 0;
-  uint8_t player_weak = 0;
-  uint8_t energy = 0;
+  sts2::game::Stat player_hp;
+  sts2::game::Stat player_block;
+  sts2::game::Stat player_strength;
+  sts2::game::Stat player_weak;
+  sts2::game::Stat energy;
   uint16_t round = 1;
   Phase phase = Phase::kPlayerActing;
   std::array<EnemyState, 2> enemies{};

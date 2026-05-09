@@ -26,14 +26,14 @@ void tally(CardCounts& counts, const std::vector<sts2::game::Card>& pile) {
 EnemyState build_enemy_state(const sts2::game::Enemy& e) {
   EnemyState s;
   s.alive = e.vitals.hp > 0;
-  s.hp = static_cast<uint8_t>(e.vitals.hp);
-  s.block = static_cast<uint8_t>(e.vitals.block);
-  s.strength = static_cast<uint8_t>(
-      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kStrength));
-  s.weak = static_cast<uint8_t>(
-      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak));
-  s.dark_strike_base = static_cast<uint8_t>(e.dark_strike_base);
-  s.ritual_amount = static_cast<uint8_t>(e.ritual_amount);
+  s.hp = sts2::game::Stat{e.vitals.hp};
+  s.block = sts2::game::Stat{e.vitals.block};
+  s.strength = sts2::game::Stat{
+      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kStrength)};
+  s.weak = sts2::game::Stat{
+      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak)};
+  s.dark_strike_base = sts2::game::Stat{e.dark_strike_base};
+  s.ritual_amount = sts2::game::Stat{e.ritual_amount};
   const sts2::game::Power* ritual =
       sts2::powers::find(e.vitals.powers, sts2::game::PowerKind::kRitual);
   s.just_applied_ritual = ritual != nullptr && ritual->just_applied;
@@ -82,11 +82,11 @@ CompactState from_combat(const sts2::game::Combat& combat) {
          nullptr);
 
   CompactState s;
-  s.player_hp = static_cast<uint8_t>(p.vitals.hp);
-  s.player_block = static_cast<uint8_t>(p.vitals.block);
-  s.player_strength = 0;
-  s.player_weak = 0;
-  s.energy = static_cast<uint8_t>(p.energy);
+  s.player_hp = sts2::game::Stat{p.vitals.hp};
+  s.player_block = sts2::game::Stat{p.vitals.block};
+  s.player_strength = sts2::game::Stat{0};
+  s.player_weak = sts2::game::Stat{0};
+  s.energy = sts2::game::Stat{p.energy};
   assert(combat.round() >= 0);
   s.round = static_cast<uint16_t>(combat.round());
   s.phase = Phase::kPlayerActing;

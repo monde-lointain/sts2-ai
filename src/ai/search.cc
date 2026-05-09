@@ -24,11 +24,11 @@ std::size_t hash_u64(uint64_t v) noexcept { return std::hash<uint64_t>{}(v); }
 
 uint64_t pack_player(const CompactState& s) noexcept {
   uint64_t v = 0;
-  v |= static_cast<uint64_t>(s.player_hp);
-  v |= static_cast<uint64_t>(s.player_block) << 8;
-  v |= static_cast<uint64_t>(s.player_strength) << 16;
-  v |= static_cast<uint64_t>(s.player_weak) << 24;
-  v |= static_cast<uint64_t>(s.energy) << 32;
+  v |= static_cast<uint64_t>(s.player_hp.raw());
+  v |= static_cast<uint64_t>(s.player_block.raw()) << 8;
+  v |= static_cast<uint64_t>(s.player_strength.raw()) << 16;
+  v |= static_cast<uint64_t>(s.player_weak.raw()) << 24;
+  v |= static_cast<uint64_t>(s.energy.raw()) << 32;
   v |= static_cast<uint64_t>(s.round) << 40;
   v |= static_cast<uint64_t>(static_cast<uint8_t>(s.phase)) << 56;
   return v;
@@ -36,12 +36,12 @@ uint64_t pack_player(const CompactState& s) noexcept {
 
 uint64_t pack_enemy(const EnemyState& e) noexcept {
   uint64_t v = 0;
-  v |= static_cast<uint64_t>(e.hp);
-  v |= static_cast<uint64_t>(e.block) << 8;
-  v |= static_cast<uint64_t>(e.strength) << 16;
-  v |= static_cast<uint64_t>(e.weak) << 24;
-  v |= static_cast<uint64_t>(e.dark_strike_base) << 32;
-  v |= static_cast<uint64_t>(e.ritual_amount) << 40;
+  v |= static_cast<uint64_t>(e.hp.raw());
+  v |= static_cast<uint64_t>(e.block.raw()) << 8;
+  v |= static_cast<uint64_t>(e.strength.raw()) << 16;
+  v |= static_cast<uint64_t>(e.weak.raw()) << 24;
+  v |= static_cast<uint64_t>(e.dark_strike_base.raw()) << 32;
+  v |= static_cast<uint64_t>(e.ritual_amount.raw()) << 40;
   v |= static_cast<uint64_t>(e.just_applied_ritual ? 1u : 0u) << 48;
   v |= static_cast<uint64_t>(e.performed_first_move ? 1u : 0u) << 49;
   v |= static_cast<uint64_t>(e.alive ? 1u : 0u) << 50;
@@ -84,7 +84,7 @@ SearchResult Search::solve(const CompactState& state) {
   // forever (test fixtures use non-zero values).
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{static_cast<double>(state.player_hp), 0.0};
+    r.score = Score{static_cast<double>(state.player_hp.value()), 0.0};
     r.terminal = true;
     return r;
   }
@@ -121,7 +121,7 @@ SearchResult Search::solve_player(CompactState state) {
     if (action.kind == transition::ActionKind::kEndTurn) {
       child = solve_chance(next);
     } else if (transition::is_terminal(next)) {
-      child.score = Score{static_cast<double>(next.player_hp), 0.0};
+      child.score = Score{static_cast<double>(next.player_hp.value()), 0.0};
       child.terminal = true;
     } else {
       child = solve_player(next);
@@ -150,7 +150,7 @@ SearchResult Search::solve_chance(CompactState state) {
 
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{static_cast<double>(state.player_hp), 1.0};
+    r.score = Score{static_cast<double>(state.player_hp.value()), 1.0};
     r.terminal = false;
     const auto [it, _] = tt_.emplace(key, r);
     return it->second;

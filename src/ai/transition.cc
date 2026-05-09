@@ -2,13 +2,13 @@
 
 #include <algorithm>
 #include <cassert>
-#include <cstdint>
 
 #include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/index_types.h"
 #include "sts2/game/move_calc.h"
+#include "sts2/game/stat.h"
 #include "sts2/game/turn_calc.h"
 
 namespace sts2::ai::transition {
@@ -21,21 +21,20 @@ using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
 
-// Adapter: bridge uint8_t hp/block fields to the canonical int& overload in
+// Adapter: bridge Stat hp/block fields to the canonical int& overload in
 // sts2::damage.
-void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
-  int hp_i = hp;
-  int block_i = block;
-  // hp loss unused; caller observes hp_i directly
+void apply_damage(sts2::game::Stat& hp, sts2::game::Stat& block, int incoming) {
+  int hp_i = hp.value();
+  int block_i = block.value();
   (void)sts2::damage::apply_to_defender(hp_i, block_i, incoming);
-  hp = static_cast<uint8_t>(hp_i);
-  block = static_cast<uint8_t>(block_i);
+  hp = sts2::game::Stat{hp_i};
+  block = sts2::game::Stat{block_i};
 }
 
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
   const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
-  apply_damage_u8(enemy.hp, enemy.block, dmg);
-  if (enemy.hp == 0) {
+  apply_damage(enemy.hp, enemy.block, dmg);
+  if (enemy.hp == sts2::game::Stat{0}) {
     enemy.alive = false;
   }
 }
@@ -50,7 +49,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
   for (CardId id : kCountedCardIds) {
     if (state.hand[id] == 0) continue;
     const auto& fx = card_effect_for(id);
-    if (fx.cost > state.energy) continue;
+    if (fx.cost > state.energy.value()) continue;
 
     const TargetType tgt = fx.target;
     if (tgt == TargetType::kAnyEnemy) {
@@ -111,7 +110,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
   assert(action.card_id != CardId::kNone);
   const CardId id = action.card_id;
   const auto& fx = card_effect_for(id);
-  if (fx.cost > state.energy) return false;
+  if (fx.cost > state.energy.value()) return false;
   if (state.hand[id] == 0) return false;
 
   if (fx.target == TargetType::kAnyEnemy) {
@@ -121,19 +120,18 @@ bool apply_player_action(CompactState& state, const Action& action) {
   }
 
   --state.hand[id];
-  state.energy = static_cast<uint8_t>(state.energy - fx.cost);
+  state.energy -= fx.cost;
 
   if (fx.base_damage) {
     EnemyState& e = action.target_idx.at(state.enemies);
-    damage_enemy(e, state.player_strength, state.player_weak, fx.base_damage);
+    damage_enemy(e, state.player_strength.value(), state.player_weak.value(), fx.base_damage);
   }
   if (fx.base_block) {
-    state.player_block =
-        static_cast<uint8_t>(state.player_block + fx.base_block);
+    state.player_block += fx.base_block;
   }
   if (fx.weak_to_target) {
     EnemyState& e = action.target_idx.at(state.enemies);
-    e.weak = static_cast<uint8_t>(e.weak + fx.weak_to_target);
+    e.weak += fx.weak_to_target;
   }
   if (fx.requires_discard) {
     if (state.hand.total() == 0) {
@@ -161,8 +159,8 @@ void enemy_act(CompactState& s, EnemyState& e) {
       break;
     case sts2::game::MoveId::kDarkStrike: {
       const int dmg =
-          sts2::damage::compute_outgoing(e.dark_strike_base, e.strength, e.weak);
-      apply_damage_u8(s.player_hp, s.player_block, dmg);
+          sts2::damage::compute_outgoing(e.dark_strike_base.value(), e.strength.value(), e.weak.value());
+      apply_damage(s.player_hp, s.player_block, dmg);
       break;
     }
   }
@@ -171,10 +169,10 @@ void enemy_act(CompactState& s, EnemyState& e) {
 void enemy_tick_powers(EnemyState& e) {
   if (sts2::game::move_calc::ritual_should_grant_strength(
           e.just_applied_ritual)) {
-    e.strength = static_cast<uint8_t>(e.strength + e.ritual_amount);
+    e.strength += e.ritual_amount.value();
   }
-  if (e.weak > 0) {
-    e.weak = static_cast<uint8_t>(e.weak - 1);
+  if (e.weak > sts2::game::Stat{0}) {
+    e.weak -= 1;
   }
 }
 
@@ -189,7 +187,7 @@ void roll_next_move(EnemyState& e) {
 }  // namespace
 
 bool is_terminal(const CompactState& s) noexcept {
-  if (s.player_hp == 0) return true;
+  if (s.player_hp == sts2::game::Stat{0}) return true;
   return std::all_of(s.enemies.begin(), s.enemies.end(),
                      [](const EnemyState& e) { return !e.alive; });
 }
@@ -209,12 +207,12 @@ void resolve_end_turn_pre_draw(CompactState& state) {
   // enemy_phase: zero block on alive enemies, then act in slot order; bail
   // early if player dies mid-phase (mirrors Combat::enemy_phase combat_over_).
   for (auto& e : state.enemies) {
-    if (e.alive) e.block = 0;
+    if (e.alive) e.block = sts2::game::Stat{0};
   }
   for (auto& e : state.enemies) {
     if (!e.alive) continue;
     enemy_act(state, e);
-    if (state.player_hp == 0) return;
+    if (state.player_hp == sts2::game::Stat{0}) return;
   }
   // Tick AFTER all acts.
   for (auto& e : state.enemies) {
@@ -228,9 +226,9 @@ void resolve_end_turn_pre_draw(CompactState& state) {
   }
 
   if (sts2::game::turn_calc::round_resets_block(state.round)) {
-    state.player_block = 0;
+    state.player_block = sts2::game::Stat{0};
   }
-  state.energy = static_cast<uint8_t>(sts2::game::turn_calc::starting_energy());
+  state.energy = sts2::game::Stat{sts2::game::turn_calc::starting_energy()};
   // Phase already kAtChanceDraw; the draw step is the chance node.
 }
 
