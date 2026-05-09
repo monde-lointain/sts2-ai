@@ -10,6 +10,7 @@
 #include "sts2/ai/recommend.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/types.h"
 #include "sts2/input/input.h"
 #include "sts2/render/ansi.h"
@@ -25,8 +26,9 @@ const char* card_id_name(sts2::game::CardId id) {
   return sts2::game::card_effects::card_effect_for(id).name.data();
 }
 
-bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {
-  return combat.is_enemy_alive(idx);
+bool target_is_live_enemy(const sts2::game::Combat& combat,
+                          sts2::game::EnemySlot slot) {
+  return combat.is_enemy_alive(slot);
 }
 
 void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
@@ -36,19 +38,19 @@ void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
     return;
   }
   out << card_id_name(step.card_id);
-  if (step.target_idx >= 0) {
-    if (static_cast<std::size_t>(step.target_idx) < combat.enemies().size()) {
+  if (step.target_idx.valid()) {
+    if (step.target_idx.in_range(combat.enemies())) {
       const int disp = combat.display_index_of(step.target_idx);
       if (disp >= 0) {
         out << " -> [" << disp << "] "
             << combat.enemy_at(step.target_idx).name;
       } else {
         // Slot is dead in current state; fall back to slot index for diagnostics.
-        out << " -> [" << step.target_idx << "] "
+        out << " -> [" << step.target_idx.raw() << "] "
             << combat.enemy_at(step.target_idx).name;
       }
     } else {
-      out << " -> " << step.target_idx;
+      out << " -> " << step.target_idx.raw();
     }
   }
   if (step.survivor_discard_id != sts2::game::CardId::kNone) {
@@ -72,12 +74,9 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     out << "End turn";
   } else if (rec.action.kind == sts2::input::Action::kPlayCard) {
     out << "Play ";
-    if (rec.action.card_idx >= 0 &&
-        static_cast<std::size_t>(rec.action.card_idx) <
-            combat.hand_size()) {
-      out << combat
-                 .player_hand_at(static_cast<std::size_t>(rec.action.card_idx))
-                 .name;
+    const sts2::game::HandIndex card_idx = rec.action.card_idx;
+    if (card_idx.in_range(combat.player().hand)) {
+      out << card_idx.at(combat.player().hand).name;
     } else {
       out << "(none)";
     }

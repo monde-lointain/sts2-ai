@@ -10,6 +10,7 @@
 
 #include <sstream>
 
+#include "sts2/game/index_types.h"
 #include "sts2/input/input.h"
 
 namespace {
@@ -69,7 +70,7 @@ TEST(InputReadAction, T_INP_035_NumericReturnsPlayCard) {
   std::istringstream in("3\n");
   const Action a = read_action(in);
   EXPECT_EQ(a.kind, Action::kPlayCard);
-  EXPECT_EQ(a.card_idx, 3);
+  EXPECT_EQ(a.card_idx, sts2::game::HandIndex{3});
 }
 
 // T-INP-040 — BP, EG — "3a" → Invalid (parse fails on letter). D5 FALSE.
@@ -111,7 +112,7 @@ TEST(InputReadAction, T_INP_060_MultiDigitParsesValue) {
   std::istringstream in("42\n");
   const Action a = read_action(in);
   EXPECT_EQ(a.kind, Action::kPlayCard);
-  EXPECT_EQ(a.card_idx, 42);
+  EXPECT_EQ(a.card_idx, sts2::game::HandIndex{42});
 }
 
 // T-INP-065 — EG — Overflow guard: 9999999 > 1_000_000 cap → Invalid.

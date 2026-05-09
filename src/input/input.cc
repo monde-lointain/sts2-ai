@@ -5,6 +5,7 @@
 #include <string>
 
 #include "input/input_internal.h"
+#include "sts2/game/index_types.h"
 
 namespace sts2::input::detail {
 
@@ -65,7 +66,7 @@ Action read_action(std::istream& in) {
   int idx = 0;
   if (detail::parse_nonneg_int(line, idx)) {
     a.kind = Action::kPlayCard;
-    a.card_idx = idx;
+    a.card_idx = sts2::game::HandIndex{idx};
     return a;
   }
   a.kind = Action::kInvalid;

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "sts2/ai/search.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/types.h"
 #include "sts2/input/input.h"
 
@@ -19,7 +20,7 @@ struct PvStep {
   enum Kind : uint8_t { kPlayCard, kEndTurn };
   Kind kind = kEndTurn;
   sts2::game::CardId card_id = sts2::game::CardId::kNone;
-  int target_idx = -1;  // attacks (kAnyEnemy cards) only
+  sts2::game::EnemySlot target_idx = sts2::game::EnemySlot::none();
   sts2::game::CardId survivor_discard_id = sts2::game::CardId::kNone;
   bool operator==(const PvStep&) const = default;
 };
@@ -28,9 +29,9 @@ struct PvStep {
 // the recommendation is followed plus the engine's random draws.
 struct Recommendation {
   // Ready to feed into main.cc. For terminal/combat-over states, kind is
-  // kEndTurn and card_idx is -1; gate via combat_over before consuming.
+  // kEndTurn and card_idx is HandIndex::none(); gate via combat_over before consuming.
   sts2::input::Action action;
-  int target_idx = -1;  // for attacks (kAnyEnemy cards)
+  sts2::game::EnemySlot target_idx = sts2::game::EnemySlot::none();
   sts2::game::CardId survivor_discard_id = sts2::game::CardId::kNone;
   double expected_hp = 0.0;
   double expected_rounds = 0.0;

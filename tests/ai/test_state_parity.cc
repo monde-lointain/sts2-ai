@@ -70,14 +70,15 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
     // most-recent action by reference and resolve it to a hand index lazily.
     Action last_action;
     combat.set_pick_discard_callback(
-        [&last_action](const sts2::game::Combat& c) -> int {
-          if (last_action.survivor_discard_id == CardId::kNone) return 0;
+        [&last_action](const sts2::game::Combat& c) -> sts2::game::HandIndex {
+          if (last_action.survivor_discard_id == CardId::kNone)
+            return sts2::game::HandIndex{0};
           for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
             if (c.player().hand[i].id == last_action.survivor_discard_id) {
-              return static_cast<int>(i);
+              return sts2::game::HandIndex{static_cast<int>(i)};
             }
           }
-          return 0;
+          return sts2::game::HandIndex{0};
         });
 
     std::mt19937 sampler_rng(static_cast<std::uint_fast32_t>(
@@ -125,13 +126,11 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
         ASSERT_GE(hand_idx, 0)
             << "card not in engine hand; seed=" << seed << " step=" << step
             << " card=" << static_cast<int>(action.card_id);
-        const int target = (action.target_idx == sts2::ai::transition::kNoTarget)
-                               ? -1
-                               : static_cast<int>(action.target_idx);
+        const sts2::game::EnemySlot target = action.target_idx;
 
         ASSERT_TRUE(apply_player_action(compact, action))
             << "AI rejected legal action; seed=" << seed << " step=" << step;
-        ASSERT_TRUE(combat.play_card(hand_idx, target))
+        ASSERT_TRUE(combat.play_card(sts2::game::HandIndex{hand_idx}, target))
             << "engine rejected play; seed=" << seed << " step=" << step;
       }
 
@@ -142,7 +141,7 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
           << " seed=" << seed << " step=" << step
           << " kind=" << static_cast<int>(action.kind)
           << " card=" << static_cast<int>(action.card_id)
-          << " target=" << static_cast<int>(action.target_idx);
+          << " target=" << action.target_idx.raw();
     }
 
     EXPECT_GE(steps_executed, 1) << "no steps ran; seed=" << seed;

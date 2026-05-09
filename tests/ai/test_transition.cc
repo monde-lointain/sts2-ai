@@ -46,12 +46,12 @@ CompactState make_test_state() {
   return s;
 }
 
-Action play(CardId id, uint8_t target = 0xFF,
+Action play(CardId id, int target = -1,
             CardId discard = CardId::kNone) {
   Action a;
   a.kind = ActionKind::kPlayCard;
   a.card_id = id;
-  a.target_idx = target;
+  a.target_idx = sts2::game::EnemySlot{target};
   a.survivor_discard_id = discard;
   return a;
 }
@@ -133,7 +133,7 @@ TEST(Transition, Survivor_GainsBlockAndDiscardsChosenCard) {
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(
-      s, play(CardId::kSurvivor, 0xFF, CardId::kStrike)));
+      s, play(CardId::kSurvivor, -1, CardId::kStrike)));
 
   EXPECT_EQ(s.player_block, 8);
   EXPECT_EQ(s.energy, 0);
@@ -147,7 +147,7 @@ TEST(Transition, Survivor_WhenLastCardInHand_NoOpsDiscard) {
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(
-      s, play(CardId::kSurvivor, 0xFF, CardId::kNone)));
+      s, play(CardId::kSurvivor, -1, CardId::kNone)));
 
   EXPECT_EQ(s.player_block, 8);
   EXPECT_EQ(s.hand, (CardCounts{}));
@@ -170,7 +170,7 @@ TEST(Transition, PlayCard_NotInHand_ReturnsFalse) {
 
   const CompactState before = s;
   EXPECT_FALSE(apply_player_action(
-      s, play(CardId::kSurvivor, 0xFF, CardId::kNone)));
+      s, play(CardId::kSurvivor, -1, CardId::kNone)));
   EXPECT_EQ(s, before);
 }
 
@@ -198,16 +198,16 @@ TEST(Transition, LegalActions_FullHandWithBothEnemies_EnumeratesCorrectly) {
   expected.push_back(play(CardId::kDefend));
   expected.push_back(play(CardId::kNeutralize, 0));
   expected.push_back(play(CardId::kNeutralize, 1));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kStrike));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kDefend));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kNeutralize));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kStrike));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kDefend));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kNeutralize));
   expected.push_back(end_turn());
 
   ASSERT_EQ(actions.size(), expected.size()) << "expected 9 actions";
   for (const auto& want : expected) {
     EXPECT_NE(std::find(actions.begin(), actions.end(), want), actions.end())
         << "missing action with card_id=" << static_cast<int>(want.card_id)
-        << " target=" << static_cast<int>(want.target_idx)
+        << " target=" << want.target_idx.raw()
         << " discard=" << static_cast<int>(want.survivor_discard_id);
   }
 }
@@ -228,9 +228,9 @@ TEST(Transition, LegalActions_OneEnemyDead_OnlyAliveEnemyTargeted) {
   expected.push_back(play(CardId::kStrike, 0));
   expected.push_back(play(CardId::kDefend));
   expected.push_back(play(CardId::kNeutralize, 0));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kStrike));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kDefend));
-  expected.push_back(play(CardId::kSurvivor, 0xFF, CardId::kNeutralize));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kStrike));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kDefend));
+  expected.push_back(play(CardId::kSurvivor, -1, CardId::kNeutralize));
   expected.push_back(end_turn());
 
   ASSERT_EQ(actions.size(), expected.size());

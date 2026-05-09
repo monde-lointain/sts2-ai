@@ -14,6 +14,7 @@
 #include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/player.h"
 #include "sts2/game/power.h"
 #include "sts2/game/powers.h"
@@ -61,7 +62,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
 
   Card card = sts2::cards::make_strike();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
-  card.on_play(combat, 0);
+  card.on_play(combat, sts2::game::EnemySlot{0});
 
   ASSERT_EQ(combat.enemies().size(), 1U);
   EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
@@ -75,7 +76,7 @@ TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
   Card c1 = sts2::cards::make_strike();
   c1.base_damage = 999;
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
-  c1.on_play(combat, 0);
+  c1.on_play(combat, sts2::game::EnemySlot{0});
 
   // Damage applied is 6 (captured value), not 999.
   EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
@@ -106,7 +107,7 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
 
   Card card = sts2::cards::make_defend();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
-  card.on_play(combat, -1);
+  card.on_play(combat, sts2::game::EnemySlot::none());
 
   EXPECT_EQ(combat.player().vitals.block, 5);
 }
@@ -119,7 +120,7 @@ TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
   Card c1 = sts2::cards::make_defend();
   c1.base_block = 999;
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
-  c1.on_play(combat, -1);
+  c1.on_play(combat, sts2::game::EnemySlot::none());
 
   // Block applied is 5 (captured value), not 999.
   EXPECT_EQ(combat.player().vitals.block, 5);
@@ -152,7 +153,7 @@ TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
 
   Card card = sts2::cards::make_neutralize();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
-  card.on_play(combat, 0);
+  card.on_play(combat, sts2::game::EnemySlot{0});
 
   ASSERT_EQ(combat.enemies().size(), 1U);
   EXPECT_EQ(combat.enemies()[0].vitals.hp, 37);
@@ -188,7 +189,8 @@ TEST(CardsMakeSurvivor, T_CRD_045_StaticFields) {
 // but only 3 are available, so all 3 land in the hand.
 TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
   Combat combat{kCombatTestSeed};
-  combat.set_pick_discard_callback([](const Combat&) { return 0; });
+  combat.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
 
   // Deck size 3 < draw count 7 → hand contains all 3 cards regardless of seed;
   // locks shuffle-order independence for this test. All-Strikes makes the
@@ -204,7 +206,7 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
 
   Card card = sts2::cards::make_survivor();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
-  card.on_play(combat, -1);
+  card.on_play(combat, sts2::game::EnemySlot::none());
 
   EXPECT_EQ(combat.player().vitals.block, 8);
   EXPECT_EQ(combat.player().hand.size(), 2U);
@@ -222,7 +224,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
 
   Card card = sts2::cards::make_survivor();
   ASSERT_TRUE(static_cast<bool>(card.on_play));
-  card.on_play(combat, -1);
+  card.on_play(combat, sts2::game::EnemySlot::none());
 
   EXPECT_EQ(combat.player().vitals.block, 8);
   EXPECT_TRUE(combat.player().hand.empty());

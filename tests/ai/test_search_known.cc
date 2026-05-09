@@ -86,7 +86,7 @@ TEST(Search, LethalThisTurn_PreferStrike) {
   EXPECT_DOUBLE_EQ(r.score.expected_rounds, 0.0);
   EXPECT_EQ(r.best_action.kind, ActionKind::kPlayCard);
   EXPECT_EQ(r.best_action.card_id, CardId::kStrike);
-  EXPECT_EQ(r.best_action.target_idx, 0);
+  EXPECT_EQ(r.best_action.target_idx, sts2::game::EnemySlot{0});
 }
 
 TEST(Search, OverkillDamage_StillPicksKillingBlow) {
@@ -100,7 +100,7 @@ TEST(Search, OverkillDamage_StillPicksKillingBlow) {
   EXPECT_DOUBLE_EQ(r.score.expected_rounds, 0.0);
   EXPECT_EQ(r.best_action.kind, ActionKind::kPlayCard);
   EXPECT_EQ(r.best_action.card_id, CardId::kStrike);
-  EXPECT_EQ(r.best_action.target_idx, 0);
+  EXPECT_EQ(r.best_action.target_idx, sts2::game::EnemySlot{0});
 }
 
 TEST(Search, DefensivePlayPreservesHp) {

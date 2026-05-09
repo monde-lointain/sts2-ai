@@ -18,7 +18,7 @@ static_assert(Combat::kPlayerMaxEnergy == turn_calc::kPlayerStartingEnergy,
 }  // namespace
 
 Combat::Combat(uint64_t seed)
-    : rng_(seed), on_pick_discard_([](const Combat&) { return 0; }) {}
+    : rng_(seed), on_pick_discard_([](const Combat&) { return HandIndex{0}; }) {}
 
 void Combat::start(std::vector<Card> starter_deck) {
   player_.draw_pile = std::move(starter_deck);
@@ -88,29 +88,24 @@ void Combat::end_turn() {
   check_win_or_lose();
 }
 
-bool Combat::can_play(HandIndex idx) const { return can_play(idx.raw()); }
-
-bool Combat::can_play(int hand_idx) const {
-  if (hand_idx < 0 || static_cast<size_t>(hand_idx) >= player_.hand.size()) {
+bool Combat::can_play(HandIndex idx) const {
+  if (!idx.in_range(player_.hand)) {
     return false;
   }
-  const Card& card = player_.hand[static_cast<size_t>(hand_idx)];
+  const Card& card = idx.at(player_.hand);
   return card.cost <= player_.energy;
 }
 
 bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
-  return play_card(hand_idx.raw(), target.raw());
-}
-
-bool Combat::play_card(int hand_idx, int target_idx) {
   if (!can_play(hand_idx)) {
     return false;
   }
-  Card card = std::move(player_.hand[static_cast<size_t>(hand_idx)]);
-  player_.hand.erase(player_.hand.begin() + hand_idx);
+  const auto i = static_cast<std::size_t>(hand_idx.raw());
+  Card card = std::move(player_.hand[i]);
+  player_.hand.erase(player_.hand.begin() + static_cast<std::ptrdiff_t>(i));
   player_.energy -= card.cost;
   if (card.on_play) {
-    card.on_play(*this, target_idx);
+    card.on_play(*this, target);
   }
   player_.discard_pile.push_back(std::move(card));
   // Backstop: card lambdas may invoke only non-HP-mutating verbs; ensure
@@ -144,47 +139,38 @@ void Combat::reshuffle() {
 }
 
 bool Combat::is_enemy_alive(EnemySlot slot) const {
-  return is_enemy_alive(slot.raw());
-}
-
-bool Combat::is_enemy_alive(int idx) const {
-  if (idx < 0 || static_cast<std::size_t>(idx) >= enemies_.size()) {
+  if (!slot.in_range(enemies_)) {
     return false;
   }
-  return enemies_[static_cast<std::size_t>(idx)].vitals.hp > 0;
+  return slot.at(enemies_).vitals.hp > 0;
 }
 
-std::vector<int> Combat::alive_enemy_indices() const {
-  std::vector<int> out;
+std::vector<EnemySlot> Combat::alive_enemy_indices() const {
+  std::vector<EnemySlot> out;
   for (std::size_t i = 0; i < enemies_.size(); ++i) {
     if (enemies_[i].vitals.hp > 0) {
-      out.push_back(static_cast<int>(i));
+      out.push_back(EnemySlot{static_cast<int>(i)});
     }
   }
   return out;
 }
 
 TargetType Combat::card_target_kind(HandIndex idx) const {
-  return card_target_kind(idx.raw());
-}
-
-TargetType Combat::card_target_kind(int hand_idx) const {
-  if (hand_idx < 0 ||
-      static_cast<std::size_t>(hand_idx) >= player_.hand.size()) {
+  if (!idx.in_range(player_.hand)) {
     return TargetType::kNoTarget;
   }
-  return player_.hand[static_cast<std::size_t>(hand_idx)].target;
+  return idx.at(player_.hand).target;
 }
 
 std::size_t Combat::hand_size() const { return player_.hand.size(); }
 
-int Combat::find_card_in_hand(CardId id) const {
+HandIndex Combat::find_card_in_hand(CardId id) const {
   for (std::size_t i = 0; i < player_.hand.size(); ++i) {
     if (player_.hand[i].id == id) {
-      return static_cast<int>(i);
+      return HandIndex{static_cast<int>(i)};
     }
   }
-  return -1;
+  return HandIndex::none();
 }
 
 int Combat::player_hp() const { return player_.vitals.hp; }
@@ -197,12 +183,8 @@ std::span<const Power> Combat::player_powers() const {
 }
 
 const Card& Combat::player_hand_at(HandIndex idx) const {
-  return player_hand_at(static_cast<std::size_t>(idx.raw()));
-}
-
-const Card& Combat::player_hand_at(std::size_t i) const {
-  assert(i < player_.hand.size());
-  return player_.hand[i];
+  assert(idx.in_range(player_.hand));
+  return idx.at(player_.hand);
 }
 
 std::size_t Combat::draw_pile_size() const { return player_.draw_pile.size(); }
@@ -216,25 +198,17 @@ int Combat::total_deck_size() const {
 }
 
 const Enemy& Combat::enemy_at(EnemySlot slot) const {
-  return enemy_at(slot.raw());
-}
-
-const Enemy& Combat::enemy_at(int slot) const {
-  assert(slot >= 0 && static_cast<std::size_t>(slot) < enemies_.size());
-  return enemies_[static_cast<std::size_t>(slot)];
+  assert(slot.in_range(enemies_));
+  return slot.at(enemies_);
 }
 
 int Combat::display_index_of(EnemySlot slot) const {
-  return display_index_of(slot.raw());
-}
-
-int Combat::display_index_of(int slot) const {
   if (!is_enemy_alive(slot)) {
     return -1;
   }
   int display = 0;
-  for (int i = 0; i < slot; ++i) {
-    if (is_enemy_alive(i)) {
+  for (int i = 0; i < slot.raw(); ++i) {
+    if (is_enemy_alive(EnemySlot{i})) {
       ++display;
     }
   }
@@ -257,17 +231,14 @@ void Combat::check_win_or_lose() {
 
 void Combat::add_enemy(Enemy e) { enemies_.push_back(std::move(e)); }
 
-void Combat::set_pick_discard_callback(std::function<int(const Combat&)> cb) {
+void Combat::set_pick_discard_callback(
+    std::function<HandIndex(const Combat&)> cb) {
   on_pick_discard_ = std::move(cb);
 }
 
 void Combat::deal_damage_to_enemy(EnemySlot slot, int base_damage) {
-  deal_damage_to_enemy(slot.raw(), base_damage);
-}
-
-void Combat::deal_damage_to_enemy(int idx, int base_damage) {
-  assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
-  Enemy& e = enemies_[static_cast<size_t>(idx)];
+  assert(slot.in_range(enemies_));
+  Enemy& e = slot.at(enemies_);
   int dmg = sts2::damage::compute_outgoing(player_.vitals.powers, base_damage);
   sts2::damage::apply_to_defender(e.vitals, dmg);
   check_win_or_lose();
@@ -282,12 +253,8 @@ void Combat::enemy_attack_player(const Enemy& source, int base_damage) {
 void Combat::gain_player_block(int amt) { player_.vitals.block += amt; }
 
 void Combat::apply_power_to_enemy(EnemySlot slot, PowerKind kind, int amt) {
-  apply_power_to_enemy(slot.raw(), kind, amt);
-}
-
-void Combat::apply_power_to_enemy(int idx, PowerKind kind, int amt) {
-  assert(idx >= 0 && static_cast<size_t>(idx) < enemies_.size());
-  Enemy& e = enemies_[static_cast<size_t>(idx)];
+  assert(slot.in_range(enemies_));
+  Enemy& e = slot.at(enemies_);
   sts2::powers::apply(e.vitals.powers, kind, amt);
 }
 
@@ -299,12 +266,13 @@ void Combat::discard_chosen_from_hand() {
   if (player_.hand.empty()) {
     return;
   }
-  int idx = on_pick_discard_(*this);
-  if (idx < 0 || static_cast<size_t>(idx) >= player_.hand.size()) {
+  HandIndex idx = on_pick_discard_(*this);
+  if (!idx.in_range(player_.hand)) {
     return;
   }
-  Card chosen = std::move(player_.hand[static_cast<size_t>(idx)]);
-  player_.hand.erase(player_.hand.begin() + idx);
+  const auto i = static_cast<std::size_t>(idx.raw());
+  Card chosen = std::move(player_.hand[i]);
+  player_.hand.erase(player_.hand.begin() + static_cast<std::ptrdiff_t>(i));
   player_.discard_pile.push_back(std::move(chosen));
 }
 

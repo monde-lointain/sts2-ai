@@ -7,6 +7,7 @@
 #include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/turn_calc.h"
 
@@ -15,6 +16,7 @@ namespace sts2::ai::transition {
 namespace {
 
 using sts2::game::CardId;
+using sts2::game::EnemySlot;
 using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
@@ -57,7 +59,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
         Action a;
         a.kind = ActionKind::kPlayCard;
         a.card_id = id;
-        a.target_idx = i;
+        a.target_idx = EnemySlot{static_cast<int>(i)};
         actions.push_back(a);
       }
     } else if (fx.requires_discard) {
@@ -68,7 +70,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
         Action a;
         a.kind = ActionKind::kPlayCard;
         a.card_id = CardId::kSurvivor;
-        a.target_idx = kNoTarget;
+        a.target_idx = EnemySlot::none();
         a.survivor_discard_id = CardId::kNone;
         actions.push_back(a);
       } else {
@@ -78,7 +80,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
           Action a;
           a.kind = ActionKind::kPlayCard;
           a.card_id = CardId::kSurvivor;
-          a.target_idx = kNoTarget;
+          a.target_idx = EnemySlot::none();
           a.survivor_discard_id = other;
           actions.push_back(a);
         }
@@ -87,7 +89,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
       Action a;
       a.kind = ActionKind::kPlayCard;
       a.card_id = id;
-      a.target_idx = kNoTarget;
+      a.target_idx = EnemySlot::none();
       actions.push_back(a);
     }
   }
@@ -113,15 +115,16 @@ bool apply_player_action(CompactState& state, const Action& action) {
   if (state.hand[id] == 0) return false;
 
   if (fx.target == TargetType::kAnyEnemy) {
-    if (action.target_idx >= 2) return false;
-    if (!state.enemies[action.target_idx].alive) return false;
+    if (!action.target_idx.in_range(state.enemies)) return false;
+    auto slot = action.target_idx;
+    if (!slot.at(state.enemies).alive) return false;
   }
 
   --state.hand[id];
   state.energy = static_cast<uint8_t>(state.energy - fx.cost);
 
   if (fx.base_damage) {
-    EnemyState& e = state.enemies[action.target_idx];
+    EnemyState& e = action.target_idx.at(state.enemies);
     damage_enemy(e, state.player_strength, state.player_weak, fx.base_damage);
   }
   if (fx.base_block) {
@@ -129,7 +132,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
         static_cast<uint8_t>(state.player_block + fx.base_block);
   }
   if (fx.weak_to_target) {
-    EnemyState& e = state.enemies[action.target_idx];
+    EnemyState& e = action.target_idx.at(state.enemies);
     e.weak = static_cast<uint8_t>(e.weak + fx.weak_to_target);
   }
   if (fx.requires_discard) {

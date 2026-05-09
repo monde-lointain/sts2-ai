@@ -7,18 +7,11 @@
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/index_types.h"
 #include "sts2/game/types.h"
 #include "sts2/input/input.h"
 
 namespace sts2::ai {
-
-namespace {
-
-int normalize_target(uint8_t target) {
-  return (target == transition::kNoTarget) ? -1 : static_cast<int>(target);
-}
-
-}  // namespace
 
 Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
   Recommendation rec;
@@ -26,7 +19,8 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
 
   if (combat.combat_over() || transition::is_terminal(state)) {
     rec.combat_over = true;
-    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn, -1};
+    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn,
+                                     sts2::game::HandIndex::none()};
     rec.expected_hp = static_cast<double>(state.player_hp);
     return rec;
   }
@@ -35,14 +29,15 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
 
   const transition::Action& best = result.best_action;
   if (best.kind == transition::ActionKind::kEndTurn) {
-    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn, -1};
+    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn,
+                                     sts2::game::HandIndex::none()};
   } else {
-    const int hand_idx = combat.find_card_in_hand(best.card_id);
-    assert(hand_idx >= 0 && "search returned a card not in engine hand");
+    const sts2::game::HandIndex hand_idx = combat.find_card_in_hand(best.card_id);
+    assert(hand_idx.valid() && "search returned a card not in engine hand");
     rec.action = sts2::input::Action{sts2::input::Action::kPlayCard, hand_idx};
   }
 
-  rec.target_idx = normalize_target(best.target_idx);
+  rec.target_idx = best.target_idx;
   rec.survivor_discard_id = best.survivor_discard_id;
   rec.expected_hp = result.score.expected_hp;
   rec.expected_rounds = result.score.expected_rounds;
@@ -65,7 +60,7 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
     PvStep step;
     step.kind = PvStep::kPlayCard;
     step.card_id = a.card_id;
-    step.target_idx = normalize_target(a.target_idx);
+    step.target_idx = a.target_idx;
     step.survivor_discard_id = a.survivor_discard_id;
     rec.principal_variation.push_back(step);
 

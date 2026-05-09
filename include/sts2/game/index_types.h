@@ -2,13 +2,10 @@
 
 #include <cstddef>
 
-// Strong index wrappers for enemy slots and hand positions.
-//
-// Explicit construction from int prevents accidental silent conversion. Use
-// EnemySlot::none() / HandIndex::none() for "no target" sentinels (v_ == -1).
-//
-// T15b will migrate existing int call sites to these types and remove the
-// parallel int overloads added in T15a.
+// Strong index types used throughout the engine and AI layers. EnemySlot
+// references a slot in Combat::enemies(); HandIndex references a card in the
+// player's hand. Both expose a `none()` sentinel — prefer `.valid()` over
+// raw-int comparisons.
 
 namespace sts2::game {
 
