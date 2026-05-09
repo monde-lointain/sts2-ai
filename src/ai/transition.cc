@@ -1,5 +1,6 @@
 #include "sts2/ai/transition.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 
@@ -253,6 +254,150 @@ bool apply_player_action(CompactState& state, const Action& action) {
 
   inc_count(state.discard, id);
   return true;
+}
+
+namespace {
+
+constexpr int kBaseHandDraw = 5;
+constexpr int kRingOfTheSnakeBonus = 2;
+
+void merge_hand_to_discard(CompactState& s) {
+  s.discard.strike = static_cast<uint8_t>(s.discard.strike + s.hand.strike);
+  s.discard.defend = static_cast<uint8_t>(s.discard.defend + s.hand.defend);
+  s.discard.neutralize =
+      static_cast<uint8_t>(s.discard.neutralize + s.hand.neutralize);
+  s.discard.survivor =
+      static_cast<uint8_t>(s.discard.survivor + s.hand.survivor);
+  s.hand = CardCounts{};
+}
+
+void enemy_act(CompactState& s, EnemyState& e) {
+  switch (e.current_move) {
+    case sts2::game::MoveId::kIncantation:
+      // Mirrors powers::apply for kRitual: amount accumulates on the Power,
+      // but in v1 Ritual is applied once -> Power.amount stays at ritual_amount.
+      // We model the dynamic Ritual state purely via just_applied_ritual.
+      e.just_applied_ritual = true;
+      break;
+    case sts2::game::MoveId::kDarkStrike: {
+      const int dmg = compute_outgoing(e.strength, e.weak, e.dark_strike_base);
+      apply_to_defender(s.player_hp, s.player_block, dmg);
+      break;
+    }
+  }
+}
+
+void enemy_tick_powers(EnemyState& e) {
+  if (e.just_applied_ritual) {
+    e.just_applied_ritual = false;
+  } else {
+    e.strength = static_cast<uint8_t>(e.strength + e.ritual_amount);
+  }
+  if (e.weak > 0) {
+    e.weak = static_cast<uint8_t>(e.weak - 1);
+  }
+}
+
+void roll_next_move(EnemyState& e) {
+  if (!e.performed_first_move) {
+    e.performed_first_move = true;
+    return;
+  }
+  if (e.current_move == sts2::game::MoveId::kIncantation) {
+    e.current_move = sts2::game::MoveId::kDarkStrike;
+  }
+}
+
+}  // namespace
+
+bool is_terminal(const CompactState& s) noexcept {
+  if (s.player_hp == 0) return true;
+  return std::all_of(s.enemies.begin(), s.enemies.end(),
+                     [](const EnemyState& e) { return !e.alive; });
+}
+
+int draw_count(const CompactState& s) noexcept {
+  return kBaseHandDraw + (s.round == 1 ? kRingOfTheSnakeBonus : 0);
+}
+
+void resolve_end_turn_pre_draw(CompactState& state) {
+  assert(state.phase == Phase::kAtChanceDraw);
+
+  // end_player_turn: hand -> discard. Player power tick is a no-op in v1
+  // (no Ritual on player; Weak hard-asserted 0 by from_combat).
+  merge_hand_to_discard(state);
+
+  // enemy_phase: zero block on alive enemies, then act in slot order; bail
+  // early if player dies mid-phase (mirrors Combat::enemy_phase combat_over_).
+  for (auto& e : state.enemies) {
+    if (e.alive) e.block = 0;
+  }
+  for (auto& e : state.enemies) {
+    if (!e.alive) continue;
+    enemy_act(state, e);
+    if (state.player_hp == 0) return;
+  }
+  // Tick AFTER all acts.
+  for (auto& e : state.enemies) {
+    if (e.alive) enemy_tick_powers(e);
+  }
+
+  state.round = static_cast<uint16_t>(state.round + 1);
+
+  for (auto& e : state.enemies) {
+    if (e.alive) roll_next_move(e);
+  }
+
+  if (state.round > 1) {
+    state.player_block = 0;
+  }
+  state.energy = 3;
+  // Phase already kAtChanceDraw; the draw step is the chance node.
+}
+
+void apply_draw(CompactState& state, CardCounts drawn) {
+  assert(state.phase == Phase::kAtChanceDraw);
+  assert(drawn.total() <= 10);
+
+  // Reshuffle if the draw pile alone can't satisfy the request. Engine drains
+  // pre-reshuffle cards first then post-reshuffle; for multiset purposes the
+  // unioned outcome is identical, so a single up-front reshuffle is sound.
+  const bool need_reshuffle = drawn.strike > state.draw.strike ||
+                              drawn.defend > state.draw.defend ||
+                              drawn.neutralize > state.draw.neutralize ||
+                              drawn.survivor > state.draw.survivor;
+  if (need_reshuffle) {
+    state.draw.strike =
+        static_cast<uint8_t>(state.draw.strike + state.discard.strike);
+    state.draw.defend =
+        static_cast<uint8_t>(state.draw.defend + state.discard.defend);
+    state.draw.neutralize =
+        static_cast<uint8_t>(state.draw.neutralize + state.discard.neutralize);
+    state.draw.survivor =
+        static_cast<uint8_t>(state.draw.survivor + state.discard.survivor);
+    state.discard = CardCounts{};
+  }
+
+  assert(drawn.strike <= state.draw.strike);
+  assert(drawn.defend <= state.draw.defend);
+  assert(drawn.neutralize <= state.draw.neutralize);
+  assert(drawn.survivor <= state.draw.survivor);
+
+  state.hand.strike = static_cast<uint8_t>(state.hand.strike + drawn.strike);
+  state.hand.defend = static_cast<uint8_t>(state.hand.defend + drawn.defend);
+  state.hand.neutralize =
+      static_cast<uint8_t>(state.hand.neutralize + drawn.neutralize);
+  state.hand.survivor =
+      static_cast<uint8_t>(state.hand.survivor + drawn.survivor);
+
+  state.draw.strike = static_cast<uint8_t>(state.draw.strike - drawn.strike);
+  state.draw.defend = static_cast<uint8_t>(state.draw.defend - drawn.defend);
+  state.draw.neutralize =
+      static_cast<uint8_t>(state.draw.neutralize - drawn.neutralize);
+  state.draw.survivor =
+      static_cast<uint8_t>(state.draw.survivor - drawn.survivor);
+
+  state.phase = Phase::kPlayerActing;
 }
 
 }  // namespace sts2::ai::transition
