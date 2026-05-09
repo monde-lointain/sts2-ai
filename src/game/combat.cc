@@ -183,8 +183,6 @@ std::span<const Power> Combat::player_powers() const {
   return player_.vitals.powers;
 }
 
-std::size_t Combat::player_hand_size() const { return player_.hand.size(); }
-
 const Card& Combat::player_hand_at(std::size_t i) const {
   assert(i < player_.hand.size());
   return player_.hand[i];

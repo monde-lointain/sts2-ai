@@ -54,7 +54,6 @@ class Combat {
   [[nodiscard]] int player_energy() const;
   [[nodiscard]] int player_max_energy() const;
   [[nodiscard]] std::span<const Power> player_powers() const;
-  [[nodiscard]] std::size_t player_hand_size() const;
   [[nodiscard]] const Card& player_hand_at(std::size_t i) const;
   [[nodiscard]] std::size_t draw_pile_size() const;
   [[nodiscard]] std::size_t discard_pile_size() const;

@@ -37,16 +37,15 @@ void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
   }
   out << card_id_name(step.card_id);
   if (step.target_idx >= 0) {
-    const auto& es = combat.enemies();
-    if (static_cast<std::size_t>(step.target_idx) < es.size()) {
+    if (static_cast<std::size_t>(step.target_idx) < combat.enemies().size()) {
       const int disp = combat.display_index_of(step.target_idx);
       if (disp >= 0) {
         out << " -> [" << disp << "] "
-            << es[static_cast<std::size_t>(step.target_idx)].name;
+            << combat.enemy_at(step.target_idx).name;
       } else {
         // Slot is dead in current state; fall back to slot index for diagnostics.
         out << " -> [" << step.target_idx << "] "
-            << es[static_cast<std::size_t>(step.target_idx)].name;
+            << combat.enemy_at(step.target_idx).name;
       }
     } else {
       out << " -> " << step.target_idx;
@@ -75,7 +74,7 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
     out << "Play ";
     if (rec.action.card_idx >= 0 &&
         static_cast<std::size_t>(rec.action.card_idx) <
-            combat.player_hand_size()) {
+            combat.hand_size()) {
       out << combat
                  .player_hand_at(static_cast<std::size_t>(rec.action.card_idx))
                  .name;

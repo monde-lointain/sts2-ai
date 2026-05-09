@@ -136,7 +136,7 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
   }
   out << "\n";
 
-  for (std::size_t i = 0; i < c.player_hand_size(); ++i) {
+  for (std::size_t i = 0; i < c.hand_size(); ++i) {
     const sts2::game::Card& card = c.player_hand_at(i);
     bool playable = card.cost <= c.player_energy();
     const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;

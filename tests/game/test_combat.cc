@@ -1291,7 +1291,7 @@ TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
 // -------------------------------------------------------------------------
 // 10.13  Player/enemy/deck query helpers (T9 refactor): player_hp,
 //        player_max_hp, player_block, player_energy, player_max_energy,
-//        player_powers, player_hand_size, player_hand_at, draw_pile_size,
+//        player_powers, player_hand_at, draw_pile_size,
 //        discard_pile_size, total_deck_size, enemy_at, display_index_of
 // -------------------------------------------------------------------------
 
@@ -1338,21 +1338,11 @@ TEST(CombatPlayerVitalsAccessors, PlayerPowersEmptyAndPopulated) {
   EXPECT_EQ(c.player_powers().size(), c.player().vitals.powers.size());
 }
 
-// player_hand_size: empty pre-start; matches hand size post-start.
-TEST(CombatPlayerHandAccessors, PlayerHandSize) {
-  Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player_hand_size(), 0U);
-
-  c.start(MakeStrikeDefendDeck7());
-  EXPECT_EQ(c.player_hand_size(), 7U);
-  EXPECT_EQ(c.player_hand_size(), c.player().hand.size());
-}
-
 // player_hand_at: returns the same Card as direct access at every valid index.
 TEST(CombatPlayerHandAccessors, PlayerHandAtMatchesDirectAccess) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_EQ(c.player_hand_size(), 7U);
-  for (std::size_t i = 0; i < c.player_hand_size(); ++i) {
+  ASSERT_EQ(c.hand_size(), 7U);
+  for (std::size_t i = 0; i < c.hand_size(); ++i) {
     EXPECT_EQ(c.player_hand_at(i).id, c.player().hand[i].id);
     EXPECT_EQ(&c.player_hand_at(i), &c.player().hand[i]);
   }

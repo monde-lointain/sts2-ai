@@ -106,7 +106,7 @@ TEST(RenderInternalPowerName, T_RND_095_OutOfEnumReturnsEmpty) {
 // -------------------------------------------------------------------------
 
 // T-RND-100 — BP, BV — Empty span → empty string (D1 TRUE early return).
-TEST(RenderInternalFormatPowers, T_RND_100_EmptyVectorEmpty) {
+TEST(RenderInternalFormatPowers, T_RND_100_EmptySpanEmpty) {
   const std::vector<Power> ps;
   EXPECT_EQ(format_powers(ps), "");
 }
