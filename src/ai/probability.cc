@@ -30,7 +30,7 @@ uint64_t binom(int n, int r) noexcept {
 }
 
 std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
-  assert(pool.total() >= 0);
+  assert(pool.total() <= kMaxN);
   assert(k >= 0 && k <= pool.total());
   assert(pool.strike <= kMaxN && pool.defend <= kMaxN &&
          pool.neutralize <= kMaxN && pool.survivor <= kMaxN);
@@ -43,7 +43,6 @@ std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
 
   const int total = pool.total();
   const uint64_t denom = binom(total, k);
-  assert(denom > 0);
   const double inv_denom = 1.0 / static_cast<double>(denom);
 
   for (int s = 0; s <= pool.strike; ++s) {
@@ -60,7 +59,6 @@ std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
         const int v = k - sdn;
         if (v < 0 || v > pool.survivor) continue;
         const uint64_t num = csdn * binom(pool.survivor, v);
-        if (num == 0) continue;
         Outcome o;
         o.hand.strike = static_cast<uint8_t>(s);
         o.hand.defend = static_cast<uint8_t>(d);

@@ -76,7 +76,7 @@ TEST(Probability, EnumerateStarterDeckTurn1) {
   for (const auto& o : out) {
     recovered += o.weight * static_cast<double>(total_ordered);
   }
-  EXPECT_NEAR(recovered, static_cast<double>(total_ordered), 1e-6);
+  EXPECT_NEAR(recovered, static_cast<double>(total_ordered), kEps);
 
   // Most-likely multiset must contain at least 1 Strike and at least 1 Defend:
   // 7 non-Strike cards exist (5+1+1), so a 0-Strike hand is possible only as
@@ -99,6 +99,7 @@ TEST(Probability, EnumerateAfterTurn1Sample) {
     return o.hand == target;
   });
   ASSERT_NE(it, out.end());
+  // C(3,2)*C(4,2)*C(1,1) / C(8,5) = 18/56 = 9/28
   EXPECT_NEAR(it->weight, 9.0 / 28.0, kEps);
 }
 
@@ -162,10 +163,12 @@ TEST(Probability, EngineDistributionMonteCarlo) {
     }
   }
   ASSERT_GT(df, 1);
-  // df = #outcomes - 1; for pool {5,5,1,1} k=7, support is 24 outcomes, df=23.
-  // 99.9th-percentile of chi-square(23) ~= 49.7; use a generous 80 to keep
-  // the test robust under seed luck without losing power against real bugs.
-  EXPECT_LT(chi2, 80.0) << "df=" << (df - 1);
+  // Pool {5,5,1,1} k=7 has support up to ~24 multisets but typically ~20 with
+  // nonzero expected count for this pool/k. Threshold 80 is comfortably above
+  // the 99.9th-percentile chi-square critical value for any df <= 24
+  // (chi^2(19) at 99.9% ~= 43.7, chi^2(23) ~= 49.7), keeping the test robust
+  // under seed luck without losing power against real bugs.
+  EXPECT_LT(chi2, 80.0) << "chi2=" << chi2 << " bins=" << df;
 }
 
 }  // namespace
