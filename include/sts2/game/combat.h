@@ -48,7 +48,6 @@ class Combat {
   // Query helpers
   [[nodiscard]] bool is_enemy_alive(EnemySlot slot) const;
   [[nodiscard]] std::vector<EnemySlot> alive_enemy_indices() const;
-  [[nodiscard]] TargetType card_target_kind(HandIndex idx) const;
   [[nodiscard]] std::size_t hand_size() const;
   [[nodiscard]] HandIndex find_card_in_hand(CardId id) const;
 

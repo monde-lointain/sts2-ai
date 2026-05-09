@@ -128,13 +128,6 @@ std::vector<EnemySlot> Combat::alive_enemy_indices() const {
   return out;
 }
 
-TargetType Combat::card_target_kind(HandIndex idx) const {
-  if (!player_.hand.valid(idx)) {
-    return TargetType::kNoTarget;
-  }
-  return player_.hand.at(idx).target;
-}
-
 std::size_t Combat::hand_size() const { return player_.hand.size(); }
 
 HandIndex Combat::find_card_in_hand(CardId id) const {

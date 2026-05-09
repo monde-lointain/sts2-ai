@@ -71,7 +71,8 @@ int main(int argc, char** argv) {
                     << "\n";
           break;
         }
-        sts2::game::TargetType target_type = combat.card_target_kind(a.card_idx);
+        const sts2::game::TargetType target_type =
+            combat.player().hand.at(a.card_idx).target;
         sts2::game::EnemySlot target = sts2::game::EnemySlot::none();
         if (target_type == sts2::game::TargetType::kAnyEnemy) {
           target = sts2::app::prompt_target(combat, std::cin, std::cout);

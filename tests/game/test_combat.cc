@@ -1150,7 +1150,7 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
 
 // -------------------------------------------------------------------------
 // 10.12  Query helpers (T3 refactor): is_enemy_alive, alive_enemy_indices,
-//        card_target_kind, hand_size, find_card_in_hand
+//        hand_size, find_card_in_hand
 // -------------------------------------------------------------------------
 
 using TargetType = sts2::game::TargetType;
@@ -1209,33 +1209,6 @@ TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
 TEST(CombatAliveEnemyIndices, BothAliveReturnsBothInOrder) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   EXPECT_EQ(c.alive_enemy_indices(), (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{0}, sts2::game::EnemySlot{1}}));
-}
-
-// card_target_kind: -1 → kNoTarget (negative-index guard).
-TEST(CombatCardTargetKind, NegativeIndexNoTarget) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.card_target_kind(sts2::game::HandIndex{-1}), TargetType::kNoTarget);
-}
-
-// card_target_kind: out-of-range → kNoTarget (size guard).
-TEST(CombatCardTargetKind, OutOfRangeNoTarget) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.card_target_kind(sts2::game::HandIndex{static_cast<int>(c.hand_size())}),
-            TargetType::kNoTarget);
-  EXPECT_EQ(c.card_target_kind(sts2::game::HandIndex{99}), TargetType::kNoTarget);
-}
-
-// card_target_kind: in-range Strike → kAnyEnemy; Defend → kSelf.
-// Strike and Defend exist somewhere in the starter hand; locate by id.
-TEST(CombatCardTargetKind, InRangeReturnsCardTarget) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  const int strike_idx = FindHandIndex(c, CardId::kStrike);
-  ASSERT_GE(strike_idx, 0);
-  EXPECT_EQ(c.card_target_kind(sts2::game::HandIndex{strike_idx}), TargetType::kAnyEnemy);
-
-  const int defend_idx = FindHandIndex(c, CardId::kDefend);
-  ASSERT_GE(defend_idx, 0);
-  EXPECT_EQ(c.card_target_kind(sts2::game::HandIndex{defend_idx}), TargetType::kSelf);
 }
 
 // hand_size: empty hand → 0.
