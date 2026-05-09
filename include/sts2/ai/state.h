@@ -39,10 +39,10 @@ enum class Phase : uint8_t { kPlayerActing, kAtChanceDraw };
 struct CompactState {
   uint8_t player_hp = 0;
   uint8_t player_block = 0;
-  uint8_t player_strength = 0;  // hard-asserted 0 in v1
-  uint8_t player_weak = 0;      // hard-asserted 0 in v1
+  uint8_t player_strength = 0;
+  uint8_t player_weak = 0;
   uint8_t energy = 0;
-  uint8_t round = 1;
+  uint16_t round = 1;
   Phase phase = Phase::kPlayerActing;
   std::array<EnemyState, 2> enemies{};
   CardCounts hand{};

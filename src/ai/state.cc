@@ -10,7 +10,6 @@
 #include "sts2/game/player.h"
 #include "sts2/game/power.h"
 #include "sts2/game/powers.h"
-#include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
 
 namespace sts2::ai {
@@ -33,8 +32,7 @@ void tally(CardCounts& counts, const std::vector<sts2::game::Card>& pile) {
         ++counts.survivor;
         break;
       case sts2::game::CardId::kNone:
-      default:
-        assert(false && "unknown CardId");
+        assert(false && "kNone in pile");
         break;
     }
   }
@@ -62,8 +60,7 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
 }  // namespace
 
 int CardCounts::total() const noexcept {
-  return static_cast<int>(strike) + static_cast<int>(defend) +
-         static_cast<int>(neutralize) + static_cast<int>(survivor);
+  return strike + defend + neutralize + survivor;
 }
 
 CompactState from_combat(const sts2::game::Combat& combat) {
@@ -81,13 +78,13 @@ CompactState from_combat(const sts2::game::Combat& combat) {
   s.player_strength = 0;
   s.player_weak = 0;
   s.energy = static_cast<uint8_t>(p.energy);
-  s.round = static_cast<uint8_t>(combat.round());
+  assert(combat.round() >= 0);
+  s.round = static_cast<uint16_t>(combat.round());
   s.phase = Phase::kPlayerActing;
 
   const auto& es = combat.enemies();
   assert(es.size() <= 2);
-  const std::size_t n = es.size() < 2 ? es.size() : std::size_t{2};
-  for (std::size_t i = 0; i < n; ++i) {
+  for (std::size_t i = 0; i < es.size(); ++i) {
     s.enemies[i] = build_enemy_state(es[i]);
   }
 

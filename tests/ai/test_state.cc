@@ -1,7 +1,3 @@
-// Tests for include/sts2/ai/state.h + src/ai/state.cc.
-// T1 spec: build CompactState from a freshly-started Combat and verify the
-// expected snapshot values.
-
 #include <gtest/gtest.h>
 
 #include "sts2/ai/state.h"
