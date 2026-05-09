@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "sts2/game/move_calc.h"
+
 namespace sts2::powers {
 
 sts2::game::Power* find(std::vector<sts2::game::Power>& powers,
@@ -46,12 +48,9 @@ void tick_at_turn_end(std::vector<sts2::game::Power>& powers) {
   // Ritual listener first.
   if (sts2::game::Power* ritual =
           find(powers, sts2::game::PowerKind::kRitual)) {
-    if (ritual->just_applied) {
-      ritual->just_applied = false;
-    } else {
-      int gain = ritual->amount;
-      apply(powers, sts2::game::PowerKind::kStrength, gain);
-    }
+    int gain = sts2::game::move_calc::ritual_tick_strength_gain(
+        ritual->just_applied, ritual->amount);
+    if (gain > 0) apply(powers, sts2::game::PowerKind::kStrength, gain);
   }
   for (auto it = powers.begin(); it != powers.end();) {
     if (it->kind == sts2::game::PowerKind::kWeak) {

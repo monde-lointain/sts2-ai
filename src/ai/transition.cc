@@ -6,6 +6,7 @@
 
 #include "sts2/ai/card_metadata.h"
 #include "sts2/game/damage_calc.h"
+#include "sts2/game/move_calc.h"
 
 namespace sts2::ai::transition {
 
@@ -174,11 +175,9 @@ void enemy_act(CompactState& s, EnemyState& e) {
 }
 
 void enemy_tick_powers(EnemyState& e) {
-  if (e.just_applied_ritual) {
-    e.just_applied_ritual = false;
-  } else {
-    e.strength = static_cast<uint8_t>(e.strength + e.ritual_amount);
-  }
+  const int gain = sts2::game::move_calc::ritual_tick_strength_gain(
+      e.just_applied_ritual, e.ritual_amount);
+  e.strength = static_cast<uint8_t>(e.strength + gain);
   if (e.weak > 0) {
     e.weak = static_cast<uint8_t>(e.weak - 1);
   }
@@ -189,9 +188,7 @@ void roll_next_move(EnemyState& e) {
     e.performed_first_move = true;
     return;
   }
-  if (e.current_move == sts2::game::MoveId::kIncantation) {
-    e.current_move = sts2::game::MoveId::kDarkStrike;
-  }
+  e.current_move = sts2::game::move_calc::next_move(e.current_move);
 }
 
 }  // namespace
