@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <iostream>
-#include <string>
 
 #include "sts2/app/args.h"
 #include "sts2/app/prompts.h"
@@ -17,9 +16,12 @@
 int main(int argc, char** argv) {
   uint64_t seed = 0;
   bool seed_provided = false;
-  if (!sts2::app::parse_args(argc, argv, seed, seed_provided, std::cerr))
+  if (!sts2::app::parse_args(argc, argv, seed, seed_provided, std::cerr)) {
     return 1;
-  if (!seed_provided) seed = sts2::app::random_seed();
+  }
+  if (!seed_provided) {
+    seed = sts2::app::random_seed();
+  }
 
   sts2::console::enable_ansi_and_utf8();
 
@@ -40,18 +42,20 @@ int main(int argc, char** argv) {
 
   while (true) {
     sts2::render::render_combat(combat, std::cout);
-    if (combat.combat_over()) return 0;
+    if (combat.combat_over()) {
+      return 0;
+    }
 
     std::cout << sts2::ansi::kGreen << ">" << sts2::ansi::kReset
               << " Play card [index], (e)nd turn, (q)uit: " << std::flush;
     sts2::input::Action a = sts2::input::read_action(std::cin);
     switch (a.kind) {
-      case sts2::input::Action::Quit:
+      case sts2::input::Action::kQuit:
         return 0;
-      case sts2::input::Action::EndTurn:
+      case sts2::input::Action::kEndTurn:
         combat.end_turn();
         break;
-      case sts2::input::Action::PlayCard: {
+      case sts2::input::Action::kPlayCard: {
         if (!combat.can_play(a.card_idx)) {
           std::cout << sts2::ansi::kRed << "  unplayable." << sts2::ansi::kReset
                     << "\n";
@@ -60,7 +64,7 @@ int main(int argc, char** argv) {
         sts2::game::TargetType target_type =
             combat.player().hand[static_cast<size_t>(a.card_idx)].target;
         int target = -1;
-        if (target_type == sts2::game::TargetType::AnyEnemy) {
+        if (target_type == sts2::game::TargetType::kAnyEnemy) {
           target = sts2::app::prompt_target(combat, std::cin, std::cout);
           if (target < 0) {
             std::cout << sts2::ansi::kRed << "  no valid target."
@@ -71,7 +75,7 @@ int main(int argc, char** argv) {
         combat.play_card(a.card_idx, target);
         break;
       }
-      case sts2::input::Action::Invalid:
+      case sts2::input::Action::kInvalid:
         std::cout << sts2::ansi::kRed << "  invalid input."
                   << sts2::ansi::kReset << "\n";
         break;

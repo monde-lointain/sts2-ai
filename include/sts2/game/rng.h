@@ -13,7 +13,9 @@ class Rng {
 
   template <typename T>
   void shuffle(std::vector<T>& v) {
-    if (v.size() < 2) return;
+    if (v.size() < 2) {
+      return;
+    }
     for (size_t i = v.size() - 1; i > 0; --i) {
       std::uniform_int_distribution<size_t> dist(0, i);
       size_t j = dist(engine_);

@@ -46,18 +46,18 @@ inline constexpr std::uint64_t kDampSeed_hp53 = 0x2ULL;
 
 // Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).
 inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {
-    sts2::game::CardId::Strike,
-    sts2::game::CardId::Strike,
-    sts2::game::CardId::Neutralize,
-    sts2::game::CardId::Survivor,
-    sts2::game::CardId::Defend,
-    sts2::game::CardId::Defend,
-    sts2::game::CardId::Strike,
-    sts2::game::CardId::Strike,
-    sts2::game::CardId::Defend,
-    sts2::game::CardId::Strike,
-    sts2::game::CardId::Defend,
-    sts2::game::CardId::Defend
+    sts2::game::CardId::kStrike,
+    sts2::game::CardId::kStrike,
+    sts2::game::CardId::kNeutralize,
+    sts2::game::CardId::kSurvivor,
+    sts2::game::CardId::kDefend,
+    sts2::game::CardId::kDefend,
+    sts2::game::CardId::kStrike,
+    sts2::game::CardId::kStrike,
+    sts2::game::CardId::kDefend,
+    sts2::game::CardId::kStrike,
+    sts2::game::CardId::kDefend,
+    sts2::game::CardId::kDefend
 };
 
 // Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.

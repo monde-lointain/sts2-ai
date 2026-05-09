@@ -8,12 +8,18 @@
 namespace sts2::app {
 
 bool parse_uint64(const std::string& s, std::uint64_t& out) {
-  if (s.empty()) return false;
+  if (s.empty()) {
+    return false;
+  }
   std::uint64_t v = 0;
   for (char ch : s) {
-    if (ch < '0' || ch > '9') return false;
-    std::uint64_t next = v * 10 + static_cast<std::uint64_t>(ch - '0');
-    if (next < v) return false;
+    if (ch < '0' || ch > '9') {
+      return false;
+    }
+    std::uint64_t next = (v * 10) + static_cast<std::uint64_t>(ch - '0');
+    if (next < v) {
+      return false;
+    }
     v = next;
   }
   out = v;
@@ -47,8 +53,8 @@ bool parse_args(int argc, char** argv, std::uint64_t& seed_out,
 
 std::uint64_t random_seed() {
   std::random_device rd;
-  std::uint64_t hi = static_cast<std::uint64_t>(rd());
-  std::uint64_t lo = static_cast<std::uint64_t>(rd());
+  auto hi = static_cast<std::uint64_t>(rd());
+  auto lo = static_cast<std::uint64_t>(rd());
   return (hi << 32) | lo;
 }
 

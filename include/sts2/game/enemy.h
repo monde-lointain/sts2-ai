@@ -11,7 +11,7 @@ struct Enemy {
   std::string name;
   Vitals vitals;
 
-  MoveId current_move = MoveId::Incantation;
+  MoveId current_move = MoveId::kIncantation;
   bool performed_first_move = false;
 
   int dark_strike_base = 0;

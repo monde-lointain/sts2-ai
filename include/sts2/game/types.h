@@ -1,15 +1,13 @@
 #pragma once
 
-#include <cstdint>
-
 namespace sts2::game {
 
-enum class CardType : int { Attack, Skill };
-enum class TargetType : int { Self, AnyEnemy, NoTarget };
-enum class CardPile : int { Draw, Hand, Discard, Exhaust };
-enum class CardId : int { None, Strike, Defend, Neutralize, Survivor };
-enum class PowerKind : int { Weak, Strength, Ritual };
-enum class MoveId : int { Incantation, DarkStrike };
-enum class CombatSide : int { Player, Enemy };
+enum class CardType : int { kAttack, kSkill };
+enum class TargetType : int { kSelf, kAnyEnemy, kNoTarget };
+enum class CardPile : int { kDraw, kHand, kDiscard, kExhaust };
+enum class CardId : int { kNone, kStrike, kDefend, kNeutralize, kSurvivor };
+enum class PowerKind : int { kWeak, kStrength, kRitual };
+enum class MoveId : int { kIncantation, kDarkStrike };
+enum class CombatSide : int { kPlayer, kEnemy };
 
 }  // namespace sts2::game

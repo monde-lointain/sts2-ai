@@ -99,8 +99,12 @@ TEST(RngUniformInt, T_RNG_020_NonNegativeRangeEndpointsObserved) {
     const int x = r.uniform_int(0, 9);
     ASSERT_GE(x, 0);
     ASSERT_LE(x, 9);
-    if (x == 0) saw_lo = true;
-    if (x == 9) saw_hi = true;
+    if (x == 0) {
+      saw_lo = true;
+    }
+    if (x == 9) {
+      saw_hi = true;
+    }
   }
   EXPECT_TRUE(saw_lo);
   EXPECT_TRUE(saw_hi);
@@ -115,8 +119,12 @@ TEST(RngUniformInt, T_RNG_025_NegativeRangeEndpointsObserved) {
     const int x = r.uniform_int(-10, -1);
     ASSERT_GE(x, -10);
     ASSERT_LE(x, -1);
-    if (x == -10) saw_lo = true;
-    if (x == -1) saw_hi = true;
+    if (x == -10) {
+      saw_lo = true;
+    }
+    if (x == -1) {
+      saw_hi = true;
+    }
   }
   EXPECT_TRUE(saw_lo);
   EXPECT_TRUE(saw_hi);
@@ -130,7 +138,9 @@ TEST(RngUniformInt, T_RNG_030_MixedSignRangeZeroObserved) {
     const int x = r.uniform_int(-5, 5);
     ASSERT_GE(x, -5);
     ASSERT_LE(x, 5);
-    if (x == 0) saw_zero = true;
+    if (x == 0) {
+      saw_zero = true;
+    }
   }
   EXPECT_TRUE(saw_zero);
 }
@@ -145,7 +155,9 @@ TEST(RngUniformInt, T_RNG_035_MaxWidthPositiveRange) {
     const int x = r.uniform_int(0, INT_MAX);
     ASSERT_GE(x, 0);
     ASSERT_LE(x, INT_MAX);
-    if (x > INT_MAX / 2) saw_upper_half = true;
+    if (x > INT_MAX / 2) {
+      saw_upper_half = true;
+    }
   }
   EXPECT_TRUE(saw_upper_half);
 }
@@ -160,7 +172,9 @@ TEST(RngUniformInt, T_RNG_040_MaxWidthNegativeBound) {
     const int x = r.uniform_int(INT_MIN, 0);
     ASSERT_LE(x, 0);
     ASSERT_GE(x, INT_MIN);
-    if (x < INT_MIN / 2) ++samples_below_half;
+    if (x < INT_MIN / 2) {
+      ++samples_below_half;
+    }
   }
   EXPECT_GE(samples_below_half, 1) << "Probability of all samples >= INT_MIN/2 "
                                       "is ~2^-100; negligible flake.";
@@ -183,7 +197,7 @@ TEST(RngShuffle, T_RNG_050_SingleElement) {
   Rng r{kRngTestSeed};
   std::vector<int> v{42};
   r.shuffle(v);
-  ASSERT_EQ(v.size(), 1u);
+  ASSERT_EQ(v.size(), 1U);
   EXPECT_EQ(v[0], 42);
 }
 

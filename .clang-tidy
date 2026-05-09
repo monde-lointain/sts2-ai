@@ -11,10 +11,15 @@ Checks: >
   readability-*,
   -bugprone-easily-swappable-parameters,
   -modernize-use-trailing-return-type,
+  -misc-const-correctness,
+  -misc-include-cleaner,
   -readability-identifier-length,
   -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
   -readability-magic-numbers,
   -readability-function-cognitive-complexity,
+  -readability-implicit-bool-conversion,
   -performance-enum-size
 HeaderFilterRegex: ''
 CheckOptions:

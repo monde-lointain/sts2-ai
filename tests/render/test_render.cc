@@ -24,7 +24,6 @@
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
-#include "sts2/game/power.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
 #include "sts2/render/ansi.h"
@@ -223,7 +222,7 @@ TEST(RenderCombat, T_RND_200_NeutralizeDescriptionMultiLine) {
   deck.push_back(sts2::cards::make_neutralize());
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
 
   const std::string s = Render(c);
 
@@ -241,8 +240,8 @@ TEST(RenderCombat, T_RND_205_IntentRendersIncantationThenDarkStrike) {
 
   // Setup A: R1, both enemies on Incantation.
   ASSERT_EQ(c.round(), 1);
-  ASSERT_EQ(c.enemies()[0].current_move, MoveId::Incantation);
-  ASSERT_EQ(c.enemies()[1].current_move, MoveId::Incantation);
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
+  ASSERT_EQ(c.enemies()[1].current_move, MoveId::kIncantation);
   {
     const std::string s = Render(c);
     EXPECT_THAT(s, HasSubstr("Buff"));
@@ -251,8 +250,8 @@ TEST(RenderCombat, T_RND_205_IntentRendersIncantationThenDarkStrike) {
   // Advance to R2; enemies roll Incantation → DarkStrike.
   c.end_turn();
   ASSERT_EQ(c.round(), 2);
-  ASSERT_EQ(c.enemies()[0].current_move, MoveId::DarkStrike);
-  ASSERT_EQ(c.enemies()[1].current_move, MoveId::DarkStrike);
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kDarkStrike);
+  ASSERT_EQ(c.enemies()[1].current_move, MoveId::kDarkStrike);
   {
     const std::string s = Render(c);
     // Read the computed intent strings off the live enemies; this binds

@@ -11,11 +11,11 @@ namespace sts2::game {
 class Combat;
 
 struct Card {
-  CardId id = CardId::None;
+  CardId id = CardId::kNone;
   std::string name;
   int cost = 0;
-  CardType type = CardType::Skill;
-  TargetType target = TargetType::Self;
+  CardType type = CardType::kSkill;
+  TargetType target = TargetType::kSelf;
   int base_damage = 0;
   int base_block = 0;
   std::string short_stats;

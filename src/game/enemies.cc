@@ -1,8 +1,6 @@
 #include "sts2/game/enemies.h"
 
 #include "sts2/game/combat.h"
-#include "sts2/game/damage.h"
-#include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
 
 namespace sts2::enemies {
@@ -34,18 +32,18 @@ void roll_next_move(sts2::game::Enemy& e) {
     e.performed_first_move = true;
     return;
   }
-  if (e.current_move == sts2::game::MoveId::Incantation) {
-    e.current_move = sts2::game::MoveId::DarkStrike;
+  if (e.current_move == sts2::game::MoveId::kIncantation) {
+    e.current_move = sts2::game::MoveId::kDarkStrike;
   }
 }
 
 void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
   switch (e.current_move) {
-    case sts2::game::MoveId::Incantation:
-      combat.apply_power_to_enemy_self(e, sts2::game::PowerKind::Ritual,
-                                       e.ritual_amount);
+    case sts2::game::MoveId::kIncantation:
+      sts2::game::Combat::apply_power_to_enemy_self(
+          e, sts2::game::PowerKind::kRitual, e.ritual_amount);
       break;
-    case sts2::game::MoveId::DarkStrike:
+    case sts2::game::MoveId::kDarkStrike:
       combat.enemy_attack_player(e, e.dark_strike_base);
       break;
   }

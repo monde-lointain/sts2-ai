@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include <sstream>
-#include <string>
 
 #include "sts2/input/input.h"
 
@@ -27,49 +26,49 @@ using sts2::input::read_index;
 TEST(InputReadAction, T_INP_005_EofReturnsQuit) {
   std::istringstream in("");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Quit);
+  EXPECT_EQ(a.kind, Action::kQuit);
 }
 
 // T-INP-010 — BP, BV — Empty line → Invalid. D2 TRUE (post-trim).
 TEST(InputReadAction, T_INP_010_EmptyLineReturnsInvalid) {
   std::istringstream in("\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Invalid);
+  EXPECT_EQ(a.kind, Action::kInvalid);
 }
 
 // T-INP-015 — BP, EP — "e" → EndTurn. D3 left-op TRUE.
 TEST(InputReadAction, T_INP_015_LowercaseEReturnsEndTurn) {
   std::istringstream in("e\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::EndTurn);
+  EXPECT_EQ(a.kind, Action::kEndTurn);
 }
 
 // T-INP-020 — BP, EP — "E" → EndTurn. D3 right-op TRUE.
 TEST(InputReadAction, T_INP_020_UppercaseEReturnsEndTurn) {
   std::istringstream in("E\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::EndTurn);
+  EXPECT_EQ(a.kind, Action::kEndTurn);
 }
 
 // T-INP-025 — BP, EP — "q" → Quit. D4 left-op TRUE.
 TEST(InputReadAction, T_INP_025_LowercaseQReturnsQuit) {
   std::istringstream in("q\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Quit);
+  EXPECT_EQ(a.kind, Action::kQuit);
 }
 
 // T-INP-030 — BP, EP — "Q" → Quit. D4 right-op TRUE.
 TEST(InputReadAction, T_INP_030_UppercaseQReturnsQuit) {
   std::istringstream in("Q\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Quit);
+  EXPECT_EQ(a.kind, Action::kQuit);
 }
 
 // T-INP-035 — BP, EP — "3" → PlayCard idx=3. D5 TRUE.
 TEST(InputReadAction, T_INP_035_NumericReturnsPlayCard) {
   std::istringstream in("3\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::PlayCard);
+  EXPECT_EQ(a.kind, Action::kPlayCard);
   EXPECT_EQ(a.card_idx, 3);
 }
 
@@ -77,14 +76,14 @@ TEST(InputReadAction, T_INP_035_NumericReturnsPlayCard) {
 TEST(InputReadAction, T_INP_040_TrailingLetterReturnsInvalid) {
   std::istringstream in("3a\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Invalid);
+  EXPECT_EQ(a.kind, Action::kInvalid);
 }
 
 // T-INP-045 — EP — Whitespace tolerant: "  e  " → EndTurn after trim.
 TEST(InputReadAction, T_INP_045_WhitespaceTolerantEndTurn) {
   std::istringstream in("  e  \n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::EndTurn);
+  EXPECT_EQ(a.kind, Action::kEndTurn);
 }
 
 // T-INP-050 — EG — Trailing CR/LF (Windows line endings) trimmed.
@@ -93,7 +92,7 @@ TEST(InputReadAction, T_INP_045_WhitespaceTolerantEndTurn) {
 TEST(InputReadAction, T_INP_050_WindowsLineEndingsTrimmed) {
   std::istringstream in("q\r\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Quit);
+  EXPECT_EQ(a.kind, Action::kQuit);
 }
 
 // T-INP-055 — EG — Multi-line input: read_action consumes only first line.
@@ -101,7 +100,7 @@ TEST(InputReadAction, T_INP_050_WindowsLineEndingsTrimmed) {
 TEST(InputReadAction, T_INP_055_ConsumesOnlyFirstLine) {
   std::istringstream in("q\ne\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Quit);
+  EXPECT_EQ(a.kind, Action::kQuit);
   EXPECT_EQ(in.peek(), 'e');
 }
 
@@ -111,7 +110,7 @@ TEST(InputReadAction, T_INP_055_ConsumesOnlyFirstLine) {
 TEST(InputReadAction, T_INP_060_MultiDigitParsesValue) {
   std::istringstream in("42\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::PlayCard);
+  EXPECT_EQ(a.kind, Action::kPlayCard);
   EXPECT_EQ(a.card_idx, 42);
 }
 
@@ -120,7 +119,7 @@ TEST(InputReadAction, T_INP_060_MultiDigitParsesValue) {
 TEST(InputReadAction, T_INP_065_OverflowGuardReturnsInvalid) {
   std::istringstream in("9999999\n");
   const Action a = read_action(in);
-  EXPECT_EQ(a.kind, Action::Invalid);
+  EXPECT_EQ(a.kind, Action::kInvalid);
 }
 
 // -------------------------------------------------------------------------

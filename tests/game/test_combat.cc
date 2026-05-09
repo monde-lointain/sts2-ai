@@ -18,7 +18,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -28,8 +27,6 @@
 #include "sts2/game/enemies.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/player.h"
-#include "sts2/game/power.h"
-#include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
@@ -72,7 +69,9 @@ std::vector<Card> MakeStrikeDefendDeck7() {
 int FindHandIndex(const Combat& c, CardId id) {
   const auto& h = c.player().hand;
   for (std::size_t i = 0; i < h.size(); ++i) {
-    if (h[i].id == id) return static_cast<int>(i);
+    if (h[i].id == id) {
+      return static_cast<int>(i);
+    }
   }
   return -1;
 }
@@ -110,7 +109,7 @@ TEST(CombatConstruction, T_CMB_010_StartTriggersStartPlayerTurn) {
 
   EXPECT_EQ(c.round(), 1);
   EXPECT_FALSE(c.combat_over());
-  EXPECT_EQ(c.player().hand.size(), 7u);
+  EXPECT_EQ(c.player().hand.size(), 7U);
   EXPECT_TRUE(c.player().draw_pile.empty());
   EXPECT_TRUE(c.player().discard_pile.empty());
   EXPECT_EQ(c.player().energy, 3);
@@ -120,8 +119,8 @@ TEST(CombatConstruction, T_CMB_010_StartTriggersStartPlayerTurn) {
 TEST(CombatConstruction, T_CMB_015_StarterDeckRingDrawsSeven) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
 
-  EXPECT_EQ(c.player().hand.size(), 7u);
-  EXPECT_EQ(c.player().draw_pile.size(), 5u);
+  EXPECT_EQ(c.player().hand.size(), 7U);
+  EXPECT_EQ(c.player().draw_pile.size(), 5U);
 }
 
 // T-CMB-020 — BP — add_enemy appends; multiple appends preserve order.
@@ -131,7 +130,7 @@ TEST(CombatAddEnemy, T_CMB_020_AppendPreservesOrder) {
   c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
   c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
 
-  ASSERT_EQ(c.enemies().size(), 2u);
+  ASSERT_EQ(c.enemies().size(), 2U);
   EXPECT_EQ(c.enemies()[0].name, "Calcified Cultist");
   EXPECT_EQ(c.enemies()[1].name, "Damp Cultist");
 }
@@ -150,15 +149,15 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
 
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
   const Card pre_idx0 = c.player().hand[0];  // copy for later id comparison
   const Card pre_idx1 = c.player().hand[1];
   const Card pre_idx2 = c.player().hand[2];
 
   c.discard_chosen_from_hand();
 
-  ASSERT_EQ(c.player().hand.size(), 2u);
-  ASSERT_EQ(c.player().discard_pile.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 2U);
+  ASSERT_EQ(c.player().discard_pile.size(), 1U);
   EXPECT_EQ(c.player().discard_pile[0].id, pre_idx1.id);
   // Pre-call indices 0 and 2 remain in the hand, in order.
   EXPECT_EQ(c.player().hand[0].id, pre_idx0.id);
@@ -179,13 +178,13 @@ TEST(CombatDelegators, T_CMB_030_GainPlayerBlockAccumulates) {
 TEST(CombatDelegators, T_CMB_035_ApplyPowerToEnemyAccumulates) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed);
 
-  c.apply_power_to_enemy(0, PowerKind::Weak, 1);
-  ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1u);
-  EXPECT_EQ(c.enemies()[0].vitals.powers[0].kind, PowerKind::Weak);
+  c.apply_power_to_enemy(0, PowerKind::kWeak, 1);
+  ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1U);
+  EXPECT_EQ(c.enemies()[0].vitals.powers[0].kind, PowerKind::kWeak);
   EXPECT_EQ(c.enemies()[0].vitals.powers[0].amount, 1);
 
-  c.apply_power_to_enemy(0, PowerKind::Weak, 2);
-  ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1u);
+  c.apply_power_to_enemy(0, PowerKind::kWeak, 2);
+  ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1U);
   EXPECT_EQ(c.enemies()[0].vitals.powers[0].amount, 3);
 }
 
@@ -196,10 +195,10 @@ TEST(CombatDelegators, T_CMB_040_ApplyPowerToEnemySelf) {
   Enemy e{};
   e.vitals = Vitals{40, 40, 0, {}};
 
-  c.apply_power_to_enemy_self(e, PowerKind::Ritual, 2);
+  c.apply_power_to_enemy_self(e, PowerKind::kRitual, 2);
 
-  ASSERT_EQ(e.vitals.powers.size(), 1u);
-  EXPECT_EQ(e.vitals.powers[0].kind, PowerKind::Ritual);
+  ASSERT_EQ(e.vitals.powers.size(), 1U);
+  EXPECT_EQ(e.vitals.powers[0].kind, PowerKind::kRitual);
   EXPECT_EQ(e.vitals.powers[0].amount, 2);
   // Newly-applied Ritual sets just_applied=true (per powers::apply).
   EXPECT_TRUE(e.vitals.powers[0].just_applied);
@@ -264,7 +263,7 @@ TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
 TEST(CombatDealDamage, T_CMB_065_EnemyAttackUsesSourcePowers) {
   Combat c{kCombatTestSeed};
   Enemy source{};
-  source.vitals = Vitals{40, 40, 0, {MakePower(PowerKind::Strength, 2)}};
+  source.vitals = Vitals{40, 40, 0, {MakePower(PowerKind::kStrength, 2)}};
 
   c.enemy_attack_player(source, 9);
 
@@ -297,7 +296,7 @@ TEST(CombatCanPlay, T_CMB_075_NegativeIndex) {
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
 
   EXPECT_FALSE(c.can_play(-1));
 }
@@ -310,7 +309,7 @@ TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
   deck.push_back(sts2::cards::make_strike());
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
 
   EXPECT_FALSE(c.can_play(3));
 }
@@ -322,14 +321,17 @@ TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
 TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
   std::vector<Card> deck;
-  for (int i = 0; i < 6; ++i) deck.push_back(sts2::cards::make_strike());
+  deck.reserve(6);
+  for (int i = 0; i < 6; ++i) {
+    deck.push_back(sts2::cards::make_strike());
+  }
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 6u);
+  ASSERT_EQ(c.player().hand.size(), 6U);
   ASSERT_EQ(c.player().energy, 3);
 
   DrainPlayerEnergy(c);
   ASSERT_EQ(c.player().energy, 0);
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
 
   // Last valid idx (2); cost 1 > energy 0.
   EXPECT_FALSE(c.can_play(2));
@@ -339,7 +341,10 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
 TEST(CombatCanPlay, T_CMB_090_BoundaryCostEqualsEnergy) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
   std::vector<Card> deck;
-  for (int i = 0; i < 6; ++i) deck.push_back(sts2::cards::make_strike());
+  deck.reserve(6);
+  for (int i = 0; i < 6; ++i) {
+    deck.push_back(sts2::cards::make_strike());
+  }
   c.start(std::move(deck));
   // Spend two energy, leaving energy=1 == Strike cost.
   ASSERT_TRUE(c.play_card(0, 0));
@@ -360,19 +365,19 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   deck.push_back(sts2::cards::make_strike());
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 4u);
+  ASSERT_EQ(c.player().hand.size(), 4U);
 
   // Find Neutralize and play strikes (not Neutralize) to drain energy to 0.
   int strikes_played = 0;
   while (strikes_played < 3) {
-    int idx = FindHandIndex(c, CardId::Strike);
+    int idx = FindHandIndex(c, CardId::kStrike);
     ASSERT_NE(idx, -1);
     ASSERT_TRUE(c.play_card(idx, 0));
     ++strikes_played;
   }
   ASSERT_EQ(c.player().energy, 0);
 
-  int neut_idx = FindHandIndex(c, CardId::Neutralize);
+  int neut_idx = FindHandIndex(c, CardId::kNeutralize);
   ASSERT_NE(neut_idx, -1);
   EXPECT_TRUE(c.can_play(neut_idx));
 }
@@ -395,20 +400,23 @@ TEST(CombatCanPlay, T_CMB_100_EmptyHand) {
 TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
   std::vector<Card> deck;
-  for (int i = 0; i < 4; ++i) deck.push_back(sts2::cards::make_strike());
+  deck.reserve(4);
+  for (int i = 0; i < 4; ++i) {
+    deck.push_back(sts2::cards::make_strike());
+  }
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 4u);
+  ASSERT_EQ(c.player().hand.size(), 4U);
   DrainPlayerEnergy(c);
   ASSERT_EQ(c.player().energy, 0);
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
   const int hp_before = c.enemies()[0].vitals.hp;
   const std::size_t discard_size_before = c.player().discard_pile.size();
 
   bool ok = c.play_card(0, 0);
 
   EXPECT_FALSE(ok);
-  EXPECT_EQ(c.player().hand.size(), 1u);
-  EXPECT_EQ(c.player().hand[0].id, CardId::Strike);
+  EXPECT_EQ(c.player().hand.size(), 1U);
+  EXPECT_EQ(c.player().hand[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 0);
   EXPECT_EQ(c.enemies()[0].vitals.hp, hp_before);
   EXPECT_EQ(c.player().discard_pile.size(), discard_size_before);
@@ -428,15 +436,15 @@ TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
   ASSERT_EQ(c.player().energy, 3);
 
   bool ok = c.play_card(0, 0);
 
   EXPECT_TRUE(ok);
   EXPECT_TRUE(c.player().hand.empty());
-  ASSERT_EQ(c.player().discard_pile.size(), 1u);
-  EXPECT_EQ(c.player().discard_pile[0].id, CardId::Strike);
+  ASSERT_EQ(c.player().discard_pile.size(), 1U);
+  EXPECT_EQ(c.player().discard_pile[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 2);
   EXPECT_EQ(c.enemies()[0].vitals.hp, 34);
   EXPECT_FALSE(c.combat_over());
@@ -451,7 +459,9 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   Combat c{kCombatTestSeed};
   c.set_pick_discard_callback([](const Combat& cc) {
     for (std::size_t i = 0; i < cc.player().hand.size(); ++i) {
-      if (cc.player().hand[i].id == CardId::Strike) return static_cast<int>(i);
+      if (cc.player().hand[i].id == CardId::kStrike) {
+        return static_cast<int>(i);
+      }
     }
     return 0;
   });
@@ -460,19 +470,19 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   deck.push_back(sts2::cards::make_strike());
   deck.push_back(sts2::cards::make_defend());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
 
-  int survivor_idx = FindHandIndex(c, CardId::Survivor);
+  int survivor_idx = FindHandIndex(c, CardId::kSurvivor);
   ASSERT_NE(survivor_idx, -1);
 
   bool ok = c.play_card(survivor_idx, -1);
 
   EXPECT_TRUE(ok);
-  ASSERT_EQ(c.player().hand.size(), 1u);
-  EXPECT_EQ(c.player().hand[0].id, CardId::Defend);
-  ASSERT_EQ(c.player().discard_pile.size(), 2u);
-  EXPECT_EQ(c.player().discard_pile[0].id, CardId::Strike);
-  EXPECT_EQ(c.player().discard_pile[1].id, CardId::Survivor);
+  ASSERT_EQ(c.player().hand.size(), 1U);
+  EXPECT_EQ(c.player().hand[0].id, CardId::kDefend);
+  ASSERT_EQ(c.player().discard_pile.size(), 2U);
+  EXPECT_EQ(c.player().discard_pile[0].id, CardId::kStrike);
+  EXPECT_EQ(c.player().discard_pile[1].id, CardId::kSurvivor);
   EXPECT_EQ(c.player().vitals.block, 8);
 }
 
@@ -483,7 +493,7 @@ TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
 
   bool ok = c.play_card(0, 0);
 
@@ -515,14 +525,14 @@ TEST(CombatDraw, T_CMB_130_DrawZeroNoOp) {
 // after R1 start hand=7, draw=5, discard=0.
 TEST(CombatDraw, T_CMB_135_DrawThreeFromPopulatedDeck) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_EQ(c.player().hand.size(), 7u);
-  ASSERT_EQ(c.player().draw_pile.size(), 5u);
+  ASSERT_EQ(c.player().hand.size(), 7U);
+  ASSERT_EQ(c.player().draw_pile.size(), 5U);
   ASSERT_TRUE(c.player().discard_pile.empty());
 
   c.draw(3);
 
-  EXPECT_EQ(c.player().hand.size(), 10u);
-  EXPECT_EQ(c.player().draw_pile.size(), 2u);
+  EXPECT_EQ(c.player().hand.size(), 10U);
+  EXPECT_EQ(c.player().draw_pile.size(), 2U);
   EXPECT_TRUE(c.player().discard_pile.empty());
 }
 
@@ -531,12 +541,12 @@ TEST(CombatDraw, T_CMB_135_DrawThreeFromPopulatedDeck) {
 TEST(CombatDraw, T_CMB_140_HandCapClamp) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   c.draw(3);
-  ASSERT_EQ(c.player().hand.size(), 10u);
+  ASSERT_EQ(c.player().hand.size(), 10U);
   const std::size_t draw_before = c.player().draw_pile.size();
 
   c.draw(2);
 
-  EXPECT_EQ(c.player().hand.size(), 10u);
+  EXPECT_EQ(c.player().hand.size(), 10U);
   EXPECT_EQ(c.player().draw_pile.size(), draw_before);
 }
 
@@ -548,20 +558,23 @@ TEST(CombatDraw, T_CMB_140_HandCapClamp) {
 TEST(CombatDraw, T_CMB_145_ReshuffleMidLoop) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  for (int i = 0; i < 8; ++i) deck.push_back(sts2::cards::make_defend());
+  deck.reserve(8);
+  for (int i = 0; i < 8; ++i) {
+    deck.push_back(sts2::cards::make_defend());
+  }
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 7u);
-  ASSERT_EQ(c.player().draw_pile.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 7U);
+  ASSERT_EQ(c.player().draw_pile.size(), 1U);
   ASSERT_TRUE(c.player().discard_pile.empty());
 
   ASSERT_TRUE(c.play_card(0, -1));
-  ASSERT_EQ(c.player().hand.size(), 6u);
-  ASSERT_EQ(c.player().discard_pile.size(), 1u);
-  ASSERT_EQ(c.player().draw_pile.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 6U);
+  ASSERT_EQ(c.player().discard_pile.size(), 1U);
+  ASSERT_EQ(c.player().draw_pile.size(), 1U);
 
   c.draw(2);
 
-  EXPECT_EQ(c.player().hand.size(), 8u);
+  EXPECT_EQ(c.player().hand.size(), 8U);
   EXPECT_TRUE(c.player().draw_pile.empty());
   EXPECT_TRUE(c.player().discard_pile.empty());
 }
@@ -572,13 +585,13 @@ TEST(CombatDraw, T_CMB_145_ReshuffleMidLoop) {
 TEST(CombatDraw, T_CMB_150_EmptyDrawAndDiscardShortCircuits) {
   Combat c{kCombatTestSeed};
   c.start(MakeStrikeDefendDeck7());
-  ASSERT_EQ(c.player().hand.size(), 7u);
+  ASSERT_EQ(c.player().hand.size(), 7U);
   ASSERT_TRUE(c.player().draw_pile.empty());
   ASSERT_TRUE(c.player().discard_pile.empty());
 
   c.draw(3);
 
-  EXPECT_EQ(c.player().hand.size(), 7u);
+  EXPECT_EQ(c.player().hand.size(), 7U);
   EXPECT_TRUE(c.player().draw_pile.empty());
   EXPECT_TRUE(c.player().discard_pile.empty());
 }
@@ -612,18 +625,22 @@ TEST(CombatReshuffle, T_CMB_160_NonEmptyDiscardDrainedAndShuffled) {
   // Play three Defends from hand (each costs 1). Defends always exist at
   // some hand index in the starter deck draw; locate by id.
   for (int i = 0; i < 3; ++i) {
-    int idx = FindHandIndex(c, CardId::Defend);
+    int idx = FindHandIndex(c, CardId::kDefend);
     ASSERT_NE(idx, -1);
     ASSERT_TRUE(c.play_card(idx, -1));
   }
-  ASSERT_EQ(c.player().discard_pile.size(), 3u);
+  ASSERT_EQ(c.player().discard_pile.size(), 3U);
   const std::size_t pre_draw = c.player().draw_pile.size();
   const std::size_t pre_discard = c.player().discard_pile.size();
 
   // Capture id multiset of pre-draw ∪ pre-discard.
   std::vector<CardId> expected_ids;
-  for (const Card& cc : c.player().draw_pile) expected_ids.push_back(cc.id);
-  for (const Card& cc : c.player().discard_pile) expected_ids.push_back(cc.id);
+  for (const Card& cc : c.player().draw_pile) {
+    expected_ids.push_back(cc.id);
+  }
+  for (const Card& cc : c.player().discard_pile) {
+    expected_ids.push_back(cc.id);
+  }
   std::sort(expected_ids.begin(), expected_ids.end());
 
   c.reshuffle();
@@ -632,7 +649,9 @@ TEST(CombatReshuffle, T_CMB_160_NonEmptyDiscardDrainedAndShuffled) {
   EXPECT_EQ(c.player().draw_pile.size(), pre_draw + pre_discard);
 
   std::vector<CardId> got_ids;
-  for (const Card& cc : c.player().draw_pile) got_ids.push_back(cc.id);
+  for (const Card& cc : c.player().draw_pile) {
+    got_ids.push_back(cc.id);
+  }
   std::sort(got_ids.begin(), got_ids.end());
   EXPECT_EQ(got_ids, expected_ids);
 }
@@ -673,7 +692,7 @@ TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   deck.push_back(sts2::cards::make_defend());
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
 
   // Snapshot pre-end hand ids in their current order.
   const CardId h0 = c.player().hand[0].id;
@@ -683,7 +702,7 @@ TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   c.end_player_turn();
 
   EXPECT_TRUE(c.player().hand.empty());
-  ASSERT_EQ(c.player().discard_pile.size(), 3u);
+  ASSERT_EQ(c.player().discard_pile.size(), 3U);
   // Discard is LIFO: last hand element pushed first.
   EXPECT_EQ(c.player().discard_pile[0].id, h2);
   EXPECT_EQ(c.player().discard_pile[1].id, h1);
@@ -709,9 +728,9 @@ TEST(CombatStartPlayerTurn, T_CMB_175_Round1KeepsBlockDrawsSeven) {
 
   EXPECT_EQ(c.round(), 1);
   EXPECT_EQ(c.player().vitals.block, 4);
-  EXPECT_EQ(c.player().hand.size(), 7u);
+  EXPECT_EQ(c.player().hand.size(), 7U);
   EXPECT_EQ(c.player().energy, 3);
-  ASSERT_EQ(c.enemies().size(), 2u);
+  ASSERT_EQ(c.enemies().size(), 2U);
   EXPECT_TRUE(c.enemies()[0].performed_first_move);
   EXPECT_TRUE(c.enemies()[1].performed_first_move);
 }
@@ -726,10 +745,10 @@ TEST(CombatStartPlayerTurn, T_CMB_180_Round2ResetsBlockDrawsFive) {
 
   EXPECT_EQ(c.round(), 2);
   EXPECT_EQ(c.player().vitals.block, 0);
-  EXPECT_EQ(c.player().hand.size(), 5u);
-  ASSERT_EQ(c.enemies().size(), 2u);
-  EXPECT_EQ(c.enemies()[0].current_move, MoveId::DarkStrike);
-  EXPECT_EQ(c.enemies()[1].current_move, MoveId::DarkStrike);
+  EXPECT_EQ(c.player().hand.size(), 5U);
+  ASSERT_EQ(c.enemies().size(), 2U);
+  EXPECT_EQ(c.enemies()[0].current_move, MoveId::kDarkStrike);
+  EXPECT_EQ(c.enemies()[1].current_move, MoveId::kDarkStrike);
 }
 
 // T-CMB-185 — EG — Dead enemy: roll_next_move skipped (D2 FALSE), so
@@ -739,7 +758,7 @@ TEST(CombatStartPlayerTurn, T_CMB_185_DeadEnemyMoveNotRolled) {
   // After start: both enemies have performed_first_move=true,
   // current_move=Incantation.
   ASSERT_TRUE(c.enemies()[0].performed_first_move);
-  ASSERT_EQ(c.enemies()[0].current_move, MoveId::Incantation);
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
 
   KillEnemy(c, 0);
   ASSERT_EQ(c.enemies()[0].vitals.hp, 0);
@@ -749,10 +768,10 @@ TEST(CombatStartPlayerTurn, T_CMB_185_DeadEnemyMoveNotRolled) {
   EXPECT_EQ(c.round(), 2);
   // Enemy 0 was dead at R2 start_player_turn — its move stayed Incantation
   // and performed_first_move stayed true.
-  EXPECT_EQ(c.enemies()[0].current_move, MoveId::Incantation);
+  EXPECT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
   EXPECT_TRUE(c.enemies()[0].performed_first_move);
   // Enemy 1 was alive — rolled to DarkStrike.
-  EXPECT_EQ(c.enemies()[1].current_move, MoveId::DarkStrike);
+  EXPECT_EQ(c.enemies()[1].current_move, MoveId::kDarkStrike);
 }
 
 // -------------------------------------------------------------------------
@@ -783,11 +802,11 @@ TEST(CombatEnemyPhase, T_CMB_195_TwoAliveIncantationFullSweep) {
   c.enemy_phase();
 
   EXPECT_EQ(c.player().vitals.hp, hp_before);
-  ASSERT_EQ(c.enemies().size(), 2u);
+  ASSERT_EQ(c.enemies().size(), 2U);
   ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 2, /*just_applied=*/false)});
+                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false)});
   ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 5, /*just_applied=*/false)});
+                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
   EXPECT_EQ(c.enemies()[0].vitals.block, 0);
   EXPECT_EQ(c.enemies()[1].vitals.block, 0);
 }
@@ -805,13 +824,13 @@ TEST(CombatEnemyPhase, T_CMB_200_Round2DarkStrikeRitualToStrength) {
 
   // After the R2 enemy_phase ran: damage applied = 9 + 1 = 10 → hp 70-10=60.
   EXPECT_EQ(c.player().vitals.hp, 60);
-  ASSERT_EQ(c.enemies().size(), 2u);
+  ASSERT_EQ(c.enemies().size(), 2U);
   ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 2, /*just_applied=*/false),
-                  MakePower(PowerKind::Strength, 2)});
+                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false),
+                  MakePower(PowerKind::kStrength, 2)});
   ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 5, /*just_applied=*/false),
-                  MakePower(PowerKind::Strength, 5)});
+                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false),
+                  MakePower(PowerKind::kStrength, 5)});
 }
 
 // T-CMB-205 — EG — One dead enemy in middle (here: enemy 0): D2 FALSE skips
@@ -828,7 +847,7 @@ TEST(CombatEnemyPhase, T_CMB_205_DeadEnemyAllLoopsSkip) {
   EXPECT_TRUE(c.enemies()[0].vitals.powers.empty());
   // Enemy 1: act applied Ritual (just_applied=true), tick cleared it.
   ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 5, /*just_applied=*/false)});
+                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
 }
 
 // T-CMB-210 — EG — Player dies mid-phase short-circuits the act loop (D5 TRUE).
@@ -853,11 +872,11 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
   EXPECT_TRUE(c.is_player_dead());
   // Tick loop NOT executed → no Strength gain on either enemy this round.
   // Enemies still hold their R1-tick Ritual{n,false}.
-  ASSERT_EQ(c.enemies().size(), 2u);
+  ASSERT_EQ(c.enemies().size(), 2U);
   ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 2, /*just_applied=*/false)});
+                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false)});
   ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::Ritual, 5, /*just_applied=*/false)});
+                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
 }
 
 // -------------------------------------------------------------------------
@@ -917,7 +936,7 @@ TEST(CombatEndTurn, T_CMB_225_NormalRoundTransition) {
   c.end_turn();
 
   EXPECT_EQ(c.round(), 2);
-  EXPECT_EQ(c.player().hand.size(), 5u);
+  EXPECT_EQ(c.player().hand.size(), 5U);
   EXPECT_EQ(c.player().energy, 3);
   EXPECT_EQ(c.player().vitals.block, 0);
   EXPECT_FALSE(c.combat_over());
@@ -1084,11 +1103,11 @@ TEST(CombatDiscardChosen, T_CMB_280_CallbackNegativeNoOp) {
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
 
   c.discard_chosen_from_hand();
 
-  EXPECT_EQ(c.player().hand.size(), 1u);
+  EXPECT_EQ(c.player().hand.size(), 1U);
   EXPECT_TRUE(c.player().discard_pile.empty());
 }
 
@@ -1101,11 +1120,11 @@ TEST(CombatDiscardChosen, T_CMB_285_CallbackOutOfRangeNoOp) {
   deck.push_back(sts2::cards::make_strike());
   deck.push_back(sts2::cards::make_defend());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 2u);
+  ASSERT_EQ(c.player().hand.size(), 2U);
 
   c.discard_chosen_from_hand();
 
-  EXPECT_EQ(c.player().hand.size(), 2u);
+  EXPECT_EQ(c.player().hand.size(), 2U);
   EXPECT_TRUE(c.player().discard_pile.empty());
 }
 
@@ -1119,17 +1138,17 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   deck.push_back(sts2::cards::make_defend());
   deck.push_back(sts2::cards::make_neutralize());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 3u);
+  ASSERT_EQ(c.player().hand.size(), 3U);
   const CardId pre0 = c.player().hand[0].id;
   const CardId pre1 = c.player().hand[1].id;
   const CardId pre2 = c.player().hand[2].id;
 
   c.discard_chosen_from_hand();
 
-  ASSERT_EQ(c.player().hand.size(), 2u);
+  ASSERT_EQ(c.player().hand.size(), 2U);
   EXPECT_EQ(c.player().hand[0].id, pre0);
   EXPECT_EQ(c.player().hand[1].id, pre2);
-  ASSERT_EQ(c.player().discard_pile.size(), 1u);
+  ASSERT_EQ(c.player().discard_pile.size(), 1U);
   EXPECT_EQ(c.player().discard_pile[0].id, pre1);
 }
 

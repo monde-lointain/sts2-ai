@@ -17,10 +17,14 @@ if(CPPCHECK_EXECUTABLE)
       --enable=all
       --suppress=missingIncludeSystem
       --suppress=unusedFunction
+      --suppress=unmatchedSuppression
       --inline-suppr
       --std=c++20
       --error-exitcode=1
+      --check-level=exhaustive
+      -I${CMAKE_SOURCE_DIR}
       -I${CMAKE_SOURCE_DIR}/include
+      -I${CMAKE_SOURCE_DIR}/src
       ${CPPCHECK_RULE_ARGS}
       ${CMAKE_SOURCE_DIR}/src
       ${CMAKE_SOURCE_DIR}/include
@@ -33,10 +37,15 @@ if(CPPCHECK_EXECUTABLE)
       --enable=all
       --suppress=missingIncludeSystem
       --suppress=unusedFunction
+      --suppress=unmatchedSuppression
       --inline-suppr
       --std=c++20
+      --check-level=exhaustive
       --xml
       --xml-version=2
+      -I${CMAKE_SOURCE_DIR}
+      -I${CMAKE_SOURCE_DIR}/include
+      -I${CMAKE_SOURCE_DIR}/src
       ${CPPCHECK_RULE_ARGS}
       ${CMAKE_SOURCE_DIR}/src
       ${CMAKE_SOURCE_DIR}/include
@@ -49,10 +58,13 @@ endif()
 # clang-tidy target
 find_program(CLANG_TIDY_EXECUTABLE NAMES clang-tidy)
 if(CLANG_TIDY_EXECUTABLE)
-  # Collect all source and header files
+  # Collect all source and header files (project + tests).
+  # gtest/gmock sources live under ${CMAKE_BINARY_DIR}/_deps and are not
+  # picked up here.
   file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
     ${CMAKE_SOURCE_DIR}/src/*.cc
     ${CMAKE_SOURCE_DIR}/include/*.h
+    ${CMAKE_SOURCE_DIR}/tests/*.cc
   )
 
   add_custom_target(tidy
@@ -70,6 +82,7 @@ if(SCAN_BUILD_EXECUTABLE)
   add_custom_target(scan-build
     COMMAND ${SCAN_BUILD_EXECUTABLE}
       -o ${CMAKE_BINARY_DIR}/scan-build-reports
+      --exclude ${CMAKE_BINARY_DIR}/_deps
       cmake --build ${CMAKE_BINARY_DIR} --clean-first
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running scan-build"

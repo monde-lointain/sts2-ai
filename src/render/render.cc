@@ -7,7 +7,6 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/damage.h"
 #include "sts2/game/power.h"
-#include "sts2/game/powers.h"
 #include "sts2/game/types.h"
 #include "sts2/render/ansi.h"
 #include "sts2/render/bar.h"
@@ -17,32 +16,42 @@ namespace sts2::render::detail {
 
 std::string repeat_utf8(const char* utf8_glyph, int count) {
   std::string s;
-  for (int i = 0; i < count; ++i) s += utf8_glyph;
+  for (int i = 0; i < count; ++i) {
+    s += utf8_glyph;
+  }
   return s;
 }
 
+// Braced-init would invoke std::initializer_list<char> ctor and narrow count.
+// NOLINTNEXTLINE(modernize-return-braced-init-list)
 std::string spaces(std::size_t n) { return std::string(n, ' '); }
 
-const char* power_color(sts2::game::PowerKind) { return ansi::kReset; }
+const char* power_color(sts2::game::PowerKind /*unused*/) {
+  return ansi::kReset;
+}
 
 const char* power_name(sts2::game::PowerKind kind) {
   switch (kind) {
-    case sts2::game::PowerKind::Weak:
+    case sts2::game::PowerKind::kWeak:
       return "Weak";
-    case sts2::game::PowerKind::Strength:
+    case sts2::game::PowerKind::kStrength:
       return "Str";
-    case sts2::game::PowerKind::Ritual:
+    case sts2::game::PowerKind::kRitual:
       return "Ritual";
   }
   return "";
 }
 
 std::string format_powers(const std::vector<sts2::game::Power>& ps) {
-  if (ps.empty()) return {};
+  if (ps.empty()) {
+    return {};
+  }
   std::ostringstream os;
   bool first = true;
   for (const auto& p : ps) {
-    if (!first) os << ", ";
+    if (!first) {
+      os << ", ";
+    }
     first = false;
     os << power_color(p.kind) << power_name(p.kind) << ' ' << p.amount
        << ansi::kReset;
@@ -53,10 +62,10 @@ std::string format_powers(const std::vector<sts2::game::Power>& ps) {
 std::string format_intent(const sts2::game::Enemy& e) {
   std::ostringstream os;
   switch (e.current_move) {
-    case sts2::game::MoveId::Incantation:
+    case sts2::game::MoveId::kIncantation:
       os << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
       break;
-    case sts2::game::MoveId::DarkStrike:
+    case sts2::game::MoveId::kDarkStrike:
       os << ansi::kRed << glyphs::kSwords << ' '
          << sts2::damage::compute_outgoing(e.vitals.powers, e.dark_strike_base)
          << ansi::kReset;
@@ -68,7 +77,9 @@ std::string format_intent(const sts2::game::Enemy& e) {
 std::size_t max_enemy_name_len(const std::vector<sts2::game::Enemy>& es) {
   std::size_t m = 0;
   for (const auto& e : es) {
-    if (e.vitals.hp > 0 && e.name.size() > m) m = e.name.size();
+    if (e.vitals.hp > 0 && e.name.size() > m) {
+      m = e.name.size();
+    }
   }
   return m;
 }
@@ -115,9 +126,10 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
 
   std::size_t name_width = detail::max_enemy_name_len(c.enemies());
   std::size_t display_idx = 0;
-  for (std::size_t i = 0; i < c.enemies().size(); ++i) {
-    const sts2::game::Enemy& e = c.enemies()[i];
-    if (e.vitals.hp <= 0) continue;
+  for (const auto& e : c.enemies()) {
+    if (e.vitals.hp <= 0) {
+      continue;
+    }
     out << "  [" << display_idx++ << "] " << ansi::kBold << e.name
         << ansi::kReset << detail::spaces(name_width - e.name.size())
         << "   HP " << ansi::kRed
@@ -142,11 +154,11 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
     const char* bullet =
         playable ? glyphs::kBulletFilled : glyphs::kBulletHollow;
     const char* type_color =
-        (card.type == sts2::game::CardType::Attack) ? ansi::kRed : ansi::kBlue;
+        (card.type == sts2::game::CardType::kAttack) ? ansi::kRed : ansi::kBlue;
     out << "  " << bullet_color << bullet << ansi::kReset << " [" << i << "] "
         << type_color << card.name << ansi::kReset << " (" << ansi::kCyan
         << card.cost << ansi::kReset << ") " << card.short_stats;
-    if (card.target == sts2::game::TargetType::AnyEnemy) {
+    if (card.target == sts2::game::TargetType::kAnyEnemy) {
       out << "  " << ansi::kYellow << glyphs::kArrowRight << ansi::kReset;
     }
     out << "\n";

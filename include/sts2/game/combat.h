@@ -23,28 +23,28 @@ class Combat {
   void enemy_phase();
   void end_turn();
 
-  bool can_play(int hand_idx) const;
+  [[nodiscard]] bool can_play(int hand_idx) const;
   bool play_card(int hand_idx, int target_idx = -1);
 
   void draw(int n);
   void reshuffle();
 
-  bool is_player_dead() const;
-  bool all_enemies_dead() const;
+  [[nodiscard]] bool is_player_dead() const;
+  [[nodiscard]] bool all_enemies_dead() const;
   void check_win_or_lose();
 
-  const Player& player() const { return player_; }
-  const std::vector<Enemy>& enemies() const { return enemies_; }
-  int round() const { return round_; }
-  bool combat_over() const { return combat_over_; }
+  [[nodiscard]] const Player& player() const { return player_; }
+  [[nodiscard]] const std::vector<Enemy>& enemies() const { return enemies_; }
+  [[nodiscard]] int round() const { return round_; }
+  [[nodiscard]] bool combat_over() const { return combat_over_; }
 
   void add_enemy(Enemy e);
   void set_pick_discard_callback(std::function<int(const Combat&)> cb);
   void deal_damage_to_enemy(int idx, int base_damage);
-  void enemy_attack_player(Enemy& source, int base_damage);
+  void enemy_attack_player(const Enemy& source, int base_damage);
   void gain_player_block(int amt);
   void apply_power_to_enemy(int idx, PowerKind kind, int amt);
-  void apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt);
+  static void apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt);
   void discard_chosen_from_hand();
 
  private:

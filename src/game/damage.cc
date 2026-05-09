@@ -9,8 +9,8 @@ namespace sts2::damage {
 int compute_outgoing(const std::vector<sts2::game::Power>& attacker_powers,
                      int base_damage) {
   int d = base_damage + sts2::powers::amount(attacker_powers,
-                                             sts2::game::PowerKind::Strength);
-  if (sts2::powers::amount(attacker_powers, sts2::game::PowerKind::Weak) > 0) {
+                                             sts2::game::PowerKind::kStrength);
+  if (sts2::powers::amount(attacker_powers, sts2::game::PowerKind::kWeak) > 0) {
     d = static_cast<int>(d * 0.75);
   }
   return d < 0 ? 0 : d;

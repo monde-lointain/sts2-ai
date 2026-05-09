@@ -31,13 +31,13 @@ constexpr std::uint64_t kSeedSearchCap = 1ULL << 20;
 
 const char* card_id_name(sts2::game::CardId id) {
     switch (id) {
-        case sts2::game::CardId::None:       return "sts2::game::CardId::None";
-        case sts2::game::CardId::Strike:     return "sts2::game::CardId::Strike";
-        case sts2::game::CardId::Defend:     return "sts2::game::CardId::Defend";
-        case sts2::game::CardId::Neutralize: return "sts2::game::CardId::Neutralize";
-        case sts2::game::CardId::Survivor:   return "sts2::game::CardId::Survivor";
+        case sts2::game::CardId::kNone:       return "sts2::game::CardId::kNone";
+        case sts2::game::CardId::kStrike:     return "sts2::game::CardId::kStrike";
+        case sts2::game::CardId::kDefend:     return "sts2::game::CardId::kDefend";
+        case sts2::game::CardId::kNeutralize: return "sts2::game::CardId::kNeutralize";
+        case sts2::game::CardId::kSurvivor:   return "sts2::game::CardId::kSurvivor";
     }
-    return "sts2::game::CardId::None";
+    return "sts2::game::CardId::kNone";
 }
 
 // Returns the first seed in [0, kSeedSearchCap) for which factory(Rng{seed})
@@ -47,7 +47,8 @@ std::optional<std::uint64_t> find_seed_for_hp(
     for (std::uint64_t seed = 0; seed < kSeedSearchCap; ++seed) {
         sts2::game::Rng rng(seed);
         sts2::game::Enemy e = factory(rng);
-        if (e.vitals.hp == target_hp) return seed;
+        if (e.vitals.hp == target_hp) { return seed;
+}
     }
     return std::nullopt;
 }
@@ -97,14 +98,16 @@ int main() {
         sts2::game::Rng rng(kRngTestSeed);
         std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         rng.shuffle(v);
-        for (size_t i = 0; i < 10; ++i) shuffle_10[i] = v[i];
+        for (size_t i = 0; i < 10; ++i) { shuffle_10[i] = v[i];
+}
     }
 
     // 3. uniform_int(0, 9) x10
     std::array<int, 10> seq_0_9{};
     {
         sts2::game::Rng rng(kRngTestSeed);
-        for (int i = 0; i < 10; ++i) seq_0_9[i] = rng.uniform_int(0, 9);
+        for (int i = 0; i < 10; ++i) { seq_0_9[i] = rng.uniform_int(0, 9);
+}
     }
 
     // 4. make_calcified_cultist HP at seed 0x42
@@ -138,7 +141,8 @@ int main() {
         sts2::game::Rng rng(kCombatTestSeed);
         std::vector<sts2::game::Card> deck = sts2::cards::make_silent_starter_deck();
         rng.shuffle(deck);
-        for (size_t i = 0; i < 12; ++i) deck_shuffled[i] = deck[i].id;
+        for (size_t i = 0; i < 12; ++i) { deck_shuffled[i] = deck[i].id;
+}
     }
 
     // 9. two consecutive uniform_int(0, INT_MAX)
@@ -169,7 +173,8 @@ int main() {
     body << "inline constexpr std::array<int, 10> kRngSeq_0_9 = {";
     for (size_t i = 0; i < seq_0_9.size(); ++i) {
         body << seq_0_9[i];
-        if (i + 1 < seq_0_9.size()) body << ", ";
+        if (i + 1 < seq_0_9.size()) { body << ", ";
+}
     }
     body << "};\n";
     body << "\n";
@@ -181,7 +186,8 @@ int main() {
     body << "inline constexpr std::array<int, 10> kShuffle_10 = {";
     for (size_t i = 0; i < shuffle_10.size(); ++i) {
         body << shuffle_10[i];
-        if (i + 1 < shuffle_10.size()) body << ", ";
+        if (i + 1 < shuffle_10.size()) { body << ", ";
+}
     }
     body << "};\n";
     body << "\n";
@@ -202,7 +208,8 @@ int main() {
     body << "inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
     for (size_t i = 0; i < deck_shuffled.size(); ++i) {
         body << "    " << card_id_name(deck_shuffled[i]);
-        if (i + 1 < deck_shuffled.size()) body << ",";
+        if (i + 1 < deck_shuffled.size()) { body << ",";
+}
         body << "\n";
     }
     body << "};\n";

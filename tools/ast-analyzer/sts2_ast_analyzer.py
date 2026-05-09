@@ -552,7 +552,7 @@ def collect_decls(c: ci.Cursor, world: WorldModel):
         ba.analyze(c)
         # Compact def-use into dict of dicts
         for name, du in ba.def_use.items():
-            fn.def_use[name] = asdict(du)
+            fn.def_use[name] = asdict(dU)
         world.funcs[fn.qualified] = fn
         # Attach to type if method
         if fn.is_method and fn.parent_name in world.types:

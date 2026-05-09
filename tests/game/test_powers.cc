@@ -21,9 +21,9 @@ using sts2::tests::helpers::MakePower;
 using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
 
-constexpr PowerKind Weak = PowerKind::Weak;
-constexpr PowerKind Strength = PowerKind::Strength;
-constexpr PowerKind Ritual = PowerKind::Ritual;
+constexpr PowerKind Weak = PowerKind::kWeak;
+constexpr PowerKind Strength = PowerKind::kStrength;
+constexpr PowerKind Ritual = PowerKind::kRitual;
 
 // -------------------------------------------------------------------------
 // 6.1  powers::find — mutable overload
@@ -66,7 +66,7 @@ TEST(PowersFind, T_PWR_025_FirstMatchWithDuplicates) {
   std::vector<Power> v = {MakePower(Weak, 1), MakePower(Weak, 2)};
   Power* p = sts2::powers::find(v, Weak);
   ASSERT_NE(p, nullptr);
-  EXPECT_EQ(p, &v[0]);
+  EXPECT_EQ(p, v.data());
   EXPECT_EQ(p->amount, 1);
 }
 

@@ -15,8 +15,6 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/enemy.h"
-#include "sts2/game/power.h"
-#include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
@@ -63,7 +61,7 @@ TEST(EnemiesMakeCalcified, T_ENM_005_StableCultistAtSeed42) {
   EXPECT_LE(e.vitals.hp, 41);
   EXPECT_EQ(e.dark_strike_base, 9);
   EXPECT_EQ(e.ritual_amount, 2);
-  EXPECT_EQ(e.current_move, MoveId::Incantation);
+  EXPECT_EQ(e.current_move, MoveId::kIncantation);
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, 0);
   EXPECT_TRUE(e.vitals.powers.empty());
@@ -111,7 +109,7 @@ TEST(EnemiesMakeDamp, T_ENM_015_StableCultistAtSeed42) {
   EXPECT_LE(e.vitals.hp, 53);
   EXPECT_EQ(e.dark_strike_base, 1);
   EXPECT_EQ(e.ritual_amount, 5);
-  EXPECT_EQ(e.current_move, MoveId::Incantation);
+  EXPECT_EQ(e.current_move, MoveId::kIncantation);
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, 0);
   EXPECT_TRUE(e.vitals.powers.empty());
@@ -144,35 +142,35 @@ TEST(EnemiesMakeDamp, T_ENM_020_AllHpOutcomesReachable) {
 // current_move untouched (D1 TRUE → P1).
 TEST(EnemiesRollNextMove, T_ENM_025_FirstCallLatches) {
   Enemy e{};
-  e.current_move = MoveId::Incantation;
+  e.current_move = MoveId::kIncantation;
   e.performed_first_move = false;
 
   sts2::enemies::roll_next_move(e);
 
   EXPECT_TRUE(e.performed_first_move);
-  EXPECT_EQ(e.current_move, MoveId::Incantation);
+  EXPECT_EQ(e.current_move, MoveId::kIncantation);
 }
 
 // T-ENM-030 — BP, EP — Incantation → DarkStrike (D1 FALSE; D2 TRUE → P2).
 TEST(EnemiesRollNextMove, T_ENM_030_IncantationToDarkStrike) {
   Enemy e{};
-  e.current_move = MoveId::Incantation;
+  e.current_move = MoveId::kIncantation;
   e.performed_first_move = true;
 
   sts2::enemies::roll_next_move(e);
 
-  EXPECT_EQ(e.current_move, MoveId::DarkStrike);
+  EXPECT_EQ(e.current_move, MoveId::kDarkStrike);
 }
 
 // T-ENM-035 — BP — DarkStrike stays (D1 FALSE; D2 FALSE → P3).
 TEST(EnemiesRollNextMove, T_ENM_035_DarkStrikeStays) {
   Enemy e{};
-  e.current_move = MoveId::DarkStrike;
+  e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
 
   sts2::enemies::roll_next_move(e);
 
-  EXPECT_EQ(e.current_move, MoveId::DarkStrike);
+  EXPECT_EQ(e.current_move, MoveId::kDarkStrike);
 }
 
 // T-ENM-040 — DF — Sequence over 4 calls from a fresh enemy:
@@ -181,7 +179,7 @@ TEST(EnemiesRollNextMove, T_ENM_035_DarkStrikeStays) {
 TEST(EnemiesRollNextMove, T_ENM_040_SequenceOverFourCalls) {
   Enemy e{};
   // Defaults: current_move = Incantation, performed_first_move = false.
-  ASSERT_EQ(e.current_move, MoveId::Incantation);
+  ASSERT_EQ(e.current_move, MoveId::kIncantation);
   ASSERT_FALSE(e.performed_first_move);
 
   std::vector<MoveId> seq;
@@ -191,10 +189,10 @@ TEST(EnemiesRollNextMove, T_ENM_040_SequenceOverFourCalls) {
   }
 
   const std::vector<MoveId> expected = {
-      MoveId::Incantation,
-      MoveId::DarkStrike,
-      MoveId::DarkStrike,
-      MoveId::DarkStrike,
+      MoveId::kIncantation,
+      MoveId::kDarkStrike,
+      MoveId::kDarkStrike,
+      MoveId::kDarkStrike,
   };
   ASSERT_EQ(seq.size(), expected.size());
   for (std::size_t i = 0; i < expected.size(); ++i) {
@@ -212,11 +210,11 @@ TEST(EnemiesAct, T_ENM_045_IncantationAppliesRitualToSelf) {
   Combat c{kCombatTestSeed};
   Enemy e{};
   e.ritual_amount = 2;
-  e.current_move = MoveId::Incantation;
+  e.current_move = MoveId::kIncantation;
 
   sts2::enemies::act(e, c);
 
-  ExpectPowersEq(e.vitals.powers, {MakePower(PowerKind::Ritual, 2, true)});
+  ExpectPowersEq(e.vitals.powers, {MakePower(PowerKind::kRitual, 2, true)});
 }
 
 // T-ENM-050 — BP, EP — DarkStrike case attacks the player with raw base.
@@ -225,7 +223,7 @@ TEST(EnemiesAct, T_ENM_050_DarkStrikeAttacksPlayer) {
   Combat c{kCombatTestSeed};
   Enemy e{};
   e.dark_strike_base = 9;
-  e.current_move = MoveId::DarkStrike;
+  e.current_move = MoveId::kDarkStrike;
 
   sts2::enemies::act(e, c);
 
@@ -239,8 +237,8 @@ TEST(EnemiesAct, T_ENM_055_DarkStrikeWithStrengthAdds) {
   Combat c{kCombatTestSeed};
   Enemy e{};
   e.dark_strike_base = 9;
-  e.current_move = MoveId::DarkStrike;
-  e.vitals.powers = {MakePower(PowerKind::Strength, 2)};
+  e.current_move = MoveId::kDarkStrike;
+  e.vitals.powers = {MakePower(PowerKind::kStrength, 2)};
 
   sts2::enemies::act(e, c);
 
@@ -253,8 +251,8 @@ TEST(EnemiesAct, T_ENM_060_DarkStrikeWithWeakHalves) {
   Combat c{kCombatTestSeed};
   Enemy e{};
   e.dark_strike_base = 9;
-  e.current_move = MoveId::DarkStrike;
-  e.vitals.powers = {MakePower(PowerKind::Weak, 1)};
+  e.current_move = MoveId::kDarkStrike;
+  e.vitals.powers = {MakePower(PowerKind::kWeak, 1)};
 
   sts2::enemies::act(e, c);
 

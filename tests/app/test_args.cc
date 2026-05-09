@@ -31,7 +31,9 @@ using ::testing::HasSubstr;
 std::vector<char*> MakeArgv(std::vector<std::string>& storage) {
   std::vector<char*> argv;
   argv.reserve(storage.size());
-  for (auto& s : storage) argv.push_back(s.data());
+  for (auto& s : storage) {
+    argv.push_back(s.data());
+  }
   return argv;
 }
 
@@ -49,14 +51,14 @@ TEST(AppParseUint64, T_MAIN_005_EmptyReturnsFalse) {
 TEST(AppParseUint64, T_MAIN_010_ZeroParses) {
   std::uint64_t v = 999;
   EXPECT_TRUE(parse_uint64("0", v));
-  EXPECT_EQ(v, 0u);
+  EXPECT_EQ(v, 0U);
 }
 
 // T-MAIN-015 — BP, EP — "42" → true, out=42.
 TEST(AppParseUint64, T_MAIN_015_FortyTwoParses) {
   std::uint64_t v = 0;
   EXPECT_TRUE(parse_uint64("42", v));
-  EXPECT_EQ(v, 42u);
+  EXPECT_EQ(v, 42U);
 }
 
 // T-MAIN-020 — BV — UINT64_MAX as decimal string → true, out=UINT64_MAX.
@@ -126,7 +128,7 @@ TEST(AppParseArgs, T_MAIN_055_SeedFortyTwo) {
   EXPECT_TRUE(parse_args(static_cast<int>(argv.size()), argv.data(), seed,
                          seed_provided, err));
   EXPECT_TRUE(seed_provided);
-  EXPECT_EQ(seed, 42u);
+  EXPECT_EQ(seed, 42U);
   EXPECT_TRUE(err.str().empty());
 }
 
@@ -198,7 +200,7 @@ TEST(AppParseArgs, T_MAIN_080_SeedZero) {
   EXPECT_TRUE(parse_args(static_cast<int>(argv.size()), argv.data(), seed,
                          seed_provided, err));
   EXPECT_TRUE(seed_provided);
-  EXPECT_EQ(seed, 0u);
+  EXPECT_EQ(seed, 0U);
   EXPECT_TRUE(err.str().empty());
 }
 
@@ -226,7 +228,9 @@ TEST(AppParseArgs, T_MAIN_085_SeedUint64Max) {
 // from std::random_device is vanishingly small on any sane platform).
 TEST(AppRandomSeed, T_MAIN_090_NotAllZero) {
   std::array<std::uint64_t, 10> samples{};
-  for (auto& s : samples) s = random_seed();
+  for (auto& s : samples) {
+    s = random_seed();
+  }
   bool any_nonzero = false;
   for (auto s : samples) {
     if (s != 0) {

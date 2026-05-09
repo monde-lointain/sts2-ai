@@ -19,8 +19,8 @@ using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
 using Vitals = sts2::game::Vitals;
 
-constexpr PowerKind Weak = PowerKind::Weak;
-constexpr PowerKind Strength = PowerKind::Strength;
+constexpr PowerKind Weak = PowerKind::kWeak;
+constexpr PowerKind Strength = PowerKind::kStrength;
 
 // -------------------------------------------------------------------------
 // 7.1  damage::compute_outgoing

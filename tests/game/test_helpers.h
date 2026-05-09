@@ -27,9 +27,9 @@
 namespace sts2::game {
 inline void PrintTo(PowerKind k, std::ostream* os) {
     switch (k) {
-        case PowerKind::Weak:     *os << "Weak";     break;
-        case PowerKind::Strength: *os << "Strength"; break;
-        case PowerKind::Ritual:   *os << "Ritual";   break;
+        case PowerKind::kWeak:     *os << "Weak";     break;
+        case PowerKind::kStrength: *os << "Strength"; break;
+        case PowerKind::kRitual:   *os << "Ritual";   break;
     }
 }
 }  // namespace sts2::game
@@ -50,9 +50,9 @@ void ExpectShuffleMatchesPinned(const std::vector<T>& shuffled,
 
 // Compact constructor for Power test data; `just_applied` defaults to false
 // because that matches every spec input except T-PWR-105.
-inline constexpr sts2::game::Power MakePower(sts2::game::PowerKind kind, int amount,
+ constexpr sts2::game::Power MakePower(sts2::game::PowerKind kind, int amount,
                                              bool just_applied = false) {
-    return sts2::game::Power{kind, amount, just_applied};
+    return sts2::game::Power{.kind=kind, .amount=amount, .just_applied=just_applied};
 }
 
 // Element-wise comparison of two Power vectors with diagnostic indexing.
@@ -115,7 +115,7 @@ inline void DrainPlayerEnergy(sts2::game::Combat& c) {
     while (c.player().energy > 0 && !c.player().hand.empty() && safety-- > 0) {
         const auto& card = c.player().hand[0];
         int target = -1;
-        if (card.target == sts2::game::TargetType::AnyEnemy) {
+        if (card.target == sts2::game::TargetType::kAnyEnemy) {
             for (std::size_t i = 0; i < c.enemies().size(); ++i) {
                 if (c.enemies()[i].vitals.hp > 0) {
                     target = static_cast<int>(i);

@@ -24,7 +24,9 @@ using sts2::glyphs::kFullBlock;
 // ever change (the constants in glyphs.h move with them).
 std::string Repeat(const char* glyph, int n) {
   std::string s;
-  for (int i = 0; i < n; ++i) s += glyph;
+  for (int i = 0; i < n; ++i) {
+    s += glyph;
+  }
   return s;
 }
 

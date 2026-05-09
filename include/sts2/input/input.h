@@ -5,8 +5,8 @@
 namespace sts2::input {
 
 struct Action {
-  enum Kind { PlayCard, EndTurn, Quit, Invalid };
-  Kind kind = Invalid;
+  enum Kind { kPlayCard, kEndTurn, kQuit, kInvalid };
+  Kind kind = kInvalid;
   int card_idx = -1;
 };
 

@@ -9,7 +9,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstdint>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -19,9 +18,7 @@
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
-#include "sts2/game/enemy.h"
 #include "sts2/game/rng.h"
-#include "sts2/game/vitals.h"
 #include "tests/game/test_helpers.h"
 #include "tests/seeds/expected_values.h"
 
@@ -161,7 +158,7 @@ TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_strike());
   c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 1u);
+  ASSERT_EQ(c.player().hand.size(), 1U);
 
   std::istringstream in("garbage\n");
   std::ostringstream out;
@@ -178,7 +175,7 @@ TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
 // Returns the user's pick.
 TEST(AppPromptDiscard, T_MAIN_135_MultiCardRendersAndPrompts) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_GT(c.player().hand.size(), 1u);  // starter draws 7
+  ASSERT_GT(c.player().hand.size(), 1U);  // starter draws 7
 
   const int max_idx = static_cast<int>(c.player().hand.size()) - 1;
   std::istringstream in("0\n");

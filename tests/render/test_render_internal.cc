@@ -15,11 +15,9 @@
 #include <vector>
 
 #include "render/render_internal.h"
-#include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/player.h"
-#include "sts2/game/power.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
 #include "sts2/render/ansi.h"
@@ -50,9 +48,9 @@ using Player = sts2::game::Player;
 using PowerKind = sts2::game::PowerKind;
 using Vitals = sts2::game::Vitals;
 
-constexpr PowerKind Weak = PowerKind::Weak;
-constexpr PowerKind Strength = PowerKind::Strength;
-constexpr PowerKind Ritual = PowerKind::Ritual;
+constexpr PowerKind Weak = PowerKind::kWeak;
+constexpr PowerKind Strength = PowerKind::kStrength;
+constexpr PowerKind Ritual = PowerKind::kRitual;
 
 // -------------------------------------------------------------------------
 // 11.2.1  repeat_utf8  (T-RND-065..075)
@@ -158,7 +156,7 @@ TEST(RenderInternalFormatPowers, T_RND_115_ThreeSeparatorsAreNMinusOne) {
        ++pos) {
     ++count;
   }
-  EXPECT_EQ(count, 2u);
+  EXPECT_EQ(count, 2U);
   EXPECT_THAT(s, HasSubstr("Weak 1"));
   EXPECT_THAT(s, HasSubstr("Str 2"));
   EXPECT_THAT(s, HasSubstr("Ritual 3"));
@@ -171,7 +169,7 @@ TEST(RenderInternalFormatPowers, T_RND_115_ThreeSeparatorsAreNMinusOne) {
 // T-RND-120 — BP — Incantation: contains kArrowUp glyph and "Buff".
 TEST(RenderInternalFormatIntent, T_RND_120_IncantationBuffArrowUp) {
   Enemy e{};
-  e.current_move = MoveId::Incantation;
+  e.current_move = MoveId::kIncantation;
 
   const std::string s = format_intent(e);
 
@@ -184,7 +182,7 @@ TEST(RenderInternalFormatIntent, T_RND_120_IncantationBuffArrowUp) {
 // Strength and Weak are absent).
 TEST(RenderInternalFormatIntent, T_RND_125_DarkStrikeShowsBaseDamage) {
   Enemy e{};
-  e.current_move = MoveId::DarkStrike;
+  e.current_move = MoveId::kDarkStrike;
   e.dark_strike_base = 9;
 
   const std::string s = format_intent(e);
@@ -198,7 +196,7 @@ TEST(RenderInternalFormatIntent, T_RND_125_DarkStrikeShowsBaseDamage) {
 // intent string.
 TEST(RenderInternalFormatIntent, T_RND_130_DarkStrikeBoostedByStrength) {
   Enemy e{};
-  e.current_move = MoveId::DarkStrike;
+  e.current_move = MoveId::kDarkStrike;
   e.dark_strike_base = 9;
   e.vitals.powers = {MakePower(Strength, 2)};
 
@@ -214,7 +212,7 @@ TEST(RenderInternalFormatIntent, T_RND_130_DarkStrikeBoostedByStrength) {
 // T-RND-135 — BP, BV — Empty container → 0 (loop body never enters).
 TEST(RenderInternalMaxEnemyName, T_RND_135_EmptyZero) {
   const std::vector<Enemy> es;
-  EXPECT_EQ(max_enemy_name_len(es), 0u);
+  EXPECT_EQ(max_enemy_name_len(es), 0U);
 }
 
 // T-RND-140 — BP — All alive: returns max name length across the vector.
@@ -230,7 +228,7 @@ TEST(RenderInternalMaxEnemyName, T_RND_140_AllAliveMaxLen) {
   c.vitals = Vitals{10, 10, 0, {}};
   const std::vector<Enemy> es = {a, b, c};
 
-  EXPECT_EQ(max_enemy_name_len(es), 5u);
+  EXPECT_EQ(max_enemy_name_len(es), 5U);
 }
 
 // T-RND-145 — EG — Dead enemies are excluded; only alive names contribute.
@@ -244,7 +242,7 @@ TEST(RenderInternalMaxEnemyName, T_RND_145_DeadExcluded) {
   b.vitals = Vitals{10, 10, 0, {}};
   const std::vector<Enemy> es = {a, b};
 
-  EXPECT_EQ(max_enemy_name_len(es), 1u);
+  EXPECT_EQ(max_enemy_name_len(es), 1U);
 }
 
 // -------------------------------------------------------------------------
