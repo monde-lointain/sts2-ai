@@ -8,7 +8,7 @@ namespace sts2::damage {
 
 // Canonical outgoing-damage formula: base + strength, scaled 0.75 if weak>0,
 // clamped to >=0. Pure; no allocation.
-inline int compute_outgoing(int base, int strength, int weak) {
+[[nodiscard]] inline int compute_outgoing(int base, int strength, int weak) {
   int d = base + strength;
   if (weak > 0) {
     d = static_cast<int>(d * 0.75);
