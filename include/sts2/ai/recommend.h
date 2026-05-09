@@ -4,11 +4,12 @@
 #include <vector>
 
 #include "sts2/ai/search.h"
-#include "sts2/ai/state.h"
-#include "sts2/ai/transition.h"
-#include "sts2/game/combat.h"
 #include "sts2/game/types.h"
 #include "sts2/input/input.h"
+
+namespace sts2::game {
+class Combat;
+}  // namespace sts2::game
 
 namespace sts2::ai {
 
