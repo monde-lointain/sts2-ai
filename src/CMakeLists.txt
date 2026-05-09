@@ -42,6 +42,7 @@ add_library(sts2::ai ALIAS sts2_ai)
 
 target_sources(sts2_ai PRIVATE
     ai/state.cc
+    ai/probability.cc
 )
 
 target_compile_features(sts2_ai PUBLIC cxx_std_20)
