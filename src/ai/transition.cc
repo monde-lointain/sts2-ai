@@ -114,6 +114,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
   --state.hand[id];
   state.energy = static_cast<uint8_t>(state.energy - meta.cost);
 
+  // Card costs/effects mirror src/game/cards.cc make_*() factories; keep in sync.
   switch (id) {
     case CardId::kStrike: {
       EnemyState& e = state.enemies[action.target_idx];
