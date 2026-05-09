@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <string_view>
 
@@ -20,13 +21,16 @@ struct CardEffect {
   int base_block;
   int weak_to_target;
   bool requires_discard;
+  CardType type;
+  std::string_view short_stats;
+  std::array<std::string_view, 2> description;
 };
 
 inline constexpr CardEffect kCardEffects[] = {
-    {CardId::kStrike,    "Strike",    1, TargetType::kAnyEnemy, 6, 0, 0, false},
-    {CardId::kDefend,    "Defend",    1, TargetType::kSelf,     0, 5, 0, false},
-    {CardId::kNeutralize,"Neutralize",0, TargetType::kAnyEnemy, 3, 0, 1, false},
-    {CardId::kSurvivor,  "Survivor",  1, TargetType::kSelf,     0, 8, 0, true },
+    {CardId::kStrike,    "Strike",    1, TargetType::kAnyEnemy, 6, 0, 0, false, CardType::kAttack, "6dmg", {"Deal 6 damage.", ""}},
+    {CardId::kDefend,    "Defend",    1, TargetType::kSelf,     0, 5, 0, false, CardType::kSkill,  "5blk", {"Gain 5 Block.", ""}},
+    {CardId::kNeutralize,"Neutralize",0, TargetType::kAnyEnemy, 3, 0, 1, false, CardType::kAttack, "3dmg", {"Deal 3 damage.", "Apply 1 Weak."}},
+    {CardId::kSurvivor,  "Survivor",  1, TargetType::kSelf,     0, 8, 0, true,  CardType::kSkill,  "8blk", {"Gain 8 Block.", "Discard 1 card."}},
 };
 
 inline constexpr CardId kCountedCardIds[] = {

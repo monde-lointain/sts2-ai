@@ -37,12 +37,12 @@ using PowerKind = sts2::game::PowerKind;
 using TargetType = sts2::game::TargetType;
 
 // -------------------------------------------------------------------------
-// 8.1  cards::make_strike()
+// 8.1  cards::make_card(CardId::kStrike)
 // -------------------------------------------------------------------------
 
 // T-CRD-005 — BP — Static fields populated as specified; on_play is set.
 TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
-  Card c = sts2::cards::make_strike();
+  Card c = sts2::cards::make_card(CardId::kStrike);
   EXPECT_EQ(c.id, CardId::kStrike);
   EXPECT_EQ(c.name, "Strike");
   EXPECT_EQ(c.cost, 1);
@@ -60,7 +60,7 @@ TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
 TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
   Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-  Card card = sts2::cards::make_strike();
+  Card card = sts2::cards::make_card(CardId::kStrike);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot{0});
 
@@ -73,7 +73,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
 TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
   Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-  Card c1 = sts2::cards::make_strike();
+  Card c1 = sts2::cards::make_card(CardId::kStrike);
   c1.base_damage = 999;
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
   c1.on_play(combat, sts2::game::EnemySlot{0});
@@ -83,12 +83,12 @@ TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
 }
 
 // -------------------------------------------------------------------------
-// 8.2  cards::make_defend()
+// 8.2  cards::make_card(CardId::kDefend)
 // -------------------------------------------------------------------------
 
 // T-CRD-020 — BP — Static fields populated as specified; on_play is set.
 TEST(CardsMakeDefend, T_CRD_020_StaticFields) {
-  Card c = sts2::cards::make_defend();
+  Card c = sts2::cards::make_card(CardId::kDefend);
   EXPECT_EQ(c.id, CardId::kDefend);
   EXPECT_EQ(c.name, "Defend");
   EXPECT_EQ(c.cost, 1);
@@ -105,7 +105,7 @@ TEST(CardsMakeDefend, T_CRD_020_StaticFields) {
 TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
   Combat combat{kCombatTestSeed};
 
-  Card card = sts2::cards::make_defend();
+  Card card = sts2::cards::make_card(CardId::kDefend);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 
@@ -117,7 +117,7 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
 TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
   Combat combat{kCombatTestSeed};
 
-  Card c1 = sts2::cards::make_defend();
+  Card c1 = sts2::cards::make_card(CardId::kDefend);
   c1.base_block = 999;
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
   c1.on_play(combat, sts2::game::EnemySlot::none());
@@ -127,12 +127,12 @@ TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
 }
 
 // -------------------------------------------------------------------------
-// 8.3  cards::make_neutralize()
+// 8.3  cards::make_card(CardId::kNeutralize)
 // -------------------------------------------------------------------------
 
 // T-CRD-035 — BP — Static fields; description has 2 lines.
 TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
-  Card c = sts2::cards::make_neutralize();
+  Card c = sts2::cards::make_card(CardId::kNeutralize);
   EXPECT_EQ(c.id, CardId::kNeutralize);
   EXPECT_EQ(c.name, "Neutralize");
   EXPECT_EQ(c.cost, 0);
@@ -151,7 +151,7 @@ TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
 TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
   Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
-  Card card = sts2::cards::make_neutralize();
+  Card card = sts2::cards::make_card(CardId::kNeutralize);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot{0});
 
@@ -165,12 +165,12 @@ TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
 }
 
 // -------------------------------------------------------------------------
-// 8.4  cards::make_survivor()
+// 8.4  cards::make_card(CardId::kSurvivor)
 // -------------------------------------------------------------------------
 
 // T-CRD-045 — BP — Static fields; description has 2 lines.
 TEST(CardsMakeSurvivor, T_CRD_045_StaticFields) {
-  Card c = sts2::cards::make_survivor();
+  Card c = sts2::cards::make_card(CardId::kSurvivor);
   EXPECT_EQ(c.id, CardId::kSurvivor);
   EXPECT_EQ(c.name, "Survivor");
   EXPECT_EQ(c.cost, 1);
@@ -196,15 +196,15 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
   // locks shuffle-order independence for this test. All-Strikes makes the
   // discarded card's id deterministic regardless of post-shuffle order.
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(CardId::kStrike));
   combat.start(std::move(deck));
 
   ASSERT_EQ(combat.player().hand.size(), 3U);
   ASSERT_EQ(combat.player().deck.discard_size(), 0U);
 
-  Card card = sts2::cards::make_survivor();
+  Card card = sts2::cards::make_card(CardId::kSurvivor);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 
@@ -222,7 +222,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
   ASSERT_TRUE(combat.player().hand.empty());
   ASSERT_EQ(combat.player().deck.discard_size(), 0U);
 
-  Card card = sts2::cards::make_survivor();
+  Card card = sts2::cards::make_card(CardId::kSurvivor);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 

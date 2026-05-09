@@ -32,7 +32,7 @@ using sts2::game::Rng;
 Hand MakeHandOfN(int n) {
   Hand h;
   for (int i = 0; i < n; ++i) {
-    h.add(sts2::cards::make_strike());
+    h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   return h;
 }
@@ -42,7 +42,7 @@ Deck MakeDeckOf(int n, Rng& rng) {
   std::vector<Card> cards;
   cards.reserve(static_cast<std::size_t>(n));
   for (int i = 0; i < n; ++i) {
-    cards.push_back(sts2::cards::make_defend());
+    cards.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   }
   Deck d;
   d.load_starter(std::move(cards), rng);
@@ -60,7 +60,7 @@ TEST(HandMaxSize, ConstantIsTen) {
 TEST(HandAdd, FillsToMaxSize) {
   Hand h;
   for (int i = 0; i < Hand::kMaxSize; ++i) {
-    h.add(sts2::cards::make_strike());
+    h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   EXPECT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
 }
@@ -69,7 +69,7 @@ TEST(HandAdd, NoOpAtMaxSize) {
   Hand h = MakeHandOfN(Hand::kMaxSize);
   ASSERT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
 
-  h.add(sts2::cards::make_defend());  // should be silently dropped
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));  // should be silently dropped
 
   EXPECT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
   // All cards should still be Strikes (the Defend was not added).
@@ -80,9 +80,9 @@ TEST(HandAdd, NoOpAtMaxSize) {
 
 TEST(HandAdd, GrowsBeforeMaxSize) {
   Hand h;
-  h.add(sts2::cards::make_strike());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
   EXPECT_EQ(h.size(), 1U);
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
   EXPECT_EQ(h.size(), 2U);
 }
 
@@ -98,7 +98,7 @@ TEST(HandSize, EmptyOnDefault) {
 
 TEST(HandSize, TracksMutations) {
   Hand h;
-  h.add(sts2::cards::make_strike());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
   EXPECT_FALSE(h.empty());
   EXPECT_EQ(h.size(), 1U);
 }
@@ -130,8 +130,8 @@ TEST(HandValid, PastEndIsInvalid) {
 
 TEST(HandAt, ReturnsCorrectCard) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   EXPECT_EQ(h.at(HandIndex{0}).id, CardId::kStrike);
   EXPECT_EQ(h.at(HandIndex{1}).id, CardId::kDefend);
@@ -148,9 +148,9 @@ TEST(HandFind, AbsentReturnsNone) {
 
 TEST(HandFind, PresentReturnsFirstIndex) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
-  h.add(sts2::cards::make_strike());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
 
   const HandIndex idx = h.find(CardId::kDefend);
   EXPECT_TRUE(h.valid(idx));
@@ -164,9 +164,9 @@ TEST(HandFind, EmptyHandReturnsNone) {
 
 TEST(HandFind, FirstOfDuplicatesReturned) {
   Hand h;
-  h.add(sts2::cards::make_defend());
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   EXPECT_EQ(h.find(CardId::kDefend).raw(), 0);
 }
@@ -177,9 +177,9 @@ TEST(HandFind, FirstOfDuplicatesReturned) {
 
 TEST(HandPlay, RemovesCardAndReturnsIt) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
-  h.add(sts2::cards::make_neutralize());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   ASSERT_EQ(h.size(), 3U);
 
   Card played = h.play(HandIndex{1});  // Defend at index 1
@@ -192,8 +192,8 @@ TEST(HandPlay, RemovesCardAndReturnsIt) {
 
 TEST(HandPlay, CanPlayFirst) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   Card played = h.play(HandIndex{0});
 
@@ -204,8 +204,8 @@ TEST(HandPlay, CanPlayFirst) {
 
 TEST(HandPlay, CanPlayLast) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   Card played = h.play(HandIndex{1});
 
@@ -220,8 +220,8 @@ TEST(HandPlay, CanPlayLast) {
 
 TEST(HandDiscardAt, RemovesAndReturnsCard) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   Card discarded = h.discard_at(HandIndex{0});
 
@@ -233,11 +233,11 @@ TEST(HandDiscardAt, RemovesAndReturnsCard) {
 // Verify both methods produce the same result (shared implementation).
 TEST(HandDiscardAt, SameResultAsPlay) {
   Hand h1;
-  h1.add(sts2::cards::make_strike());
-  h1.add(sts2::cards::make_defend());
+  h1.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h1.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
   Hand h2;
-  h2.add(sts2::cards::make_strike());
-  h2.add(sts2::cards::make_defend());
+  h2.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h2.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   Card via_play    = h1.play(HandIndex{0});
   Card via_discard = h2.discard_at(HandIndex{0});
@@ -264,9 +264,9 @@ TEST(HandDumpInto, EmptyHandNoOp) {
 
 TEST(HandDumpInto, MovesAllCardsLifo) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
-  h.add(sts2::cards::make_neutralize());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   ASSERT_EQ(h.size(), 3U);
 
   Deck deck;
@@ -344,7 +344,7 @@ TEST(HandDrawFrom, ReshufflesDiscardWhenDrawEmpty) {
 
   constexpr int kN = 4;
   for (int i = 0; i < kN; ++i) {
-    deck.discard(sts2::cards::make_strike());
+    deck.discard(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   ASSERT_EQ(deck.draw_size(), 0U);
   ASSERT_EQ(deck.discard_size(), static_cast<std::size_t>(kN));
@@ -364,8 +364,8 @@ TEST(HandDrawFrom, ReshufflesDiscardWhenDrawEmpty) {
 
 TEST(HandCards, SpanReferencesStoredElements) {
   Hand h;
-  h.add(sts2::cards::make_strike());
-  h.add(sts2::cards::make_defend());
+  h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
   const auto span = h.cards();
   ASSERT_EQ(span.size(), 2U);

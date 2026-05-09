@@ -157,7 +157,7 @@ TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
   // 1-card deck → start() draws into hand. Ring of the Snake adds 2 to the
   // base draw, but with only 1 card available, hand size becomes 1.
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 

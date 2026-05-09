@@ -57,13 +57,13 @@ using Vitals = sts2::game::Vitals;
 // Build the small "fixed deck" used by §10.1's T-CMB-010 setup.
 std::vector<Card> MakeStrikeDefendDeck7() {
   std::vector<Card> d;
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   return d;
 }
 
@@ -141,9 +141,9 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
       [](const Combat&) { return sts2::game::HandIndex{1}; });
 
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
 
   ASSERT_EQ(c.player().hand.size(), 3U);
@@ -291,7 +291,7 @@ TEST(CombatDealDamage, T_CMB_070_LethalEnemyAttackTripsCombatOver) {
 TEST(CombatCanPlay, T_CMB_075_NegativeIndex) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -302,9 +302,9 @@ TEST(CombatCanPlay, T_CMB_075_NegativeIndex) {
 TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -320,7 +320,7 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 6U);
@@ -340,7 +340,7 @@ TEST(CombatCanPlay, T_CMB_090_BoundaryCostEqualsEnergy) {
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   // Spend two energy, leaving energy=1 == Strike cost.
@@ -357,10 +357,10 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
   // Deck: 3 Strikes + 1 Neutralize. After start, hand has all 4 (deck<7).
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 4U);
 
@@ -399,7 +399,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   std::vector<Card> deck;
   deck.reserve(4);
   for (int i = 0; i < 4; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 4U);
@@ -430,7 +430,7 @@ TEST(CombatPlayCard, T_CMB_110_OnPlayFalsyUnreachable) {
 TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
   ASSERT_EQ(c.player().energy, 3);
@@ -459,9 +459,9 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
                : sts2::game::HandIndex{0};
   });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_survivor());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kSurvivor));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -484,7 +484,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
 TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/4);
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -553,7 +553,7 @@ TEST(CombatDraw, T_CMB_145_ReshuffleMidLoop) {
   std::vector<Card> deck;
   deck.reserve(8);
   for (int i = 0; i < 8; ++i) {
-    deck.push_back(sts2::cards::make_defend());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 7U);
@@ -681,9 +681,9 @@ TEST(CombatEndPlayerTurn, T_CMB_165_EmptyHandTicksPowers) {
 TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -1096,7 +1096,7 @@ TEST(CombatDiscardChosen, T_CMB_280_CallbackNegativeNoOp) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{-1}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -1113,8 +1113,8 @@ TEST(CombatDiscardChosen, T_CMB_285_CallbackOutOfRangeNoOp) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{5}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 2U);
 
@@ -1131,9 +1131,9 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{1}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
   const CardId pre0 = c.player().hand.cards()[0].id;
@@ -1241,7 +1241,7 @@ TEST(CombatFindCardInHand, PresentReturnsIndex) {
 TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
   EXPECT_EQ(c.find_card_in_hand(CardId::kNeutralize), sts2::game::HandIndex::none());
@@ -1251,9 +1251,9 @@ TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
 TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 

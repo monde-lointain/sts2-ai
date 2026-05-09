@@ -37,7 +37,7 @@ using sts2::tests::helpers::MakeCombatWithEnemy;
 // piles are empty afterwards.
 std::vector<Card> MakeTinyStrikeDeck() {
   std::vector<Card> deck;
-  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_strike());
+  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   return deck;
 }
 

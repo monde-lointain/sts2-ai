@@ -218,9 +218,9 @@ TEST(RenderCombat, T_RND_200_NeutralizeDescriptionMultiLine) {
   // Three Neutralize cards; with kBaseHandDraw+RingOfTheSnake=7 and only 3
   // in deck, draw fills hand with all three.
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_neutralize());
-  deck.push_back(sts2::cards::make_neutralize());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
