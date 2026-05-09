@@ -31,9 +31,6 @@ class Combat {
   [[nodiscard]] bool can_play(HandIndex idx) const;
   bool play_card(HandIndex hand_idx, EnemySlot target = EnemySlot::none());
 
-  void draw(int n);
-  void reshuffle();
-
   [[nodiscard]] bool is_player_dead() const;
   [[nodiscard]] bool all_enemies_dead() const;
   void check_win_or_lose();
@@ -53,7 +50,6 @@ class Combat {
   void enemy_attack_player(const Enemy& source, int base_damage);
   void gain_player_block(int amt);
   void apply_power_to_enemy(EnemySlot slot, PowerKind kind, int amt);
-  static void apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt);
   void discard_chosen_from_hand();
 
  private:

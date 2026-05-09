@@ -1,8 +1,12 @@
 #include "sts2/ai/probability.h"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <cstddef>
+#include <iterator>
 
+#include "sts2/game/card_effects.h"
 #include "sts2/game/types.h"
 
 namespace sts2::ai::probability {
@@ -10,6 +14,7 @@ namespace sts2::ai::probability {
 namespace {
 
 using sts2::game::CardId;
+using sts2::game::card_effects::kCountedCardIds;
 
 constexpr int kMaxN = 12;
 
@@ -24,6 +29,30 @@ constexpr auto kBinomTable = []() {
   return t;
 }();
 
+void enumerate_recursive(const CardCounts& pool, int k_left,
+                         std::size_t card_idx, uint64_t numerator,
+                         CardCounts& acc, std::vector<Outcome>& out,
+                         double inv_denom) {
+  if (card_idx == std::size(kCountedCardIds)) {
+    if (k_left == 0) {
+      Outcome o;
+      o.hand = acc;
+      o.weight = static_cast<double>(numerator) * inv_denom;
+      out.push_back(o);
+    }
+    return;
+  }
+  const CardId id = kCountedCardIds[card_idx];
+  const int avail = pool[id];
+  const int upper = std::min(avail, k_left);
+  for (int take = 0; take <= upper; ++take) {
+    acc[id] = static_cast<uint8_t>(take);
+    enumerate_recursive(pool, k_left - take, card_idx + 1,
+                        numerator * binom(avail, take), acc, out, inv_denom);
+  }
+  acc[id] = 0;  // restore for sibling branches
+}
+
 }  // namespace
 
 uint64_t binom(int n, int r) noexcept {
@@ -36,9 +65,10 @@ uint64_t binom(int n, int r) noexcept {
 std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
   assert(pool.total() <= kMaxN);
   assert(k >= 0 && k <= pool.total());
-  assert(pool[CardId::kStrike] <= kMaxN && pool[CardId::kDefend] <= kMaxN &&
-         pool[CardId::kNeutralize] <= kMaxN &&
-         pool[CardId::kSurvivor] <= kMaxN);
+  for (const auto id : kCountedCardIds) {
+    assert(pool[id] <= kMaxN);
+    (void)id;
+  }
 
   std::vector<Outcome> out;
   if (k == 0) {
@@ -50,30 +80,8 @@ std::vector<Outcome> enumerate_draws(CardCounts pool, int k) {
   const uint64_t denom = binom(total, k);
   const double inv_denom = 1.0 / static_cast<double>(denom);
 
-  for (int s = 0; s <= pool[CardId::kStrike]; ++s) {
-    if (s > k) break;
-    const uint64_t cs = binom(pool[CardId::kStrike], s);
-    for (int d = 0; d <= pool[CardId::kDefend]; ++d) {
-      const int sd = s + d;
-      if (sd > k) break;
-      const uint64_t csd = cs * binom(pool[CardId::kDefend], d);
-      for (int n = 0; n <= pool[CardId::kNeutralize]; ++n) {
-        const int sdn = sd + n;
-        if (sdn > k) break;
-        const uint64_t csdn = csd * binom(pool[CardId::kNeutralize], n);
-        const int v = k - sdn;
-        if (v < 0 || v > pool[CardId::kSurvivor]) continue;
-        const uint64_t num = csdn * binom(pool[CardId::kSurvivor], v);
-        Outcome o;
-        o.hand[CardId::kStrike] = static_cast<uint8_t>(s);
-        o.hand[CardId::kDefend] = static_cast<uint8_t>(d);
-        o.hand[CardId::kNeutralize] = static_cast<uint8_t>(n);
-        o.hand[CardId::kSurvivor] = static_cast<uint8_t>(v);
-        o.weight = static_cast<double>(num) * inv_denom;
-        out.push_back(o);
-      }
-    }
-  }
+  CardCounts acc;
+  enumerate_recursive(pool, k, 0, 1, acc, out, inv_denom);
   return out;
 }
 

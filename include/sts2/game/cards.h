@@ -6,10 +6,7 @@
 
 namespace sts2::cards {
 
-game::Card make_strike();
-game::Card make_defend();
-game::Card make_neutralize();
-game::Card make_survivor();
+[[nodiscard]] game::Card make_card(game::CardId id);
 
 std::vector<game::Card> make_silent_starter_deck();
 

@@ -40,7 +40,7 @@ void Combat::start_player_turn() {
 
   player_.energy = turn_calc::starting_energy();
 
-  draw(turn_calc::hand_draw_size(round_));
+  player_.hand.draw_from(player_.deck, rng_, turn_calc::hand_draw_size(round_));
 }
 
 void Combat::end_player_turn() {
@@ -107,10 +107,6 @@ bool Combat::play_card(HandIndex hand_idx, EnemySlot target) {
   return true;
 }
 
-void Combat::draw(int n) { player_.hand.draw_from(player_.deck, rng_, n); }
-
-void Combat::reshuffle() { player_.deck.reshuffle(rng_); }
-
 std::vector<EnemySlot> Combat::alive_enemy_indices() const {
   std::vector<EnemySlot> out;
   for (std::size_t i = 0; i < enemies_.size(); ++i) {
@@ -165,10 +161,6 @@ void Combat::gain_player_block(int amt) { player_.vitals.block += amt; }
 void Combat::apply_power_to_enemy(EnemySlot slot, PowerKind kind, int amt) {
   assert(slot.in_range(enemies_));
   Enemy& e = slot.at(enemies_);
-  sts2::powers::apply(e.vitals.powers, kind, amt);
-}
-
-void Combat::apply_power_to_enemy_self(Enemy& e, PowerKind kind, int amt) {
   sts2::powers::apply(e.vitals.powers, kind, amt);
 }
 

@@ -59,7 +59,7 @@ TEST(CardEffectFor, LooksUpById) {
 // Spec consistency: table values match what the engine factories produce.
 TEST(CardEffectsTableConsistency, StrikeMatchesFactory) {
   const auto& fx = card_effect_for(CardId::kStrike);
-  auto card = sts2::cards::make_strike();
+  auto card = sts2::cards::make_card(CardId::kStrike);
   EXPECT_EQ(card.cost, fx.cost);
   EXPECT_EQ(card.target, fx.target);
   EXPECT_EQ(card.base_damage, fx.base_damage);
@@ -69,7 +69,7 @@ TEST(CardEffectsTableConsistency, StrikeMatchesFactory) {
 
 TEST(CardEffectsTableConsistency, DefendMatchesFactory) {
   const auto& fx = card_effect_for(CardId::kDefend);
-  auto card = sts2::cards::make_defend();
+  auto card = sts2::cards::make_card(CardId::kDefend);
   EXPECT_EQ(card.cost, fx.cost);
   EXPECT_EQ(card.target, fx.target);
   EXPECT_EQ(card.base_damage, fx.base_damage);
@@ -79,7 +79,7 @@ TEST(CardEffectsTableConsistency, DefendMatchesFactory) {
 
 TEST(CardEffectsTableConsistency, NeutralizeMatchesFactory) {
   const auto& fx = card_effect_for(CardId::kNeutralize);
-  auto card = sts2::cards::make_neutralize();
+  auto card = sts2::cards::make_card(CardId::kNeutralize);
   EXPECT_EQ(card.cost, fx.cost);
   EXPECT_EQ(card.target, fx.target);
   EXPECT_EQ(card.base_damage, fx.base_damage);
@@ -90,7 +90,7 @@ TEST(CardEffectsTableConsistency, NeutralizeMatchesFactory) {
 
 TEST(CardEffectsTableConsistency, SurvivorMatchesFactory) {
   const auto& fx = card_effect_for(CardId::kSurvivor);
-  auto card = sts2::cards::make_survivor();
+  auto card = sts2::cards::make_card(CardId::kSurvivor);
   EXPECT_EQ(card.cost, fx.cost);
   EXPECT_EQ(card.target, fx.target);
   EXPECT_EQ(card.base_damage, fx.base_damage);

@@ -37,7 +37,7 @@ using sts2::tests::helpers::MakeCombatWithEnemy;
 // piles are empty afterwards.
 std::vector<Card> MakeTinyStrikeDeck() {
   std::vector<Card> deck;
-  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_strike());
+  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   return deck;
 }
 
@@ -89,7 +89,7 @@ TEST(Recommend, TerminalState_FlagsCombatOver) {
 
 TEST(Recommend, PvAdvancesCorrectly_LethalPosition) {
   // 1 enemy at 6 hp + 5-Strike deck. Round-1 draws 7 from 5 cards: hand has
-  // all 5 Strikes (draw stops when pile empty per Combat::draw). Energy=3
+  // all 5 Strikes (draw stops when pile empty per Hand::draw_from). Energy=3
   // (max_energy default). One Strike at idx 0 lethals the enemy.
   Combat combat = MakeTinyCombat(0x12345ULL, /*enemy_hp=*/6);
   ASSERT_FALSE(combat.combat_over());

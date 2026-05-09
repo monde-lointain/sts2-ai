@@ -4,7 +4,9 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 
+#include "sts2/game/card_effects.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/types.h"
 
@@ -15,7 +17,27 @@ class Combat;
 namespace sts2::ai {
 
 struct CardCounts {
-  std::array<uint8_t, 4> counts{};
+  std::array<uint8_t, std::size(sts2::game::card_effects::kCountedCardIds)>
+      counts{};
+  static_assert(std::size(sts2::game::card_effects::kCountedCardIds) <= 8,
+                "pack_counts uint64 packing limit (8 bits per slot)");
+
+  // to_index() relies on kCountedCardIds being ordered to match CardId enum
+  // layout (kNone=0 implicit; entry i is CardId{i+1}). Without this, indexing
+  // silently misaligns when a new CardId is added at the wrong enum position.
+  static_assert(
+      [] {
+        for (std::size_t i = 0;
+             i < std::size(sts2::game::card_effects::kCountedCardIds); ++i) {
+          if (static_cast<int>(
+                  sts2::game::card_effects::kCountedCardIds[i]) !=
+              static_cast<int>(i) + 1) {
+            return false;
+          }
+        }
+        return true;
+      }(),
+      "kCountedCardIds order must match CardId enum (kNone=0, kStrike=1, ...)");
 
   // CardId is 1-indexed; kNone=0 is an assert-only sentinel, so we offset by 1
   // to map kStrike..kSurvivor onto array indices 0..3.

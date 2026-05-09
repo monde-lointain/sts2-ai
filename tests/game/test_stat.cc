@@ -1,8 +1,8 @@
 // Tests for include/sts2/game/stat.h.
 //
-// Covers: default construction, explicit int construction, value()/raw(),
-// operator+= / operator-=, all six comparison operators, and uint8_t
-// wraparound behaviour.
+// Covers: default construction, explicit int construction with +/-1e9
+// saturation, value(), pack8() byte view, operator+= / operator-= with
+// saturating arithmetic (allows negative), and all six comparison operators.
 
 #include <gtest/gtest.h>
 
@@ -17,7 +17,7 @@ using sts2::game::Stat;
 TEST(Stat, DefaultConstruct_IsZero) {
   Stat s;
   EXPECT_EQ(s.value(), 0);
-  EXPECT_EQ(s.raw(), 0u);
+  EXPECT_EQ(s.pack8(), 0u);
 }
 
 TEST(Stat, ExplicitInt_StoresCorrectValue) {
@@ -26,9 +26,20 @@ TEST(Stat, ExplicitInt_StoresCorrectValue) {
   EXPECT_EQ(Stat{0}.value(), 0);
 }
 
-TEST(Stat, Raw_ReturnsSameAsUint8) {
-  EXPECT_EQ(Stat{42}.raw(), static_cast<uint8_t>(42));
-  EXPECT_EQ(Stat{255}.raw(), static_cast<uint8_t>(255));
+TEST(Stat, ConstructorClampsPositive) {
+  EXPECT_EQ(Stat{2'000'000'000}.value(), Stat::kMaxClamp);
+}
+
+TEST(Stat, ConstructorClampsNegative) {
+  EXPECT_EQ(Stat{-2'000'000'000}.value(), -Stat::kMaxClamp);
+}
+
+// --- pack8 byte view ---
+
+TEST(Stat, Pack8_InRange) {
+  EXPECT_EQ(Stat{50}.pack8(), static_cast<uint8_t>(50));
+  EXPECT_EQ(Stat{255}.pack8(), static_cast<uint8_t>(255));
+  EXPECT_EQ(Stat{0}.pack8(), static_cast<uint8_t>(0));
 }
 
 // --- Arithmetic ---
@@ -57,18 +68,31 @@ TEST(Stat, MinusEquals_ToZero) {
   EXPECT_EQ(s.value(), 0);
 }
 
-// uint8_t arithmetic wraps mod 256. Document the behaviour rather than assert
-// it's "correct" — callers must not rely on wrap for hp/energy semantics.
-TEST(Stat, PlusEquals_WrapsAt256) {
-  Stat s{255};
-  s += 1;
-  EXPECT_EQ(s.value(), 0);  // wraps to 0
+// Saturating arithmetic: no wrap at byte boundary; mirrors Godot
+// PowerModel.SetAmount semantics with Math.Clamp(value, -1e9, +1e9).
+
+TEST(Stat, PlusEquals_NoWrapAt256) {
+  Stat s{200};
+  s += 100;
+  EXPECT_EQ(s.value(), 300);
 }
 
-TEST(Stat, MinusEquals_WrapsBelow0) {
+TEST(Stat, MinusEquals_AllowsNegative) {
   Stat s{0};
+  s -= 5;
+  EXPECT_EQ(s.value(), -5);
+}
+
+TEST(Stat, PlusEquals_SaturatesPositive) {
+  Stat s{Stat::kMaxClamp};
+  s += 1;
+  EXPECT_EQ(s.value(), Stat::kMaxClamp);
+}
+
+TEST(Stat, MinusEquals_SaturatesNegative) {
+  Stat s{-Stat::kMaxClamp};
   s -= 1;
-  EXPECT_EQ(s.value(), 255);  // wraps to 255
+  EXPECT_EQ(s.value(), -Stat::kMaxClamp);
 }
 
 // --- Equality ---

@@ -57,13 +57,13 @@ using Vitals = sts2::game::Vitals;
 // Build the small "fixed deck" used by §10.1's T-CMB-010 setup.
 std::vector<Card> MakeStrikeDefendDeck7() {
   std::vector<Card> d;
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
-  d.push_back(sts2::cards::make_defend());
-  d.push_back(sts2::cards::make_strike());
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   return d;
 }
 
@@ -141,9 +141,9 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
       [](const Combat&) { return sts2::game::HandIndex{1}; });
 
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
 
   ASSERT_EQ(c.player().hand.size(), 3U);
@@ -183,22 +183,6 @@ TEST(CombatDelegators, T_CMB_035_ApplyPowerToEnemyAccumulates) {
   c.apply_power_to_enemy(sts2::game::EnemySlot{0}, PowerKind::kWeak, 2);
   ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1U);
   EXPECT_EQ(c.enemies()[0].vitals.powers[0].amount, 3);
-}
-
-// T-CMB-040 — BP — apply_power_to_enemy_self delegates correctly.
-// Verified by reading the passed-in enemy's powers afterwards.
-TEST(CombatDelegators, T_CMB_040_ApplyPowerToEnemySelf) {
-  Combat c{kCombatTestSeed};
-  Enemy e{};
-  e.vitals = Vitals{40, 40, 0, {}};
-
-  c.apply_power_to_enemy_self(e, PowerKind::kRitual, 2);
-
-  ASSERT_EQ(e.vitals.powers.size(), 1U);
-  EXPECT_EQ(e.vitals.powers[0].kind, PowerKind::kRitual);
-  EXPECT_EQ(e.vitals.powers[0].amount, 2);
-  // Newly-applied Ritual sets just_applied=true (per powers::apply).
-  EXPECT_TRUE(e.vitals.powers[0].just_applied);
 }
 
 // T-CMB-045 — BP — is_player_dead() returns TRUE when hp<=0, FALSE when hp>0.
@@ -291,7 +275,7 @@ TEST(CombatDealDamage, T_CMB_070_LethalEnemyAttackTripsCombatOver) {
 TEST(CombatCanPlay, T_CMB_075_NegativeIndex) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -302,9 +286,9 @@ TEST(CombatCanPlay, T_CMB_075_NegativeIndex) {
 TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -320,7 +304,7 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 6U);
@@ -340,7 +324,7 @@ TEST(CombatCanPlay, T_CMB_090_BoundaryCostEqualsEnergy) {
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   // Spend two energy, leaving energy=1 == Strike cost.
@@ -357,10 +341,10 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
   // Deck: 3 Strikes + 1 Neutralize. After start, hand has all 4 (deck<7).
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 4U);
 
@@ -399,7 +383,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   std::vector<Card> deck;
   deck.reserve(4);
   for (int i = 0; i < 4; ++i) {
-    deck.push_back(sts2::cards::make_strike());
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 4U);
@@ -430,7 +414,7 @@ TEST(CombatPlayCard, T_CMB_110_OnPlayFalsyUnreachable) {
 TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
   ASSERT_EQ(c.player().energy, 3);
@@ -459,9 +443,9 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
                : sts2::game::HandIndex{0};
   });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_survivor());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kSurvivor));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -484,7 +468,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
 TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/4);
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -493,160 +477,6 @@ TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
   EXPECT_TRUE(ok);
   EXPECT_EQ(c.enemies()[0].vitals.hp, 0);
   EXPECT_TRUE(c.combat_over());
-}
-
-// -------------------------------------------------------------------------
-// 10.4  draw
-// -------------------------------------------------------------------------
-
-// T-CMB-130 — BP, BV — draw(0) is a no-op (D1 FALSE on entry).
-TEST(CombatDraw, T_CMB_130_DrawZeroNoOp) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  const std::size_t hand_before = c.player().hand.size();
-  const std::size_t draw_before = c.player().deck.draw_size();
-  const std::size_t discard_before = c.player().deck.discard_size();
-
-  c.draw(0);
-
-  EXPECT_EQ(c.player().hand.size(), hand_before);
-  EXPECT_EQ(c.player().deck.draw_size(), draw_before);
-  EXPECT_EQ(c.player().deck.discard_size(), discard_before);
-}
-
-// T-CMB-135 — BP, EP — draw(3) from a populated draw pile: hand grows by 3,
-// draw shrinks by 3, discard unchanged. Uses the 12-card starter deck where
-// after R1 start hand=7, draw=5, discard=0.
-TEST(CombatDraw, T_CMB_135_DrawThreeFromPopulatedDeck) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_EQ(c.player().deck.draw_size(), 5U);
-  ASSERT_EQ(c.player().deck.discard_size(), 0U);
-
-  c.draw(3);
-
-  EXPECT_EQ(c.player().hand.size(), 10U);
-  EXPECT_EQ(c.player().deck.draw_size(), 2U);
-  EXPECT_EQ(c.player().deck.discard_size(), 0U);
-}
-
-// T-CMB-140 — BV — Hand cap clamp. start draws 7 (5+ring 2). Then draw(3)
-// brings hand to 10 (kMaxHandSize). Subsequent draw(2) should be a no-op.
-TEST(CombatDraw, T_CMB_140_HandCapClamp) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  c.draw(3);
-  ASSERT_EQ(c.player().hand.size(), 10U);
-  const std::size_t draw_before = c.player().deck.draw_size();
-
-  c.draw(2);
-
-  EXPECT_EQ(c.player().hand.size(), 10U);
-  EXPECT_EQ(c.player().deck.draw_size(), draw_before);
-}
-
-// T-CMB-145 — BP, EG — Reshuffle when draw empties mid-loop.
-// Setup: 8 Defend deck (no enemies needed; Defend targets Self). After start,
-// hand=7, draw=1, discard=0. Play one Defend → hand=6, discard=1, draw=1.
-// Then draw(2): iter 1 takes the last draw card (hand=7, draw=0); iter 2
-// triggers reshuffle (D3 TRUE), draw=1 again, takes it (hand=8, draw=0).
-TEST(CombatDraw, T_CMB_145_ReshuffleMidLoop) {
-  Combat c{kCombatTestSeed};
-  std::vector<Card> deck;
-  deck.reserve(8);
-  for (int i = 0; i < 8; ++i) {
-    deck.push_back(sts2::cards::make_defend());
-  }
-  c.start(std::move(deck));
-  ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_EQ(c.player().deck.draw_size(), 1U);
-  ASSERT_EQ(c.player().deck.discard_size(), 0U);
-
-  ASSERT_TRUE(c.play_card(sts2::game::HandIndex{0}, sts2::game::EnemySlot::none()));
-  ASSERT_EQ(c.player().hand.size(), 6U);
-  ASSERT_EQ(c.player().deck.discard_size(), 1U);
-  ASSERT_EQ(c.player().deck.draw_size(), 1U);
-
-  c.draw(2);
-
-  EXPECT_EQ(c.player().hand.size(), 8U);
-  EXPECT_EQ(c.player().deck.draw_size(), 0U);
-  EXPECT_EQ(c.player().deck.discard_size(), 0U);
-}
-
-// T-CMB-150 — EG — Empty draw + empty discard short-circuits (D3 TRUE,
-// D4 TRUE → return on iter 1). 7-card deck → start draws all 7, leaving
-// draw=0 and discard=0; draw(3) is a no-op.
-TEST(CombatDraw, T_CMB_150_EmptyDrawAndDiscardShortCircuits) {
-  Combat c{kCombatTestSeed};
-  c.start(MakeStrikeDefendDeck7());
-  ASSERT_EQ(c.player().hand.size(), 7U);
-  ASSERT_EQ(c.player().deck.draw_size(), 0U);
-  ASSERT_EQ(c.player().deck.discard_size(), 0U);
-
-  c.draw(3);
-
-  EXPECT_EQ(c.player().hand.size(), 7U);
-  EXPECT_EQ(c.player().deck.draw_size(), 0U);
-  EXPECT_EQ(c.player().deck.discard_size(), 0U);
-}
-
-// -------------------------------------------------------------------------
-// 10.5  reshuffle
-// -------------------------------------------------------------------------
-
-// T-CMB-155 — BP, BV — Empty discard → no-op (D1 FALSE on entry).
-// 7-card deck → start draws all 7 → discard empty, draw empty, hand=7.
-TEST(CombatReshuffle, T_CMB_155_EmptyDiscardNoOp) {
-  Combat c{kCombatTestSeed};
-  c.start(MakeStrikeDefendDeck7());
-  ASSERT_EQ(c.player().deck.discard_size(), 0U);
-  ASSERT_EQ(c.player().deck.draw_size(), 0U);
-  const std::size_t hand_before = c.player().hand.size();
-
-  c.reshuffle();
-
-  EXPECT_EQ(c.player().hand.size(), hand_before);
-  EXPECT_EQ(c.player().deck.draw_size(), 0U);
-  EXPECT_EQ(c.player().deck.discard_size(), 0U);
-}
-
-// T-CMB-160 — BP, DF — Non-empty discard → drained into draw and shuffled.
-// Setup: starter combat (12-card deck, R1 hand=7, draw=5). Play several
-// cards to populate discard. Multiset of (pre-draw ∪ pre-discard) is
-// preserved into draw_pile after reshuffle.
-TEST(CombatReshuffle, T_CMB_160_NonEmptyDiscardDrainedAndShuffled) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  // Play three Defends from hand (each costs 1). Defends always exist at
-  // some hand index in the starter deck draw; locate by id.
-  for (int i = 0; i < 3; ++i) {
-    int idx = FindHandIndex(c, CardId::kDefend);
-    ASSERT_NE(idx, -1);
-    ASSERT_TRUE(c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
-  }
-  ASSERT_EQ(c.player().deck.discard_size(), 3U);
-  const std::size_t pre_draw = c.player().deck.draw_size();
-  const std::size_t pre_discard = c.player().deck.discard_size();
-
-  // Capture id multiset of pre-draw ∪ pre-discard.
-  std::vector<CardId> expected_ids;
-  for (const Card& cc : c.player().deck.draw_pile()) {
-    expected_ids.push_back(cc.id);
-  }
-  for (const Card& cc : c.player().deck.discard_pile()) {
-    expected_ids.push_back(cc.id);
-  }
-  std::sort(expected_ids.begin(), expected_ids.end());
-
-  c.reshuffle();
-
-  EXPECT_EQ(c.player().deck.discard_size(), 0U);
-  EXPECT_EQ(c.player().deck.draw_size(), pre_draw + pre_discard);
-
-  std::vector<CardId> got_ids;
-  for (const Card& cc : c.player().deck.draw_pile()) {
-    got_ids.push_back(cc.id);
-  }
-  std::sort(got_ids.begin(), got_ids.end());
-  EXPECT_EQ(got_ids, expected_ids);
 }
 
 // -------------------------------------------------------------------------
@@ -681,9 +511,9 @@ TEST(CombatEndPlayerTurn, T_CMB_165_EmptyHandTicksPowers) {
 TEST(CombatEndPlayerTurn, T_CMB_170_NonEmptyHandDiscardedLifo) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -1096,7 +926,7 @@ TEST(CombatDiscardChosen, T_CMB_280_CallbackNegativeNoOp) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{-1}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
 
@@ -1113,8 +943,8 @@ TEST(CombatDiscardChosen, T_CMB_285_CallbackOutOfRangeNoOp) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{5}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 2U);
 
@@ -1131,9 +961,9 @@ TEST(CombatDiscardChosen, T_CMB_290_CallbackValidIndexMoves) {
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{1}; });
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
-  deck.push_back(sts2::cards::make_neutralize());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
   const CardId pre0 = c.player().hand.cards()[0].id;
@@ -1241,7 +1071,7 @@ TEST(CombatFindCardInHand, PresentReturnsIndex) {
 TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
   EXPECT_EQ(c.find_card_in_hand(CardId::kNeutralize), sts2::game::HandIndex::none());
@@ -1251,9 +1081,9 @@ TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
 TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
   Combat c{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_strike());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 

@@ -71,18 +71,18 @@ TEST(DeckLoadStarter, T_DCK_015_ClearsPriorState) {
 
   // First load.
   std::vector<Card> deck1;
-  deck1.push_back(sts2::cards::make_strike());
+  deck1.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   d.load_starter(std::move(deck1), rng);
   ASSERT_EQ(d.draw_size(), 1U);
 
   // Discard one card to populate discard pile.
-  d.discard(sts2::cards::make_defend());
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kDefend));
   ASSERT_EQ(d.discard_size(), 1U);
 
   // Second load — must clear both piles.
   std::vector<Card> deck2;
-  deck2.push_back(sts2::cards::make_neutralize());
-  deck2.push_back(sts2::cards::make_neutralize());
+  deck2.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
+  deck2.push_back(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   d.load_starter(std::move(deck2), rng);
 
   EXPECT_EQ(d.draw_size(), 2U);
@@ -96,8 +96,8 @@ TEST(DeckDrawOne, T_DCK_020_DrawFromNonEmptyPile) {
   Deck d;
   Rng rng{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   d.load_starter(std::move(deck), rng);
   ASSERT_EQ(d.draw_size(), 2U);
 
@@ -117,8 +117,8 @@ TEST(DeckDrawOne, T_DCK_025_ReshufflesWhenDrawEmpty) {
   Deck d;
   Rng rng{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   d.load_starter(std::move(deck), rng);
 
   // Drain draw pile.
@@ -159,11 +159,11 @@ TEST(DeckDrawOne, T_DCK_030_BothEmptyReturnsNullopt) {
 // -------------------------------------------------------------------------
 TEST(DeckDiscard, T_DCK_035_PushesToDiscardPile) {
   Deck d;
-  d.discard(sts2::cards::make_strike());
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kStrike));
   EXPECT_EQ(d.discard_size(), 1U);
   EXPECT_EQ(d.discard_pile()[0].id, CardId::kStrike);
 
-  d.discard(sts2::cards::make_defend());
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kDefend));
   EXPECT_EQ(d.discard_size(), 2U);
   EXPECT_EQ(d.discard_pile()[1].id, CardId::kDefend);
 }
@@ -176,9 +176,9 @@ TEST(DeckReshuffle, T_DCK_040_MovesDiscardToDrawAndShuffles) {
   Deck d;
   Rng rng{kCombatTestSeed};
 
-  d.discard(sts2::cards::make_strike());
-  d.discard(sts2::cards::make_defend());
-  d.discard(sts2::cards::make_neutralize());
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kDefend));
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
   ASSERT_EQ(d.discard_size(), 3U);
   ASSERT_EQ(d.draw_size(), 0U);
 
@@ -209,10 +209,10 @@ TEST(DeckSizeHelpers, T_DCK_045_TotalSizeIsSumOfPiles) {
   Deck d;
   Rng rng{kCombatTestSeed};
   std::vector<Card> deck;
-  deck.push_back(sts2::cards::make_strike());
-  deck.push_back(sts2::cards::make_defend());
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
   d.load_starter(std::move(deck), rng);
-  d.discard(sts2::cards::make_neutralize());
+  d.discard(sts2::cards::make_card(sts2::game::CardId::kNeutralize));
 
   EXPECT_EQ(d.draw_size(), 2U);
   EXPECT_EQ(d.discard_size(), 1U);
