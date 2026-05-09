@@ -22,7 +22,7 @@ namespace {
 // not cover) so callers like the survivor-discard path can print "(none)".
 const char* card_id_name(sts2::game::CardId id) {
   if (id == sts2::game::CardId::kNone) return "(none)";
-  return sts2::ai::lookup(id).name.data();
+  return sts2::ai::card_metadata_for(id).name.data();
 }
 
 bool target_is_live_enemy(const sts2::game::Combat& combat, int idx) {

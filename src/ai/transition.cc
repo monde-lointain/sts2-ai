@@ -28,17 +28,17 @@ void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
 }
 
 uint8_t count_in_hand(const CardCounts& hand, CardId id) {
-  return hand.*lookup(id).count_field;
+  return hand.*card_metadata_for(id).count_field;
 }
 
 void dec_count(CardCounts& counts, CardId id) {
-  uint8_t& cell = counts.*lookup(id).count_field;
+  uint8_t& cell = counts.*card_metadata_for(id).count_field;
   assert(cell > 0);
   --cell;
 }
 
 void inc_count(CardCounts& counts, CardId id) {
-  ++(counts.*lookup(id).count_field);
+  ++(counts.*card_metadata_for(id).count_field);
 }
 
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
@@ -58,7 +58,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
 
   for (CardId id : kAllCards) {
     if (count_in_hand(state.hand, id) == 0) continue;
-    const auto& meta = lookup(id);
+    const auto& meta = card_metadata_for(id);
     if (meta.cost > state.energy) continue;
 
     const TargetType tgt = meta.target;
@@ -118,7 +118,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
 
   assert(action.card_id != CardId::kNone);
   const CardId id = action.card_id;
-  const auto& meta = lookup(id);
+  const auto& meta = card_metadata_for(id);
   if (meta.cost > state.energy) return false;
   if (count_in_hand(state.hand, id) == 0) return false;
 

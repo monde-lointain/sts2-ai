@@ -35,11 +35,12 @@ inline constexpr CardMetadata kCardTable[] = {
 // Linear scan over the 4-entry table; constexpr so it composes in compile-time
 // contexts and the optimizer can fold calls with literal ids. Asserts on
 // CardId::kNone (and any other unmapped value).
-[[nodiscard]] constexpr const CardMetadata& lookup(sts2::game::CardId id) {
+[[nodiscard]] constexpr const CardMetadata& card_metadata_for(
+    sts2::game::CardId id) {
   for (const auto& m : kCardTable) {
     if (m.id == id) return m;
   }
-  assert(false && "card_metadata::lookup: invalid CardId");
+  assert(false && "card_metadata_for: invalid CardId");
   return kCardTable[0];
 }
 
