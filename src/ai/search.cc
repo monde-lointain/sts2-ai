@@ -22,14 +22,6 @@ constexpr std::size_t hash_combine(std::size_t a, std::size_t b) noexcept {
 // into a byte-wise hasher).
 std::size_t hash_u64(uint64_t v) noexcept { return std::hash<uint64_t>{}(v); }
 
-CardCounts add_counts(CardCounts a, CardCounts b) noexcept {
-  a.strike = static_cast<uint8_t>(a.strike + b.strike);
-  a.defend = static_cast<uint8_t>(a.defend + b.defend);
-  a.neutralize = static_cast<uint8_t>(a.neutralize + b.neutralize);
-  a.survivor = static_cast<uint8_t>(a.survivor + b.survivor);
-  return a;
-}
-
 uint64_t pack_player(const CompactState& s) noexcept {
   uint64_t v = 0;
   v |= static_cast<uint64_t>(s.player_hp);
@@ -59,10 +51,9 @@ uint64_t pack_enemy(const EnemyState& e) noexcept {
 
 uint64_t pack_counts(const CardCounts& c) noexcept {
   uint64_t v = 0;
-  v |= static_cast<uint64_t>(c.strike);
-  v |= static_cast<uint64_t>(c.defend) << 8;
-  v |= static_cast<uint64_t>(c.neutralize) << 16;
-  v |= static_cast<uint64_t>(c.survivor) << 24;
+  for (std::size_t i = 0; i < c.counts.size(); ++i) {
+    v |= static_cast<uint64_t>(c.counts[i]) << (8 * i);
+  }
   return v;
 }
 
@@ -185,7 +176,7 @@ SearchResult Search::solve_chance(CompactState state) {
     // Engine semantics (Combat::draw): when both piles run dry, draw stops
     // early. Player deterministically gets every remaining card.
     CompactState next = state;
-    const CardCounts everything = add_counts(state.draw, state.discard);
+    const CardCounts everything = state.draw + state.discard;
     transition::apply_draw(next, everything);
     const SearchResult child = solve_player(next);
     exp_hp = child.score.expected_hp;
@@ -198,7 +189,7 @@ SearchResult Search::solve_chance(CompactState state) {
     const auto outcomes =
         probability::enumerate_draws(state.discard, remaining);
     for (const auto& o : outcomes) {
-      const CardCounts full_drawn = add_counts(forced_from_draw, o.hand);
+      const CardCounts full_drawn = forced_from_draw + o.hand;
       CompactState next = state;
       transition::apply_draw(next, full_drawn);
       const SearchResult child = solve_player(next);

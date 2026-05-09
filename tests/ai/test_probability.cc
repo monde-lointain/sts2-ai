@@ -12,6 +12,8 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/rng.h"
+#include "sts2/game/types.h"
+#include "tests/ai/test_helpers.h"
 
 namespace {
 
@@ -19,16 +21,14 @@ using sts2::ai::CardCounts;
 using sts2::ai::probability::binom;
 using sts2::ai::probability::enumerate_draws;
 using sts2::ai::probability::Outcome;
+using sts2::game::CardId;
+using sts2::tests::ai::make_counts;
 
 constexpr double kEps = 1e-12;
 
 CardCounts make_pool(int s, int d, int n, int v) {
-  CardCounts c;
-  c.strike = static_cast<uint8_t>(s);
-  c.defend = static_cast<uint8_t>(d);
-  c.neutralize = static_cast<uint8_t>(n);
-  c.survivor = static_cast<uint8_t>(v);
-  return c;
+  return make_counts(static_cast<uint8_t>(s), static_cast<uint8_t>(d),
+                     static_cast<uint8_t>(n), static_cast<uint8_t>(v));
 }
 
 double weight_sum(const std::vector<Outcome>& v) {
@@ -84,8 +84,8 @@ TEST(Probability, EnumerateStarterDeckTurn1) {
   auto best = std::max_element(
       out.begin(), out.end(),
       [](const Outcome& a, const Outcome& b) { return a.weight < b.weight; });
-  EXPECT_GE(best->hand.strike, 1);
-  EXPECT_GE(best->hand.defend, 1);
+  EXPECT_GE(best->hand[CardId::kStrike], 1);
+  EXPECT_GE(best->hand[CardId::kDefend], 1);
 }
 
 TEST(Probability, EnumerateAfterTurn1Sample) {
@@ -142,16 +142,13 @@ TEST(Probability, EngineDistributionMonteCarlo) {
     c.start(sts2::cards::make_silent_starter_deck());
     const auto snap = sts2::ai::from_combat(c);
     ASSERT_EQ(snap.hand.total(), k);
-    std::array<uint8_t, 4> key{snap.hand.strike, snap.hand.defend,
-                               snap.hand.neutralize, snap.hand.survivor};
-    ++hist[key];
+    ++hist[snap.hand.counts];
   }
 
   double chi2 = 0.0;
   int df = 0;
   for (const auto& o : analytic) {
-    std::array<uint8_t, 4> key{o.hand.strike, o.hand.defend, o.hand.neutralize,
-                               o.hand.survivor};
+    const auto& key = o.hand.counts;
     const double expected = o.weight * kTrials;
     const auto it = hist.find(key);
     const double observed =

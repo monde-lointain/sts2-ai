@@ -7,6 +7,7 @@
 #include "sts2/ai/transition.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/types.h"
+#include "tests/ai/test_helpers.h"
 #include "tests/game/test_helpers.h"
 
 namespace {
@@ -26,6 +27,7 @@ using sts2::ai::transition::legal_actions;
 using sts2::ai::transition::resolve_end_turn_pre_draw;
 using sts2::game::CardId;
 using sts2::game::MoveId;
+using sts2::tests::ai::make_counts;
 using sts2::tests::helpers::MakeStarterCombat;
 
 CompactState make_test_state() {
@@ -62,7 +64,7 @@ Action end_turn() {
 
 TEST(Transition, Strike_PlayedAgainstAliveEnemy_DealsBaseDamage) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
+  s.hand[CardId::kStrike] = 1;
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(s, play(CardId::kStrike, 0)));
@@ -71,14 +73,12 @@ TEST(Transition, Strike_PlayedAgainstAliveEnemy_DealsBaseDamage) {
   EXPECT_TRUE(s.enemies[0].alive);
   EXPECT_EQ(s.energy, 0);
   EXPECT_EQ(s.hand, (CardCounts{}));
-  CardCounts disc;
-  disc.strike = 1;
-  EXPECT_EQ(s.discard, disc);
+  EXPECT_EQ(s.discard, make_counts(1, 0, 0, 0));
 }
 
 TEST(Transition, Strike_OnDeadEnemy_ReturnsFalseStateUnchanged) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
+  s.hand[CardId::kStrike] = 1;
   s.energy = 1;
   s.enemies[0].hp = 0;
   s.enemies[0].alive = false;
@@ -90,7 +90,7 @@ TEST(Transition, Strike_OnDeadEnemy_ReturnsFalseStateUnchanged) {
 
 TEST(Transition, Defend_AddsBlock) {
   CompactState s = make_test_state();
-  s.hand.defend = 1;
+  s.hand[CardId::kDefend] = 1;
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(s, play(CardId::kDefend)));
@@ -98,14 +98,12 @@ TEST(Transition, Defend_AddsBlock) {
   EXPECT_EQ(s.player_block, 5);
   EXPECT_EQ(s.energy, 0);
   EXPECT_EQ(s.hand, (CardCounts{}));
-  CardCounts disc;
-  disc.defend = 1;
-  EXPECT_EQ(s.discard, disc);
+  EXPECT_EQ(s.discard, make_counts(0, 1, 0, 0));
 }
 
 TEST(Transition, Neutralize_DealsDamageAndAppliesWeak) {
   CompactState s = make_test_state();
-  s.hand.neutralize = 1;
+  s.hand[CardId::kNeutralize] = 1;
   s.energy = 2;
 
   ASSERT_TRUE(apply_player_action(s, play(CardId::kNeutralize, 0)));
@@ -118,7 +116,7 @@ TEST(Transition, Neutralize_DealsDamageAndAppliesWeak) {
 
 TEST(Transition, Neutralize_StackingWeak_OnEnemyAlreadyWeak_Increments) {
   CompactState s = make_test_state();
-  s.hand.neutralize = 1;
+  s.hand[CardId::kNeutralize] = 1;
   s.energy = 2;
   s.enemies[0].weak = 2;
 
@@ -129,9 +127,9 @@ TEST(Transition, Neutralize_StackingWeak_OnEnemyAlreadyWeak_Increments) {
 
 TEST(Transition, Survivor_GainsBlockAndDiscardsChosenCard) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
-  s.hand.defend = 1;
-  s.hand.survivor = 1;
+  s.hand[CardId::kStrike] = 1;
+  s.hand[CardId::kDefend] = 1;
+  s.hand[CardId::kSurvivor] = 1;
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(
@@ -139,18 +137,13 @@ TEST(Transition, Survivor_GainsBlockAndDiscardsChosenCard) {
 
   EXPECT_EQ(s.player_block, 8);
   EXPECT_EQ(s.energy, 0);
-  CardCounts hand_after;
-  hand_after.defend = 1;
-  EXPECT_EQ(s.hand, hand_after);
-  CardCounts disc;
-  disc.strike = 1;
-  disc.survivor = 1;
-  EXPECT_EQ(s.discard, disc);
+  EXPECT_EQ(s.hand, make_counts(0, 1, 0, 0));
+  EXPECT_EQ(s.discard, make_counts(1, 0, 0, 1));
 }
 
 TEST(Transition, Survivor_WhenLastCardInHand_NoOpsDiscard) {
   CompactState s = make_test_state();
-  s.hand.survivor = 1;
+  s.hand[CardId::kSurvivor] = 1;
   s.energy = 1;
 
   ASSERT_TRUE(apply_player_action(
@@ -158,14 +151,12 @@ TEST(Transition, Survivor_WhenLastCardInHand_NoOpsDiscard) {
 
   EXPECT_EQ(s.player_block, 8);
   EXPECT_EQ(s.hand, (CardCounts{}));
-  CardCounts disc;
-  disc.survivor = 1;
-  EXPECT_EQ(s.discard, disc);
+  EXPECT_EQ(s.discard, make_counts(0, 0, 0, 1));
 }
 
 TEST(Transition, PlayCard_InsufficientEnergy_ReturnsFalse) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
+  s.hand[CardId::kStrike] = 1;
   s.energy = 0;
 
   const CompactState before = s;
@@ -193,10 +184,10 @@ TEST(Transition, EndTurn_TogglesPhase) {
 
 TEST(Transition, LegalActions_FullHandWithBothEnemies_EnumeratesCorrectly) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
-  s.hand.defend = 1;
-  s.hand.neutralize = 1;
-  s.hand.survivor = 1;
+  s.hand[CardId::kStrike] = 1;
+  s.hand[CardId::kDefend] = 1;
+  s.hand[CardId::kNeutralize] = 1;
+  s.hand[CardId::kSurvivor] = 1;
   s.energy = 3;
 
   const auto actions = legal_actions(s);
@@ -223,10 +214,10 @@ TEST(Transition, LegalActions_FullHandWithBothEnemies_EnumeratesCorrectly) {
 
 TEST(Transition, LegalActions_OneEnemyDead_OnlyAliveEnemyTargeted) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
-  s.hand.defend = 1;
-  s.hand.neutralize = 1;
-  s.hand.survivor = 1;
+  s.hand[CardId::kStrike] = 1;
+  s.hand[CardId::kDefend] = 1;
+  s.hand[CardId::kNeutralize] = 1;
+  s.hand[CardId::kSurvivor] = 1;
   s.energy = 3;
   s.enemies[1].hp = 0;
   s.enemies[1].alive = false;
@@ -250,10 +241,10 @@ TEST(Transition, LegalActions_OneEnemyDead_OnlyAliveEnemyTargeted) {
 
 TEST(Transition, LegalActions_LowEnergy_OnlyFreeCardAvailable) {
   CompactState s = make_test_state();
-  s.hand.strike = 1;
-  s.hand.defend = 1;
-  s.hand.neutralize = 1;
-  s.hand.survivor = 1;
+  s.hand[CardId::kStrike] = 1;
+  s.hand[CardId::kDefend] = 1;
+  s.hand[CardId::kNeutralize] = 1;
+  s.hand[CardId::kSurvivor] = 1;
   s.energy = 0;
 
   const auto actions = legal_actions(s);
@@ -271,18 +262,15 @@ TEST(Transition, LegalActions_LowEnergy_OnlyFreeCardAvailable) {
 
 TEST(Transition, EndTurn_PreDrawResolution_PlayerHandToDiscard) {
   CompactState s = make_test_state();
-  s.hand.strike = 2;
-  s.hand.defend = 1;
+  s.hand[CardId::kStrike] = 2;
+  s.hand[CardId::kDefend] = 1;
   s.discard = CardCounts{};
 
   ASSERT_TRUE(apply_player_action(s, end_turn()));
   resolve_end_turn_pre_draw(s);
 
   EXPECT_EQ(s.hand, (CardCounts{}));
-  CardCounts disc;
-  disc.strike = 2;
-  disc.defend = 1;
-  EXPECT_EQ(s.discard, disc);
+  EXPECT_EQ(s.discard, make_counts(2, 1, 0, 0));
 }
 
 TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
@@ -291,12 +279,7 @@ TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
   s.enemies[0].block = 7;
   s.enemies[1].block = 4;
   // Drain hand to keep test focused on enemy phase.
-  s.discard.strike = static_cast<uint8_t>(s.discard.strike + s.hand.strike);
-  s.discard.defend = static_cast<uint8_t>(s.discard.defend + s.hand.defend);
-  s.discard.neutralize =
-      static_cast<uint8_t>(s.discard.neutralize + s.hand.neutralize);
-  s.discard.survivor =
-      static_cast<uint8_t>(s.discard.survivor + s.hand.survivor);
+  s.discard += s.hand;
   s.hand = CardCounts{};
   const uint8_t hp_before = s.player_hp;
 
@@ -325,12 +308,7 @@ TEST(Transition, EndTurn_PreDrawResolution_RitualConvertsToStrengthOnSubsequentE
   sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
   // Discard hand to isolate enemy mechanics.
-  s.discard.strike = static_cast<uint8_t>(s.discard.strike + s.hand.strike);
-  s.discard.defend = static_cast<uint8_t>(s.discard.defend + s.hand.defend);
-  s.discard.neutralize =
-      static_cast<uint8_t>(s.discard.neutralize + s.hand.neutralize);
-  s.discard.survivor =
-      static_cast<uint8_t>(s.discard.survivor + s.hand.survivor);
+  s.discard += s.hand;
   s.hand = CardCounts{};
 
   // Round 1 -> 2: Incantation acts (sets just_applied), then same-turn tick
@@ -347,12 +325,7 @@ TEST(Transition, EndTurn_PreDrawResolution_RitualConvertsToStrengthOnSubsequentE
   ASSERT_EQ(s.enemies[1].current_move, MoveId::kDarkStrike);
 
   // Drain newly-drawn hand again to keep next end_turn resolution clean.
-  s.discard.strike = static_cast<uint8_t>(s.discard.strike + s.hand.strike);
-  s.discard.defend = static_cast<uint8_t>(s.discard.defend + s.hand.defend);
-  s.discard.neutralize =
-      static_cast<uint8_t>(s.discard.neutralize + s.hand.neutralize);
-  s.discard.survivor =
-      static_cast<uint8_t>(s.discard.survivor + s.hand.survivor);
+  s.discard += s.hand;
   s.hand = CardCounts{};
   s.phase = Phase::kPlayerActing;
   const uint8_t hp_before_r2 = s.player_hp;
@@ -483,15 +456,14 @@ TEST(Transition, ApplyDraw_BasicDrain) {
   CompactState s = make_test_state();
   s.phase = Phase::kAtChanceDraw;
   s.hand = CardCounts{};
-  s.draw = CardCounts{2, 2, 0, 0};
-  s.discard = CardCounts{1, 1, 1, 0};
+  s.draw = make_counts(2, 2, 0, 0);
+  s.discard = make_counts(1, 1, 1, 0);
 
-  CardCounts drawn{1, 1, 0, 0};
-  apply_draw(s, drawn);
+  apply_draw(s, make_counts(1, 1, 0, 0));
 
-  EXPECT_EQ(s.hand, (CardCounts{1, 1, 0, 0}));
-  EXPECT_EQ(s.draw, (CardCounts{1, 1, 0, 0}));
-  EXPECT_EQ(s.discard, (CardCounts{1, 1, 1, 0}));
+  EXPECT_EQ(s.hand, make_counts(1, 1, 0, 0));
+  EXPECT_EQ(s.draw, make_counts(1, 1, 0, 0));
+  EXPECT_EQ(s.discard, make_counts(1, 1, 1, 0));
   EXPECT_EQ(s.phase, Phase::kPlayerActing);
 }
 
@@ -499,14 +471,13 @@ TEST(Transition, ApplyDraw_TriggersReshuffleWhenDrawShortOfRequest) {
   CompactState s = make_test_state();
   s.phase = Phase::kAtChanceDraw;
   s.hand = CardCounts{};
-  s.draw = CardCounts{1, 0, 0, 0};
-  s.discard = CardCounts{3, 2, 0, 0};
+  s.draw = make_counts(1, 0, 0, 0);
+  s.discard = make_counts(3, 2, 0, 0);
 
-  CardCounts drawn{2, 1, 0, 0};
-  apply_draw(s, drawn);
+  apply_draw(s, make_counts(2, 1, 0, 0));
 
-  EXPECT_EQ(s.hand, (CardCounts{2, 1, 0, 0}));
-  EXPECT_EQ(s.draw, (CardCounts{2, 1, 0, 0}));
+  EXPECT_EQ(s.hand, make_counts(2, 1, 0, 0));
+  EXPECT_EQ(s.draw, make_counts(2, 1, 0, 0));
   EXPECT_EQ(s.discard, (CardCounts{}));
   EXPECT_EQ(s.phase, Phase::kPlayerActing);
 }

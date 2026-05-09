@@ -42,7 +42,7 @@ CompactState make_lethal_position() {
   s.enemies[0].performed_first_move = true;
   s.enemies[1].alive = false;
   s.enemies[1].hp = 0;
-  s.hand.strike = 1;
+  s.hand[CardId::kStrike] = 1;
   return s;
 }
 
@@ -115,8 +115,8 @@ TEST(Search, DefensivePlayPreservesHp) {
   s.energy = 1;
   s.round = 5;
   s.phase = Phase::kPlayerActing;
-  s.hand.defend = 1;
-  s.draw.strike = 1;  // drawn next turn to deliver lethal
+  s.hand[CardId::kDefend] = 1;
+  s.draw[CardId::kStrike] = 1;  // drawn next turn to deliver lethal
   s.enemies[0].alive = true;
   s.enemies[0].hp = 3;  // 1 Strike kills (6 dmg)
   s.enemies[0].strength = 0;

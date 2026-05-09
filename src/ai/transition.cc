@@ -14,9 +14,6 @@ namespace {
 using sts2::game::CardId;
 using sts2::game::TargetType;
 
-constexpr CardId kAllCards[] = {CardId::kStrike, CardId::kDefend,
-                                CardId::kNeutralize, CardId::kSurvivor};
-
 // Adapter: bridge uint8_t hp/block fields to the canonical int& overload in
 // sts2::damage.
 void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
@@ -25,20 +22,6 @@ void apply_damage_u8(uint8_t& hp, uint8_t& block, int incoming) {
   sts2::damage::apply_to_defender(hp_i, block_i, incoming);
   hp = static_cast<uint8_t>(hp_i);
   block = static_cast<uint8_t>(block_i);
-}
-
-uint8_t count_in_hand(const CardCounts& hand, CardId id) {
-  return hand.*card_metadata_for(id).count_field;
-}
-
-void dec_count(CardCounts& counts, CardId id) {
-  uint8_t& cell = counts.*card_metadata_for(id).count_field;
-  assert(cell > 0);
-  --cell;
-}
-
-void inc_count(CardCounts& counts, CardId id) {
-  ++(counts.*card_metadata_for(id).count_field);
 }
 
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
@@ -56,8 +39,8 @@ std::vector<Action> legal_actions(const CompactState& state) {
 
   std::vector<Action> actions;
 
-  for (CardId id : kAllCards) {
-    if (count_in_hand(state.hand, id) == 0) continue;
+  for (CardId id : kCountedCardIds) {
+    if (state.hand[id] == 0) continue;
     const auto& meta = card_metadata_for(id);
     if (meta.cost > state.energy) continue;
 
@@ -73,7 +56,8 @@ std::vector<Action> legal_actions(const CompactState& state) {
       }
     } else if (id == CardId::kSurvivor) {
       CardCounts post = state.hand;
-      dec_count(post, CardId::kSurvivor);
+      assert(post[CardId::kSurvivor] > 0);
+      --post[CardId::kSurvivor];
       if (post.total() == 0) {
         Action a;
         a.kind = ActionKind::kPlayCard;
@@ -82,9 +66,9 @@ std::vector<Action> legal_actions(const CompactState& state) {
         a.survivor_discard_id = CardId::kNone;
         actions.push_back(a);
       } else {
-        for (CardId other : kAllCards) {
+        for (CardId other : kCountedCardIds) {
           if (other == CardId::kSurvivor) continue;
-          if (count_in_hand(post, other) == 0) continue;
+          if (post[other] == 0) continue;
           Action a;
           a.kind = ActionKind::kPlayCard;
           a.card_id = CardId::kSurvivor;
@@ -120,17 +104,16 @@ bool apply_player_action(CompactState& state, const Action& action) {
   const CardId id = action.card_id;
   const auto& meta = card_metadata_for(id);
   if (meta.cost > state.energy) return false;
-  if (count_in_hand(state.hand, id) == 0) return false;
+  if (state.hand[id] == 0) return false;
 
   if (meta.target == TargetType::kAnyEnemy) {
     if (action.target_idx >= 2) return false;
     if (!state.enemies[action.target_idx].alive) return false;
   }
 
-  dec_count(state.hand, id);
+  --state.hand[id];
   state.energy = static_cast<uint8_t>(state.energy - meta.cost);
 
-  // Card costs/effects mirror src/game/cards.cc make_*() factories; keep in sync.
   switch (id) {
     case CardId::kStrike: {
       EnemyState& e = state.enemies[action.target_idx];
@@ -152,9 +135,9 @@ bool apply_player_action(CompactState& state, const Action& action) {
       if (state.hand.total() == 0) {
         assert(action.survivor_discard_id == sts2::game::CardId::kNone);
       } else if (action.survivor_discard_id != CardId::kNone) {
-        assert(count_in_hand(state.hand, action.survivor_discard_id) > 0);
-        dec_count(state.hand, action.survivor_discard_id);
-        inc_count(state.discard, action.survivor_discard_id);
+        assert(state.hand[action.survivor_discard_id] > 0);
+        --state.hand[action.survivor_discard_id];
+        ++state.discard[action.survivor_discard_id];
       }
       break;
     }
@@ -163,7 +146,7 @@ bool apply_player_action(CompactState& state, const Action& action) {
       break;
   }
 
-  inc_count(state.discard, id);
+  ++state.discard[id];
   return true;
 }
 
@@ -171,16 +154,6 @@ namespace {
 
 constexpr int kBaseHandDraw = 5;
 constexpr int kRingOfTheSnakeBonus = 2;
-
-void merge_hand_to_discard(CompactState& s) {
-  s.discard.strike = static_cast<uint8_t>(s.discard.strike + s.hand.strike);
-  s.discard.defend = static_cast<uint8_t>(s.discard.defend + s.hand.defend);
-  s.discard.neutralize =
-      static_cast<uint8_t>(s.discard.neutralize + s.hand.neutralize);
-  s.discard.survivor =
-      static_cast<uint8_t>(s.discard.survivor + s.hand.survivor);
-  s.hand = CardCounts{};
-}
 
 void enemy_act(CompactState& s, EnemyState& e) {
   switch (e.current_move) {
@@ -237,7 +210,8 @@ void resolve_end_turn_pre_draw(CompactState& state) {
 
   // end_player_turn: hand -> discard. Player power tick is a no-op in v1
   // (no Ritual on player; Weak hard-asserted 0 by from_combat).
-  merge_hand_to_discard(state);
+  state.discard += state.hand;
+  state.hand = CardCounts{};
 
   // enemy_phase: zero block on alive enemies, then act in slot order; bail
   // early if player dies mid-phase (mirrors Combat::enemy_phase combat_over_).
@@ -274,40 +248,15 @@ void apply_draw(CompactState& state, CardCounts drawn) {
   // Reshuffle if the draw pile alone can't satisfy the request. Engine drains
   // pre-reshuffle cards first then post-reshuffle; for multiset purposes the
   // unioned outcome is identical, so a single up-front reshuffle is sound.
-  const bool need_reshuffle = drawn.strike > state.draw.strike ||
-                              drawn.defend > state.draw.defend ||
-                              drawn.neutralize > state.draw.neutralize ||
-                              drawn.survivor > state.draw.survivor;
-  if (need_reshuffle) {
-    state.draw.strike =
-        static_cast<uint8_t>(state.draw.strike + state.discard.strike);
-    state.draw.defend =
-        static_cast<uint8_t>(state.draw.defend + state.discard.defend);
-    state.draw.neutralize =
-        static_cast<uint8_t>(state.draw.neutralize + state.discard.neutralize);
-    state.draw.survivor =
-        static_cast<uint8_t>(state.draw.survivor + state.discard.survivor);
+  if (!state.draw.covers(drawn)) {
+    state.draw += state.discard;
     state.discard = CardCounts{};
   }
 
-  assert(drawn.strike <= state.draw.strike);
-  assert(drawn.defend <= state.draw.defend);
-  assert(drawn.neutralize <= state.draw.neutralize);
-  assert(drawn.survivor <= state.draw.survivor);
+  assert(state.draw.covers(drawn));
 
-  state.hand.strike = static_cast<uint8_t>(state.hand.strike + drawn.strike);
-  state.hand.defend = static_cast<uint8_t>(state.hand.defend + drawn.defend);
-  state.hand.neutralize =
-      static_cast<uint8_t>(state.hand.neutralize + drawn.neutralize);
-  state.hand.survivor =
-      static_cast<uint8_t>(state.hand.survivor + drawn.survivor);
-
-  state.draw.strike = static_cast<uint8_t>(state.draw.strike - drawn.strike);
-  state.draw.defend = static_cast<uint8_t>(state.draw.defend - drawn.defend);
-  state.draw.neutralize =
-      static_cast<uint8_t>(state.draw.neutralize - drawn.neutralize);
-  state.draw.survivor =
-      static_cast<uint8_t>(state.draw.survivor - drawn.survivor);
+  state.hand += drawn;
+  state.draw -= drawn;
 
   state.phase = Phase::kPlayerActing;
 }
