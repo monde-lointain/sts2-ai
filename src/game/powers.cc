@@ -48,9 +48,10 @@ void tick_at_turn_end(std::vector<sts2::game::Power>& powers) {
   // Ritual listener first.
   if (sts2::game::Power* ritual =
           find(powers, sts2::game::PowerKind::kRitual)) {
-    int gain = sts2::game::move_calc::ritual_tick_strength_gain(
-        ritual->just_applied, ritual->amount);
-    if (gain > 0) apply(powers, sts2::game::PowerKind::kStrength, gain);
+    if (sts2::game::move_calc::ritual_should_grant_strength(
+            ritual->just_applied)) {
+      apply(powers, sts2::game::PowerKind::kStrength, ritual->amount);
+    }
   }
   for (auto it = powers.begin(); it != powers.end();) {
     if (it->kind == sts2::game::PowerKind::kWeak) {

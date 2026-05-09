@@ -175,9 +175,10 @@ void enemy_act(CompactState& s, EnemyState& e) {
 }
 
 void enemy_tick_powers(EnemyState& e) {
-  const int gain = sts2::game::move_calc::ritual_tick_strength_gain(
-      e.just_applied_ritual, e.ritual_amount);
-  e.strength = static_cast<uint8_t>(e.strength + gain);
+  if (sts2::game::move_calc::ritual_should_grant_strength(
+          e.just_applied_ritual)) {
+    e.strength = static_cast<uint8_t>(e.strength + e.ritual_amount);
+  }
   if (e.weak > 0) {
     e.weak = static_cast<uint8_t>(e.weak - 1);
   }

@@ -8,20 +8,21 @@
 
 namespace sts2::game::move_calc {
 
-// Advance enemy intent. Currently kIncantation -> kDarkStrike; otherwise no-op.
+// Advance enemy intent through its move sequence. kIncantation -> kDarkStrike;
+// other moves are stable.
 [[nodiscard]] inline MoveId next_move(MoveId current) noexcept {
   if (current == MoveId::kIncantation) return MoveId::kDarkStrike;
   return current;
 }
 
-// Ritual tick. If just_applied: clear and grant 0 Strength (skip-first-turn).
-// Else: grant ritual_amount Strength. Mutates just_applied to false.
-inline int ritual_tick_strength_gain(bool& just_applied, int ritual_amount) noexcept {
+// Ritual tick decision. Mutates just_applied to false. Returns true iff this
+// tick should grant Strength (the just-applied turn skips the gain).
+[[nodiscard]] inline bool ritual_should_grant_strength(bool& just_applied) noexcept {
   if (just_applied) {
     just_applied = false;
-    return 0;
+    return false;
   }
-  return ritual_amount;
+  return true;
 }
 
 }  // namespace sts2::game::move_calc
