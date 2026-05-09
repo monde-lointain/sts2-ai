@@ -68,9 +68,9 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
   EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
 }
 
-// T-CRD-015 — EG — Lambda value-captures `base`; post-construction mutation
-// of `base_damage` does not affect the closure (locks capture-by-copy).
-TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
+// T-CRD-015 — EG — Post-construction mutation of `base_damage` on the Card
+// does not affect the closure (on_play reads the immutable kCardEffects entry).
+TEST(CardsMakeStrike, T_CRD_015_OnPlayIgnoresPostCreationBaseMutation) {
   Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
 
   Card c1 = sts2::cards::make_card(CardId::kStrike);
@@ -78,7 +78,7 @@ TEST(CardsMakeStrike, T_CRD_015_LambdaCapturesBaseByValue) {
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
   c1.on_play(combat, sts2::game::EnemySlot{0});
 
-  // Damage applied is 6 (captured value), not 999.
+  // Damage applied is 6 (from kCardEffects[Strike]), not 999.
   EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
 }
 
@@ -112,9 +112,9 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
   EXPECT_EQ(combat.player().vitals.block, 5);
 }
 
-// T-CRD-030 — EG — Capture-by-copy mirror of T-CRD-015.
-// Mutating `base_block` after construction does not change the closure.
-TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
+// T-CRD-030 — EG — Mirror of T-CRD-015 for block.
+// Mutating `base_block` on the Card after construction does not change the closure.
+TEST(CardsMakeDefend, T_CRD_030_OnPlayIgnoresPostCreationBaseMutation) {
   Combat combat{kCombatTestSeed};
 
   Card c1 = sts2::cards::make_card(CardId::kDefend);
@@ -122,7 +122,7 @@ TEST(CardsMakeDefend, T_CRD_030_LambdaCapturesBaseByValue) {
   ASSERT_TRUE(static_cast<bool>(c1.on_play));
   c1.on_play(combat, sts2::game::EnemySlot::none());
 
-  // Block applied is 5 (captured value), not 999.
+  // Block applied is 5 (from kCardEffects[Defend]), not 999.
   EXPECT_EQ(combat.player().vitals.block, 5);
 }
 
