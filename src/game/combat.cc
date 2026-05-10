@@ -146,13 +146,13 @@ void Combat::deal_damage_to_enemy(EnemySlot slot, int base_damage) {
   assert(slot.in_range(enemies_));
   Enemy& e = slot.at(enemies_);
   int dmg = sts2::damage::compute_outgoing(player_.vitals.powers, base_damage);
-  sts2::damage::apply_to_defender(e.vitals, dmg);
+  (void)sts2::damage::apply_to_defender(e.vitals, dmg);
   check_win_or_lose();
 }
 
 void Combat::enemy_attack_player(const Enemy& source, int base_damage) {
   int dmg = sts2::damage::compute_outgoing(source.vitals.powers, base_damage);
-  sts2::damage::apply_to_defender(player_.vitals, dmg);
+  (void)sts2::damage::apply_to_defender(player_.vitals, dmg);
   check_win_or_lose();
 }
 

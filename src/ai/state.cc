@@ -33,8 +33,8 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
       sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kStrength)};
   s.weak = sts2::game::Stat{
       sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak)};
-  s.dark_strike_base = sts2::game::Stat{e.dark_strike_base};
-  s.ritual_amount = sts2::game::Stat{e.ritual_amount};
+  s.dark_strike_base = e.dark_strike_base;
+  s.ritual_amount = e.ritual_amount;
   const sts2::game::Power* ritual =
       sts2::powers::find(e.vitals.powers, sts2::game::PowerKind::kRitual);
   s.just_applied_ritual = ritual != nullptr && ritual->just_applied;

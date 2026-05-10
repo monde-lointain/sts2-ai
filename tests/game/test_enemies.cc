@@ -60,8 +60,8 @@ TEST(EnemiesMakeCalcified, T_ENM_005_StableCultistAtSeed42) {
   EXPECT_EQ(e.vitals.hp, Stat{kCalcifiedHp_seed42});
   EXPECT_GE(e.vitals.hp, Stat{38});
   EXPECT_LE(e.vitals.hp, Stat{41});
-  EXPECT_EQ(e.dark_strike_base, 9);
-  EXPECT_EQ(e.ritual_amount, 2);
+  EXPECT_EQ(e.dark_strike_base, Stat{9});
+  EXPECT_EQ(e.ritual_amount, Stat{2});
   EXPECT_EQ(e.current_move, MoveId::kIncantation);
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, Stat{0});
@@ -108,8 +108,8 @@ TEST(EnemiesMakeDamp, T_ENM_015_StableCultistAtSeed42) {
   EXPECT_EQ(e.vitals.hp, Stat{kDampHp_seed42});
   EXPECT_GE(e.vitals.hp, Stat{51});
   EXPECT_LE(e.vitals.hp, Stat{53});
-  EXPECT_EQ(e.dark_strike_base, 1);
-  EXPECT_EQ(e.ritual_amount, 5);
+  EXPECT_EQ(e.dark_strike_base, Stat{1});
+  EXPECT_EQ(e.ritual_amount, Stat{5});
   EXPECT_EQ(e.current_move, MoveId::kIncantation);
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, Stat{0});
@@ -210,7 +210,7 @@ TEST(EnemiesRollNextMove, T_ENM_040_SequenceOverFourCalls) {
 TEST(EnemiesAct, T_ENM_045_IncantationAppliesRitualToSelf) {
   Combat c{kCombatTestSeed};
   Enemy e{};
-  e.ritual_amount = 2;
+  e.ritual_amount = Stat{2};
   e.current_move = MoveId::kIncantation;
 
   sts2::enemies::act(e, c);
@@ -223,7 +223,7 @@ TEST(EnemiesAct, T_ENM_045_IncantationAppliesRitualToSelf) {
 TEST(EnemiesAct, T_ENM_050_DarkStrikeAttacksPlayer) {
   Combat c{kCombatTestSeed};
   Enemy e{};
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
 
   sts2::enemies::act(e, c);
@@ -237,7 +237,7 @@ TEST(EnemiesAct, T_ENM_050_DarkStrikeAttacksPlayer) {
 TEST(EnemiesAct, T_ENM_055_DarkStrikeWithStrengthAdds) {
   Combat c{kCombatTestSeed};
   Enemy e{};
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
   e.vitals.powers = {MakePower(PowerKind::kStrength, 2)};
 
@@ -251,7 +251,7 @@ TEST(EnemiesAct, T_ENM_055_DarkStrikeWithStrengthAdds) {
 TEST(EnemiesAct, T_ENM_060_DarkStrikeWithWeakHalves) {
   Combat c{kCombatTestSeed};
   Enemy e{};
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
   e.vitals.powers = {MakePower(PowerKind::kWeak, 1)};
 

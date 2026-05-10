@@ -21,19 +21,9 @@ using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
 
-// Adapter: bridge Stat hp/block fields to the canonical int& overload in
-// sts2::damage.
-void apply_damage(sts2::game::Stat& hp, sts2::game::Stat& block, int incoming) {
-  int hp_i = hp.value();
-  int block_i = block.value();
-  (void)sts2::damage::apply_to_defender(hp_i, block_i, incoming);
-  hp = sts2::game::Stat{hp_i};
-  block = sts2::game::Stat{block_i};
-}
-
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
   const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
-  apply_damage(enemy.hp, enemy.block, dmg);
+  (void)sts2::damage::apply_to_defender(enemy.hp, enemy.block, dmg);
   if (enemy.hp == sts2::game::Stat{0}) {
     enemy.alive = false;
   }
@@ -161,7 +151,7 @@ void enemy_act(CompactState& s, EnemyState& e) {
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
             e.dark_strike_base.value(), e.strength.value(), e.weak.value());
-        apply_damage(s.player_hp, s.player_block, dmg);
+        (void)sts2::damage::apply_to_defender(s.player_hp, s.player_block, dmg);
       });
 }
 

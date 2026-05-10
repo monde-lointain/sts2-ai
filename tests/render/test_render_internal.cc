@@ -172,7 +172,7 @@ TEST(RenderInternalFormatIntent, T_RND_120_IncantationBuffArrowUp) {
 TEST(RenderInternalFormatIntent, T_RND_125_DarkStrikeShowsBaseDamage) {
   Enemy e{};
   e.current_move = MoveId::kDarkStrike;
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
 
   const std::string s = format_intent(e);
 
@@ -186,7 +186,7 @@ TEST(RenderInternalFormatIntent, T_RND_125_DarkStrikeShowsBaseDamage) {
 TEST(RenderInternalFormatIntent, T_RND_130_DarkStrikeBoostedByStrength) {
   Enemy e{};
   e.current_move = MoveId::kDarkStrike;
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
   e.vitals.powers = {MakePower(Strength, 2)};
 
   const std::string s = format_intent(e);
