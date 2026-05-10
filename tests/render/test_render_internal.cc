@@ -34,7 +34,7 @@ using sts2::render::detail::power_name;
 using sts2::render::detail::repeat_utf8;
 using sts2::render::detail::spaces;
 
-using sts2::tests::helpers::MakePower;
+using sts2::tests::helpers::make_power;
 using Stat = sts2::game::Stat;
 
 namespace ansi = sts2::ansi;
@@ -46,9 +46,9 @@ using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
 using Vitals = sts2::game::Vitals;
 
-constexpr PowerKind Weak = PowerKind::kWeak;
-constexpr PowerKind Strength = PowerKind::kStrength;
-constexpr PowerKind Ritual = PowerKind::kRitual;
+constexpr PowerKind kWeak = PowerKind::kWeak;
+constexpr PowerKind kStrength = PowerKind::kStrength;
+constexpr PowerKind kRitual = PowerKind::kRitual;
 
 // -------------------------------------------------------------------------
 // 11.2.1  repeat_utf8  (T-RND-065..075)
@@ -87,9 +87,9 @@ TEST(RenderInternalSpaces, T_RND_080_ZeroAndFive) {
 
 // T-RND-090 — BP — Each enum value maps to its expected display string.
 TEST(RenderInternalPowerName, T_RND_090_EachKindMapsCorrectly) {
-  EXPECT_STREQ(power_name(Weak), "Weak");
-  EXPECT_STREQ(power_name(Strength), "Str");
-  EXPECT_STREQ(power_name(Ritual), "Ritual");
+  EXPECT_STREQ(power_name(kWeak), "Weak");
+  EXPECT_STREQ(power_name(kStrength), "Str");
+  EXPECT_STREQ(power_name(kRitual), "Ritual");
 }
 
 // T-RND-095 — EG — Out-of-enum value → "" (post-switch fall-through return).
@@ -97,7 +97,10 @@ TEST(RenderInternalPowerName, T_RND_090_EachKindMapsCorrectly) {
 // is well-defined per [expr.static.cast]. Locks the post-switch return path
 // of power_name() against regressions that drop the fall-through return.
 TEST(RenderInternalPowerName, T_RND_095_OutOfEnumReturnsEmpty) {
-  const PowerKind bogus = static_cast<PowerKind>(99);
+  // Intentional out-of-range cast to exercise power_name's post-switch
+  // fall-through.
+  // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+  const auto bogus = static_cast<PowerKind>(99);
   EXPECT_STREQ(power_name(bogus), "");
 }
 
@@ -114,7 +117,7 @@ TEST(RenderInternalFormatPowers, T_RND_100_EmptySpanEmpty) {
 // T-RND-105 — BP — Single power: no leading separator (D3 short-circuits on
 // first iter via the `first` flag).
 TEST(RenderInternalFormatPowers, T_RND_105_SingleNoSeparator) {
-  const std::vector<Power> ps = {MakePower(Weak, 2)};
+  const std::vector<Power> ps = {make_power(kWeak, 2)};
   const std::string s = format_powers(ps);
   const std::string expected =
       std::string(ansi::kReset) + "Weak 2" + ansi::kReset;
@@ -123,7 +126,8 @@ TEST(RenderInternalFormatPowers, T_RND_105_SingleNoSeparator) {
 
 // T-RND-110 — BP — Two powers: exactly one ", " separator between them.
 TEST(RenderInternalFormatPowers, T_RND_110_TwoWithSeparator) {
-  const std::vector<Power> ps = {MakePower(Weak, 2), MakePower(Strength, 3)};
+  const std::vector<Power> ps = {make_power(kWeak, 2),
+                                 make_power(kStrength, 3)};
   const std::string s = format_powers(ps);
   const std::string expected = std::string(ansi::kReset) + "Weak 2" +
                                ansi::kReset + ", " + std::string(ansi::kReset) +
@@ -135,8 +139,8 @@ TEST(RenderInternalFormatPowers, T_RND_110_TwoWithSeparator) {
 // Counts ", " occurrences explicitly so a regression that drops or doubles
 // separators is caught even if individual tokens still match.
 TEST(RenderInternalFormatPowers, T_RND_115_ThreeSeparatorsAreNMinusOne) {
-  const std::vector<Power> ps = {MakePower(Weak, 1), MakePower(Strength, 2),
-                                 MakePower(Ritual, 3)};
+  const std::vector<Power> ps = {make_power(kWeak, 1), make_power(kStrength, 2),
+                                 make_power(kRitual, 3)};
   const std::string s = format_powers(ps);
 
   std::size_t count = 0;
@@ -186,7 +190,7 @@ TEST(RenderInternalFormatIntent, T_RND_130_DarkStrikeBoostedByStrength) {
   Enemy e{};
   e.current_move = MoveId::kDarkStrike;
   e.dark_strike_base = Stat{9};
-  e.vitals.powers = {MakePower(Strength, 2)};
+  e.vitals.powers = {make_power(kStrength, 2)};
 
   const std::string s = format_intent(e);
 

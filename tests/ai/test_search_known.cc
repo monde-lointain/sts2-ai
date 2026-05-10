@@ -22,7 +22,7 @@ using sts2::ai::transition::ActionKind;
 using sts2::game::CardId;
 using sts2::game::MoveId;
 using sts2::game::Stat;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::make_starter_combat;
 
 CompactState make_lethal_position() {
   CompactState s;
@@ -205,7 +205,7 @@ TEST(Search, Peek_UnvisitedReturnsNull) {
 //     --gtest_also_run_disabled_tests
 //     --gtest_filter='Search.DISABLED_StarterCombatSolves*'
 TEST(Search, DISABLED_StarterCombatSolves_LogsDiagnostics) {
-  sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
+  sts2::game::Combat combat = make_starter_combat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
 
   Search search;

@@ -12,10 +12,10 @@ using sts2::ai::from_combat;
 using sts2::ai::Phase;
 using sts2::game::MoveId;
 using sts2::game::Stat;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::make_starter_combat;
 
 TEST(AiState, FromCombat_FreshStarter_SnapshotMatches) {
-  sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
+  sts2::game::Combat combat = make_starter_combat(0xC0FFEEULL);
   const CompactState s = from_combat(combat);
 
   EXPECT_EQ(s.player_hp, Stat{70});

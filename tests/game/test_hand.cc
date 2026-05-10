@@ -28,7 +28,7 @@ using sts2::game::Rng;
 // Helpers
 // -------------------------------------------------------------------------
 
-Hand MakeHandOfN(int n) {
+Hand make_hand_of_n(int n) {
   Hand h;
   for (int i = 0; i < n; ++i) {
     h.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
@@ -37,7 +37,7 @@ Hand MakeHandOfN(int n) {
 }
 
 // Build a Deck loaded with n Defend cards (uses RNG only for shuffle).
-Deck MakeDeckOf(int n, Rng& rng) {
+Deck make_deck_of(int n, Rng& rng) {
   std::vector<Card> cards;
   cards.reserve(static_cast<std::size_t>(n));
   for (int i = 0; i < n; ++i) {
@@ -63,7 +63,7 @@ TEST(HandAdd, FillsToMaxSize) {
 }
 
 TEST(HandAdd, NoOpAtMaxSize) {
-  Hand h = MakeHandOfN(Hand::kMaxSize);
+  Hand h = make_hand_of_n(Hand::kMaxSize);
   ASSERT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
 
   h.add(sts2::cards::make_card(
@@ -106,23 +106,23 @@ TEST(HandSize, TracksMutations) {
 // -------------------------------------------------------------------------
 
 TEST(HandValid, NoneIsInvalid) {
-  Hand h = MakeHandOfN(3);
+  Hand h = make_hand_of_n(3);
   EXPECT_FALSE(h.valid(HandIndex::none()));
 }
 
 TEST(HandValid, NegativeIsInvalid) {
-  Hand h = MakeHandOfN(3);
+  Hand h = make_hand_of_n(3);
   EXPECT_FALSE(h.valid(HandIndex{-1}));
 }
 
 TEST(HandValid, InRangeIsValid) {
-  Hand h = MakeHandOfN(3);
+  Hand h = make_hand_of_n(3);
   EXPECT_TRUE(h.valid(HandIndex{0}));
   EXPECT_TRUE(h.valid(HandIndex{2}));
 }
 
 TEST(HandValid, PastEndIsInvalid) {
-  Hand h = MakeHandOfN(3);
+  Hand h = make_hand_of_n(3);
   EXPECT_FALSE(h.valid(HandIndex{3}));
 }
 
@@ -140,7 +140,7 @@ TEST(HandAt, ReturnsCorrectCard) {
 // -------------------------------------------------------------------------
 
 TEST(HandFind, AbsentReturnsNone) {
-  Hand h = MakeHandOfN(3);  // all Strikes
+  Hand h = make_hand_of_n(3);  // all Strikes
   EXPECT_EQ(h.find(CardId::kDefend), HandIndex::none());
 }
 
@@ -291,7 +291,7 @@ TEST(HandDumpInto, MovesAllCardsLifo) {
 
 TEST(HandDrawFrom, DrawsUpToN) {
   Rng rng{0};
-  Deck deck = MakeDeckOf(5, rng);
+  Deck deck = make_deck_of(5, rng);
   Hand h;
 
   h.draw_from(deck, rng, 3);
@@ -302,8 +302,8 @@ TEST(HandDrawFrom, DrawsUpToN) {
 
 TEST(HandDrawFrom, StopsAtMaxSize) {
   Rng rng{0};
-  Deck deck = MakeDeckOf(15, rng);
-  Hand h = MakeHandOfN(Hand::kMaxSize - 2);
+  Deck deck = make_deck_of(15, rng);
+  Hand h = make_hand_of_n(Hand::kMaxSize - 2);
   ASSERT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize - 2));
 
   h.draw_from(deck, rng, 5);  // only 2 slots remain
@@ -314,7 +314,7 @@ TEST(HandDrawFrom, StopsAtMaxSize) {
 
 TEST(HandDrawFrom, StopsAtDeckExhaustion) {
   Rng rng{0};
-  Deck deck = MakeDeckOf(2, rng);
+  Deck deck = make_deck_of(2, rng);
   Hand h;
 
   h.draw_from(deck, rng, 5);  // deck only has 2
@@ -325,7 +325,7 @@ TEST(HandDrawFrom, StopsAtDeckExhaustion) {
 
 TEST(HandDrawFrom, DrawZeroNoOp) {
   Rng rng{0};
-  Deck deck = MakeDeckOf(3, rng);
+  Deck deck = make_deck_of(3, rng);
   Hand h;
 
   h.draw_from(deck, rng, 0);
@@ -340,18 +340,18 @@ TEST(HandDrawFrom, ReshufflesDiscardWhenDrawEmpty) {
   Rng rng{0xDEADBEEFULL};
   Deck deck;  // both piles empty; draw empty, discard will be seeded below
 
-  constexpr int kN = 4;
-  for (int i = 0; i < kN; ++i) {
+  constexpr int k_n = 4;
+  for (int i = 0; i < k_n; ++i) {
     deck.discard(sts2::cards::make_card(sts2::game::CardId::kStrike));
   }
   ASSERT_EQ(deck.draw_size(), 0U);
-  ASSERT_EQ(deck.discard_size(), static_cast<std::size_t>(kN));
+  ASSERT_EQ(deck.discard_size(), static_cast<std::size_t>(k_n));
 
   Hand h;
-  h.draw_from(deck, rng, kN);
+  h.draw_from(deck, rng, k_n);
 
-  // All kN cards should have been drawn after the reshuffle.
-  EXPECT_EQ(h.size(), static_cast<std::size_t>(kN));
+  // All k_n cards should have been drawn after the reshuffle.
+  EXPECT_EQ(h.size(), static_cast<std::size_t>(k_n));
   EXPECT_EQ(deck.draw_size(), 0U);
   EXPECT_EQ(deck.discard_size(), 0U);
 }

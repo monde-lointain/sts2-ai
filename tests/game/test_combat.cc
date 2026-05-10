@@ -3,7 +3,7 @@
 //
 // Pinned-value caveat: tests using kCombatTestSeed (0xC0FFEEULL) for shuffles
 // are toolchain-locked via tests/seeds/expected_values.h
-// (kSilentDeckShuffled_C0FFEE). Most assertions here check state (counts, HP,
+// (kSilentDeckShuffledC0Ffee). Most assertions here check state (counts, HP,
 // pile sizes, power vectors) rather than specific card orderings, so the seed
 // pin only matters where noted. Cultist HP rolls under that seed are observed
 // via the public API (e.g. enemies()[0].vitals.hp) without re-pinning concrete
@@ -36,12 +36,12 @@
 
 namespace {
 
-using sts2::tests::helpers::DrainPlayerEnergy;
-using sts2::tests::helpers::ExpectPowersEq;
-using sts2::tests::helpers::KillEnemy;
-using sts2::tests::helpers::MakeCombatWithEnemy;
-using sts2::tests::helpers::MakePower;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::drain_player_energy;
+using sts2::tests::helpers::expect_powers_eq;
+using sts2::tests::helpers::kill_enemy;
+using sts2::tests::helpers::make_combat_with_enemy;
+using sts2::tests::helpers::make_power;
+using sts2::tests::helpers::make_starter_combat;
 using sts2::tests::seeds::kCombatTestSeed;
 
 using Card = sts2::game::Card;
@@ -55,7 +55,7 @@ using Stat = sts2::game::Stat;
 using Vitals = sts2::game::Vitals;
 
 // Build the small "fixed deck" used by §10.1's T-CMB-010 setup.
-std::vector<Card> MakeStrikeDefendDeck7() {
+std::vector<Card> make_strike_defend_deck7() {
   std::vector<Card> d;
   d.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   d.push_back(sts2::cards::make_card(sts2::game::CardId::kDefend));
@@ -68,7 +68,7 @@ std::vector<Card> MakeStrikeDefendDeck7() {
 }
 
 // Find the first hand index of a card with the given id; returns -1 if absent.
-int FindHandIndex(const Combat& c, CardId id) {
+int find_hand_index(const Combat& c, CardId id) {
   return c.find_card_in_hand(id).raw();
 }
 
@@ -101,7 +101,7 @@ TEST(CombatConstruction, T_CMB_010_StartTriggersStartPlayerTurn) {
   c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
   c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
 
-  c.start(MakeStrikeDefendDeck7());
+  c.start(make_strike_defend_deck7());
 
   EXPECT_EQ(c.round(), 1);
   EXPECT_FALSE(c.combat_over());
@@ -113,7 +113,7 @@ TEST(CombatConstruction, T_CMB_010_StartTriggersStartPlayerTurn) {
 
 // T-CMB-015 — DF — Starter deck of 12 → R1 hand size 7, draw pile 5.
 TEST(CombatConstruction, T_CMB_015_StarterDeckRingDrawsSeven) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   EXPECT_EQ(c.player().hand.size(), 7U);
   EXPECT_EQ(c.player().deck.draw_size(), 5U);
@@ -174,7 +174,7 @@ TEST(CombatDelegators, T_CMB_030_GainPlayerBlockAccumulates) {
 // T-CMB-035 — BP — apply_power_to_enemy delegates to powers::apply.
 // Re-application accumulates amount.
 TEST(CombatDelegators, T_CMB_035_ApplyPowerToEnemyAccumulates) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed);
+  Combat c = make_combat_with_enemy(kCombatTestSeed);
 
   c.apply_power_to_enemy(sts2::game::EnemySlot{0}, PowerKind::kWeak, 1);
   ASSERT_EQ(c.enemies()[0].vitals.powers.size(), 1U);
@@ -203,7 +203,7 @@ TEST(CombatDelegators, T_CMB_045_IsPlayerDeadHpThreshold) {
 // T-CMB-050 — BP, DF — deal_damage_to_enemy(0, 6) with no powers reduces hp
 // by 6.
 TEST(CombatDealDamage, T_CMB_050_DealsRawDamageNoPowers) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, 40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, 40);
 
   c.deal_damage_to_enemy(sts2::game::EnemySlot{0}, 6);
 
@@ -232,7 +232,7 @@ TEST(CombatDealDamage, T_CMB_055_LethalWhileOtherAlive) {
 // T-CMB-060 — EG — Lethal to the LAST enemy trips combat_over via
 // all_enemies_dead.
 TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/1);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/1);
 
   c.deal_damage_to_enemy(sts2::game::EnemySlot{0}, 99);
 
@@ -245,8 +245,8 @@ TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
 TEST(CombatDealDamage, T_CMB_065_EnemyAttackUsesSourcePowers) {
   Combat c{kCombatTestSeed};
   Enemy source{};
-  source.vitals =
-      Vitals{Stat{40}, Stat{40}, Stat{0}, {MakePower(PowerKind::kStrength, 2)}};
+  source.vitals = Vitals{
+      Stat{40}, Stat{40}, Stat{0}, {make_power(PowerKind::kStrength, 2)}};
 
   c.enemy_attack_player(source, 9);
 
@@ -302,7 +302,7 @@ TEST(CombatCanPlay, T_CMB_080_IndexEqualsSize) {
 // to 0 (each Strike spent removes one card). End state: hand=3, energy=0.
 // can_play(2) → last valid idx, cost 1 > energy 0 → false.
 TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/9999);
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
@@ -312,7 +312,7 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
   ASSERT_EQ(c.player().hand.size(), 6U);
   ASSERT_EQ(c.player().energy, 3);
 
-  DrainPlayerEnergy(c);
+  drain_player_energy(c);
   ASSERT_EQ(c.player().energy, 0);
   ASSERT_EQ(c.player().hand.size(), 3U);
 
@@ -322,7 +322,7 @@ TEST(CombatCanPlay, T_CMB_085_LastValidIdxUnaffordable) {
 
 // T-CMB-090 — BP — Valid idx, cost == energy → true (boundary).
 TEST(CombatCanPlay, T_CMB_090_BoundaryCostEqualsEnergy) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/9999);
   std::vector<Card> deck;
   deck.reserve(6);
   for (int i = 0; i < 6; ++i) {
@@ -340,7 +340,7 @@ TEST(CombatCanPlay, T_CMB_090_BoundaryCostEqualsEnergy) {
 // T-CMB-095 — EG — Cost 0 with 0 energy → true (boundary 0 <= 0).
 // Neutralize cost 0. Spend all 3 energy first, then can_play on a Neutralize.
 TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/9999);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/9999);
   // Deck: 3 Strikes + 1 Neutralize. After start, hand has all 4 (deck<7).
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
@@ -353,7 +353,7 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   // Find Neutralize and play strikes (not Neutralize) to drain energy to 0.
   int strikes_played = 0;
   while (strikes_played < 3) {
-    int idx = FindHandIndex(c, CardId::kStrike);
+    int idx = find_hand_index(c, CardId::kStrike);
     ASSERT_NE(idx, -1);
     ASSERT_TRUE(
         c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot{0}));
@@ -361,7 +361,7 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   }
   ASSERT_EQ(c.player().energy, 0);
 
-  int neut_idx = FindHandIndex(c, CardId::kNeutralize);
+  int neut_idx = find_hand_index(c, CardId::kNeutralize);
   ASSERT_NE(neut_idx, -1);
   EXPECT_TRUE(c.can_play(sts2::game::HandIndex{neut_idx}));
 }
@@ -382,7 +382,7 @@ TEST(CombatCanPlay, T_CMB_100_EmptyHand) {
 // Energy=3 by default after start; to be "unplayable", we drain it then
 // attempt.
 TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
   std::vector<Card> deck;
   deck.reserve(4);
   for (int i = 0; i < 4; ++i) {
@@ -390,7 +390,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   }
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 4U);
-  DrainPlayerEnergy(c);
+  drain_player_energy(c);
   ASSERT_EQ(c.player().energy, 0);
   ASSERT_EQ(c.player().hand.size(), 1U);
   const Stat hp_before = c.enemies()[0].vitals.hp;
@@ -415,7 +415,7 @@ TEST(CombatPlayCard, T_CMB_110_OnPlayFalsyUnreachable) {
 // T-CMB-115 — BP, DF — Strike: hand→discard, energy spent, damage dealt,
 // check_win_or_lose called (FALSE outcome).
 TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
@@ -452,7 +452,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
-  int survivor_idx = FindHandIndex(c, CardId::kSurvivor);
+  int survivor_idx = find_hand_index(c, CardId::kSurvivor);
   ASSERT_NE(survivor_idx, -1);
 
   bool ok = c.play_card(sts2::game::HandIndex{survivor_idx},
@@ -470,7 +470,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
 // T-CMB-125 — EG — Lethal-on-play: dealing damage that kills the last enemy
 // trips combat_over.
 TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/4);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/4);
   std::vector<Card> deck;
   deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
@@ -567,7 +567,7 @@ TEST(CombatStartPlayerTurn, T_CMB_175_Round1KeepsBlockDrawsSeven) {
 // DarkStrike. After end_turn(), R1 enemy_phase has run (Incantation→Ritual)
 // and start_player_turn for R2 has rolled DarkStrike.
 TEST(CombatStartPlayerTurn, T_CMB_180_Round2ResetsBlockDrawsFive) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   c.end_turn();
 
@@ -582,13 +582,13 @@ TEST(CombatStartPlayerTurn, T_CMB_180_Round2ResetsBlockDrawsFive) {
 // T-CMB-185 — EG — Dead enemy: roll_next_move skipped (D2 FALSE), so
 // current_move and performed_first_move retain their values from R1 start.
 TEST(CombatStartPlayerTurn, T_CMB_185_DeadEnemyMoveNotRolled) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   // After start: both enemies have performed_first_move=true,
   // current_move=Incantation.
   ASSERT_TRUE(c.enemies()[0].performed_first_move);
   ASSERT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
 
-  KillEnemy(c, 0);
+  kill_enemy(c, 0);
   ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
 
   c.end_turn();  // advances to R2 start_player_turn
@@ -624,17 +624,17 @@ TEST(CombatEnemyPhase, T_CMB_190_NoEnemiesNoOp) {
 // because the per-enemy tick at the bottom of the act loop clears just_applied.
 // Player hp unchanged (Incantation deals no damage).
 TEST(CombatEnemyPhase, T_CMB_195_TwoAliveIncantationFullSweep) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   const Stat hp_before = c.player().vitals.hp;
 
   c.enemy_phase();
 
   EXPECT_EQ(c.player().vitals.hp, hp_before);
   ASSERT_EQ(c.enemies().size(), 2U);
-  ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false)});
-  ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
+  expect_powers_eq(c.enemies()[0].vitals.powers,
+                   {make_power(PowerKind::kRitual, 2, /*just_applied=*/false)});
+  expect_powers_eq(c.enemies()[1].vitals.powers,
+                   {make_power(PowerKind::kRitual, 5, /*just_applied=*/false)});
   EXPECT_EQ(c.enemies()[0].vitals.block, Stat{0});
   EXPECT_EQ(c.enemies()[1].vitals.block, Stat{0});
 }
@@ -643,7 +643,7 @@ TEST(CombatEnemyPhase, T_CMB_195_TwoAliveIncantationFullSweep) {
 // tick turns the (just_applied=false) Ritual into a Strength gain equal to
 // ritual_amount. Player damage = 9 + 1 (no Strength yet at attack time).
 TEST(CombatEnemyPhase, T_CMB_200_Round2DarkStrikeRitualToStrength) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   c.end_turn();  // advance through R1 → R2 start_player_turn (R2 ready)
   ASSERT_EQ(c.round(), 2);
 
@@ -653,19 +653,19 @@ TEST(CombatEnemyPhase, T_CMB_200_Round2DarkStrikeRitualToStrength) {
   // After the R2 enemy_phase ran: damage applied = 9 + 1 = 10 → hp 70-10=60.
   EXPECT_EQ(c.player().vitals.hp, Stat{60});
   ASSERT_EQ(c.enemies().size(), 2U);
-  ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false),
-                  MakePower(PowerKind::kStrength, 2)});
-  ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false),
-                  MakePower(PowerKind::kStrength, 5)});
+  expect_powers_eq(c.enemies()[0].vitals.powers,
+                   {make_power(PowerKind::kRitual, 2, /*just_applied=*/false),
+                    make_power(PowerKind::kStrength, 2)});
+  expect_powers_eq(c.enemies()[1].vitals.powers,
+                   {make_power(PowerKind::kRitual, 5, /*just_applied=*/false),
+                    make_power(PowerKind::kStrength, 5)});
 }
 
 // T-CMB-205 — EG — One dead enemy in middle (here: enemy 0): D2 FALSE skips
 // block reset, D4 TRUE skips act, D7 FALSE skips tick. Enemy 1 phases normally.
 TEST(CombatEnemyPhase, T_CMB_205_DeadEnemyAllLoopsSkip) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
   ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
   ASSERT_TRUE(c.enemies()[0].vitals.powers.empty());
 
@@ -674,8 +674,8 @@ TEST(CombatEnemyPhase, T_CMB_205_DeadEnemyAllLoopsSkip) {
   // Enemy 0: dead, all three loops skipped → still no powers.
   EXPECT_TRUE(c.enemies()[0].vitals.powers.empty());
   // Enemy 1: act applied Ritual (just_applied=true), tick cleared it.
-  ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
+  expect_powers_eq(c.enemies()[1].vitals.powers,
+                   {make_power(PowerKind::kRitual, 5, /*just_applied=*/false)});
 }
 
 // T-CMB-210 — EG — Player dies mid-phase short-circuits the act loop (D5 TRUE).
@@ -683,7 +683,7 @@ TEST(CombatEnemyPhase, T_CMB_205_DeadEnemyAllLoopsSkip) {
 // to hp=1, then end_turn() drives into R2 enemy_phase. Enemy 0 (DarkStrike 9)
 // kills the player; enemy 1 does NOT act this turn; tick loop is NOT executed.
 TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   c.end_turn();  // R1 → R2 start; both enemies now have current_move=DarkStrike
   ASSERT_EQ(c.round(), 2);
 
@@ -701,10 +701,10 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
   // Tick loop NOT executed → no Strength gain on either enemy this round.
   // Enemies still hold their R1-tick Ritual{n,false}.
   ASSERT_EQ(c.enemies().size(), 2U);
-  ExpectPowersEq(c.enemies()[0].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false)});
-  ExpectPowersEq(c.enemies()[1].vitals.powers,
-                 {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
+  expect_powers_eq(c.enemies()[0].vitals.powers,
+                   {make_power(PowerKind::kRitual, 2, /*just_applied=*/false)});
+  expect_powers_eq(c.enemies()[1].vitals.powers,
+                   {make_power(PowerKind::kRitual, 5, /*just_applied=*/false)});
 }
 
 // -------------------------------------------------------------------------
@@ -715,7 +715,7 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
 // Set up combat_over=true via lethal damage to player, then verify end_turn
 // makes no state changes.
 TEST(CombatEndTurn, T_CMB_215_CombatOverEarlyReturn) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   Enemy temp{};
   temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 999);
@@ -737,7 +737,7 @@ TEST(CombatEndTurn, T_CMB_215_CombatOverEarlyReturn) {
 // enemy_phase (D2 TRUE). round NOT incremented; start_player_turn NOT called
 // (next R3 hand not redrawn — hand stays empty post end_player_turn).
 TEST(CombatEndTurn, T_CMB_220_PlayerDeathDuringEnemyPhaseEarlyReturn) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   c.end_turn();  // → R2 start; enemies on DarkStrike
   ASSERT_EQ(c.round(), 2);
   Enemy temp{};
@@ -759,7 +759,7 @@ TEST(CombatEndTurn, T_CMB_220_PlayerDeathDuringEnemyPhaseEarlyReturn) {
 // end_player_turn → enemy_phase → round_++ → start_player_turn →
 // check_win_or_lose.
 TEST(CombatEndTurn, T_CMB_225_NormalRoundTransition) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   c.end_turn();
 
@@ -813,9 +813,9 @@ TEST(CombatAllEnemiesDead, T_CMB_240_EmptyVectorFalse) {
 
 // T-CMB-245 — BP — All dead → TRUE.
 TEST(CombatAllEnemiesDead, T_CMB_245_AllDeadTrue) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
-  KillEnemy(c, 1);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
+  kill_enemy(c, 1);
 
   EXPECT_TRUE(c.all_enemies_dead());
 }
@@ -832,8 +832,8 @@ TEST(CombatAllEnemiesDead, T_CMB_250_AliveInMiddleFalse) {
   c.add_enemy(std::move(a));
   c.add_enemy(std::move(b));
   c.add_enemy(std::move(d));
-  KillEnemy(c, 0);
-  KillEnemy(c, 2);
+  kill_enemy(c, 0);
+  kill_enemy(c, 2);
   ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
   ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
   ASSERT_EQ(c.enemies()[2].vitals.hp, Stat{0});
@@ -860,9 +860,9 @@ TEST(CombatCheckWinOrLose, T_CMB_255_PlayerDeadShortCircuit) {
 // T-CMB-260 — BP — Player alive, all enemies dead → combat_over true
 // (left FALSE, right TRUE).
 TEST(CombatCheckWinOrLose, T_CMB_260_AllEnemiesDeadFlipsOver) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
-  KillEnemy(c, 1);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
+  kill_enemy(c, 1);
   ASSERT_FALSE(c.is_player_dead());
   ASSERT_TRUE(c.all_enemies_dead());
 
@@ -873,7 +873,7 @@ TEST(CombatCheckWinOrLose, T_CMB_260_AllEnemiesDeadFlipsOver) {
 
 // T-CMB-265 — BP — Both alive → combat_over FALSE (no change).
 TEST(CombatCheckWinOrLose, T_CMB_265_BothAliveNoChange) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   ASSERT_FALSE(c.is_player_dead());
   ASSERT_FALSE(c.all_enemies_dead());
 
@@ -887,9 +887,9 @@ TEST(CombatCheckWinOrLose, T_CMB_265_BothAliveNoChange) {
 // first, then dealing lethal damage to the player; combat_over latches true
 // from the first kill and remains true after the second.
 TEST(CombatCheckWinOrLose, T_CMB_270_BothSidesDead) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
-  KillEnemy(c, 1);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
+  kill_enemy(c, 1);
   ASSERT_TRUE(c.combat_over());
 
   Enemy temp{};
@@ -992,14 +992,14 @@ using TargetType = sts2::game::TargetType;
 
 // is_alive: negative-index guard — slot not in range → not alive.
 TEST(CombatIsEnemyAlive, NegativeIndexFalse) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
   const sts2::game::EnemySlot slot{-1};
   EXPECT_FALSE(slot.in_range(c.enemies()));
 }
 
 // is_alive: in-range alive enemy → true.
 TEST(CombatIsEnemyAlive, AliveTrue) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
   const sts2::game::EnemySlot slot{0};
   ASSERT_TRUE(slot.in_range(c.enemies()));
   EXPECT_TRUE(sts2::game::is_alive(slot.at(c.enemies())));
@@ -1007,8 +1007,8 @@ TEST(CombatIsEnemyAlive, AliveTrue) {
 
 // is_alive: in-range dead enemy → false.
 TEST(CombatIsEnemyAlive, DeadFalse) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
-  KillEnemy(c, 0);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
+  kill_enemy(c, 0);
   ASSERT_LE(c.enemies()[0].vitals.hp, Stat{0});
   const sts2::game::EnemySlot slot{0};
   EXPECT_FALSE(sts2::game::is_alive(slot.at(c.enemies())));
@@ -1016,7 +1016,7 @@ TEST(CombatIsEnemyAlive, DeadFalse) {
 
 // is_alive: out-of-range slot → not in range (size guard).
 TEST(CombatIsEnemyAlive, OutOfRangeFalse) {
-  Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
+  Combat c = make_combat_with_enemy(kCombatTestSeed, /*hp=*/40);
   EXPECT_FALSE(sts2::game::EnemySlot{1}.in_range(c.enemies()));
   EXPECT_FALSE(sts2::game::EnemySlot{99}.in_range(c.enemies()));
 }
@@ -1030,16 +1030,16 @@ TEST(CombatAliveEnemyIndices, EmptyVectorEmpty) {
 
 // alive_enemy_indices: zero alive → empty.
 TEST(CombatAliveEnemyIndices, ZeroAliveEmpty) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
-  KillEnemy(c, 1);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
+  kill_enemy(c, 1);
   EXPECT_TRUE(c.alive_enemy_indices().empty());
 }
 
 // alive_enemy_indices: one alive in middle → returns its slot index.
 TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
   ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
   EXPECT_EQ(c.alive_enemy_indices(),
             (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{1}}));
@@ -1047,7 +1047,7 @@ TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
 
 // alive_enemy_indices: both alive → returns both slot indices in slot order.
 TEST(CombatAliveEnemyIndices, BothAliveReturnsBothInOrder) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(c.alive_enemy_indices(),
             (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{0},
                                                 sts2::game::EnemySlot{1}}));
@@ -1062,13 +1062,13 @@ TEST(CombatHandSize, EmptyZero) {
 
 // hand size: populated starter combat has 7 cards.
 TEST(CombatHandSize, PopulatedSeven) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(c.player().hand.size(), 7U);
 }
 
 // find_card_in_hand: present → returns index of first match.
 TEST(CombatFindCardInHand, PresentReturnsIndex) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   const sts2::game::HandIndex strike_idx = c.find_card_in_hand(CardId::kStrike);
   ASSERT_TRUE(strike_idx.valid());
   EXPECT_EQ(c.player().hand.at(strike_idx).id, CardId::kStrike);
@@ -1133,7 +1133,7 @@ TEST(CombatPlayerVitalsAccessors, PlayerEnergyAccessors) {
   Combat c{kCombatTestSeed};
   EXPECT_EQ(c.player().energy, 0);
 
-  c.start(MakeStrikeDefendDeck7());
+  c.start(make_strike_defend_deck7());
   EXPECT_EQ(c.player().energy, Combat::kPlayerMaxEnergy);
 }
 
@@ -1145,7 +1145,7 @@ TEST(CombatPlayerVitalsAccessors, PlayerPowersEmptyByDefault) {
 
 // hand.at: returns the same Card as cards() at every valid index.
 TEST(CombatPlayerHandAccessors, HandAtMatchesCardsAccess) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   ASSERT_EQ(c.player().hand.size(), 7U);
   for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
     const auto idx = sts2::game::HandIndex{static_cast<int>(i)};
@@ -1156,16 +1156,16 @@ TEST(CombatPlayerHandAccessors, HandAtMatchesCardsAccess) {
 
 // draw/discard pile sizes: starter combat — 7 hand + 5 draw + 0 discard at R1.
 TEST(CombatPileSizeAccessors, StarterCombatPilesAtR1Start) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(c.player().deck.draw_size(), 5U);
   EXPECT_EQ(c.player().deck.discard_size(), 0U);
 }
 
 // discard pile grows after playing a card.
 TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   const std::size_t pre_discard = c.player().deck.discard_size();
-  int idx = FindHandIndex(c, CardId::kDefend);
+  int idx = find_hand_index(c, CardId::kDefend);
   ASSERT_NE(idx, -1);
   ASSERT_TRUE(
       c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
@@ -1174,7 +1174,7 @@ TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
 
 // total deck size: draw + hand + discard.
 TEST(CombatTotalDeckSize, SumsAllPiles) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   // 12-card deck; R1: 7 hand + 5 draw + 0 discard.
   EXPECT_EQ(
       static_cast<int>(c.player().deck.total_size() + c.player().hand.size()),
@@ -1191,14 +1191,14 @@ TEST(CombatTotalDeckSize, ZeroWhenEmpty) {
 
 // display_index_of (render helper): negative slot → -1.
 TEST(CombatDisplayIndexOf, NegativeSlotMinusOne) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(
       sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{-1}), -1);
 }
 
 // display_index_of: out-of-range slot → -1.
 TEST(CombatDisplayIndexOf, OutOfRangeMinusOne) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{2}),
             -1);
   EXPECT_EQ(
@@ -1207,15 +1207,15 @@ TEST(CombatDisplayIndexOf, OutOfRangeMinusOne) {
 
 // display_index_of: dead enemy slot → -1.
 TEST(CombatDisplayIndexOf, DeadSlotMinusOne) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
   EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}),
             -1);
 }
 
 // display_index_of: both alive — slot indices map identity-wise.
 TEST(CombatDisplayIndexOf, BothAliveIdentity) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}),
             0);
   EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}),
@@ -1224,8 +1224,8 @@ TEST(CombatDisplayIndexOf, BothAliveIdentity) {
 
 // display_index_of: enemy 0 dead — slot 1 collapses to display 0.
 TEST(CombatDisplayIndexOf, FrontDeadCollapsesIndex) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
   EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}),
             0);
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 #include "sts2/game/types.h"
 
 // Canonical enemy move + ritual-tick primitives, shared by the production
@@ -52,10 +54,10 @@ void act_on_intent(
   // grep act_on_intent users to verify they handle the new case.
   switch (move) {
     case MoveId::kIncantation:
-      on_ritual();
+      std::forward<OnRitual>(on_ritual)();
       break;
     case MoveId::kDarkStrike:
-      on_dark_strike();
+      std::forward<OnDarkStrike>(on_dark_strike)();
       break;
   }
 }

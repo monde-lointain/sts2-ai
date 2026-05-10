@@ -25,7 +25,7 @@
 
 namespace {
 
-using sts2::tests::helpers::MakeCombatWithEnemy;
+using sts2::tests::helpers::make_combat_with_enemy;
 using sts2::tests::seeds::kCombatTestSeed;
 
 using Card = sts2::game::Card;
@@ -59,7 +59,7 @@ TEST(CardsMakeStrike, T_CRD_005_StaticFields) {
 // T-CRD-010 — DF — on_play deals base_damage to the targeted enemy.
 // Capture `base = 6` is the def, deal_damage_to_enemy(0, base) is the use.
 TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
-  Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
+  Combat combat = make_combat_with_enemy(kCombatTestSeed);
 
   Card card = sts2::cards::make_card(CardId::kStrike);
   ASSERT_TRUE(static_cast<bool>(card.on_play));
@@ -72,7 +72,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
 // T-CRD-015 — EG — Post-construction mutation of `base_damage` on the Card
 // does not affect the closure (on_play reads the immutable kCardEffects entry).
 TEST(CardsMakeStrike, T_CRD_015_OnPlayIgnoresPostCreationBaseMutation) {
-  Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
+  Combat combat = make_combat_with_enemy(kCombatTestSeed);
 
   Card c1 = sts2::cards::make_card(CardId::kStrike);
   c1.base_damage = 999;
@@ -151,7 +151,7 @@ TEST(CardsMakeNeutralize, T_CRD_035_StaticFields) {
 // T-CRD-040 — DF — on_play deals 3 damage AND applies Weak 1.
 // Locks call ordering (damage before Weak per source order).
 TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
-  Combat combat = MakeCombatWithEnemy(kCombatTestSeed);
+  Combat combat = make_combat_with_enemy(kCombatTestSeed);
 
   Card card = sts2::cards::make_card(CardId::kNeutralize);
   ASSERT_TRUE(static_cast<bool>(card.on_play));

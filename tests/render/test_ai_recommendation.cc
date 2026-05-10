@@ -25,8 +25,8 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::Not;
 
-using sts2::tests::helpers::KillEnemy;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::kill_enemy;
+using sts2::tests::helpers::make_starter_combat;
 using sts2::tests::seeds::kCombatTestSeed;
 
 using sts2::ai::PvStep;
@@ -36,14 +36,14 @@ using sts2::game::Combat;
 using sts2::game::Stat;
 using sts2::input::Action;
 
-std::string Render(const Recommendation& rec, const Combat& c) {
+std::string render_to_string(const Recommendation& rec, const Combat& c) {
   std::ostringstream os;
   sts2::render::render_ai_recommendation(rec, c, os);
   return os.str();
 }
 
 TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   // Find a Strike in hand for a realistic kPlayCard hand_idx.
   const int strike_idx = c.find_card_in_hand(CardId::kStrike).raw();
   ASSERT_GE(strike_idx, 0);
@@ -65,7 +65,7 @@ TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
              .target_idx = sts2::game::EnemySlot::none(),
              .survivor_discard_id = CardId::kNone});
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("AI:"));
   EXPECT_THAT(s, HasSubstr("Play Strike"));
@@ -80,9 +80,9 @@ TEST(RenderAiRecommendation, PlayCardWithTargetIncludesEnemyNameAndIndex) {
 }
 
 TEST(RenderAiRecommendation, PostDeath_RenumberAliveEnemies) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   // Kill Calcified Cultist (slot 0); Damp Cultist (slot 1) is now display [0].
-  KillEnemy(c, 0);
+  kill_enemy(c, 0);
   ASSERT_LE(c.enemies()[0].vitals.hp, Stat{0});
   ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
 
@@ -98,14 +98,14 @@ TEST(RenderAiRecommendation, PostDeath_RenumberAliveEnemies) {
              .target_idx = sts2::game::EnemySlot{1},
              .survivor_discard_id = CardId::kNone});
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("[0] Damp Cultist"));
   EXPECT_THAT(s, Not(HasSubstr("[1] Damp Cultist")));
 }
 
 TEST(RenderAiRecommendation, EndTurnRendersEndTurnText) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   Recommendation rec;
   rec.action = Action{.kind = Action::kEndTurn,
@@ -118,7 +118,7 @@ TEST(RenderAiRecommendation, EndTurnRendersEndTurnText) {
              .target_idx = sts2::game::EnemySlot::none(),
              .survivor_discard_id = CardId::kNone});
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("End turn"));
   EXPECT_THAT(s, HasSubstr("E[HP]=50.0"));
@@ -126,7 +126,7 @@ TEST(RenderAiRecommendation, EndTurnRendersEndTurnText) {
 }
 
 TEST(RenderAiRecommendation, SurvivorIncludesDiscardSuggestion) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   Recommendation rec;
   // Use any in-bounds index; the renderer reads the card id from the hand
@@ -141,14 +141,14 @@ TEST(RenderAiRecommendation, SurvivorIncludesDiscardSuggestion) {
   rec.expected_hp = 60.0;
   rec.expected_rounds = 5.5;
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("discarding"));
   EXPECT_THAT(s, HasSubstr("Defend"));
 }
 
 TEST(RenderAiRecommendation, PvSurvivorStepIncludesDropAnnotation) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   Recommendation rec;
   rec.action = Action{Action::kEndTurn, sts2::game::HandIndex::none()};
@@ -160,7 +160,7 @@ TEST(RenderAiRecommendation, PvSurvivorStepIncludesDropAnnotation) {
              .target_idx = sts2::game::EnemySlot::none(),
              .survivor_discard_id = CardId::kStrike});
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("Survivor"));
   EXPECT_THAT(s, HasSubstr("(drop Strike)"));
@@ -169,7 +169,7 @@ TEST(RenderAiRecommendation, PvSurvivorStepIncludesDropAnnotation) {
 }
 
 TEST(RenderAiRecommendation, CombatOverRendersShortLineNoPv) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   Recommendation rec;
   rec.combat_over = true;
@@ -177,7 +177,7 @@ TEST(RenderAiRecommendation, CombatOverRendersShortLineNoPv) {
                       .card_idx = sts2::game::HandIndex::none()};
   rec.expected_hp = 70.0;
 
-  const std::string s = Render(rec, c);
+  const std::string s = render_to_string(rec, c);
 
   EXPECT_THAT(s, HasSubstr("combat over"));
   EXPECT_THAT(s, Not(HasSubstr("E[HP]=")));

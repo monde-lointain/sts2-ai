@@ -26,7 +26,7 @@ using sts2::ai::transition::is_terminal;
 using sts2::ai::transition::legal_actions;
 using sts2::ai::transition::resolve_end_turn_pre_draw;
 using sts2::game::CardId;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::make_starter_combat;
 
 constexpr int kSeedCount = 200;
 constexpr int kMaxStepsPerSeed = 100;
@@ -62,7 +62,8 @@ CardCounts hand_to_counts(const sts2::game::Combat& combat) {
 
 TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
   for (int seed = 0; seed < kSeedCount; ++seed) {
-    sts2::game::Combat combat = MakeStarterCombat(static_cast<uint64_t>(seed));
+    sts2::game::Combat combat =
+        make_starter_combat(static_cast<uint64_t>(seed));
     CompactState compact = from_combat(combat);
 
     // Survivor's discard target is decided by the engine via a callback. To

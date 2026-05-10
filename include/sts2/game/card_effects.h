@@ -13,8 +13,10 @@
 namespace sts2::game::card_effects {
 
 struct CardEffect {
-  CardId id;
   std::string_view name;
+  std::string_view short_stats;
+  std::array<std::string_view, 2> description;
+  CardId id;
   int cost;
   CardType type;
   TargetType target;
@@ -22,58 +24,56 @@ struct CardEffect {
   int base_block;
   int weak_to_target;
   bool requires_discard;
-  std::string_view short_stats;
-  std::array<std::string_view, 2> description;
 };
 
-inline constexpr CardEffect kCardEffects[] = {
-    {.id = CardId::kStrike,
-     .name = "Strike",
+inline constexpr std::array<CardEffect, 4> kCardEffects = {{
+    {.name = "Strike",
+     .short_stats = "6dmg",
+     .description = {"Deal 6 damage.", ""},
+     .id = CardId::kStrike,
      .cost = 1,
      .type = CardType::kAttack,
      .target = TargetType::kAnyEnemy,
      .base_damage = 6,
      .base_block = 0,
      .weak_to_target = 0,
-     .requires_discard = false,
-     .short_stats = "6dmg",
-     .description = {"Deal 6 damage.", ""}},
-    {.id = CardId::kDefend,
-     .name = "Defend",
+     .requires_discard = false},
+    {.name = "Defend",
+     .short_stats = "5blk",
+     .description = {"Gain 5 Block.", ""},
+     .id = CardId::kDefend,
      .cost = 1,
      .type = CardType::kSkill,
      .target = TargetType::kSelf,
      .base_damage = 0,
      .base_block = 5,
      .weak_to_target = 0,
-     .requires_discard = false,
-     .short_stats = "5blk",
-     .description = {"Gain 5 Block.", ""}},
-    {.id = CardId::kNeutralize,
-     .name = "Neutralize",
+     .requires_discard = false},
+    {.name = "Neutralize",
+     .short_stats = "3dmg",
+     .description = {"Deal 3 damage.", "Apply 1 Weak."},
+     .id = CardId::kNeutralize,
      .cost = 0,
      .type = CardType::kAttack,
      .target = TargetType::kAnyEnemy,
      .base_damage = 3,
      .base_block = 0,
      .weak_to_target = 1,
-     .requires_discard = false,
-     .short_stats = "3dmg",
-     .description = {"Deal 3 damage.", "Apply 1 Weak."}},
-    {.id = CardId::kSurvivor,
-     .name = "Survivor",
+     .requires_discard = false},
+    {.name = "Survivor",
+     .short_stats = "8blk",
+     .description = {"Gain 8 Block.", "Discard 1 card."},
+     .id = CardId::kSurvivor,
      .cost = 1,
      .type = CardType::kSkill,
      .target = TargetType::kSelf,
      .base_damage = 0,
      .base_block = 8,
      .weak_to_target = 0,
-     .requires_discard = true,
-     .short_stats = "8blk",
-     .description = {"Gain 8 Block.", "Discard 1 card."}},
-};
+     .requires_discard = true},
+}};
 
-inline constexpr CardId kCountedCardIds[] = {
+inline constexpr std::array<CardId, 4> kCountedCardIds = {
     CardId::kStrike,
     CardId::kDefend,
     CardId::kNeutralize,
@@ -87,7 +87,7 @@ inline constexpr CardId kCountedCardIds[] = {
     }
   }
   assert(false && "card_effect_for: invalid CardId");
-  return kCardEffects[0];
+  return kCardEffects.front();
 }
 
 }  // namespace sts2::game::card_effects

@@ -28,7 +28,7 @@ using sts2::game::CardId;
 using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::tests::ai::make_counts;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::make_starter_combat;
 
 CompactState make_test_state() {
   CompactState s;
@@ -273,7 +273,7 @@ TEST(Transition, EndTurn_PreDrawResolution_PlayerHandToDiscard) {
 }
 
 TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
-  sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
+  sts2::game::Combat combat = make_starter_combat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
   s.enemies[0].block = Stat{7};
   s.enemies[1].block = Stat{4};
@@ -305,7 +305,7 @@ TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
 
 TEST(Transition,
      EndTurn_PreDrawResolution_RitualConvertsToStrengthOnSubsequentEndTurn) {
-  sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
+  sts2::game::Combat combat = make_starter_combat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
   // Discard hand to isolate enemy mechanics.
   s.discard += s.hand;

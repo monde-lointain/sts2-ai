@@ -37,9 +37,9 @@ namespace {
 using ::testing::HasSubstr;
 using ::testing::Not;
 
-using sts2::tests::helpers::DrainPlayerEnergy;
-using sts2::tests::helpers::KillEnemy;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::drain_player_energy;
+using sts2::tests::helpers::kill_enemy;
+using sts2::tests::helpers::make_starter_combat;
 using sts2::tests::seeds::kCombatTestSeed;
 
 using Card = sts2::game::Card;
@@ -54,7 +54,7 @@ namespace glyphs = sts2::glyphs;
 namespace render = sts2::render;
 
 // Capture the renderer's output for substring assertions.
-std::string Render(const Combat& c) {
+std::string render_to_string(const Combat& c) {
   std::ostringstream os;
   render::render_combat(c, os);
   return os.str();
@@ -68,8 +68,8 @@ std::string Render(const Combat& c) {
 // branches: round/energy/HP header, both enemies alive, hand of 7 with the
 // "playable" path on every card (energy 3, all costs <= 1).
 TEST(RenderCombat, T_RND_155_InitialStateRendersAllBaselineFields) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  const std::string s = Render(c);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  const std::string s = render_to_string(c);
 
   EXPECT_THAT(s, HasSubstr("Round 1"));
   EXPECT_THAT(s, HasSubstr("Energy 3/3"));
@@ -88,10 +88,10 @@ TEST(RenderCombat, T_RND_155_InitialStateRendersAllBaselineFields) {
 // T-RND-160 — BP — Block visible on player after gain_player_block(5).
 // D99 (player block > 0) TRUE.
 TEST(RenderCombat, T_RND_160_PlayerBlockVisible) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   c.gain_player_block(5);
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   // Tied form: blue "5", reset, then " blk".
   const std::string token =
@@ -117,7 +117,7 @@ TEST(RenderCombat, T_RND_170_EnemyBlockVisible) {
   c.add_enemy(std::move(e));
   c.start(sts2::cards::make_silent_starter_deck());
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   const std::string token =
       std::string(ansi::kBlue) + "3" + ansi::kReset + " blk";
@@ -128,10 +128,10 @@ TEST(RenderCombat, T_RND_170_EnemyBlockVisible) {
 // end_turn drives R1 enemy_phase → both enemies' Incantation applies Ritual.
 // Covers D125 TRUE plus the format_powers integration.
 TEST(RenderCombat, T_RND_175_EnemyRitualVisibleAfterEndTurn) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   c.end_turn();
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   EXPECT_THAT(s, HasSubstr("Ritual 2"));  // Calcified
   EXPECT_THAT(s, HasSubstr("Ritual 5"));  // Damp
@@ -139,25 +139,25 @@ TEST(RenderCombat, T_RND_175_EnemyRitualVisibleAfterEndTurn) {
 
 // T-RND-180 — BP — Dead enemy hidden: D116 TRUE (continue) drops the row.
 TEST(RenderCombat, T_RND_180_DeadEnemyHidden) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   EXPECT_THAT(s, Not(HasSubstr("Calcified Cultist")));
   EXPECT_THAT(s, HasSubstr("Damp Cultist"));
 }
 
 // T-RND-185 — BP — Unplayable card displayed in dim. After draining energy
-// to 0 via DrainPlayerEnergy, every cost-1 card in hand renders with
+// to 0 via drain_player_energy, every cost-1 card in hand renders with
 // kBulletHollow + kDim, never kBulletFilled + kGreen. Covers D135/D136 FALSE.
 TEST(RenderCombat, T_RND_185_UnplayableCardsRenderDim) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  DrainPlayerEnergy(c);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  drain_player_energy(c);
   ASSERT_EQ(c.player().energy, 0);
   ASSERT_FALSE(c.player().hand.empty());
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   const std::string hollow_dim =
       std::string(ansi::kDim) + glyphs::kBulletHollow + ansi::kReset;
@@ -171,8 +171,8 @@ TEST(RenderCombat, T_RND_185_UnplayableCardsRenderDim) {
 // its name; Defend (Skill) carries kBlue. The starter hand under
 // kCombatTestSeed contains both card types.
 TEST(RenderCombat, T_RND_190_AttackVsSkillColour) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  const std::string s = Render(c);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  const std::string s = render_to_string(c);
 
   const std::string strike_red =
       std::string(ansi::kRed) + "Strike" + ansi::kReset;
@@ -188,8 +188,8 @@ TEST(RenderCombat, T_RND_190_AttackVsSkillColour) {
 // "Defend ... arrow" pattern is. Defend-arrow absence is checked via the
 // unique stat token "5blk" followed (eventually) by a newline before any arrow.
 TEST(RenderCombat, T_RND_195_TargetArrowOnAnyEnemyOnly) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  const std::string s = Render(c);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  const std::string s = render_to_string(c);
 
   // Strike line: "...Strike\x1b[0m (...) 6dmg  \x1b[93m→\x1b[0m\n"
   // Robust substring: short_stats "6dmg" then the arrow run on the same line.
@@ -225,7 +225,7 @@ TEST(RenderCombat, T_RND_200_NeutralizeDescriptionMultiLine) {
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 3U);
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   EXPECT_THAT(s, HasSubstr("Deal 3 damage."));
   EXPECT_THAT(s, HasSubstr("Apply 1 Weak."));
@@ -237,14 +237,14 @@ TEST(RenderCombat, T_RND_200_NeutralizeDescriptionMultiLine) {
 // computed damage value (read off the actual enemy via format_intent) is
 // in the output.
 TEST(RenderCombat, T_RND_205_IntentRendersIncantationThenDarkStrike) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
 
   // Setup A: R1, both enemies on Incantation.
   ASSERT_EQ(c.round(), 1);
   ASSERT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
   ASSERT_EQ(c.enemies()[1].current_move, MoveId::kIncantation);
   {
-    const std::string s = Render(c);
+    const std::string s = render_to_string(c);
     EXPECT_THAT(s, HasSubstr("Buff"));
   }
 
@@ -254,7 +254,7 @@ TEST(RenderCombat, T_RND_205_IntentRendersIncantationThenDarkStrike) {
   ASSERT_EQ(c.enemies()[0].current_move, MoveId::kDarkStrike);
   ASSERT_EQ(c.enemies()[1].current_move, MoveId::kDarkStrike);
   {
-    const std::string s = Render(c);
+    const std::string s = render_to_string(c);
     // Read the computed intent strings off the live enemies; this binds
     // the assertion to render::detail::format_intent's exact output and
     // sidesteps any dependence on the seed's HP rolls or Ritual ticks.
@@ -269,11 +269,11 @@ TEST(RenderCombat, T_RND_205_IntentRendersIncantationThenDarkStrike) {
 // T-RND-210 — EG — All enemies dead: no enemy rows render; display_idx
 // stays at 0 throughout the loop (D116 TRUE for every entry).
 TEST(RenderCombat, T_RND_210_AllEnemiesDeadNoEnemyRows) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
-  KillEnemy(c, 0);
-  KillEnemy(c, 1);
+  Combat c = make_starter_combat(kCombatTestSeed);
+  kill_enemy(c, 0);
+  kill_enemy(c, 1);
 
-  const std::string s = Render(c);
+  const std::string s = render_to_string(c);
 
   EXPECT_THAT(s, Not(HasSubstr("Calcified Cultist")));
   EXPECT_THAT(s, Not(HasSubstr("Damp Cultist")));

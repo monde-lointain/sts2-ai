@@ -28,8 +28,8 @@ namespace {
 using sts2::app::prompt_discard;
 using sts2::app::prompt_index;
 using sts2::app::prompt_target;
-using sts2::tests::helpers::KillEnemy;
-using sts2::tests::helpers::MakeStarterCombat;
+using sts2::tests::helpers::kill_enemy;
+using sts2::tests::helpers::make_starter_combat;
 using sts2::tests::seeds::kCombatTestSeed;
 using ::testing::HasSubstr;
 
@@ -119,7 +119,7 @@ TEST(AppPromptTarget, T_MAIN_120_TwoAliveUserPicksSecond) {
   c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));  // idx 1 (will die)
   c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 2
 
-  KillEnemy(c, 1);  // alive_indices becomes [0, 2]
+  kill_enemy(c, 1);  // alive_indices becomes [0, 2]
 
   std::istringstream in("1\n");
   std::ostringstream out;
@@ -136,7 +136,7 @@ TEST(AppPromptTarget, T_MAIN_125_InvalidThenValid) {
   c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));       // idx 1 (die)
   c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));  // idx 2
 
-  KillEnemy(c, 1);
+  kill_enemy(c, 1);
 
   std::istringstream in("abc\n0\n");
   std::ostringstream out;
@@ -175,7 +175,7 @@ TEST(AppPromptDiscard, T_MAIN_130_SingleCardReturnsZeroNoStream) {
 // out should contain rendered combat output AND the discard prompt label.
 // Returns the user's pick.
 TEST(AppPromptDiscard, T_MAIN_135_MultiCardRendersAndPrompts) {
-  Combat c = MakeStarterCombat(kCombatTestSeed);
+  Combat c = make_starter_combat(kCombatTestSeed);
   ASSERT_GT(c.player().hand.size(), 1U);  // starter draws 7
 
   const int max_idx = static_cast<int>(c.player().hand.size()) - 1;

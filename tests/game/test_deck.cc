@@ -17,9 +17,9 @@
 
 namespace {
 
-using sts2::tests::helpers::ExpectShuffleMatchesPinned;
+using sts2::tests::helpers::expect_shuffle_matches_pinned;
 using sts2::tests::seeds::kCombatTestSeed;
-using sts2::tests::seeds::kSilentDeckShuffled_C0FFEE;
+using sts2::tests::seeds::kSilentDeckShuffledC0Ffee;
 
 using Card = sts2::game::Card;
 using CardId = sts2::game::CardId;
@@ -38,7 +38,7 @@ TEST(DeckConstruction, T_DCK_005_DefaultEmpty) {
 
 // -------------------------------------------------------------------------
 // T-DCK-010 — DF — load_starter shuffles the deck with the given Rng.
-// Pinned via kSilentDeckShuffled_C0FFEE: the 12-card silent starter deck
+// Pinned via kSilentDeckShuffledC0Ffee: the 12-card silent starter deck
 // shuffled with Rng{kCombatTestSeed} must match the pinned order.
 // -------------------------------------------------------------------------
 TEST(DeckLoadStarter, T_DCK_010_ShuffleMatchesPinned) {
@@ -60,7 +60,7 @@ TEST(DeckLoadStarter, T_DCK_010_ShuffleMatchesPinned) {
   for (const Card& c : original) {
     orig_ids.push_back(c.id);
   }
-  ExpectShuffleMatchesPinned(got_ids, kSilentDeckShuffled_C0FFEE, orig_ids);
+  expect_shuffle_matches_pinned(got_ids, kSilentDeckShuffledC0Ffee, orig_ids);
 }
 
 // -------------------------------------------------------------------------
@@ -129,7 +129,9 @@ TEST(DeckDrawOne, T_DCK_025_ReshufflesWhenDrawEmpty) {
   ASSERT_TRUE(c2.has_value());
   ASSERT_EQ(d.draw_size(), 0U);
 
-  // Discard one card to populate discard pile.
+  // Discard one card to populate discard pile. ASSERT_TRUE above guarantees
+  // c1 has a value; clang-tidy can't track gtest macros.
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   d.discard(std::move(*c1));
   ASSERT_EQ(d.discard_size(), 1U);
 

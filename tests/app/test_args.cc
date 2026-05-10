@@ -28,7 +28,7 @@ using ::testing::HasSubstr;
 // Build a char* vector from string literals; the strings live in `storage`
 // (caller-owned) so the returned pointers stay valid for the test scope.
 // Callers pass a pre-built std::vector<std::string>& as backing storage.
-std::vector<char*> MakeArgv(std::vector<std::string>& storage) {
+std::vector<char*> make_argv(std::vector<std::string>& storage) {
   std::vector<char*> argv;
   argv.reserve(storage.size());
   for (auto& s : storage) {
@@ -106,7 +106,7 @@ TEST(AppParseUint64, T_MAIN_045_LeadingWhitespaceReturnsFalse) {
 // T-MAIN-050 — BP — No args → returns true, seed_provided=false.
 TEST(AppParseArgs, T_MAIN_050_NoArgsOk) {
   std::vector<std::string> storage{"prog"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 12345;  // sentinel
   bool seed_provided = true;
   std::ostringstream err;
@@ -120,7 +120,7 @@ TEST(AppParseArgs, T_MAIN_050_NoArgsOk) {
 // T-MAIN-055 — BP — `[prog, --seed, 42]` → ok, seed_provided, seed=42.
 TEST(AppParseArgs, T_MAIN_055_SeedFortyTwo) {
   std::vector<std::string> storage{"prog", "--seed", "42"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 0;
   bool seed_provided = false;
   std::ostringstream err;
@@ -136,7 +136,7 @@ TEST(AppParseArgs, T_MAIN_055_SeedFortyTwo) {
 // "--seed requires a value".
 TEST(AppParseArgs, T_MAIN_060_MissingValueErrors) {
   std::vector<std::string> storage{"prog", "--seed"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 0;
   bool seed_provided = false;
   std::ostringstream err;
@@ -150,7 +150,7 @@ TEST(AppParseArgs, T_MAIN_060_MissingValueErrors) {
 // "is not a valid uint64".
 TEST(AppParseArgs, T_MAIN_065_BadValueErrors) {
   std::vector<std::string> storage{"prog", "--seed", "abc"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 0;
   bool seed_provided = false;
   std::ostringstream err;
@@ -164,7 +164,7 @@ TEST(AppParseArgs, T_MAIN_065_BadValueErrors) {
 // "unknown argument".
 TEST(AppParseArgs, T_MAIN_070_UnknownArgErrors) {
   std::vector<std::string> storage{"prog", "--foo"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 0;
   bool seed_provided = false;
   std::ostringstream err;
@@ -178,7 +178,7 @@ TEST(AppParseArgs, T_MAIN_070_UnknownArgErrors) {
 // the first unknown arg before reaching --seed. Documents left-to-right scan.
 TEST(AppParseArgs, T_MAIN_075_UnknownBeforeSeedShortCircuits) {
   std::vector<std::string> storage{"prog", "--foo", "--seed", "1"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 999;   // sentinel
   bool seed_provided = true;  // sentinel
   std::ostringstream err;
@@ -192,7 +192,7 @@ TEST(AppParseArgs, T_MAIN_075_UnknownBeforeSeedShortCircuits) {
 // T-MAIN-080 — BV — `[prog, --seed, 0]` → seed=0, ok.
 TEST(AppParseArgs, T_MAIN_080_SeedZero) {
   std::vector<std::string> storage{"prog", "--seed", "0"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 999;
   bool seed_provided = false;
   std::ostringstream err;
@@ -207,7 +207,7 @@ TEST(AppParseArgs, T_MAIN_080_SeedZero) {
 // T-MAIN-085 — BV — `[prog, --seed, 18446744073709551615]` → seed=UINT64_MAX.
 TEST(AppParseArgs, T_MAIN_085_SeedUint64Max) {
   std::vector<std::string> storage{"prog", "--seed", "18446744073709551615"};
-  auto argv = MakeArgv(storage);
+  auto argv = make_argv(storage);
   std::uint64_t seed = 0;
   bool seed_provided = false;
   std::ostringstream err;

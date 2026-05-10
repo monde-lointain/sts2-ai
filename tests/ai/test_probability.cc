@@ -135,8 +135,8 @@ TEST(Probability, EngineDistributionMonteCarlo) {
   auto analytic = enumerate_draws(pool, k);
 
   std::map<std::array<uint8_t, 4>, std::size_t> hist;
-  constexpr int kTrials = 5000;
-  for (int seed = 1; seed <= kTrials; ++seed) {
+  constexpr int k_trials = 5000;
+  for (int seed = 1; seed <= k_trials; ++seed) {
     sts2::game::Combat c{static_cast<uint64_t>(seed)};
     sts2::game::Rng enemy_rng{static_cast<uint64_t>(seed)};
     c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
@@ -153,7 +153,7 @@ TEST(Probability, EngineDistributionMonteCarlo) {
   int df = 0;
   for (const auto& o : analytic) {
     const auto& key = o.hand.counts;
-    const double expected = o.weight * kTrials;
+    const double expected = o.weight * k_trials;
     const auto it = hist.find(key);
     const double observed =
         it == hist.end() ? 0.0 : static_cast<double>(it->second);

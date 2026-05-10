@@ -170,7 +170,7 @@ int main() {
          << std::hex << kCultistTestSeed << std::dec << "ULL;\n";
     body << "\n";
     body << "// T-RNG-005: 10 successive uniform_int(0, 9) calls on Rng{kRngTestSeed}.\n";
-    body << "inline constexpr std::array<int, 10> kRngSeq_0_9 = {";
+    body << "inline constexpr std::array<int, 10> kRngSeq09 = {";
     for (size_t i = 0; i < seq_0_9.size(); ++i) {
         body << seq_0_9[i];
         if (i + 1 < seq_0_9.size()) { body << ", ";
@@ -179,11 +179,11 @@ int main() {
     body << "};\n";
     body << "\n";
     body << "// T-RNG-055: shuffle({1, 2}) on Rng{kRngTestSeed}.\n";
-    body << "inline constexpr std::array<int, 2>  kShuffle_2  = {"
+    body << "inline constexpr std::array<int, 2>  kShuffle2  = {"
          << shuffle_2[0] << ", " << shuffle_2[1] << "};\n";
     body << "\n";
     body << "// T-RNG-060: shuffle({0..9}) on Rng{kRngTestSeed}.\n";
-    body << "inline constexpr std::array<int, 10> kShuffle_10 = {";
+    body << "inline constexpr std::array<int, 10> kShuffle10 = {";
     for (size_t i = 0; i < shuffle_10.size(); ++i) {
         body << shuffle_10[i];
         if (i + 1 < shuffle_10.size()) { body << ", ";
@@ -192,20 +192,20 @@ int main() {
     body << "};\n";
     body << "\n";
     body << "// T-ENM-005 / T-ENM-015: cultist HPs from make_*_cultist(Rng{kCultistTestSeed}).\n";
-    body << "inline constexpr int kCalcifiedHp_seed42 = " << calcified_hp_seed42 << ";\n";
-    body << "inline constexpr int kDampHp_seed42      = " << damp_hp_seed42 << ";\n";
+    body << "inline constexpr int kCalcifiedHpSeed42 = " << calcified_hp_seed42 << ";\n";
+    body << "inline constexpr int kDampHpSeed42      = " << damp_hp_seed42 << ";\n";
     body << "\n";
     body << "// T-ENM-010 / T-ENM-020: first seed in [0, 2^20) producing a given HP.\n";
-    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp38", s_cal_38, 38, "make_calcified_cultist");
-    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp39", s_cal_39, 39, "make_calcified_cultist");
-    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp40", s_cal_40, 40, "make_calcified_cultist");
-    emit_seed_or_record_failure(body, failures, "kCalcifiedSeed_hp41", s_cal_41, 41, "make_calcified_cultist");
-    emit_seed_or_record_failure(body, failures, "kDampSeed_hp51",      s_damp_51, 51, "make_damp_cultist");
-    emit_seed_or_record_failure(body, failures, "kDampSeed_hp52",      s_damp_52, 52, "make_damp_cultist");
-    emit_seed_or_record_failure(body, failures, "kDampSeed_hp53",      s_damp_53, 53, "make_damp_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeedHp38", s_cal_38, 38, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeedHp39", s_cal_39, 39, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeedHp40", s_cal_40, 40, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kCalcifiedSeedHp41", s_cal_41, 41, "make_calcified_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeedHp51",      s_damp_51, 51, "make_damp_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeedHp52",      s_damp_52, 52, "make_damp_cultist");
+    emit_seed_or_record_failure(body, failures, "kDampSeedHp53",      s_damp_53, 53, "make_damp_cultist");
     body << "\n";
     body << "// Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).\n";
-    body << "inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {\n";
+    body << "inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffledC0Ffee = {\n";
     for (size_t i = 0; i < deck_shuffled.size(); ++i) {
         body << "    " << card_id_name(deck_shuffled[i]);
         if (i + 1 < deck_shuffled.size()) { body << ",";
@@ -215,8 +215,8 @@ int main() {
     body << "};\n";
     body << "\n";
     body << "// Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.\n";
-    body << "inline constexpr int kRngFirstUniform_0_INTMAX  = " << first_intmax << ";\n";
-    body << "inline constexpr int kRngSecondUniform_0_INTMAX = " << second_intmax << ";\n";
+    body << "inline constexpr int kRngFirstUniform0Intmax  = " << first_intmax << ";\n";
+    body << "inline constexpr int kRngSecondUniform0Intmax = " << second_intmax << ";\n";
     body << "\n";
     body << "}  // namespace sts2::tests::seeds\n";
 
@@ -262,13 +262,13 @@ int main() {
                       << std::dec << " (above 2^16)\n";
         }
     };
-    report("kCalcifiedSeed_hp38", s_cal_38);
-    report("kCalcifiedSeed_hp39", s_cal_39);
-    report("kCalcifiedSeed_hp40", s_cal_40);
-    report("kCalcifiedSeed_hp41", s_cal_41);
-    report("kDampSeed_hp51",      s_damp_51);
-    report("kDampSeed_hp52",      s_damp_52);
-    report("kDampSeed_hp53",      s_damp_53);
+    report("kCalcifiedSeedHp38", s_cal_38);
+    report("kCalcifiedSeedHp39", s_cal_39);
+    report("kCalcifiedSeedHp40", s_cal_40);
+    report("kCalcifiedSeedHp41", s_cal_41);
+    report("kDampSeedHp51",      s_damp_51);
+    report("kDampSeedHp52",      s_damp_52);
+    report("kDampSeedHp53",      s_damp_53);
 
     return 0;
 }

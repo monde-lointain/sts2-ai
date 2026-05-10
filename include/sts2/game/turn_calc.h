@@ -23,9 +23,9 @@ inline constexpr int kPlayerStartingEnergy = 3;
 // Cards drawn at the start of a turn. Round 1 grants a Ring of the Snake
 // bonus (+2); all subsequent rounds draw the base amount.
 [[nodiscard]] inline int hand_draw_size(int round) noexcept {
-  constexpr int kBaseHandDraw = 5;
-  constexpr int kRingOfTheSnakeBonus = 2;
-  return kBaseHandDraw + (round == 1 ? kRingOfTheSnakeBonus : 0);
+  constexpr int k_base_hand_draw = 5;
+  constexpr int k_ring_of_the_snake_bonus = 2;
+  return k_base_hand_draw + (round == 1 ? k_ring_of_the_snake_bonus : 0);
 }
 
 }  // namespace sts2::game::turn_calc

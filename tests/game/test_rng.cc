@@ -2,7 +2,7 @@
 // Spec: docs/test-plan/02-test-specifications.md §5 (T-RNG-005..070).
 //
 // Pinned-value tests (T-RNG-055, T-RNG-060) compare against
-// tests::seeds::kShuffle_2 / kShuffle_10. The pinned values are toolchain-
+// tests::seeds::kShuffle2 / kShuffle10. The pinned values are toolchain-
 // specific (clang-cl + MSVC STL); see tests/seeds/expected_values.h.
 
 #include <gtest/gtest.h>
@@ -20,13 +20,13 @@
 namespace {
 
 using Rng = sts2::game::Rng;
-using sts2::tests::helpers::ExpectShuffleMatchesPinned;
-using sts2::tests::seeds::kRngFirstUniform_0_INTMAX;
-using sts2::tests::seeds::kRngSecondUniform_0_INTMAX;
-using sts2::tests::seeds::kRngSeq_0_9;
+using sts2::tests::helpers::expect_shuffle_matches_pinned;
+using sts2::tests::seeds::kRngFirstUniform0Intmax;
+using sts2::tests::seeds::kRngSecondUniform0Intmax;
+using sts2::tests::seeds::kRngSeq09;
 using sts2::tests::seeds::kRngTestSeed;
-using sts2::tests::seeds::kShuffle_10;
-using sts2::tests::seeds::kShuffle_2;
+using sts2::tests::seeds::kShuffle10;
+using sts2::tests::seeds::kShuffle2;
 
 // -------------------------------------------------------------------------
 // 5.1  Rng::Rng(uint64_t seed)
@@ -51,8 +51,8 @@ TEST(RngConstructor, T_RNG_005_DeterministicSeeding) {
 // (toolchain regression).
 TEST(RngConstructor, T_RNG_007_PinnedReferenceSequence) {
   Rng r{kRngTestSeed};
-  for (std::size_t i = 0; i < kRngSeq_0_9.size(); ++i) {
-    EXPECT_EQ(r.uniform_int(0, 9), kRngSeq_0_9[i]) << "mismatch at index " << i;
+  for (std::size_t i = 0; i < kRngSeq09.size(); ++i) {
+    EXPECT_EQ(r.uniform_int(0, 9), kRngSeq09[i]) << "mismatch at index " << i;
   }
 }
 
@@ -60,9 +60,9 @@ TEST(RngConstructor, T_RNG_007_PinnedReferenceSequence) {
 TEST(RngConstructor, T_RNG_008_PinnedWideRange) {
   Rng r{kRngTestSeed};
   EXPECT_EQ(r.uniform_int(0, std::numeric_limits<int>::max()),
-            kRngFirstUniform_0_INTMAX);
+            kRngFirstUniform0Intmax);
   EXPECT_EQ(r.uniform_int(0, std::numeric_limits<int>::max()),
-            kRngSecondUniform_0_INTMAX);
+            kRngSecondUniform0Intmax);
 }
 
 // T-RNG-010 — EG — Differentiated seeds yield different sequences.
@@ -201,23 +201,23 @@ TEST(RngShuffle, T_RNG_050_SingleElement) {
   EXPECT_EQ(v[0], 42);
 }
 
-// T-RNG-055 — BP, BV — Two elements; pinned to kShuffle_2. (D1 FALSE; D2 single
+// T-RNG-055 — BP, BV — Two elements; pinned to kShuffle2. (D1 FALSE; D2 single
 // iter.)
 TEST(RngShuffle, T_RNG_055_TwoElementsMatchesPinned) {
   Rng r{kRngTestSeed};
   const std::vector<int> original{1, 2};
   std::vector<int> v = original;
   r.shuffle(v);
-  ExpectShuffleMatchesPinned(v, kShuffle_2, original);
+  expect_shuffle_matches_pinned(v, kShuffle2, original);
 }
 
-// T-RNG-060 — DF — Ten elements; pinned to kShuffle_10.
+// T-RNG-060 — DF — Ten elements; pinned to kShuffle10.
 TEST(RngShuffle, T_RNG_060_TenElementsMatchesPinned) {
   Rng r{kRngTestSeed};
   const std::vector<int> original{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   std::vector<int> v = original;
   r.shuffle(v);
-  ExpectShuffleMatchesPinned(v, kShuffle_10, original);
+  expect_shuffle_matches_pinned(v, kShuffle10, original);
 }
 
 // T-RNG-065 — EG — Determinism across two Rngs with same seed.

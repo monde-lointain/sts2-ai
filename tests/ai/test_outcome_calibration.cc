@@ -30,11 +30,9 @@ using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::game::Vitals;
 using sts2::input::Action;
-using sts2::tests::helpers::MakeStarterCombat;
-
 // Tiny 5-Strike deck (matches test_recommend_legality.cc; kept local to
 // avoid coupling test files via shared headers).
-std::vector<Card> MakeTinyStrikeDeck() {
+std::vector<Card> make_tiny_strike_deck() {
   std::vector<Card> deck;
   deck.reserve(5);
   for (int i = 0; i < 5; ++i) {
@@ -46,7 +44,7 @@ std::vector<Card> MakeTinyStrikeDeck() {
 // Lethal-this-turn engine combat: 1 enemy at 6 hp, 5-Strike deck. Round-1
 // 7-card draw fills hand with all 5 Strikes; energy=3 means a single Strike
 // (6 dmg, no Strength) lethals the enemy -> expected_hp = starting hp.
-Combat MakeLethalCombat(uint64_t seed) {
+Combat make_lethal_combat(uint64_t seed) {
   Combat c{seed};
   Enemy e{};
   e.vitals =
@@ -57,12 +55,12 @@ Combat MakeLethalCombat(uint64_t seed) {
   c.add_enemy(std::move(e));
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{0}; });
-  c.start(MakeTinyStrikeDeck());
+  c.start(make_tiny_strike_deck());
   return c;
 }
 
 TEST(RecommendCalibration, KnownLethalPosition_ExpectedHpExact) {
-  Combat combat = MakeLethalCombat(0xABCDULL);
+  Combat combat = make_lethal_combat(0xABCDULL);
   const int starting_hp = combat.player().vitals.hp.value();
   ASSERT_FALSE(combat.combat_over());
 
@@ -92,16 +90,16 @@ TEST(RecommendCalibration, KnownLethalPosition_ExpectedHpExact) {
 // different "draw seeds" while keeping the enemy-spawn seed fixed (so HPs
 // match the root state the search planned against).
 TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
-  constexpr uint64_t kEnemySeed = 0xC0FFEEULL;
-  constexpr int kTrials = 10;
-  constexpr int kMaxStepsPerTrial = 400;
+  constexpr uint64_t k_enemy_seed = 0xC0FFEEULL;
+  constexpr int k_trials = 10;
+  constexpr int k_max_steps_per_trial = 400;
 
   // Build one combat per trial: enemy spawns rolled from kEnemySeed (fixed,
   // matches the root state); deck shuffle + draws driven by per-trial seed.
-  // MakeStarterCombat ties both to one seed; inline a 2-seed variant.
+  // make_starter_combat ties both to one seed; inline a 2-seed variant.
   auto make_trial_combat = [](uint64_t draw_seed) {
     Combat c{draw_seed};
-    sts2::game::Rng enemy_rng{kEnemySeed};
+    sts2::game::Rng enemy_rng{k_enemy_seed};
     c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
     c.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
     c.set_pick_discard_callback(
@@ -133,7 +131,7 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
   double sum_expected_hp = 0.0;
   int trials_completed = 0;
 
-  for (int trial = 0; trial < kTrials; ++trial) {
+  for (int trial = 0; trial < k_trials; ++trial) {
     const uint64_t draw_seed = 0xC0FFEEULL ^ static_cast<uint64_t>(trial);
     Combat combat = make_trial_combat(draw_seed);
 
@@ -155,7 +153,7 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
     sum_expected_hp += root_rec.expected_hp;
 
     int steps = 0;
-    while (!combat.combat_over() && steps < kMaxStepsPerTrial) {
+    while (!combat.combat_over() && steps < k_max_steps_per_trial) {
       last_rec = recommender.recommend(combat);
       if (last_rec.combat_over) {
         break;

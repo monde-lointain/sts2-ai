@@ -28,14 +28,14 @@ using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::game::Vitals;
 using sts2::input::Action;
-using sts2::tests::helpers::KillEnemy;
-using sts2::tests::helpers::MakeCombatWithEnemy;
+using sts2::tests::helpers::kill_enemy;
+using sts2::tests::helpers::make_combat_with_enemy;
 
 // Tiny deck: 5 Strikes only. Keeps the chance branching factor at the round-1
 // draw small so default ctest stays fast (full silent starter is multi-minute
 // per first solve). Round-1 draws 7 from a 5-card deck — 5 cards land in hand,
 // piles are empty afterwards.
-std::vector<Card> MakeTinyStrikeDeck() {
+std::vector<Card> make_tiny_strike_deck() {
   std::vector<Card> deck;
   deck.reserve(5);
   for (int i = 0; i < 5; ++i) {
@@ -47,7 +47,7 @@ std::vector<Card> MakeTinyStrikeDeck() {
 // Small-fixture combat: one enemy with controllable hp, real DarkStrike move
 // so the search bottoms out via player death on bad lines, plus the tiny
 // Strike-only deck above.
-Combat MakeTinyCombat(uint64_t seed, int enemy_hp) {
+Combat make_tiny_combat(uint64_t seed, int enemy_hp) {
   Combat c{seed};
   Enemy e{};
   e.vitals = Vitals{.hp = Stat{enemy_hp},
@@ -60,14 +60,14 @@ Combat MakeTinyCombat(uint64_t seed, int enemy_hp) {
   c.add_enemy(std::move(e));
   c.set_pick_discard_callback(
       [](const Combat&) { return sts2::game::HandIndex{0}; });
-  c.start(MakeTinyStrikeDeck());
+  c.start(make_tiny_strike_deck());
   return c;
 }
 
 TEST(Recommend, FreshStarter_ReturnsLegalAction) {
   // Five seeds. Tiny fixture so each first-solve is ~ms, not minutes.
   for (uint64_t seed : {1ULL, 2ULL, 3ULL, 4ULL, 5ULL}) {
-    Combat combat = MakeTinyCombat(seed, /*enemy_hp=*/30);
+    Combat combat = make_tiny_combat(seed, /*enemy_hp=*/30);
     Recommender rec;
     const Recommendation r = rec.recommend(combat);
 
@@ -82,8 +82,8 @@ TEST(Recommend, FreshStarter_ReturnsLegalAction) {
 }
 
 TEST(Recommend, TerminalState_FlagsCombatOver) {
-  Combat combat = MakeCombatWithEnemy(0xABCDEFULL, /*hp=*/40);
-  KillEnemy(combat, 0);
+  Combat combat = make_combat_with_enemy(0xABCDEFULL, /*hp=*/40);
+  kill_enemy(combat, 0);
   combat.check_win_or_lose();
   ASSERT_TRUE(combat.combat_over());
 
@@ -97,7 +97,7 @@ TEST(Recommend, PvAdvancesCorrectly_LethalPosition) {
   // 1 enemy at 6 hp + 5-Strike deck. Round-1 draws 7 from 5 cards: hand has
   // all 5 Strikes (draw stops when pile empty per Hand::draw_from). Energy=3
   // (max_energy default). One Strike at idx 0 lethals the enemy.
-  Combat combat = MakeTinyCombat(0x12345ULL, /*enemy_hp=*/6);
+  Combat combat = make_tiny_combat(0x12345ULL, /*enemy_hp=*/6);
   ASSERT_FALSE(combat.combat_over());
   ASSERT_EQ(combat.player().hand.size(), 5U);
 
@@ -122,7 +122,7 @@ TEST(Recommend, PvAdvancesCorrectly_LethalPosition) {
 }
 
 TEST(Recommend, RecommenderTtPersistsAcrossCalls) {
-  Combat combat = MakeTinyCombat(0xDEADBEEFULL, /*enemy_hp=*/6);
+  Combat combat = make_tiny_combat(0xDEADBEEFULL, /*enemy_hp=*/6);
 
   Recommender rec;
   (void)rec.recommend(combat);

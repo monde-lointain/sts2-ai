@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <array>
+
 #include "sts2/game/card_effects.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/types.h"
@@ -14,8 +16,8 @@ using sts2::game::card_effects::kCountedCardIds;
 
 // Every CardId except kNone is present in the table exactly once.
 TEST(CardEffectsTable, AllNonNoneIdsPresent) {
-  const CardId all_counted[] = {CardId::kStrike, CardId::kDefend,
-                                CardId::kNeutralize, CardId::kSurvivor};
+  const std::array<CardId, 4> all_counted = {
+      CardId::kStrike, CardId::kDefend, CardId::kNeutralize, CardId::kSurvivor};
   for (CardId id : all_counted) {
     bool found = false;
     for (const CardEffect& e : kCardEffects) {
@@ -37,8 +39,8 @@ TEST(CardEffectsTable, KNoneAbsent) {
 
 // kCountedCardIds covers every non-kNone CardId.
 TEST(CardEffectsTable, CountedCardIdsComplete) {
-  const CardId all_counted[] = {CardId::kStrike, CardId::kDefend,
-                                CardId::kNeutralize, CardId::kSurvivor};
+  const std::array<CardId, 4> all_counted = {
+      CardId::kStrike, CardId::kDefend, CardId::kNeutralize, CardId::kSurvivor};
   for (CardId id : all_counted) {
     bool found = false;
     for (CardId cid : kCountedCardIds) {

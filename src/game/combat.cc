@@ -104,7 +104,7 @@ std::vector<EnemySlot> Combat::alive_enemy_indices() const {
   std::vector<EnemySlot> out;
   for (std::size_t i = 0; i < enemies_.size(); ++i) {
     if (is_alive(enemies_[i])) {
-      out.push_back(EnemySlot{static_cast<int>(i)});
+      out.emplace_back(static_cast<int>(i));
     }
   }
   return out;

@@ -22,7 +22,7 @@ using sts2::glyphs::kFullBlock;
 // Helpers: build expected UTF-8 strings without sprinkling raw byte sequences
 // at every call site. Keeps tests readable and resilient if the glyph bytes
 // ever change (the constants in glyphs.h move with them).
-std::string Repeat(const char* glyph, int n) {
+std::string repeat_glyph(const char* glyph, int n) {
   std::string s;
   for (int i = 0; i < n; ++i) {
     s += glyph;
@@ -48,45 +48,47 @@ TEST(RenderHpBar, T_RND_010_NegativeWidthReturnsEmpty) {
 // T-RND-015 — BP, EG — Maximum zero coerced to 1 — D2 TRUE.
 // (current=5 > 1 → clamped to 1 → 100% filled across width=4.)
 TEST(RenderHpBar, T_RND_015_MaximumZeroCoercedToOne) {
-  EXPECT_EQ(sts2::render::hp_bar(5, 0, 4), Repeat(kFullBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(5, 0, 4), repeat_glyph(kFullBlock, 4));
 }
 
 // T-RND-020 — EG — Negative maximum coerced — D2 TRUE.
 TEST(RenderHpBar, T_RND_020_NegativeMaximumCoerced) {
-  EXPECT_EQ(sts2::render::hp_bar(5, -1, 4), Repeat(kFullBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(5, -1, 4), repeat_glyph(kFullBlock, 4));
 }
 
 // T-RND-025 — BP, BV — Current zero clamps to 0 → all empty.
 TEST(RenderHpBar, T_RND_025_CurrentZeroAllEmpty) {
-  EXPECT_EQ(sts2::render::hp_bar(0, 10, 4), Repeat(kEmptyBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(0, 10, 4), repeat_glyph(kEmptyBlock, 4));
 }
 
 // T-RND-030 — BV — Current negative clamps to 0 → all empty.
 TEST(RenderHpBar, T_RND_030_NegativeCurrentAllEmpty) {
-  EXPECT_EQ(sts2::render::hp_bar(-3, 10, 4), Repeat(kEmptyBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(-3, 10, 4), repeat_glyph(kEmptyBlock, 4));
 }
 
 // T-RND-035 — BV — Current above max clamps to max → all filled.
 TEST(RenderHpBar, T_RND_035_CurrentAboveMaxAllFilled) {
-  EXPECT_EQ(sts2::render::hp_bar(15, 10, 4), Repeat(kFullBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(15, 10, 4), repeat_glyph(kFullBlock, 4));
 }
 
 // T-RND-040 — BP, BV — Visibility floor: tiny positive raises filled to 1.
 // (1*4)/100 == 0, but D4 (clamped>0 && filled_chars==0) raises to 1.
 TEST(RenderHpBar, T_RND_040_VisibilityFloorRaisesToOne) {
-  const std::string expected = std::string(kFullBlock) + Repeat(kEmptyBlock, 3);
+  const std::string expected =
+      std::string(kFullBlock) + repeat_glyph(kEmptyBlock, 3);
   EXPECT_EQ(sts2::render::hp_bar(1, 100, 4), expected);
 }
 
 // T-RND-045 — BP, EP — Half-fill normal case: 5/10 of 4 → 2 filled.
 TEST(RenderHpBar, T_RND_045_HalfFill) {
-  const std::string expected = Repeat(kFullBlock, 2) + Repeat(kEmptyBlock, 2);
+  const std::string expected =
+      repeat_glyph(kFullBlock, 2) + repeat_glyph(kEmptyBlock, 2);
   EXPECT_EQ(sts2::render::hp_bar(5, 10, 4), expected);
 }
 
 // T-RND-050 — BV — Full bar.
 TEST(RenderHpBar, T_RND_050_FullBar) {
-  EXPECT_EQ(sts2::render::hp_bar(10, 10, 4), Repeat(kFullBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(10, 10, 4), repeat_glyph(kFullBlock, 4));
 }
 
 // T-RND-055 — EG — Width 1 with clamped > 0 — D4 raises filled to 1.
@@ -99,7 +101,7 @@ TEST(RenderHpBar, T_RND_055_WidthOneVisibilityFloor) {
 // Equivalent inputs to T-RND-025 but the test name pins the branch intent:
 // the && at D4 must NOT evaluate filled_chars==0 when clamped is 0.
 TEST(RenderHpBar, T_RND_060_ClampedZeroShortCircuitsD4) {
-  EXPECT_EQ(sts2::render::hp_bar(0, 10, 4), Repeat(kEmptyBlock, 4));
+  EXPECT_EQ(sts2::render::hp_bar(0, 10, 4), repeat_glyph(kEmptyBlock, 4));
 }
 
 }  // namespace

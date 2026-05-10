@@ -23,29 +23,29 @@ inline constexpr std::uint64_t kCombatTestSeed  = 0xc0ffeeULL;
 inline constexpr std::uint64_t kCultistTestSeed = 0x42ULL;
 
 // T-RNG-005: 10 successive uniform_int(0, 9) calls on Rng{kRngTestSeed}.
-inline constexpr std::array<int, 10> kRngSeq_0_9 = {7, 3, 9, 2, 0, 8, 4, 7, 7, 9};
+inline constexpr std::array<int, 10> kRngSeq09 = {7, 3, 9, 2, 0, 8, 4, 7, 7, 9};
 
 // T-RNG-055: shuffle({1, 2}) on Rng{kRngTestSeed}.
-inline constexpr std::array<int, 2>  kShuffle_2  = {1, 2};
+inline constexpr std::array<int, 2>  kShuffle2  = {1, 2};
 
 // T-RNG-060: shuffle({0..9}) on Rng{kRngTestSeed}.
-inline constexpr std::array<int, 10> kShuffle_10 = {5, 8, 2, 6, 4, 0, 1, 9, 3, 7};
+inline constexpr std::array<int, 10> kShuffle10 = {5, 8, 2, 6, 4, 0, 1, 9, 3, 7};
 
 // T-ENM-005 / T-ENM-015: cultist HPs from make_*_cultist(Rng{kCultistTestSeed}).
-inline constexpr int kCalcifiedHp_seed42 = 39;
-inline constexpr int kDampHp_seed42      = 52;
+inline constexpr int kCalcifiedHpSeed42 = 39;
+inline constexpr int kDampHpSeed42      = 52;
 
 // T-ENM-010 / T-ENM-020: first seed in [0, 2^20) producing a given HP.
-inline constexpr std::uint64_t kCalcifiedSeed_hp38 = 0x0ULL;
-inline constexpr std::uint64_t kCalcifiedSeed_hp39 = 0x8ULL;
-inline constexpr std::uint64_t kCalcifiedSeed_hp40 = 0x3ULL;
-inline constexpr std::uint64_t kCalcifiedSeed_hp41 = 0x2ULL;
-inline constexpr std::uint64_t kDampSeed_hp51 = 0x0ULL;
-inline constexpr std::uint64_t kDampSeed_hp52 = 0x3ULL;
-inline constexpr std::uint64_t kDampSeed_hp53 = 0x2ULL;
+inline constexpr std::uint64_t kCalcifiedSeedHp38 = 0x0ULL;
+inline constexpr std::uint64_t kCalcifiedSeedHp39 = 0x8ULL;
+inline constexpr std::uint64_t kCalcifiedSeedHp40 = 0x3ULL;
+inline constexpr std::uint64_t kCalcifiedSeedHp41 = 0x2ULL;
+inline constexpr std::uint64_t kDampSeedHp51 = 0x0ULL;
+inline constexpr std::uint64_t kDampSeedHp52 = 0x3ULL;
+inline constexpr std::uint64_t kDampSeedHp53 = 0x2ULL;
 
 // Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).
-inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE = {
+inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffledC0Ffee = {
     sts2::game::CardId::kStrike,
     sts2::game::CardId::kStrike,
     sts2::game::CardId::kNeutralize,
@@ -61,7 +61,7 @@ inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffled_C0FFEE =
 };
 
 // Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.
-inline constexpr int kRngFirstUniform_0_INTMAX  = 1541086063;
-inline constexpr int kRngSecondUniform_0_INTMAX = 765893422;
+inline constexpr int kRngFirstUniform0Intmax  = 1541086063;
+inline constexpr int kRngSecondUniform0Intmax = 765893422;
 
 }  // namespace sts2::tests::seeds

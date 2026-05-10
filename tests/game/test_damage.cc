@@ -13,15 +13,15 @@
 
 namespace {
 
-using sts2::tests::helpers::MakePower;
+using sts2::tests::helpers::make_power;
 
 using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
 using Stat = sts2::game::Stat;
 using Vitals = sts2::game::Vitals;
 
-constexpr PowerKind Weak = PowerKind::kWeak;
-constexpr PowerKind Strength = PowerKind::kStrength;
+constexpr PowerKind kWeak = PowerKind::kWeak;
+constexpr PowerKind kStrength = PowerKind::kStrength;
 
 // -------------------------------------------------------------------------
 // 7.1  damage::compute_outgoing
@@ -36,41 +36,41 @@ TEST(DamageComputeOutgoing, T_DMG_005_PlainBaseDamage) {
 // T-DMG-010 — EP, DF — Strength adds to base (def-use: powers::amount feeds
 // sum).
 TEST(DamageComputeOutgoing, T_DMG_010_StrengthAdds) {
-  const std::vector<Power> powers = {MakePower(Strength, 2)};
+  const std::vector<Power> powers = {make_power(kStrength, 2)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 8);
 }
 
 // T-DMG-015 — EP — Negative Strength subtracts, no clamp pre-Weak.
 TEST(DamageComputeOutgoing, T_DMG_015_NegativeStrengthSubtracts) {
-  const std::vector<Power> powers = {MakePower(Strength, -3)};
+  const std::vector<Power> powers = {make_power(kStrength, -3)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 3);
 }
 
 // T-DMG-020 — BP — Weak applies 0.75 multiplier (D1 TRUE). int(6*0.75) = 4.
 TEST(DamageComputeOutgoing, T_DMG_020_WeakAppliesMultiplier) {
-  const std::vector<Power> powers = {MakePower(Weak, 1)};
+  const std::vector<Power> powers = {make_power(kWeak, 1)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 4);
 }
 
 // T-DMG-025 — EP — Strength + Weak combined: int((6+4)*0.75) = int(7.5) = 7.
 TEST(DamageComputeOutgoing, T_DMG_025_StrengthAndWeak) {
   const std::vector<Power> powers = {
-      MakePower(Strength, 4),
-      MakePower(Weak, 1),
+      make_power(kStrength, 4),
+      make_power(kWeak, 1),
   };
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 7);
 }
 
 // T-DMG-030 — BP, BV — Negative result clamped to 0 by D2 ternary.
 TEST(DamageComputeOutgoing, T_DMG_030_NegativeResultClamped) {
-  const std::vector<Power> powers = {MakePower(Strength, -10)};
+  const std::vector<Power> powers = {make_power(kStrength, -10)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 0), 0);
 }
 
 // T-DMG-035 — EG — Weak amount=0 ignored: predicate is `> 0`, not `!= 0`.
 // Locks contract that a corpse-on-arrival Weak does not debuff damage.
 TEST(DamageComputeOutgoing, T_DMG_035_WeakZeroIgnored) {
-  const std::vector<Power> powers = {MakePower(Weak, 0)};
+  const std::vector<Power> powers = {make_power(kWeak, 0)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 6);
 }
 
@@ -83,7 +83,7 @@ TEST(DamageComputeOutgoing, T_DMG_040_ZeroBaseNoPowers) {
 // T-DMG-045 — EG — Truncation direction: int(7*0.75) = int(5.25) = 5, not 6.
 // Locks `static_cast<int>` truncates toward zero (not rounds).
 TEST(DamageComputeOutgoing, T_DMG_045_TruncationTowardZero) {
-  const std::vector<Power> powers = {MakePower(Weak, 1)};
+  const std::vector<Power> powers = {make_power(kWeak, 1)};
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 7), 5);
 }
 
@@ -92,8 +92,8 @@ TEST(DamageComputeOutgoing, T_DMG_045_TruncationTowardZero) {
 // Locks first-match semantics shared with Powers::find.
 TEST(DamageComputeOutgoing, T_DMG_050_MultipleWeakFirstConsulted) {
   const std::vector<Power> powers = {
-      MakePower(Weak, 1),
-      MakePower(Weak, 5),
+      make_power(kWeak, 1),
+      make_power(kWeak, 5),
   };
   EXPECT_EQ(sts2::damage::compute_outgoing(powers, 6), 4);
 }
