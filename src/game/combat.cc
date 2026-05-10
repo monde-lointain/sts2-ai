@@ -28,11 +28,9 @@ void Combat::start(std::vector<Card> starter_deck) {
 }
 
 void Combat::start_player_turn() {
-  for (auto& e : enemies_) {
-    if (e.vitals.hp > sts2::game::Stat{0}) {
-      sts2::enemies::roll_next_move(e);
-    }
-  }
+  for_each_alive_enemy(enemies_, [](Enemy& e) {
+    sts2::enemies::roll_next_move(e);
+  });
 
   if (turn_calc::round_resets_block(round_)) {
     player_.vitals.block = sts2::game::Stat{0};
@@ -49,13 +47,11 @@ void Combat::end_player_turn() {
 }
 
 void Combat::enemy_phase() {
+  for_each_alive_enemy(enemies_, [](Enemy& e) {
+    e.vitals.block = sts2::game::Stat{0};
+  });
   for (auto& e : enemies_) {
-    if (e.vitals.hp > sts2::game::Stat{0}) {
-      e.vitals.block = sts2::game::Stat{0};
-    }
-  }
-  for (auto& e : enemies_) {
-    if (e.vitals.hp <= sts2::game::Stat{0}) {
+    if (!is_alive(e)) {
       continue;
     }
     sts2::enemies::act(e, *this);
@@ -63,11 +59,9 @@ void Combat::enemy_phase() {
       return;
     }
   }
-  for (auto& e : enemies_) {
-    if (e.vitals.hp > sts2::game::Stat{0}) {
-      sts2::powers::tick_at_turn_end(e.vitals.powers);
-    }
-  }
+  for_each_alive_enemy(enemies_, [](Enemy& e) {
+    sts2::powers::tick_at_turn_end(e.vitals.powers);
+  });
 }
 
 void Combat::end_turn() {

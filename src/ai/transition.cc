@@ -6,6 +6,7 @@
 #include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
+#include "sts2/game/enemy.h"
 #include "sts2/game/index_types.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"
@@ -191,24 +192,24 @@ void resolve_end_turn_pre_draw(CompactState& state) {
 
   // enemy_phase: zero block on alive enemies, then act in slot order; bail
   // early if player dies mid-phase (mirrors Combat::enemy_phase combat_over_).
+  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
+    e.block = sts2::game::Stat{0};
+  });
   for (auto& e : state.enemies) {
-    if (e.alive) e.block = sts2::game::Stat{0};
-  }
-  for (auto& e : state.enemies) {
-    if (!e.alive) continue;
+    if (!is_alive(e)) continue;
     enemy_act(state, e);
     if (state.player_hp == sts2::game::Stat{0}) return;
   }
   // Tick AFTER all acts.
-  for (auto& e : state.enemies) {
-    if (e.alive) enemy_tick_powers(e);
-  }
+  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
+    enemy_tick_powers(e);
+  });
 
   state.round = static_cast<uint16_t>(state.round + 1);
 
-  for (auto& e : state.enemies) {
-    if (e.alive) roll_next_move(e);
-  }
+  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
+    roll_next_move(e);
+  });
 
   if (sts2::game::turn_calc::round_resets_block(state.round)) {
     state.player_block = sts2::game::Stat{0};
