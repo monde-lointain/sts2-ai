@@ -82,7 +82,7 @@ inline void ExpectPowersEq(const std::vector<sts2::game::Power>& actual,
 inline sts2::game::Combat MakeCombatWithEnemy(uint64_t seed, int hp = 40) {
     sts2::game::Combat c{seed};
     sts2::game::Enemy e{};
-    e.vitals = sts2::game::Vitals{hp, hp, 0, {}};
+    e.vitals = sts2::game::Vitals{sts2::game::Stat{hp}, sts2::game::Stat{hp}, sts2::game::Stat{0}, {}};
     c.add_enemy(std::move(e));
     return c;
 }
@@ -119,7 +119,7 @@ inline void DrainPlayerEnergy(sts2::game::Combat& c) {
         sts2::game::EnemySlot target = sts2::game::EnemySlot::none();
         if (card.target == sts2::game::TargetType::kAnyEnemy) {
             for (std::size_t i = 0; i < c.enemies().size(); ++i) {
-                if (c.enemies()[i].vitals.hp > 0) {
+                if (c.enemies()[i].vitals.hp > sts2::game::Stat{0}) {
                     target = sts2::game::EnemySlot{static_cast<int>(i)};
                     break;
                 }

@@ -75,7 +75,7 @@ std::string format_intent(const sts2::game::Enemy& e) {
 std::size_t max_enemy_name_len(const std::vector<sts2::game::Enemy>& es) {
   std::size_t m = 0;
   for (const auto& e : es) {
-    if (e.vitals.hp > 0 && e.name.size() > m) {
+    if (e.vitals.hp > sts2::game::Stat{0} && e.name.size() > m) {
       m = e.name.size();
     }
   }
@@ -115,10 +115,10 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
 
   out << "  " << ansi::kBold << "The Silent" << ansi::kReset << "  HP "
       << ansi::kRed
-      << render::hp_bar(c.player().vitals.hp, c.player().vitals.max_hp,
+      << render::hp_bar(c.player().vitals.hp.value(), c.player().vitals.max_hp.value(),
                         detail::kPlayerHpBarWidth)
       << ansi::kReset << " " << c.player().vitals.hp << "/" << c.player().vitals.max_hp;
-  if (c.player().vitals.block > 0) {
+  if (c.player().vitals.block > sts2::game::Stat{0}) {
     out << "  " << ansi::kBlue << c.player().vitals.block << ansi::kReset << " blk";
   }
   out << "  Deck " << static_cast<int>(c.player().deck.total_size() + c.player().hand.size());
@@ -140,10 +140,10 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
     out << "  [" << display_idx++ << "] " << ansi::kBold << e.name
         << ansi::kReset << detail::spaces(name_width - e.name.size())
         << "   HP " << ansi::kRed
-        << render::hp_bar(e.vitals.hp, e.vitals.max_hp,
+        << render::hp_bar(e.vitals.hp.value(), e.vitals.max_hp.value(),
                           detail::kEnemyHpBarWidth)
         << ansi::kReset << " " << e.vitals.hp << "/" << e.vitals.max_hp;
-    if (e.vitals.block > 0) {
+    if (e.vitals.block > sts2::game::Stat{0}) {
       out << "  " << ansi::kBlue << e.vitals.block << ansi::kReset << " blk";
     }
     out << "   " << detail::format_intent(e);

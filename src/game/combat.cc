@@ -29,13 +29,13 @@ void Combat::start(std::vector<Card> starter_deck) {
 
 void Combat::start_player_turn() {
   for (auto& e : enemies_) {
-    if (e.vitals.hp > 0) {
+    if (e.vitals.hp > sts2::game::Stat{0}) {
       sts2::enemies::roll_next_move(e);
     }
   }
 
   if (turn_calc::round_resets_block(round_)) {
-    player_.vitals.block = 0;
+    player_.vitals.block = sts2::game::Stat{0};
   }
 
   player_.energy = turn_calc::starting_energy();
@@ -50,12 +50,12 @@ void Combat::end_player_turn() {
 
 void Combat::enemy_phase() {
   for (auto& e : enemies_) {
-    if (e.vitals.hp > 0) {
-      e.vitals.block = 0;
+    if (e.vitals.hp > sts2::game::Stat{0}) {
+      e.vitals.block = sts2::game::Stat{0};
     }
   }
   for (auto& e : enemies_) {
-    if (e.vitals.hp <= 0) {
+    if (e.vitals.hp <= sts2::game::Stat{0}) {
       continue;
     }
     sts2::enemies::act(e, *this);
@@ -64,7 +64,7 @@ void Combat::enemy_phase() {
     }
   }
   for (auto& e : enemies_) {
-    if (e.vitals.hp > 0) {
+    if (e.vitals.hp > sts2::game::Stat{0}) {
       sts2::powers::tick_at_turn_end(e.vitals.powers);
     }
   }
@@ -121,7 +121,7 @@ HandIndex Combat::find_card_in_hand(CardId id) const {
   return player_.hand.find(id);
 }
 
-bool Combat::is_player_dead() const { return player_.vitals.hp <= 0; }
+bool Combat::is_player_dead() const { return player_.vitals.hp <= sts2::game::Stat{0}; }
 
 bool Combat::all_enemies_dead() const {
   return !enemies_.empty() &&

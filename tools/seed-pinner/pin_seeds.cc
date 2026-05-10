@@ -47,7 +47,7 @@ std::optional<std::uint64_t> find_seed_for_hp(
     for (std::uint64_t seed = 0; seed < kSeedSearchCap; ++seed) {
         sts2::game::Rng rng(seed);
         sts2::game::Enemy e = factory(rng);
-        if (e.vitals.hp == target_hp) { return seed;
+        if (e.vitals.hp == sts2::game::Stat{target_hp}) { return seed;
 }
     }
     return std::nullopt;
@@ -114,14 +114,14 @@ int main() {
     int calcified_hp_seed42 = 0;
     {
         sts2::game::Rng rng(kCultistTestSeed);
-        calcified_hp_seed42 = sts2::enemies::make_calcified_cultist(rng).vitals.hp;
+        calcified_hp_seed42 = sts2::enemies::make_calcified_cultist(rng).vitals.hp.value();
     }
 
     // 5. make_damp_cultist HP at seed 0x42
     int damp_hp_seed42 = 0;
     {
         sts2::game::Rng rng(kCultistTestSeed);
-        damp_hp_seed42 = sts2::enemies::make_damp_cultist(rng).vitals.hp;
+        damp_hp_seed42 = sts2::enemies::make_damp_cultist(rng).vitals.hp.value();
     }
 
     // 6. brute-force seeds for calcified HPs 38..41

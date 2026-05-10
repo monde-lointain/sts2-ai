@@ -17,6 +17,7 @@ using sts2::tests::helpers::MakePower;
 
 using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
+using Stat = sts2::game::Stat;
 using Vitals = sts2::game::Vitals;
 
 constexpr PowerKind Weak = PowerKind::kWeak;
@@ -104,80 +105,80 @@ TEST(DamageComputeOutgoing, T_DMG_050_MultipleWeakFirstConsulted) {
 // T-DMG-055 — BP, BV — Block fully absorbs: D1 TRUE (3 <= 5).
 // Returns 0; block reduced by incoming; hp untouched.
 TEST(DamageApplyToDefender, T_DMG_055_BlockFullyAbsorbs) {
-  Vitals target{10, 10, 5, {}};
+  Vitals target{Stat{10}, Stat{10}, Stat{5}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 3);
   EXPECT_EQ(returned, 0);
-  EXPECT_EQ(target.block, 2);
-  EXPECT_EQ(target.hp, 10);
+  EXPECT_EQ(target.block, Stat{2});
+  EXPECT_EQ(target.hp, Stat{10});
 }
 
 // T-DMG-060 — BV — Block exactly absorbs: D1 TRUE at boundary (5 <= 5).
 TEST(DamageApplyToDefender, T_DMG_060_BlockExactlyAbsorbs) {
-  Vitals target{10, 10, 5, {}};
+  Vitals target{Stat{10}, Stat{10}, Stat{5}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 5);
   EXPECT_EQ(returned, 0);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 10);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{10});
 }
 
 // T-DMG-065 — BP, BV — Bleed-through partial: D1 FALSE (5 > 3).
 // Block fully consumed; remainder (2) hits hp.
 TEST(DamageApplyToDefender, T_DMG_065_BleedThroughPartial) {
-  Vitals target{10, 10, 3, {}};
+  Vitals target{Stat{10}, Stat{10}, Stat{3}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 5);
   EXPECT_EQ(returned, 2);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 8);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{8});
 }
 
 // T-DMG-070 — BP, BV — Overkill clamps to hp: D2 ternary FALSE branch.
 // 9 incoming, no block, hp=4: hp_loss = target.hp = 4.
 TEST(DamageApplyToDefender, T_DMG_070_OverkillClampsToHp) {
-  Vitals target{4, 10, 0, {}};
+  Vitals target{Stat{4}, Stat{10}, Stat{0}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 9);
   EXPECT_EQ(returned, 4);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 0);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{0});
 }
 
 // T-DMG-075 — BV — Overkill with block: 9 - 2 = 7 > hp=4 → hp_loss = 4.
 TEST(DamageApplyToDefender, T_DMG_075_OverkillWithBlock) {
-  Vitals target{4, 10, 2, {}};
+  Vitals target{Stat{4}, Stat{10}, Stat{2}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 9);
   EXPECT_EQ(returned, 4);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 0);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{0});
 }
 
 // T-DMG-080 — BV — Zero incoming: D1 TRUE (0 <= 0); block unchanged; hp
 // unchanged.
 TEST(DamageApplyToDefender, T_DMG_080_ZeroIncoming) {
-  Vitals target{10, 10, 0, {}};
+  Vitals target{Stat{10}, Stat{10}, Stat{0}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 0);
   EXPECT_EQ(returned, 0);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 10);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{10});
 }
 
 // T-DMG-085 — EG — Negative incoming: D1 TRUE (-3 <= 0); `block -= -3` adds 3.
 // Pin this surprising arithmetic — locks the contract that callers must never
 // pass negatives to apply_to_defender.
 TEST(DamageApplyToDefender, T_DMG_085_NegativeIncomingAddsBlock) {
-  Vitals target{10, 10, 0, {}};
+  Vitals target{Stat{10}, Stat{10}, Stat{0}, {}};
   const int returned = sts2::damage::apply_to_defender(target, -3);
   EXPECT_EQ(returned, 0);
-  EXPECT_EQ(target.block, 3);
-  EXPECT_EQ(target.hp, 10);
+  EXPECT_EQ(target.block, Stat{3});
+  EXPECT_EQ(target.hp, Stat{10});
 }
 
 // T-DMG-090 — EG — Lethal-equals-hp: D1 FALSE (4 > 0); D2 ternary FALSE
 // at equality (`4 < 4` is FALSE) → uses target.hp branch. Returns 4; hp=0.
 TEST(DamageApplyToDefender, T_DMG_090_LethalEqualsHp) {
-  Vitals target{4, 10, 0, {}};
+  Vitals target{Stat{4}, Stat{10}, Stat{0}, {}};
   const int returned = sts2::damage::apply_to_defender(target, 4);
   EXPECT_EQ(returned, 4);
-  EXPECT_EQ(target.block, 0);
-  EXPECT_EQ(target.hp, 0);
+  EXPECT_EQ(target.block, Stat{0});
+  EXPECT_EQ(target.hp, Stat{0});
 }
 
 }  // namespace

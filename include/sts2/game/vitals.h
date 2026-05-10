@@ -3,13 +3,14 @@
 #include <vector>
 
 #include "sts2/game/power.h"
+#include "sts2/game/stat.h"
 
 namespace sts2::game {
 
 struct Vitals {
-  int hp = 0;
-  int max_hp = 0;
-  int block = 0;
+  Stat hp;
+  Stat max_hp;
+  Stat block;
   std::vector<Power> powers;
 };
 

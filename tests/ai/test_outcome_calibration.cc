@@ -29,6 +29,7 @@ using sts2::game::CardId;
 using sts2::game::Combat;
 using sts2::game::Enemy;
 using sts2::game::MoveId;
+using sts2::game::Stat;
 using sts2::game::Vitals;
 using sts2::input::Action;
 using sts2::tests::helpers::MakeStarterCombat;
@@ -47,7 +48,7 @@ std::vector<Card> MakeTinyStrikeDeck() {
 Combat MakeLethalCombat(uint64_t seed) {
   Combat c{seed};
   Enemy e{};
-  e.vitals = Vitals{6, 6, 0, {}};
+  e.vitals = Vitals{Stat{6}, Stat{6}, Stat{0}, {}};
   e.dark_strike_base = 9;
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
@@ -60,7 +61,7 @@ Combat MakeLethalCombat(uint64_t seed) {
 
 TEST(RecommendCalibration, KnownLethalPosition_ExpectedHpExact) {
   Combat combat = MakeLethalCombat(0xABCDULL);
-  const int starting_hp = combat.player().vitals.hp;
+  const int starting_hp = combat.player().vitals.hp.value();
   ASSERT_FALSE(combat.combat_over());
 
   Recommender rec;
@@ -167,7 +168,7 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
       ++steps;
     }
 
-    sum_final_hp += static_cast<double>(combat.player().vitals.hp);
+    sum_final_hp += static_cast<double>(combat.player().vitals.hp.value());
     ++trials_completed;
   }
 

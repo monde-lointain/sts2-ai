@@ -34,6 +34,7 @@ using CardType = sts2::game::CardType;
 using Combat = sts2::game::Combat;
 using Power = sts2::game::Power;
 using PowerKind = sts2::game::PowerKind;
+using Stat = sts2::game::Stat;
 using TargetType = sts2::game::TargetType;
 
 // -------------------------------------------------------------------------
@@ -65,7 +66,7 @@ TEST(CardsMakeStrike, T_CRD_010_OnPlayDealsBaseDamage) {
   card.on_play(combat, sts2::game::EnemySlot{0});
 
   ASSERT_EQ(combat.enemies().size(), 1U);
-  EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
+  EXPECT_EQ(combat.enemies()[0].vitals.hp, Stat{34});
 }
 
 // T-CRD-015 — EG — Post-construction mutation of `base_damage` on the Card
@@ -79,7 +80,7 @@ TEST(CardsMakeStrike, T_CRD_015_OnPlayIgnoresPostCreationBaseMutation) {
   c1.on_play(combat, sts2::game::EnemySlot{0});
 
   // Damage applied is 6 (from kCardEffects[Strike]), not 999.
-  EXPECT_EQ(combat.enemies()[0].vitals.hp, 34);
+  EXPECT_EQ(combat.enemies()[0].vitals.hp, Stat{34});
 }
 
 // -------------------------------------------------------------------------
@@ -109,7 +110,7 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 
-  EXPECT_EQ(combat.player().vitals.block, 5);
+  EXPECT_EQ(combat.player().vitals.block, Stat{5});
 }
 
 // T-CRD-030 — EG — Mirror of T-CRD-015 for block.
@@ -123,7 +124,7 @@ TEST(CardsMakeDefend, T_CRD_030_OnPlayIgnoresPostCreationBaseMutation) {
   c1.on_play(combat, sts2::game::EnemySlot::none());
 
   // Block applied is 5 (from kCardEffects[Defend]), not 999.
-  EXPECT_EQ(combat.player().vitals.block, 5);
+  EXPECT_EQ(combat.player().vitals.block, Stat{5});
 }
 
 // -------------------------------------------------------------------------
@@ -156,7 +157,7 @@ TEST(CardsMakeNeutralize, T_CRD_040_OnPlayDealsDamageAndAppliesWeak) {
   card.on_play(combat, sts2::game::EnemySlot{0});
 
   ASSERT_EQ(combat.enemies().size(), 1U);
-  EXPECT_EQ(combat.enemies()[0].vitals.hp, 37);
+  EXPECT_EQ(combat.enemies()[0].vitals.hp, Stat{37});
 
   const Power* weak =
       sts2::powers::find(combat.enemies()[0].vitals.powers, PowerKind::kWeak);
@@ -208,7 +209,7 @@ TEST(CardsMakeSurvivor, T_CRD_050_OnPlayGainsBlockAndDiscards) {
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 
-  EXPECT_EQ(combat.player().vitals.block, 8);
+  EXPECT_EQ(combat.player().vitals.block, Stat{8});
   EXPECT_EQ(combat.player().hand.size(), 2U);
   ASSERT_EQ(combat.player().deck.discard_size(), 1U);
   EXPECT_EQ(combat.player().deck.discard_pile()[0].id, CardId::kStrike);
@@ -226,7 +227,7 @@ TEST(CardsMakeSurvivor, T_CRD_055_OnPlayEmptyHandNoDiscard) {
   ASSERT_TRUE(static_cast<bool>(card.on_play));
   card.on_play(combat, sts2::game::EnemySlot::none());
 
-  EXPECT_EQ(combat.player().vitals.block, 8);
+  EXPECT_EQ(combat.player().vitals.block, Stat{8});
   EXPECT_TRUE(combat.player().hand.empty());
   EXPECT_EQ(combat.player().deck.discard_size(), 0U);
 }

@@ -4,6 +4,8 @@
 // (src/game/damage.cc) and the AI transition simulator (src/ai/transition.cc)
 // to prevent silent divergence.
 
+#include "sts2/game/stat.h"
+
 namespace sts2::damage {
 
 // Canonical outgoing-damage formula: base + strength, scaled 0.75 if weak>0,
@@ -26,6 +28,18 @@ namespace sts2::damage {
   incoming -= block;
   block = 0;
   int hp_loss = incoming < hp ? incoming : hp;
+  hp -= hp_loss;
+  return hp_loss;
+}
+
+[[nodiscard]] inline int apply_to_defender(sts2::game::Stat& hp, sts2::game::Stat& block, int incoming) noexcept {
+  if (incoming <= block.value()) {
+    block -= incoming;
+    return 0;
+  }
+  incoming -= block.value();
+  block = sts2::game::Stat{0};
+  const int hp_loss = incoming < hp.value() ? incoming : hp.value();
   hp -= hp_loss;
   return hp_loss;
 }

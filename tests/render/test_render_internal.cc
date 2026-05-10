@@ -36,6 +36,7 @@ using sts2::render::detail::repeat_utf8;
 using sts2::render::detail::spaces;
 
 using sts2::tests::helpers::MakePower;
+using Stat = sts2::game::Stat;
 
 namespace ansi = sts2::ansi;
 namespace glyphs = sts2::glyphs;
@@ -207,13 +208,13 @@ TEST(RenderInternalMaxEnemyName, T_RND_135_EmptyZero) {
 TEST(RenderInternalMaxEnemyName, T_RND_140_AllAliveMaxLen) {
   Enemy a{};
   a.name = "ab";
-  a.vitals = Vitals{10, 10, 0, {}};
+  a.vitals = Vitals{Stat{10}, Stat{10}, Stat{0}, {}};
   Enemy b{};
   b.name = "abcde";
-  b.vitals = Vitals{10, 10, 0, {}};
+  b.vitals = Vitals{Stat{10}, Stat{10}, Stat{0}, {}};
   Enemy c{};
   c.name = "abcd";
-  c.vitals = Vitals{10, 10, 0, {}};
+  c.vitals = Vitals{Stat{10}, Stat{10}, Stat{0}, {}};
   const std::vector<Enemy> es = {a, b, c};
 
   EXPECT_EQ(max_enemy_name_len(es), 5U);
@@ -224,10 +225,10 @@ TEST(RenderInternalMaxEnemyName, T_RND_140_AllAliveMaxLen) {
 TEST(RenderInternalMaxEnemyName, T_RND_145_DeadExcluded) {
   Enemy a{};
   a.name = "longer";
-  a.vitals = Vitals{0, 10, 0, {}};
+  a.vitals = Vitals{Stat{0}, Stat{10}, Stat{0}, {}};
   Enemy b{};
   b.name = "x";
-  b.vitals = Vitals{10, 10, 0, {}};
+  b.vitals = Vitals{Stat{10}, Stat{10}, Stat{0}, {}};
   const std::vector<Enemy> es = {a, b};
 
   EXPECT_EQ(max_enemy_name_len(es), 1U);
