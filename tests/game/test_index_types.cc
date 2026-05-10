@@ -71,9 +71,7 @@ TEST(HandIndex, ValidPositive) {
   EXPECT_TRUE(HandIndex{7}.valid());
 }
 
-TEST(HandIndex, InvalidNegative) {
-  EXPECT_FALSE(HandIndex{-1}.valid());
-}
+TEST(HandIndex, InvalidNegative) { EXPECT_FALSE(HandIndex{-1}.valid()); }
 
 TEST(HandIndex, NoneIsInvalid) {
   EXPECT_FALSE(HandIndex::none().valid());

@@ -27,7 +27,8 @@ TEST(MoveCalc, RitualShouldGrantStrength_JustAppliedSkipsAndClears) {
   EXPECT_FALSE(flag);
 }
 
-TEST(MoveCalc, RitualShouldGrantStrength_NotJustAppliedGrantsAndPreservesFalse) {
+TEST(MoveCalc,
+     RitualShouldGrantStrength_NotJustAppliedGrantsAndPreservesFalse) {
   bool flag = false;
   EXPECT_TRUE(move_calc::ritual_should_grant_strength(flag));
   EXPECT_FALSE(flag);

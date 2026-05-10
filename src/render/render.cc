@@ -51,8 +51,7 @@ std::string format_powers(std::span<const sts2::game::Power> ps) {
       os << ", ";
     }
     first = false;
-    os << ansi::kReset << power_name(p.kind) << ' ' << p.amount
-       << ansi::kReset;
+    os << ansi::kReset << power_name(p.kind) << ' ' << p.amount << ansi::kReset;
   }
   return os.str();
 }
@@ -65,7 +64,8 @@ std::string format_intent(const sts2::game::Enemy& e) {
       break;
     case sts2::game::MoveId::kDarkStrike:
       os << ansi::kRed << glyphs::kSwords << ' '
-         << sts2::damage::compute_outgoing(e.vitals.powers, e.dark_strike_base.value())
+         << sts2::damage::compute_outgoing(e.vitals.powers,
+                                           e.dark_strike_base.value())
          << ansi::kReset;
       break;
   }
@@ -109,19 +109,23 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
 
   out << "  Round " << c.round() << "  " << ansi::kCyan << "Energy "
       << c.player().energy << "/" << sts2::game::Combat::kPlayerMaxEnergy
-      << ansi::kReset
-      << "  Draw " << c.player().deck.draw_size() << "  Discard "
-      << c.player().deck.discard_size() << "\n";
+      << ansi::kReset << "  Draw " << c.player().deck.draw_size()
+      << "  Discard " << c.player().deck.discard_size() << "\n";
 
   out << "  " << ansi::kBold << "The Silent" << ansi::kReset << "  HP "
       << ansi::kRed
-      << render::hp_bar(c.player().vitals.hp.value(), c.player().vitals.max_hp.value(),
+      << render::hp_bar(c.player().vitals.hp.value(),
+                        c.player().vitals.max_hp.value(),
                         detail::kPlayerHpBarWidth)
-      << ansi::kReset << " " << c.player().vitals.hp << "/" << c.player().vitals.max_hp;
+      << ansi::kReset << " " << c.player().vitals.hp << "/"
+      << c.player().vitals.max_hp;
   if (c.player().vitals.block > sts2::game::Stat{0}) {
-    out << "  " << ansi::kBlue << c.player().vitals.block << ansi::kReset << " blk";
+    out << "  " << ansi::kBlue << c.player().vitals.block << ansi::kReset
+        << " blk";
   }
-  out << "  Deck " << static_cast<int>(c.player().deck.total_size() + c.player().hand.size());
+  out << "  Deck "
+      << static_cast<int>(c.player().deck.total_size() +
+                          c.player().hand.size());
   const auto player_powers = c.player().vitals.powers;
   if (!player_powers.empty()) {
     out << "  " << detail::format_powers(player_powers);
@@ -155,7 +159,8 @@ void render_combat(const sts2::game::Combat& c, std::ostream& out) {
   out << "\n";
 
   for (std::size_t i = 0; i < c.player().hand.size(); ++i) {
-    const sts2::game::Card& card = c.player().hand.at(sts2::game::HandIndex{static_cast<int>(i)});
+    const sts2::game::Card& card =
+        c.player().hand.at(sts2::game::HandIndex{static_cast<int>(i)});
     bool playable = card.cost <= c.player().energy;
     const char* bullet_color = playable ? ansi::kGreen : ansi::kDim;
     const char* bullet =

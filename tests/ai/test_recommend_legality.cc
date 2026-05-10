@@ -6,7 +6,6 @@
 
 #include "sts2/ai/recommend.h"
 #include "sts2/ai/state.h"
-#include "sts2/ai/transition.h"
 #include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
@@ -38,7 +37,10 @@ using sts2::tests::helpers::MakeCombatWithEnemy;
 // piles are empty afterwards.
 std::vector<Card> MakeTinyStrikeDeck() {
   std::vector<Card> deck;
-  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.reserve(5);
+  for (int i = 0; i < 5; ++i) {
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  }
   return deck;
 }
 
@@ -48,7 +50,10 @@ std::vector<Card> MakeTinyStrikeDeck() {
 Combat MakeTinyCombat(uint64_t seed, int enemy_hp) {
   Combat c{seed};
   Enemy e{};
-  e.vitals = Vitals{Stat{enemy_hp}, Stat{enemy_hp}, Stat{0}, {}};
+  e.vitals = Vitals{.hp = Stat{enemy_hp},
+                    .max_hp = Stat{enemy_hp},
+                    .block = Stat{0},
+                    .powers = {}};
   e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
@@ -94,7 +99,7 @@ TEST(Recommend, PvAdvancesCorrectly_LethalPosition) {
   // (max_energy default). One Strike at idx 0 lethals the enemy.
   Combat combat = MakeTinyCombat(0x12345ULL, /*enemy_hp=*/6);
   ASSERT_FALSE(combat.combat_over());
-  ASSERT_EQ(combat.player().hand.size(), 5u);
+  ASSERT_EQ(combat.player().hand.size(), 5U);
 
   Recommender rec;
   const Recommendation r = rec.recommend(combat);
@@ -125,7 +130,7 @@ TEST(Recommend, RecommenderTtPersistsAcrossCalls) {
   (void)rec.recommend(combat);
   const std::size_t after_second = rec.tt_size();
 
-  EXPECT_GT(after_first, 0u);
+  EXPECT_GT(after_first, 0U);
   EXPECT_GE(after_second, after_first)
       << "TT shrank between recommend calls: " << after_first << " -> "
       << after_second;

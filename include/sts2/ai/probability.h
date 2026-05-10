@@ -9,7 +9,7 @@ namespace sts2::ai::probability {
 
 struct Outcome {
   CardCounts hand;
-  double weight;
+  double weight{};
 };
 
 [[nodiscard]] uint64_t binom(int n, int r) noexcept;

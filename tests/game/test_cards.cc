@@ -114,7 +114,8 @@ TEST(CardsMakeDefend, T_CRD_025_OnPlayGrantsBlock) {
 }
 
 // T-CRD-030 — EG — Mirror of T-CRD-015 for block.
-// Mutating `base_block` on the Card after construction does not change the closure.
+// Mutating `base_block` on the Card after construction does not change the
+// closure.
 TEST(CardsMakeDefend, T_CRD_030_OnPlayIgnoresPostCreationBaseMutation) {
   Combat combat{kCombatTestSeed};
 

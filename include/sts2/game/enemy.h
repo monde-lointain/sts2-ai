@@ -33,9 +33,11 @@ struct Enemy {
 
 // Calls fn(e) for each alive enemy in `enemies`, in slot order.
 template <typename C, typename F>
-void for_each_alive_enemy(C&& enemies, F&& fn) {
+void for_each_alive_enemy(C& enemies, F&& fn) {
   for (auto& e : enemies) {
-    if (is_alive(e)) std::forward<F>(fn)(e);
+    if (is_alive(e)) {
+      std::forward<F>(fn)(e);
+    }
   }
 }
 

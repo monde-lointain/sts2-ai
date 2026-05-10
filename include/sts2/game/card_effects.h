@@ -27,19 +27,64 @@ struct CardEffect {
 };
 
 inline constexpr CardEffect kCardEffects[] = {
-    {CardId::kStrike,    "Strike",    1, CardType::kAttack, TargetType::kAnyEnemy, 6, 0, 0, false, "6dmg", {"Deal 6 damage.", ""}},
-    {CardId::kDefend,    "Defend",    1, CardType::kSkill,  TargetType::kSelf,     0, 5, 0, false, "5blk", {"Gain 5 Block.", ""}},
-    {CardId::kNeutralize,"Neutralize",0, CardType::kAttack, TargetType::kAnyEnemy, 3, 0, 1, false, "3dmg", {"Deal 3 damage.", "Apply 1 Weak."}},
-    {CardId::kSurvivor,  "Survivor",  1, CardType::kSkill,  TargetType::kSelf,     0, 8, 0, true,  "8blk", {"Gain 8 Block.", "Discard 1 card."}},
+    {.id = CardId::kStrike,
+     .name = "Strike",
+     .cost = 1,
+     .type = CardType::kAttack,
+     .target = TargetType::kAnyEnemy,
+     .base_damage = 6,
+     .base_block = 0,
+     .weak_to_target = 0,
+     .requires_discard = false,
+     .short_stats = "6dmg",
+     .description = {"Deal 6 damage.", ""}},
+    {.id = CardId::kDefend,
+     .name = "Defend",
+     .cost = 1,
+     .type = CardType::kSkill,
+     .target = TargetType::kSelf,
+     .base_damage = 0,
+     .base_block = 5,
+     .weak_to_target = 0,
+     .requires_discard = false,
+     .short_stats = "5blk",
+     .description = {"Gain 5 Block.", ""}},
+    {.id = CardId::kNeutralize,
+     .name = "Neutralize",
+     .cost = 0,
+     .type = CardType::kAttack,
+     .target = TargetType::kAnyEnemy,
+     .base_damage = 3,
+     .base_block = 0,
+     .weak_to_target = 1,
+     .requires_discard = false,
+     .short_stats = "3dmg",
+     .description = {"Deal 3 damage.", "Apply 1 Weak."}},
+    {.id = CardId::kSurvivor,
+     .name = "Survivor",
+     .cost = 1,
+     .type = CardType::kSkill,
+     .target = TargetType::kSelf,
+     .base_damage = 0,
+     .base_block = 8,
+     .weak_to_target = 0,
+     .requires_discard = true,
+     .short_stats = "8blk",
+     .description = {"Gain 8 Block.", "Discard 1 card."}},
 };
 
 inline constexpr CardId kCountedCardIds[] = {
-    CardId::kStrike, CardId::kDefend, CardId::kNeutralize, CardId::kSurvivor,
+    CardId::kStrike,
+    CardId::kDefend,
+    CardId::kNeutralize,
+    CardId::kSurvivor,
 };
 
-[[nodiscard]] inline constexpr const CardEffect& card_effect_for(CardId id) noexcept {
+[[nodiscard]] constexpr const CardEffect& card_effect_for(CardId id) noexcept {
   for (const auto& e : kCardEffects) {
-    if (e.id == id) return e;
+    if (e.id == id) {
+      return e;
+    }
   }
   assert(false && "card_effect_for: invalid CardId");
   return kCardEffects[0];

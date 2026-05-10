@@ -16,11 +16,11 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <cstddef>
 #include <utility>
 #include <vector>
 
+#include "render/render_internal.h"
 #include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
@@ -31,7 +31,6 @@
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
-#include "render/render_internal.h"
 #include "tests/game/test_helpers.h"
 #include "tests/seeds/expected_values.h"
 
@@ -148,7 +147,8 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
   c.start(std::move(deck));
 
   ASSERT_EQ(c.player().hand.size(), 3U);
-  const Card pre_idx0 = c.player().hand.cards()[0];  // copy for later id comparison
+  const Card pre_idx0 =
+      c.player().hand.cards()[0];  // copy for later id comparison
   const Card pre_idx1 = c.player().hand.cards()[1];
   const Card pre_idx2 = c.player().hand.cards()[2];
 
@@ -245,7 +245,8 @@ TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
 TEST(CombatDealDamage, T_CMB_065_EnemyAttackUsesSourcePowers) {
   Combat c{kCombatTestSeed};
   Enemy source{};
-  source.vitals = Vitals{Stat{40}, Stat{40}, Stat{0}, {MakePower(PowerKind::kStrength, 2)}};
+  source.vitals =
+      Vitals{Stat{40}, Stat{40}, Stat{0}, {MakePower(PowerKind::kStrength, 2)}};
 
   c.enemy_attack_player(source, 9);
 
@@ -354,7 +355,8 @@ TEST(CombatCanPlay, T_CMB_095_ZeroCostZeroEnergy) {
   while (strikes_played < 3) {
     int idx = FindHandIndex(c, CardId::kStrike);
     ASSERT_NE(idx, -1);
-    ASSERT_TRUE(c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot{0}));
+    ASSERT_TRUE(
+        c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot{0}));
     ++strikes_played;
   }
   ASSERT_EQ(c.player().energy, 0);
@@ -453,7 +455,8 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   int survivor_idx = FindHandIndex(c, CardId::kSurvivor);
   ASSERT_NE(survivor_idx, -1);
 
-  bool ok = c.play_card(sts2::game::HandIndex{survivor_idx}, sts2::game::EnemySlot::none());
+  bool ok = c.play_card(sts2::game::HandIndex{survivor_idx},
+                        sts2::game::EnemySlot::none());
 
   EXPECT_TRUE(ok);
   ASSERT_EQ(c.player().hand.size(), 1U);
@@ -1038,13 +1041,16 @@ TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
   ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
-  EXPECT_EQ(c.alive_enemy_indices(), (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{1}}));
+  EXPECT_EQ(c.alive_enemy_indices(),
+            (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{1}}));
 }
 
 // alive_enemy_indices: both alive → returns both slot indices in slot order.
 TEST(CombatAliveEnemyIndices, BothAliveReturnsBothInOrder) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(c.alive_enemy_indices(), (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{0}, sts2::game::EnemySlot{1}}));
+  EXPECT_EQ(c.alive_enemy_indices(),
+            (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{0},
+                                                sts2::game::EnemySlot{1}}));
 }
 
 // hand size: empty hand → 0.
@@ -1075,7 +1081,8 @@ TEST(CombatFindCardInHand, AbsentReturnsMinusOne) {
   deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
   c.start(std::move(deck));
   ASSERT_EQ(c.player().hand.size(), 1U);
-  EXPECT_EQ(c.find_card_in_hand(CardId::kNeutralize), sts2::game::HandIndex::none());
+  EXPECT_EQ(c.find_card_in_hand(CardId::kNeutralize),
+            sts2::game::HandIndex::none());
 }
 
 // find_card_in_hand: multiple matches → returns FIRST hand index.
@@ -1160,7 +1167,8 @@ TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
   const std::size_t pre_discard = c.player().deck.discard_size();
   int idx = FindHandIndex(c, CardId::kDefend);
   ASSERT_NE(idx, -1);
-  ASSERT_TRUE(c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
+  ASSERT_TRUE(
+      c.play_card(sts2::game::HandIndex{idx}, sts2::game::EnemySlot::none()));
   EXPECT_EQ(c.player().deck.discard_size(), pre_discard + 1);
 }
 
@@ -1168,47 +1176,58 @@ TEST(CombatPileSizeAccessors, DiscardGrowsAfterPlay) {
 TEST(CombatTotalDeckSize, SumsAllPiles) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   // 12-card deck; R1: 7 hand + 5 draw + 0 discard.
-  EXPECT_EQ(static_cast<int>(c.player().deck.total_size() + c.player().hand.size()), 12);
+  EXPECT_EQ(
+      static_cast<int>(c.player().deck.total_size() + c.player().hand.size()),
+      12);
 }
 
 // total deck size: zero when no cards anywhere.
 TEST(CombatTotalDeckSize, ZeroWhenEmpty) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(static_cast<int>(c.player().deck.total_size() + c.player().hand.size()), 0);
+  EXPECT_EQ(
+      static_cast<int>(c.player().deck.total_size() + c.player().hand.size()),
+      0);
 }
 
 // display_index_of (render helper): negative slot → -1.
 TEST(CombatDisplayIndexOf, NegativeSlotMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{-1}), -1);
+  EXPECT_EQ(
+      sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{-1}), -1);
 }
 
 // display_index_of: out-of-range slot → -1.
 TEST(CombatDisplayIndexOf, OutOfRangeMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{2}), -1);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{99}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{2}),
+            -1);
+  EXPECT_EQ(
+      sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{99}), -1);
 }
 
 // display_index_of: dead enemy slot → -1.
 TEST(CombatDisplayIndexOf, DeadSlotMinusOne) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}), -1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}),
+            -1);
 }
 
 // display_index_of: both alive — slot indices map identity-wise.
 TEST(CombatDisplayIndexOf, BothAliveIdentity) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}), 0);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}), 1);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{0}),
+            0);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}),
+            1);
 }
 
 // display_index_of: enemy 0 dead — slot 1 collapses to display 0.
 TEST(CombatDisplayIndexOf, FrontDeadCollapsesIndex) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}), 0);
+  EXPECT_EQ(sts2::render::detail::display_index_of(c, sts2::game::EnemySlot{1}),
+            0);
 }
 
 }  // namespace

@@ -40,9 +40,7 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
         sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kRitual,
                             e.ritual_amount.value());
       },
-      [&]() {
-        combat.enemy_attack_player(e, e.dark_strike_base.value());
-      });
+      [&]() { combat.enemy_attack_player(e, e.dark_strike_base.value()); });
 }
 
 }  // namespace sts2::enemies

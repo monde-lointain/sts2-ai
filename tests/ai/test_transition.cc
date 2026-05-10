@@ -14,7 +14,6 @@ namespace {
 
 using sts2::ai::CardCounts;
 using sts2::ai::CompactState;
-using sts2::ai::EnemyState;
 using sts2::ai::from_combat;
 using sts2::ai::Phase;
 using sts2::ai::transition::Action;
@@ -47,8 +46,7 @@ CompactState make_test_state() {
   return s;
 }
 
-Action play(CardId id, int target = -1,
-            CardId discard = CardId::kNone) {
+Action play(CardId id, int target = -1, CardId discard = CardId::kNone) {
   Action a;
   a.kind = ActionKind::kPlayCard;
   a.card_id = id;
@@ -133,8 +131,8 @@ TEST(Transition, Survivor_GainsBlockAndDiscardsChosenCard) {
   s.hand[CardId::kSurvivor] = 1;
   s.energy = Stat{1};
 
-  ASSERT_TRUE(apply_player_action(
-      s, play(CardId::kSurvivor, -1, CardId::kStrike)));
+  ASSERT_TRUE(
+      apply_player_action(s, play(CardId::kSurvivor, -1, CardId::kStrike)));
 
   EXPECT_EQ(s.player_block, Stat{8});
   EXPECT_EQ(s.energy, Stat{0});
@@ -147,8 +145,8 @@ TEST(Transition, Survivor_WhenLastCardInHand_NoOpsDiscard) {
   s.hand[CardId::kSurvivor] = 1;
   s.energy = Stat{1};
 
-  ASSERT_TRUE(apply_player_action(
-      s, play(CardId::kSurvivor, -1, CardId::kNone)));
+  ASSERT_TRUE(
+      apply_player_action(s, play(CardId::kSurvivor, -1, CardId::kNone)));
 
   EXPECT_EQ(s.player_block, Stat{8});
   EXPECT_EQ(s.hand, (CardCounts{}));
@@ -170,8 +168,8 @@ TEST(Transition, PlayCard_NotInHand_ReturnsFalse) {
   s.energy = Stat{3};
 
   const CompactState before = s;
-  EXPECT_FALSE(apply_player_action(
-      s, play(CardId::kSurvivor, -1, CardId::kNone)));
+  EXPECT_FALSE(
+      apply_player_action(s, play(CardId::kSurvivor, -1, CardId::kNone)));
   EXPECT_EQ(s, before);
 }
 
@@ -305,7 +303,8 @@ TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
   EXPECT_EQ(s.phase, Phase::kAtChanceDraw);
 }
 
-TEST(Transition, EndTurn_PreDrawResolution_RitualConvertsToStrengthOnSubsequentEndTurn) {
+TEST(Transition,
+     EndTurn_PreDrawResolution_RitualConvertsToStrengthOnSubsequentEndTurn) {
   sts2::game::Combat combat = MakeStarterCombat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
   // Discard hand to isolate enemy mechanics.

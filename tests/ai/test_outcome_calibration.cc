@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <vector>
@@ -8,7 +7,6 @@
 #include "sts2/ai/recommend.h"
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
-#include "sts2/ai/transition.h"
 #include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
@@ -38,7 +36,10 @@ using sts2::tests::helpers::MakeStarterCombat;
 // avoid coupling test files via shared headers).
 std::vector<Card> MakeTinyStrikeDeck() {
   std::vector<Card> deck;
-  for (int i = 0; i < 5; ++i) deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  deck.reserve(5);
+  for (int i = 0; i < 5; ++i) {
+    deck.push_back(sts2::cards::make_card(sts2::game::CardId::kStrike));
+  }
   return deck;
 }
 
@@ -48,7 +49,8 @@ std::vector<Card> MakeTinyStrikeDeck() {
 Combat MakeLethalCombat(uint64_t seed) {
   Combat c{seed};
   Enemy e{};
-  e.vitals = Vitals{Stat{6}, Stat{6}, Stat{0}, {}};
+  e.vitals =
+      Vitals{.hp = Stat{6}, .max_hp = Stat{6}, .block = Stat{0}, .powers = {}};
   e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
@@ -141,8 +143,9 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
     Recommendation last_rec;
     combat.set_pick_discard_callback(
         [&last_rec](const Combat& c) -> sts2::game::HandIndex {
-          if (last_rec.survivor_discard_id == CardId::kNone)
+          if (last_rec.survivor_discard_id == CardId::kNone) {
             return sts2::game::HandIndex{0};
+          }
           const auto idx = c.find_card_in_hand(last_rec.survivor_discard_id);
           return idx.valid() ? idx : sts2::game::HandIndex{0};
         });
@@ -154,14 +157,16 @@ TEST(RecommendCalibration, DISABLED_StarterCombat_MonteCarloCalibration) {
     int steps = 0;
     while (!combat.combat_over() && steps < kMaxStepsPerTrial) {
       last_rec = recommender.recommend(combat);
-      if (last_rec.combat_over) break;
+      if (last_rec.combat_over) {
+        break;
+      }
 
       if (last_rec.action.kind == Action::kEndTurn) {
         combat.end_turn();
       } else {
         ASSERT_EQ(last_rec.action.kind, Action::kPlayCard);
-        const bool ok = combat.play_card(last_rec.action.card_idx,
-                                         last_rec.target_idx);
+        const bool ok =
+            combat.play_card(last_rec.action.card_idx, last_rec.target_idx);
         ASSERT_TRUE(ok) << "engine rejected AI play; trial=" << trial
                         << " step=" << steps;
       }

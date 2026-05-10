@@ -11,13 +11,16 @@ namespace sts2::game::move_calc {
 // Advance enemy intent through its move sequence. kIncantation -> kDarkStrike;
 // other moves are stable.
 [[nodiscard]] inline MoveId next_move(MoveId current) noexcept {
-  if (current == MoveId::kIncantation) return MoveId::kDarkStrike;
+  if (current == MoveId::kIncantation) {
+    return MoveId::kDarkStrike;
+  }
   return current;
 }
 
 // Ritual tick decision. Mutates just_applied to false. Returns true iff this
 // tick should grant Strength (the just-applied turn skips the gain).
-[[nodiscard]] inline bool ritual_should_grant_strength(bool& just_applied) noexcept {
+[[nodiscard]] inline bool ritual_should_grant_strength(
+    bool& just_applied) noexcept {
   if (just_applied) {
     just_applied = false;
     return false;
@@ -41,9 +44,10 @@ inline void advance_intent(bool& performed_first_move,
 // is the load-bearing T18c guarantee: adding a new MoveId is a one-place
 // header change. Each layer supplies lambdas that perform its own effects.
 template <typename OnRitual, typename OnDarkStrike>
-void act_on_intent(MoveId move, OnRitual&& on_ritual,
-                   OnDarkStrike&& on_dark_strike)
-    noexcept(noexcept(on_ritual()) && noexcept(on_dark_strike())) {
+void act_on_intent(
+    MoveId move, OnRitual&& on_ritual,
+    OnDarkStrike&& on_dark_strike) noexcept(noexcept(on_ritual()) &&
+                                            noexcept(on_dark_strike())) {
   // NOTE: adding a MoveId here is not a compile-time call-site signal —
   // grep act_on_intent users to verify they handle the new case.
   switch (move) {

@@ -7,15 +7,15 @@
 namespace {
 
 using sts2::game::CardId;
-using sts2::game::card_effects::CardEffect;
 using sts2::game::card_effects::card_effect_for;
+using sts2::game::card_effects::CardEffect;
 using sts2::game::card_effects::kCardEffects;
 using sts2::game::card_effects::kCountedCardIds;
 
 // Every CardId except kNone is present in the table exactly once.
 TEST(CardEffectsTable, AllNonNoneIdsPresent) {
   const CardId all_counted[] = {CardId::kStrike, CardId::kDefend,
-                                 CardId::kNeutralize, CardId::kSurvivor};
+                                CardId::kNeutralize, CardId::kSurvivor};
   for (CardId id : all_counted) {
     bool found = false;
     for (const CardEffect& e : kCardEffects) {
@@ -38,11 +38,14 @@ TEST(CardEffectsTable, KNoneAbsent) {
 // kCountedCardIds covers every non-kNone CardId.
 TEST(CardEffectsTable, CountedCardIdsComplete) {
   const CardId all_counted[] = {CardId::kStrike, CardId::kDefend,
-                                 CardId::kNeutralize, CardId::kSurvivor};
+                                CardId::kNeutralize, CardId::kSurvivor};
   for (CardId id : all_counted) {
     bool found = false;
     for (CardId cid : kCountedCardIds) {
-      if (cid == id) { found = true; break; }
+      if (cid == id) {
+        found = true;
+        break;
+      }
     }
     EXPECT_TRUE(found) << "CardId " << static_cast<int>(id)
                        << " missing from kCountedCardIds";

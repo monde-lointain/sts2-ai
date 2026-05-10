@@ -32,7 +32,8 @@ class Hand {
   // Draws up to n cards from deck, stopping at kMaxSize or deck exhaustion.
   void draw_from(Deck& deck, Rng& rng, int n);
 
-  // Returns HandIndex of the first card with the given id, or HandIndex::none().
+  // Returns HandIndex of the first card with the given id, or
+  // HandIndex::none().
   [[nodiscard]] HandIndex find(CardId id) const noexcept;
 
   [[nodiscard]] bool valid(HandIndex idx) const noexcept;

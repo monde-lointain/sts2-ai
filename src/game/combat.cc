@@ -18,7 +18,8 @@ static_assert(Hand::kMaxSize == 10, "Hand::kMaxSize must match game rules");
 }  // namespace
 
 Combat::Combat(uint64_t seed)
-    : rng_(seed), on_pick_discard_([](const Combat&) { return HandIndex{0}; }) {}
+    : rng_(seed),
+      on_pick_discard_([](const Combat&) { return HandIndex{0}; }) {}
 
 void Combat::start(std::vector<Card> starter_deck) {
   player_.deck.load_starter(std::move(starter_deck), rng_);
@@ -28,9 +29,8 @@ void Combat::start(std::vector<Card> starter_deck) {
 }
 
 void Combat::start_player_turn() {
-  for_each_alive_enemy(enemies_, [](Enemy& e) {
-    sts2::enemies::roll_next_move(e);
-  });
+  for_each_alive_enemy(enemies_,
+                       [](Enemy& e) { sts2::enemies::roll_next_move(e); });
 
   if (turn_calc::round_resets_block(round_)) {
     player_.vitals.block = sts2::game::Stat{0};
@@ -47,9 +47,8 @@ void Combat::end_player_turn() {
 }
 
 void Combat::enemy_phase() {
-  for_each_alive_enemy(enemies_, [](Enemy& e) {
-    e.vitals.block = sts2::game::Stat{0};
-  });
+  for_each_alive_enemy(enemies_,
+                       [](Enemy& e) { e.vitals.block = sts2::game::Stat{0}; });
   for (auto& e : enemies_) {
     if (!is_alive(e)) {
       continue;
@@ -115,7 +114,9 @@ HandIndex Combat::find_card_in_hand(CardId id) const {
   return player_.hand.find(id);
 }
 
-bool Combat::is_player_dead() const { return player_.vitals.hp <= sts2::game::Stat{0}; }
+bool Combat::is_player_dead() const {
+  return player_.vitals.hp <= sts2::game::Stat{0};
+}
 
 bool Combat::all_enemies_dead() const {
   return !enemies_.empty() &&

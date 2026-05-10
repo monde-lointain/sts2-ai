@@ -30,7 +30,9 @@ using sts2::tests::helpers::MakeStarterCombat;
 
 constexpr int kSeedCount = 200;
 constexpr int kMaxStepsPerSeed = 100;
-constexpr uint64_t kSamplerSalt = 0x9E3779B97F4A7C15ULL;  // golden-ratio constant, distinct from Combat's RNG seed
+constexpr uint64_t kSamplerSalt =
+    0x9E3779B97F4A7C15ULL;  // golden-ratio constant, distinct from Combat's RNG
+                            // seed
 
 Action pick_random_action(const CompactState& s, std::mt19937& rng) {
   const auto actions = legal_actions(s);
@@ -50,7 +52,9 @@ int find_hand_index(const sts2::game::Combat& combat, CardId id) {
 CardCounts hand_to_counts(const sts2::game::Combat& combat) {
   CardCounts c;
   for (const auto& card : combat.player().hand.cards()) {
-    if (card.id == CardId::kNone) continue;
+    if (card.id == CardId::kNone) {
+      continue;
+    }
     ++c[card.id];
   }
   return c;
@@ -67,8 +71,9 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
     Action last_action;
     combat.set_pick_discard_callback(
         [&last_action](const sts2::game::Combat& c) -> sts2::game::HandIndex {
-          if (last_action.survivor_discard_id == CardId::kNone)
+          if (last_action.survivor_discard_id == CardId::kNone) {
             return sts2::game::HandIndex{0};
+          }
           const auto idx = c.find_card_in_hand(last_action.survivor_discard_id);
           return idx.valid() ? idx : sts2::game::HandIndex{0};
         });
@@ -78,7 +83,9 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
 
     int steps_executed = 0;
     for (int step = 0; step < kMaxStepsPerSeed; ++step) {
-      if (combat.combat_over() || is_terminal(compact)) break;
+      if (combat.combat_over() || is_terminal(compact)) {
+        break;
+      }
 
       ASSERT_EQ(from_combat(combat), compact)
           << "pre-step divergence; seed=" << seed << " step=" << step;
@@ -129,8 +136,7 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
       ++steps_executed;
 
       ASSERT_EQ(from_combat(combat), compact)
-          << "post-step divergence;"
-          << " seed=" << seed << " step=" << step
+          << "post-step divergence;" << " seed=" << seed << " step=" << step
           << " kind=" << static_cast<int>(action.kind)
           << " card=" << static_cast<int>(action.card_id)
           << " target=" << action.target_idx.raw();

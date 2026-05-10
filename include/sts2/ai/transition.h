@@ -21,8 +21,10 @@ struct Action {
 
 [[nodiscard]] std::vector<Action> legal_actions(const CompactState& state);
 
-[[nodiscard]] bool apply_player_action(CompactState& state, const Action& action);
+[[nodiscard]] bool apply_player_action(CompactState& state,
+                                       const Action& action);
 
+// clang-format off
 // Phase transitions for end-of-turn resolution. Sequence to advance state
 // across the chance boundary:
 //   1. apply_player_action(state, EndTurn)             // T3: phase -> kAtChanceDraw
@@ -35,6 +37,7 @@ struct Action {
 // (zero block, act, tick), round++, roll enemy moves, reset block (round>1),
 // refill energy. Leaves phase = kAtChanceDraw. May leave the player dead --
 // caller checks is_terminal(state) before drawing.
+// clang-format on
 void resolve_end_turn_pre_draw(CompactState& state);
 
 [[nodiscard]] int draw_count(const CompactState& state) noexcept;

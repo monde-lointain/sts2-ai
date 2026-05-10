@@ -56,9 +56,7 @@ HandIndex Hand::find(CardId id) const noexcept {
   return HandIndex::none();
 }
 
-bool Hand::valid(HandIndex idx) const noexcept {
-  return idx.in_range(cards_);
-}
+bool Hand::valid(HandIndex idx) const noexcept { return idx.in_range(cards_); }
 
 const Card& Hand::at(HandIndex idx) const noexcept {
   assert(valid(idx));

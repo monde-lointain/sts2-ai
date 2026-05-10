@@ -1,14 +1,12 @@
 #include "sts2/ai/recommend.h"
 
 #include <cassert>
-#include <cstdint>
 
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/index_types.h"
-#include "sts2/game/types.h"
 #include "sts2/input/input.h"
 
 namespace sts2::ai {
@@ -19,8 +17,8 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
 
   if (combat.combat_over() || transition::is_terminal(state)) {
     rec.combat_over = true;
-    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn,
-                                     sts2::game::HandIndex::none()};
+    rec.action = sts2::input::Action{.kind = sts2::input::Action::kEndTurn,
+                                     .card_idx = sts2::game::HandIndex::none()};
     rec.expected_hp = static_cast<double>(state.player_hp.value());
     return rec;
   }
@@ -29,12 +27,14 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
 
   const transition::Action& best = result.best_action;
   if (best.kind == transition::ActionKind::kEndTurn) {
-    rec.action = sts2::input::Action{sts2::input::Action::kEndTurn,
-                                     sts2::game::HandIndex::none()};
+    rec.action = sts2::input::Action{.kind = sts2::input::Action::kEndTurn,
+                                     .card_idx = sts2::game::HandIndex::none()};
   } else {
-    const sts2::game::HandIndex hand_idx = combat.find_card_in_hand(best.card_id);
+    const sts2::game::HandIndex hand_idx =
+        combat.find_card_in_hand(best.card_id);
     assert(hand_idx.valid() && "search returned a card not in engine hand");
-    rec.action = sts2::input::Action{sts2::input::Action::kPlayCard, hand_idx};
+    rec.action = sts2::input::Action{.kind = sts2::input::Action::kPlayCard,
+                                     .card_idx = hand_idx};
   }
 
   rec.target_idx = best.target_idx;
@@ -47,7 +47,9 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
   CompactState pv_state = state;
   while (!transition::is_terminal(pv_state)) {
     const SearchResult* peeked = search_.peek(pv_state);
-    if (peeked == nullptr) break;  // defensive — unreachable on the best line
+    if (peeked == nullptr) {
+      break;  // defensive — unreachable on the best line
+    }
 
     const transition::Action& a = peeked->best_action;
     if (a.kind == transition::ActionKind::kEndTurn) {

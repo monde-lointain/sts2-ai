@@ -62,14 +62,18 @@ CardCounts& CardCounts::operator-=(const CardCounts& o) noexcept {
 
 bool CardCounts::covers(const CardCounts& subset) const noexcept {
   for (std::size_t i = 0; i < counts.size(); ++i) {
-    if (counts[i] < subset.counts[i]) return false;
+    if (counts[i] < subset.counts[i]) {
+      return false;
+    }
   }
   return true;
 }
 
 int CardCounts::total() const noexcept {
   int sum = 0;
-  for (uint8_t c : counts) sum += c;
+  for (uint8_t c : counts) {
+    sum += c;
+  }
   return sum;
 }
 

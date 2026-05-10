@@ -185,9 +185,9 @@ TEST(Score, BetterThan_FloatTolerance_RoundsTiebreakBothSides) {
 TEST(Search, StarterPositionSolve_PopulatesTt) {
   CompactState s = make_lethal_position();
   Search search;
-  EXPECT_EQ(search.tt_size(), 0u);
+  EXPECT_EQ(search.tt_size(), 0U);
   (void)search.solve(s);
-  EXPECT_GE(search.tt_size(), 1u);
+  EXPECT_GE(search.tt_size(), 1U);
 }
 
 TEST(Search, Peek_UnvisitedReturnsNull) {

@@ -7,8 +7,8 @@
 
 // Strong type for character stats (hp, block, strength, weak, energy,
 // dark_strike_base, ritual_amount). Backing matches the original Godot source's
-// PowerModel.SetAmount semantics: int storage, +/-1e9 saturation, allows negative.
-// Zero-clamping for HP/block/energy lives at the caller layer (see
+// PowerModel.SetAmount semantics: int storage, +/-1e9 saturation, allows
+// negative. Zero-clamping for HP/block/energy lives at the caller layer (see
 // damage_calc.h::apply_to_defender), not inside Stat.
 
 namespace sts2::game {
@@ -18,7 +18,8 @@ class Stat {
   static constexpr int kMaxClamp = 999'999'999;
 
   constexpr Stat() noexcept = default;
-  constexpr explicit Stat(int v) noexcept : v_(std::clamp(v, -kMaxClamp, kMaxClamp)) {}
+  constexpr explicit Stat(int v) noexcept
+      : v_(std::clamp(v, -kMaxClamp, kMaxClamp)) {}
 
   [[nodiscard]] constexpr int value() const noexcept { return v_; }
 

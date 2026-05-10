@@ -29,8 +29,7 @@ struct CardCounts {
       [] {
         for (std::size_t i = 0;
              i < std::size(sts2::game::card_effects::kCountedCardIds); ++i) {
-          if (static_cast<int>(
-                  sts2::game::card_effects::kCountedCardIds[i]) !=
+          if (static_cast<int>(sts2::game::card_effects::kCountedCardIds[i]) !=
               static_cast<int>(i) + 1) {
             return false;
           }

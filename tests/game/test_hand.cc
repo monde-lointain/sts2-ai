@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
-#include <optional>
 #include <vector>
 
 #include "sts2/game/card.h"
@@ -53,9 +52,7 @@ Deck MakeDeckOf(int n, Rng& rng) {
 // kMaxSize and add()
 // -------------------------------------------------------------------------
 
-TEST(HandMaxSize, ConstantIsTen) {
-  EXPECT_EQ(Hand::kMaxSize, 10);
-}
+TEST(HandMaxSize, ConstantIsTen) { EXPECT_EQ(Hand::kMaxSize, 10); }
 
 TEST(HandAdd, FillsToMaxSize) {
   Hand h;
@@ -69,7 +66,8 @@ TEST(HandAdd, NoOpAtMaxSize) {
   Hand h = MakeHandOfN(Hand::kMaxSize);
   ASSERT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
 
-  h.add(sts2::cards::make_card(sts2::game::CardId::kDefend));  // should be silently dropped
+  h.add(sts2::cards::make_card(
+      sts2::game::CardId::kDefend));  // should be silently dropped
 
   EXPECT_EQ(h.size(), static_cast<std::size_t>(Hand::kMaxSize));
   // All cards should still be Strikes (the Defend was not added).
@@ -239,7 +237,7 @@ TEST(HandDiscardAt, SameResultAsPlay) {
   h2.add(sts2::cards::make_card(sts2::game::CardId::kStrike));
   h2.add(sts2::cards::make_card(sts2::game::CardId::kDefend));
 
-  Card via_play    = h1.play(HandIndex{0});
+  Card via_play = h1.play(HandIndex{0});
   Card via_discard = h2.discard_at(HandIndex{0});
 
   EXPECT_EQ(via_play.id, via_discard.id);
@@ -372,7 +370,7 @@ TEST(HandCards, SpanReferencesStoredElements) {
   EXPECT_EQ(span[0].id, CardId::kStrike);
   EXPECT_EQ(span[1].id, CardId::kDefend);
   // Pointer identity: span points into the same storage.
-  EXPECT_EQ(&span[0], &h.at(HandIndex{0}));
+  EXPECT_EQ(span.data(), &h.at(HandIndex{0}));
 }
 
 }  // namespace

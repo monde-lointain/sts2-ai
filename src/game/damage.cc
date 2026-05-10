@@ -9,8 +9,8 @@ namespace sts2::damage {
 
 int compute_outgoing(const std::vector<sts2::game::Power>& attacker_powers,
                      int base_damage) {
-  const int strength = sts2::powers::amount(
-      attacker_powers, sts2::game::PowerKind::kStrength);
+  const int strength =
+      sts2::powers::amount(attacker_powers, sts2::game::PowerKind::kStrength);
   const int weak =
       sts2::powers::amount(attacker_powers, sts2::game::PowerKind::kWeak);
   return compute_outgoing(base_damage, strength, weak);

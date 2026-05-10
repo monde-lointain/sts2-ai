@@ -37,8 +37,8 @@ sts2::game::EnemySlot prompt_target(const sts2::game::Combat& c,
   }
   std::string label = std::string("\n") + ansi::kGreen + ">" + ansi::kReset +
                       " Target enemy [index]: ";
-  int display_idx = prompt_index(out, in, label.c_str(),
-                                 static_cast<int>(alive.size()) - 1);
+  int display_idx =
+      prompt_index(out, in, label.c_str(), static_cast<int>(alive.size()) - 1);
   return alive[static_cast<std::size_t>(display_idx)];
 }
 
@@ -49,8 +49,7 @@ sts2::game::HandIndex prompt_discard(const sts2::game::Combat& combat,
     return sts2::game::HandIndex{0};
   }
   sts2::render::render_combat(combat, out);
-  std::string label =
-      "  Discard which? [0-" + std::to_string(hand - 1) + "]: ";
+  std::string label = "  Discard which? [0-" + std::to_string(hand - 1) + "]: ";
   int idx = prompt_index(out, in, label.c_str(), static_cast<int>(hand) - 1);
   return sts2::game::HandIndex{idx};
 }

@@ -4,7 +4,6 @@
 #include <cassert>
 
 #include "sts2/game/card_effects.h"
-#include "sts2/game/combat.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/index_types.h"
@@ -38,14 +37,20 @@ std::vector<Action> legal_actions(const CompactState& state) {
   std::vector<Action> actions;
 
   for (CardId id : kCountedCardIds) {
-    if (state.hand[id] == 0) continue;
+    if (state.hand[id] == 0) {
+      continue;
+    }
     const auto& fx = card_effect_for(id);
-    if (fx.cost > state.energy.value()) continue;
+    if (fx.cost > state.energy.value()) {
+      continue;
+    }
 
     const TargetType tgt = fx.target;
     if (tgt == TargetType::kAnyEnemy) {
       for (uint8_t i = 0; i < 2; ++i) {
-        if (!state.enemies[i].alive) continue;
+        if (!state.enemies[i].alive) {
+          continue;
+        }
         Action a;
         a.kind = ActionKind::kPlayCard;
         a.card_id = id;
@@ -65,8 +70,12 @@ std::vector<Action> legal_actions(const CompactState& state) {
         actions.push_back(a);
       } else {
         for (CardId other : kCountedCardIds) {
-          if (other == CardId::kSurvivor) continue;
-          if (post[other] == 0) continue;
+          if (other == CardId::kSurvivor) {
+            continue;
+          }
+          if (post[other] == 0) {
+            continue;
+          }
           Action a;
           a.kind = ActionKind::kPlayCard;
           a.card_id = CardId::kSurvivor;
@@ -101,13 +110,21 @@ bool apply_player_action(CompactState& state, const Action& action) {
   assert(action.card_id != CardId::kNone);
   const CardId id = action.card_id;
   const auto& fx = card_effect_for(id);
-  if (fx.cost > state.energy.value()) return false;
-  if (state.hand[id] == 0) return false;
+  if (fx.cost > state.energy.value()) {
+    return false;
+  }
+  if (state.hand[id] == 0) {
+    return false;
+  }
 
   if (fx.target == TargetType::kAnyEnemy) {
-    if (!action.target_idx.in_range(state.enemies)) return false;
+    if (!action.target_idx.in_range(state.enemies)) {
+      return false;
+    }
     auto slot = action.target_idx;
-    if (!slot.at(state.enemies).alive) return false;
+    if (!slot.at(state.enemies).alive) {
+      return false;
+    }
   }
 
   --state.hand[id];
@@ -115,7 +132,8 @@ bool apply_player_action(CompactState& state, const Action& action) {
 
   if (fx.base_damage) {
     EnemyState& e = action.target_idx.at(state.enemies);
-    damage_enemy(e, state.player_strength.value(), state.player_weak.value(), fx.base_damage);
+    damage_enemy(e, state.player_strength.value(), state.player_weak.value(),
+                 fx.base_damage);
   }
   if (fx.base_block) {
     state.player_block += fx.base_block;
@@ -145,8 +163,9 @@ void enemy_act(CompactState& s, EnemyState& e) {
       e.current_move,
       [&]() {
         // Mirrors powers::apply for kRitual: amount accumulates on the Power,
-        // but in v1 Ritual is applied once -> Power.amount stays at ritual_amount.
-        // We model the dynamic Ritual state purely via just_applied_ritual.
+        // but in v1 Ritual is applied once -> Power.amount stays at
+        // ritual_amount. We model the dynamic Ritual state purely via
+        // just_applied_ritual.
         e.just_applied_ritual = true;
       },
       [&]() {
@@ -173,7 +192,9 @@ void roll_next_move(EnemyState& e) {
 }  // namespace
 
 bool is_terminal(const CompactState& s) noexcept {
-  if (s.player_hp == sts2::game::Stat{0}) return true;
+  if (s.player_hp == sts2::game::Stat{0}) {
+    return true;
+  }
   return std::all_of(s.enemies.begin(), s.enemies.end(),
                      [](const EnemyState& e) { return !e.alive; });
 }
@@ -192,24 +213,25 @@ void resolve_end_turn_pre_draw(CompactState& state) {
 
   // enemy_phase: zero block on alive enemies, then act in slot order; bail
   // early if player dies mid-phase (mirrors Combat::enemy_phase combat_over_).
-  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
-    e.block = sts2::game::Stat{0};
-  });
+  sts2::game::for_each_alive_enemy(
+      state.enemies, [](EnemyState& e) { e.block = sts2::game::Stat{0}; });
   for (auto& e : state.enemies) {
-    if (!is_alive(e)) continue;
+    if (!is_alive(e)) {
+      continue;
+    }
     enemy_act(state, e);
-    if (state.player_hp == sts2::game::Stat{0}) return;
+    if (state.player_hp == sts2::game::Stat{0}) {
+      return;
+    }
   }
   // Tick AFTER all acts.
-  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
-    enemy_tick_powers(e);
-  });
+  sts2::game::for_each_alive_enemy(state.enemies,
+                                   [](EnemyState& e) { enemy_tick_powers(e); });
 
   state.round = static_cast<uint16_t>(state.round + 1);
 
-  sts2::game::for_each_alive_enemy(state.enemies, [](EnemyState& e) {
-    roll_next_move(e);
-  });
+  sts2::game::for_each_alive_enemy(state.enemies,
+                                   [](EnemyState& e) { roll_next_move(e); });
 
   if (sts2::game::turn_calc::round_resets_block(state.round)) {
     state.player_block = sts2::game::Stat{0};

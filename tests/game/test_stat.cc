@@ -17,7 +17,7 @@ using sts2::game::Stat;
 TEST(Stat, DefaultConstruct_IsZero) {
   Stat s;
   EXPECT_EQ(s.value(), 0);
-  EXPECT_EQ(s.pack8(), 0u);
+  EXPECT_EQ(s.pack8(), 0U);
 }
 
 TEST(Stat, ExplicitInt_StoresCorrectValue) {
@@ -97,13 +97,9 @@ TEST(Stat, MinusEquals_SaturatesNegative) {
 
 // --- Equality ---
 
-TEST(Stat, Equality_SameValue_Equal) {
-  EXPECT_EQ(Stat{10}, Stat{10});
-}
+TEST(Stat, Equality_SameValue_Equal) { EXPECT_EQ(Stat{10}, Stat{10}); }
 
-TEST(Stat, Equality_DifferentValue_NotEqual) {
-  EXPECT_NE(Stat{10}, Stat{11});
-}
+TEST(Stat, Equality_DifferentValue_NotEqual) { EXPECT_NE(Stat{10}, Stat{11}); }
 
 // --- Ordering ---
 

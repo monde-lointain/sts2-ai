@@ -29,7 +29,8 @@ struct PvStep {
 // the recommendation is followed plus the engine's random draws.
 struct Recommendation {
   // Ready to feed into main.cc. For terminal/combat-over states, kind is
-  // kEndTurn and card_idx is HandIndex::none(); gate via combat_over before consuming.
+  // kEndTurn and card_idx is HandIndex::none(); gate via combat_over before
+  // consuming.
   sts2::input::Action action;
   sts2::game::EnemySlot target_idx = sts2::game::EnemySlot::none();
   sts2::game::CardId survivor_discard_id = sts2::game::CardId::kNone;

@@ -42,9 +42,9 @@ uint64_t pack_enemy(const EnemyState& e) noexcept {
   v |= static_cast<uint64_t>(e.weak.pack8()) << 24;
   v |= static_cast<uint64_t>(e.dark_strike_base.pack8()) << 32;
   v |= static_cast<uint64_t>(e.ritual_amount.pack8()) << 40;
-  v |= static_cast<uint64_t>(e.just_applied_ritual ? 1u : 0u) << 48;
-  v |= static_cast<uint64_t>(e.performed_first_move ? 1u : 0u) << 49;
-  v |= static_cast<uint64_t>(e.alive ? 1u : 0u) << 50;
+  v |= static_cast<uint64_t>(e.just_applied_ritual ? 1U : 0U) << 48;
+  v |= static_cast<uint64_t>(e.performed_first_move ? 1U : 0U) << 49;
+  v |= static_cast<uint64_t>(e.alive ? 1U : 0U) << 50;
   v |= static_cast<uint64_t>(static_cast<uint8_t>(e.current_move)) << 56;
   return v;
 }
@@ -61,8 +61,12 @@ uint64_t pack_counts(const CardCounts& c) noexcept {
 
 bool Score::better_than(Score other) const noexcept {
   const double hp_diff = expected_hp - other.expected_hp;
-  if (hp_diff > kEps) return true;
-  if (hp_diff < -kEps) return false;
+  if (hp_diff > kEps) {
+    return true;
+  }
+  if (hp_diff < -kEps) {
+    return false;
+  }
   // Within HP epsilon: prefer fewer rounds.
   return (other.expected_rounds - expected_rounds) > kEps;
 }
@@ -84,7 +88,8 @@ SearchResult Search::solve(const CompactState& state) {
   // forever (test fixtures use non-zero values).
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{static_cast<double>(state.player_hp.value()), 0.0};
+    r.score = Score{.expected_hp = static_cast<double>(state.player_hp.value()),
+                    .expected_rounds = 0.0};
     r.terminal = true;
     return r;
   }
@@ -96,7 +101,9 @@ SearchResult Search::solve(const CompactState& state) {
 
 const SearchResult* Search::peek(const CompactState& state) const noexcept {
   const auto it = tt_.find(state);
-  if (it == tt_.end()) return nullptr;
+  if (it == tt_.end()) {
+    return nullptr;
+  }
   return &it->second;
 }
 
@@ -121,7 +128,9 @@ SearchResult Search::solve_player(CompactState state) {
     if (action.kind == transition::ActionKind::kEndTurn) {
       child = solve_chance(next);
     } else if (transition::is_terminal(next)) {
-      child.score = Score{static_cast<double>(next.player_hp.value()), 0.0};
+      child.score =
+          Score{.expected_hp = static_cast<double>(next.player_hp.value()),
+                .expected_rounds = 0.0};
       child.terminal = true;
     } else {
       child = solve_player(next);
@@ -150,7 +159,8 @@ SearchResult Search::solve_chance(CompactState state) {
 
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{static_cast<double>(state.player_hp.value()), 1.0};
+    r.score = Score{.expected_hp = static_cast<double>(state.player_hp.value()),
+                    .expected_rounds = 1.0};
     r.terminal = false;
     const auto [it, _] = tt_.emplace(key, r);
     return it->second;
@@ -201,7 +211,7 @@ SearchResult Search::solve_chance(CompactState state) {
   exp_rounds += 1.0;
 
   SearchResult r;
-  r.score = Score{exp_hp, exp_rounds};
+  r.score = Score{.expected_hp = exp_hp, .expected_rounds = exp_rounds};
   r.best_action = transition::Action{};  // EndTurn (default kind)
   r.terminal = false;
   const auto [it, _] = tt_.emplace(key, r);

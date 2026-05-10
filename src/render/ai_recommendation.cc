@@ -1,14 +1,14 @@
 #include "sts2/render/ai_recommendation.h"
 
 #include <cstddef>
-#include <ios>
 #include <iomanip>
+#include <ios>
 #include <ostream>
 #include <vector>
 
 #include "render/render_internal.h"
-#include "sts2/game/card_effects.h"
 #include "sts2/ai/recommend.h"
+#include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/index_types.h"
@@ -23,7 +23,9 @@ namespace {
 // Display string for a CardId. Handles kNone (which the metadata table does
 // not cover) so callers like the survivor-discard path can print "(none)".
 const char* card_id_name(sts2::game::CardId id) {
-  if (id == sts2::game::CardId::kNone) return "(none)";
+  if (id == sts2::game::CardId::kNone) {
+    return "(none)";
+  }
   return sts2::game::card_effects::card_effect_for(id).name.data();
 }
 
@@ -41,7 +43,8 @@ void write_pv_step(std::ostream& out, const sts2::ai::PvStep& step,
         out << " -> [" << disp << "] "
             << step.target_idx.at(combat.enemies()).name;
       } else {
-        // Slot is dead in current state; fall back to slot index for diagnostics.
+        // Slot is dead in current state; fall back to slot index for
+        // diagnostics.
         out << " -> [" << step.target_idx.raw() << "] "
             << step.target_idx.at(combat.enemies()).name;
       }
@@ -71,8 +74,8 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
   } else if (rec.action.kind == sts2::input::Action::kPlayCard) {
     out << "Play ";
     const sts2::game::HandIndex card_idx = rec.action.card_idx;
-    if (card_idx.valid() &&
-        static_cast<std::size_t>(card_idx.raw()) < combat.player().hand.size()) {
+    if (card_idx.valid() && static_cast<std::size_t>(card_idx.raw()) <
+                                combat.player().hand.size()) {
       out << combat.player().hand.at(card_idx).name;
     } else {
       out << "(none)";
@@ -102,7 +105,9 @@ void render_ai_recommendation(const sts2::ai::Recommendation& rec,
   } else {
     bool first = true;
     for (const auto& step : rec.principal_variation) {
-      if (!first) out << ", ";
+      if (!first) {
+        out << ", ";
+      }
       first = false;
       write_pv_step(out, step, combat);
     }

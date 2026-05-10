@@ -50,8 +50,8 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-    std::cout << sts2::ansi::kCyan << "Analyzing combat..." << sts2::ansi::kReset
-              << std::flush;
+    std::cout << sts2::ansi::kCyan << "Analyzing combat..."
+              << sts2::ansi::kReset << std::flush;
     sts2::ai::Recommendation rec = ai.recommend(combat);
     std::cout << "\x1b[2K\r" << std::flush;
     sts2::render::render_ai_recommendation(rec, combat, std::cout);

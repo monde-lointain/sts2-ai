@@ -33,32 +33,34 @@ CardCounts make_pool(int s, int d, int n, int v) {
 
 double weight_sum(const std::vector<Outcome>& v) {
   double s = 0.0;
-  for (const auto& o : v) s += o.weight;
+  for (const auto& o : v) {
+    s += o.weight;
+  }
   return s;
 }
 
 TEST(Probability, BinomBasic) {
-  EXPECT_EQ(binom(0, 0), 1u);
-  EXPECT_EQ(binom(5, 0), 1u);
-  EXPECT_EQ(binom(5, 5), 1u);
-  EXPECT_EQ(binom(5, 2), 10u);
-  EXPECT_EQ(binom(12, 5), 792u);
-  EXPECT_EQ(binom(12, 7), 792u);
-  EXPECT_EQ(binom(-1, 0), 0u);
-  EXPECT_EQ(binom(5, 6), 0u);
-  EXPECT_EQ(binom(5, -1), 0u);
+  EXPECT_EQ(binom(0, 0), 1U);
+  EXPECT_EQ(binom(5, 0), 1U);
+  EXPECT_EQ(binom(5, 5), 1U);
+  EXPECT_EQ(binom(5, 2), 10U);
+  EXPECT_EQ(binom(12, 5), 792U);
+  EXPECT_EQ(binom(12, 7), 792U);
+  EXPECT_EQ(binom(-1, 0), 0U);
+  EXPECT_EQ(binom(5, 6), 0U);
+  EXPECT_EQ(binom(5, -1), 0U);
 }
 
 TEST(Probability, EnumerateZeroDraw) {
   auto out = enumerate_draws(make_pool(5, 5, 1, 1), 0);
-  ASSERT_EQ(out.size(), 1u);
+  ASSERT_EQ(out.size(), 1U);
   EXPECT_EQ(out[0].hand, (CardCounts{}));
   EXPECT_DOUBLE_EQ(out[0].weight, 1.0);
 }
 
 TEST(Probability, EnumerateFullDraw) {
   auto out = enumerate_draws(make_pool(5, 5, 1, 1), 12);
-  ASSERT_EQ(out.size(), 1u);
+  ASSERT_EQ(out.size(), 1U);
   EXPECT_EQ(out[0].hand, make_pool(5, 5, 1, 1));
   EXPECT_DOUBLE_EQ(out[0].weight, 1.0);
 }
@@ -95,9 +97,8 @@ TEST(Probability, EnumerateAfterTurn1Sample) {
   EXPECT_NEAR(weight_sum(out), 1.0, kEps);
 
   const CardCounts target = make_pool(2, 2, 0, 1);
-  auto it = std::find_if(out.begin(), out.end(), [&](const Outcome& o) {
-    return o.hand == target;
-  });
+  auto it = std::find_if(out.begin(), out.end(),
+                         [&](const Outcome& o) { return o.hand == target; });
   ASSERT_NE(it, out.end());
   // C(3,2)*C(4,2)*C(1,1) / C(8,5) = 18/56 = 9/28
   EXPECT_NEAR(it->weight, 9.0 / 28.0, kEps);
@@ -110,7 +111,9 @@ TEST(Probability, WeightsSumToOne) {
         for (int v = 0; v <= 1; ++v) {
           CardCounts pool = make_pool(s, d, n, v);
           const int total = pool.total();
-          if (total < 1) continue;
+          if (total < 1) {
+            continue;
+          }
           const int kmax = std::min(total, 7);
           for (int k = 0; k <= kmax; ++k) {
             auto out = enumerate_draws(pool, k);

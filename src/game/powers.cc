@@ -8,17 +8,15 @@ namespace sts2::powers {
 
 sts2::game::Power* find(std::vector<sts2::game::Power>& powers,
                         sts2::game::PowerKind kind) {
-  auto it = std::find_if(
-      powers.begin(), powers.end(),
-      [kind](const sts2::game::Power& p) { return p.kind == kind; });
+  auto it = std::ranges::find_if(
+      powers, [kind](const sts2::game::Power& p) { return p.kind == kind; });
   return it != powers.end() ? &*it : nullptr;
 }
 
 const sts2::game::Power* find(const std::vector<sts2::game::Power>& powers,
                               sts2::game::PowerKind kind) {
-  auto it = std::find_if(
-      powers.begin(), powers.end(),
-      [kind](const sts2::game::Power& p) { return p.kind == kind; });
+  auto it = std::ranges::find_if(
+      powers, [kind](const sts2::game::Power& p) { return p.kind == kind; });
   return it != powers.end() ? &*it : nullptr;
 }
 

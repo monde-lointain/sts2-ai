@@ -15,7 +15,6 @@
 #include <vector>
 
 #include "render/render_internal.h"
-#include "sts2/game/cards.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/power.h"
 #include "sts2/game/types.h"

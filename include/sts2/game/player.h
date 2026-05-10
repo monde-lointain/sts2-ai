@@ -7,7 +7,8 @@
 namespace sts2::game {
 
 struct Player {
-  Vitals vitals{.hp = Stat{70}, .max_hp = Stat{70}, .block = Stat{0}, .powers = {}};
+  Vitals vitals{
+      .hp = Stat{70}, .max_hp = Stat{70}, .block = Stat{0}, .powers = {}};
   int energy = 0;
 
   Deck deck;

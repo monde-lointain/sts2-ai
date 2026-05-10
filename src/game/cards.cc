@@ -22,9 +22,9 @@ sts2::game::Card make_card(sts2::game::CardId id) {
       c.description.emplace_back(line);
     }
   }
-  // fx aliases inline constexpr kCardEffects[]; capture by reference is safe (static storage).
-  c.on_play = [&fx](sts2::game::Combat& combat,
-                    sts2::game::EnemySlot target) {
+  // fx aliases inline constexpr kCardEffects[]; capture by reference is safe
+  // (static storage).
+  c.on_play = [&fx](sts2::game::Combat& combat, sts2::game::EnemySlot target) {
     if (fx.base_damage) {
       combat.deal_damage_to_enemy(target, fx.base_damage);
     }

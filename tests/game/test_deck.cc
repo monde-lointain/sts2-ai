@@ -56,6 +56,7 @@ TEST(DeckLoadStarter, T_DCK_010_ShuffleMatchesPinned) {
     got_ids.push_back(c.id);
   }
   std::vector<CardId> orig_ids;
+  orig_ids.reserve(original.size());
   for (const Card& c : original) {
     orig_ids.push_back(c.id);
   }
