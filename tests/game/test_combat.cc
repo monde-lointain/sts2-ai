@@ -52,6 +52,7 @@ using Enemy = sts2::game::Enemy;
 using MoveId = sts2::game::MoveId;
 using PowerKind = sts2::game::PowerKind;
 using Rng = sts2::game::Rng;
+using Stat = sts2::game::Stat;
 using Vitals = sts2::game::Vitals;
 
 // Build the small "fixed deck" used by §10.1's T-CMB-010 setup.
@@ -85,8 +86,8 @@ TEST(CombatConstruction, T_CMB_005_DefaultState) {
   EXPECT_FALSE(c.combat_over());
   EXPECT_EQ(c.round(), 1);
   EXPECT_EQ(c.player().energy, 0);
-  EXPECT_EQ(c.player().vitals.hp, 70);
-  EXPECT_EQ(c.player().vitals.max_hp, 70);
+  EXPECT_EQ(c.player().vitals.hp, Stat{70});
+  EXPECT_EQ(c.player().vitals.max_hp, Stat{70});
   EXPECT_TRUE(c.enemies().empty());
   EXPECT_EQ(c.player().deck.draw_size(), 0U);
   EXPECT_TRUE(c.player().hand.empty());
@@ -165,9 +166,9 @@ TEST(CombatAddEnemy, T_CMB_025_PickDiscardCallbackInstalled) {
 TEST(CombatDelegators, T_CMB_030_GainPlayerBlockAccumulates) {
   Combat c{kCombatTestSeed};
   c.gain_player_block(5);
-  EXPECT_EQ(c.player().vitals.block, 5);
+  EXPECT_EQ(c.player().vitals.block, Stat{5});
   c.gain_player_block(5);
-  EXPECT_EQ(c.player().vitals.block, 10);
+  EXPECT_EQ(c.player().vitals.block, Stat{10});
 }
 
 // T-CMB-035 — BP — apply_power_to_enemy delegates to powers::apply.
@@ -192,10 +193,10 @@ TEST(CombatDelegators, T_CMB_045_IsPlayerDeadHpThreshold) {
   EXPECT_FALSE(c.is_player_dead());  // hp = 70 by default
 
   Enemy attacker{};
-  attacker.vitals = Vitals{1, 1, 0, {}};
+  attacker.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(attacker, 70);
 
-  EXPECT_EQ(c.player().vitals.hp, 0);
+  EXPECT_EQ(c.player().vitals.hp, Stat{0});
   EXPECT_TRUE(c.is_player_dead());
 }
 
@@ -206,7 +207,7 @@ TEST(CombatDealDamage, T_CMB_050_DealsRawDamageNoPowers) {
 
   c.deal_damage_to_enemy(sts2::game::EnemySlot{0}, 6);
 
-  EXPECT_EQ(c.enemies()[0].vitals.hp, 34);
+  EXPECT_EQ(c.enemies()[0].vitals.hp, Stat{34});
   EXPECT_FALSE(c.combat_over());
 }
 
@@ -215,16 +216,16 @@ TEST(CombatDealDamage, T_CMB_050_DealsRawDamageNoPowers) {
 TEST(CombatDealDamage, T_CMB_055_LethalWhileOtherAlive) {
   Combat c{kCombatTestSeed};
   Enemy e0{};
-  e0.vitals = Vitals{1, 1, 0, {}};
+  e0.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   Enemy e1{};
-  e1.vitals = Vitals{40, 40, 0, {}};
+  e1.vitals = Vitals{Stat{40}, Stat{40}, Stat{0}, {}};
   c.add_enemy(std::move(e0));
   c.add_enemy(std::move(e1));
 
   c.deal_damage_to_enemy(sts2::game::EnemySlot{0}, 99);
 
-  EXPECT_EQ(c.enemies()[0].vitals.hp, 0);
-  EXPECT_EQ(c.enemies()[1].vitals.hp, 40);
+  EXPECT_EQ(c.enemies()[0].vitals.hp, Stat{0});
+  EXPECT_EQ(c.enemies()[1].vitals.hp, Stat{40});
   EXPECT_FALSE(c.combat_over());
 }
 
@@ -235,7 +236,7 @@ TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
 
   c.deal_damage_to_enemy(sts2::game::EnemySlot{0}, 99);
 
-  EXPECT_EQ(c.enemies()[0].vitals.hp, 0);
+  EXPECT_EQ(c.enemies()[0].vitals.hp, Stat{0});
   EXPECT_TRUE(c.combat_over());
 }
 
@@ -244,11 +245,11 @@ TEST(CombatDealDamage, T_CMB_060_LethalLastEnemyTripsCombatOver) {
 TEST(CombatDealDamage, T_CMB_065_EnemyAttackUsesSourcePowers) {
   Combat c{kCombatTestSeed};
   Enemy source{};
-  source.vitals = Vitals{40, 40, 0, {MakePower(PowerKind::kStrength, 2)}};
+  source.vitals = Vitals{Stat{40}, Stat{40}, Stat{0}, {MakePower(PowerKind::kStrength, 2)}};
 
   c.enemy_attack_player(source, 9);
 
-  EXPECT_EQ(c.player().vitals.hp, 59);
+  EXPECT_EQ(c.player().vitals.hp, Stat{59});
 }
 
 // T-CMB-070 — EG — Lethal enemy_attack_player trips combat_over.
@@ -256,9 +257,9 @@ TEST(CombatDealDamage, T_CMB_070_LethalEnemyAttackTripsCombatOver) {
   Combat c{kCombatTestSeed};
   // Reduce player to 1 hp first.
   Enemy attacker{};
-  attacker.vitals = Vitals{1, 1, 0, {}};
+  attacker.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(attacker, 69);
-  ASSERT_EQ(c.player().vitals.hp, 1);
+  ASSERT_EQ(c.player().vitals.hp, Stat{1});
   ASSERT_FALSE(c.combat_over());
 
   c.enemy_attack_player(attacker, 5);
@@ -390,7 +391,7 @@ TEST(CombatPlayCard, T_CMB_105_UnplayableReturnsFalse) {
   DrainPlayerEnergy(c);
   ASSERT_EQ(c.player().energy, 0);
   ASSERT_EQ(c.player().hand.size(), 1U);
-  const int hp_before = c.enemies()[0].vitals.hp;
+  const Stat hp_before = c.enemies()[0].vitals.hp;
   const std::size_t discard_size_before = c.player().deck.discard_size();
 
   bool ok = c.play_card(sts2::game::HandIndex{0}, sts2::game::EnemySlot{0});
@@ -426,7 +427,7 @@ TEST(CombatPlayCard, T_CMB_115_StrikePlaysAndDealsDamage) {
   ASSERT_EQ(c.player().deck.discard_size(), 1U);
   EXPECT_EQ(c.player().deck.discard_pile()[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().energy, 2);
-  EXPECT_EQ(c.enemies()[0].vitals.hp, 34);
+  EXPECT_EQ(c.enemies()[0].vitals.hp, Stat{34});
   EXPECT_FALSE(c.combat_over());
 }
 
@@ -460,7 +461,7 @@ TEST(CombatPlayCard, T_CMB_120_SurvivorBlocksAndDiscards) {
   ASSERT_EQ(c.player().deck.discard_size(), 2U);
   EXPECT_EQ(c.player().deck.discard_pile()[0].id, CardId::kStrike);
   EXPECT_EQ(c.player().deck.discard_pile()[1].id, CardId::kSurvivor);
-  EXPECT_EQ(c.player().vitals.block, 8);
+  EXPECT_EQ(c.player().vitals.block, Stat{8});
 }
 
 // T-CMB-125 — EG — Lethal-on-play: dealing damage that kills the last enemy
@@ -475,7 +476,7 @@ TEST(CombatPlayCard, T_CMB_125_LethalOnPlayTripsCombatOver) {
   bool ok = c.play_card(sts2::game::HandIndex{0}, sts2::game::EnemySlot{0});
 
   EXPECT_TRUE(ok);
-  EXPECT_EQ(c.enemies()[0].vitals.hp, 0);
+  EXPECT_EQ(c.enemies()[0].vitals.hp, Stat{0});
   EXPECT_TRUE(c.combat_over());
 }
 
@@ -551,7 +552,7 @@ TEST(CombatStartPlayerTurn, T_CMB_175_Round1KeepsBlockDrawsSeven) {
   c.start(sts2::cards::make_silent_starter_deck());
 
   EXPECT_EQ(c.round(), 1);
-  EXPECT_EQ(c.player().vitals.block, 4);
+  EXPECT_EQ(c.player().vitals.block, Stat{4});
   EXPECT_EQ(c.player().hand.size(), 7U);
   EXPECT_EQ(c.player().energy, 3);
   ASSERT_EQ(c.enemies().size(), 2U);
@@ -568,7 +569,7 @@ TEST(CombatStartPlayerTurn, T_CMB_180_Round2ResetsBlockDrawsFive) {
   c.end_turn();
 
   EXPECT_EQ(c.round(), 2);
-  EXPECT_EQ(c.player().vitals.block, 0);
+  EXPECT_EQ(c.player().vitals.block, Stat{0});
   EXPECT_EQ(c.player().hand.size(), 5U);
   ASSERT_EQ(c.enemies().size(), 2U);
   EXPECT_EQ(c.enemies()[0].current_move, MoveId::kDarkStrike);
@@ -585,7 +586,7 @@ TEST(CombatStartPlayerTurn, T_CMB_185_DeadEnemyMoveNotRolled) {
   ASSERT_EQ(c.enemies()[0].current_move, MoveId::kIncantation);
 
   KillEnemy(c, 0);
-  ASSERT_EQ(c.enemies()[0].vitals.hp, 0);
+  ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
 
   c.end_turn();  // advances to R2 start_player_turn
 
@@ -606,7 +607,7 @@ TEST(CombatStartPlayerTurn, T_CMB_185_DeadEnemyMoveNotRolled) {
 TEST(CombatEnemyPhase, T_CMB_190_NoEnemiesNoOp) {
   Combat c{kCombatTestSeed};
   ASSERT_TRUE(c.enemies().empty());
-  const int hp_before = c.player().vitals.hp;
+  const Stat hp_before = c.player().vitals.hp;
 
   c.enemy_phase();
 
@@ -621,7 +622,7 @@ TEST(CombatEnemyPhase, T_CMB_190_NoEnemiesNoOp) {
 // Player hp unchanged (Incantation deals no damage).
 TEST(CombatEnemyPhase, T_CMB_195_TwoAliveIncantationFullSweep) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
-  const int hp_before = c.player().vitals.hp;
+  const Stat hp_before = c.player().vitals.hp;
 
   c.enemy_phase();
 
@@ -631,8 +632,8 @@ TEST(CombatEnemyPhase, T_CMB_195_TwoAliveIncantationFullSweep) {
                  {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false)});
   ExpectPowersEq(c.enemies()[1].vitals.powers,
                  {MakePower(PowerKind::kRitual, 5, /*just_applied=*/false)});
-  EXPECT_EQ(c.enemies()[0].vitals.block, 0);
-  EXPECT_EQ(c.enemies()[1].vitals.block, 0);
+  EXPECT_EQ(c.enemies()[0].vitals.block, Stat{0});
+  EXPECT_EQ(c.enemies()[1].vitals.block, Stat{0});
 }
 
 // T-CMB-200 — DF — R2 enemy_phase: both DarkStrike for damage, then per-enemy
@@ -647,7 +648,7 @@ TEST(CombatEnemyPhase, T_CMB_200_Round2DarkStrikeRitualToStrength) {
                  // start)
 
   // After the R2 enemy_phase ran: damage applied = 9 + 1 = 10 → hp 70-10=60.
-  EXPECT_EQ(c.player().vitals.hp, 60);
+  EXPECT_EQ(c.player().vitals.hp, Stat{60});
   ASSERT_EQ(c.enemies().size(), 2U);
   ExpectPowersEq(c.enemies()[0].vitals.powers,
                  {MakePower(PowerKind::kRitual, 2, /*just_applied=*/false),
@@ -662,7 +663,7 @@ TEST(CombatEnemyPhase, T_CMB_200_Round2DarkStrikeRitualToStrength) {
 TEST(CombatEnemyPhase, T_CMB_205_DeadEnemyAllLoopsSkip) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  ASSERT_EQ(c.enemies()[0].vitals.hp, 0);
+  ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
   ASSERT_TRUE(c.enemies()[0].vitals.powers.empty());
 
   c.enemy_phase();
@@ -685,9 +686,9 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
 
   // Reduce player to hp 1 via a temp source enemy with no powers.
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 69);
-  ASSERT_EQ(c.player().vitals.hp, 1);
+  ASSERT_EQ(c.player().vitals.hp, Stat{1});
   ASSERT_FALSE(c.combat_over());
 
   c.end_turn();
@@ -713,12 +714,12 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
 TEST(CombatEndTurn, T_CMB_215_CombatOverEarlyReturn) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 999);
   ASSERT_TRUE(c.combat_over());
   const int round_before = c.round();
   const std::size_t hand_before = c.player().hand.size();
-  const int hp_before = c.player().vitals.hp;
+  const Stat hp_before = c.player().vitals.hp;
   const int energy_before = c.player().energy;
 
   c.end_turn();
@@ -737,9 +738,9 @@ TEST(CombatEndTurn, T_CMB_220_PlayerDeathDuringEnemyPhaseEarlyReturn) {
   c.end_turn();  // → R2 start; enemies on DarkStrike
   ASSERT_EQ(c.round(), 2);
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 69);
-  ASSERT_EQ(c.player().vitals.hp, 1);
+  ASSERT_EQ(c.player().vitals.hp, Stat{1});
 
   c.end_turn();
 
@@ -762,7 +763,7 @@ TEST(CombatEndTurn, T_CMB_225_NormalRoundTransition) {
   EXPECT_EQ(c.round(), 2);
   EXPECT_EQ(c.player().hand.size(), 5U);
   EXPECT_EQ(c.player().energy, 3);
-  EXPECT_EQ(c.player().vitals.block, 0);
+  EXPECT_EQ(c.player().vitals.block, Stat{0});
   EXPECT_FALSE(c.combat_over());
 }
 
@@ -774,28 +775,28 @@ TEST(CombatEndTurn, T_CMB_225_NormalRoundTransition) {
 TEST(CombatIsPlayerDead, T_CMB_230_TrueAtZeroAndBelow) {
   Combat c{kCombatTestSeed};
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 70);
-  ASSERT_EQ(c.player().vitals.hp, 0);
+  ASSERT_EQ(c.player().vitals.hp, Stat{0});
   EXPECT_TRUE(c.is_player_dead());
 
   // Dealing more damage at hp=0 leaves hp=0 (apply_to_defender clamps); the
   // <=0 invariant still holds either way.
   c.enemy_attack_player(temp, 99);
-  EXPECT_LE(c.player().vitals.hp, 0);
+  EXPECT_LE(c.player().vitals.hp, Stat{0});
   EXPECT_TRUE(c.is_player_dead());
 }
 
 // T-CMB-235 — BP — FALSE at hp=1 and hp=70.
 TEST(CombatIsPlayerDead, T_CMB_235_FalseAboveZero) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player().vitals.hp, 70);
+  EXPECT_EQ(c.player().vitals.hp, Stat{70});
   EXPECT_FALSE(c.is_player_dead());
 
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 69);
-  ASSERT_EQ(c.player().vitals.hp, 1);
+  ASSERT_EQ(c.player().vitals.hp, Stat{1});
   EXPECT_FALSE(c.is_player_dead());
 }
 
@@ -820,19 +821,19 @@ TEST(CombatAllEnemiesDead, T_CMB_245_AllDeadTrue) {
 TEST(CombatAllEnemiesDead, T_CMB_250_AliveInMiddleFalse) {
   Combat c{kCombatTestSeed};
   Enemy a{};
-  a.vitals = Vitals{1, 1, 0, {}};
+  a.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   Enemy b{};
-  b.vitals = Vitals{40, 40, 0, {}};
+  b.vitals = Vitals{Stat{40}, Stat{40}, Stat{0}, {}};
   Enemy d{};
-  d.vitals = Vitals{1, 1, 0, {}};
+  d.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.add_enemy(std::move(a));
   c.add_enemy(std::move(b));
   c.add_enemy(std::move(d));
   KillEnemy(c, 0);
   KillEnemy(c, 2);
-  ASSERT_EQ(c.enemies()[0].vitals.hp, 0);
-  ASSERT_GT(c.enemies()[1].vitals.hp, 0);
-  ASSERT_EQ(c.enemies()[2].vitals.hp, 0);
+  ASSERT_EQ(c.enemies()[0].vitals.hp, Stat{0});
+  ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
+  ASSERT_EQ(c.enemies()[2].vitals.hp, Stat{0});
 
   EXPECT_FALSE(c.all_enemies_dead());
 }
@@ -843,7 +844,7 @@ TEST(CombatAllEnemiesDead, T_CMB_250_AliveInMiddleFalse) {
 TEST(CombatCheckWinOrLose, T_CMB_255_PlayerDeadShortCircuit) {
   Combat c{kCombatTestSeed};
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 70);
   ASSERT_TRUE(c.is_player_dead());
   ASSERT_FALSE(c.all_enemies_dead());
@@ -889,7 +890,7 @@ TEST(CombatCheckWinOrLose, T_CMB_270_BothSidesDead) {
   ASSERT_TRUE(c.combat_over());
 
   Enemy temp{};
-  temp.vitals = Vitals{1, 1, 0, {}};
+  temp.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(temp, 999);
   ASSERT_TRUE(c.is_player_dead());
   ASSERT_TRUE(c.all_enemies_dead());
@@ -1005,7 +1006,7 @@ TEST(CombatIsEnemyAlive, AliveTrue) {
 TEST(CombatIsEnemyAlive, DeadFalse) {
   Combat c = MakeCombatWithEnemy(kCombatTestSeed, /*hp=*/40);
   KillEnemy(c, 0);
-  ASSERT_LE(c.enemies()[0].vitals.hp, 0);
+  ASSERT_LE(c.enemies()[0].vitals.hp, Stat{0});
   const sts2::game::EnemySlot slot{0};
   EXPECT_FALSE(sts2::game::is_alive(slot.at(c.enemies())));
 }
@@ -1036,7 +1037,7 @@ TEST(CombatAliveEnemyIndices, ZeroAliveEmpty) {
 TEST(CombatAliveEnemyIndices, OneAliveReturnsSlot) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   KillEnemy(c, 0);
-  ASSERT_GT(c.enemies()[1].vitals.hp, 0);
+  ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
   EXPECT_EQ(c.alive_enemy_indices(), (std::vector<sts2::game::EnemySlot>{sts2::game::EnemySlot{1}}));
 }
 
@@ -1098,26 +1099,26 @@ TEST(CombatFindCardInHand, MultipleMatchesReturnsFirst) {
 // player vitals: defaults — fresh combat.
 TEST(CombatPlayerVitalsAccessors, PlayerHpDefaults) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player().vitals.hp, 70);
-  EXPECT_EQ(c.player().vitals.max_hp, 70);
+  EXPECT_EQ(c.player().vitals.hp, Stat{70});
+  EXPECT_EQ(c.player().vitals.max_hp, Stat{70});
 }
 
 // player vitals: reflects damage applied via enemy_attack_player.
 TEST(CombatPlayerVitalsAccessors, PlayerHpAfterDamage) {
   Combat c{kCombatTestSeed};
   Enemy attacker{};
-  attacker.vitals = Vitals{1, 1, 0, {}};
+  attacker.vitals = Vitals{Stat{1}, Stat{1}, Stat{0}, {}};
   c.enemy_attack_player(attacker, 5);
-  EXPECT_EQ(c.player().vitals.hp, 65);
-  EXPECT_EQ(c.player().vitals.max_hp, 70);
+  EXPECT_EQ(c.player().vitals.hp, Stat{65});
+  EXPECT_EQ(c.player().vitals.max_hp, Stat{70});
 }
 
 // player block: starts at 0; gain_player_block accumulates.
 TEST(CombatPlayerVitalsAccessors, PlayerBlockAccumulates) {
   Combat c{kCombatTestSeed};
-  EXPECT_EQ(c.player().vitals.block, 0);
+  EXPECT_EQ(c.player().vitals.block, Stat{0});
   c.gain_player_block(7);
-  EXPECT_EQ(c.player().vitals.block, 7);
+  EXPECT_EQ(c.player().vitals.block, Stat{7});
 }
 
 // player energy: 0 pre-start, kPlayerMaxEnergy post-start.

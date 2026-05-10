@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <ostream>
 
 // Strong type for character stats (hp, block, strength, weak, energy,
 // dark_strike_base, ritual_amount). Backing matches the original Godot source's
@@ -44,5 +45,9 @@ class Stat {
  private:
   int32_t v_ = 0;
 };
+
+inline std::ostream& operator<<(std::ostream& os, Stat s) {
+  return os << s.value();
+}
 
 }  // namespace sts2::game

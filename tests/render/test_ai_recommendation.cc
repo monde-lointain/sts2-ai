@@ -34,6 +34,7 @@ using sts2::ai::PvStep;
 using sts2::ai::Recommendation;
 using sts2::game::CardId;
 using sts2::game::Combat;
+using sts2::game::Stat;
 using sts2::input::Action;
 
 std::string Render(const Recommendation& rec, const Combat& c) {
@@ -78,8 +79,8 @@ TEST(RenderAiRecommendation, PostDeath_RenumberAliveEnemies) {
   Combat c = MakeStarterCombat(kCombatTestSeed);
   // Kill Calcified Cultist (slot 0); Damp Cultist (slot 1) is now display [0].
   KillEnemy(c, 0);
-  ASSERT_LE(c.enemies()[0].vitals.hp, 0);
-  ASSERT_GT(c.enemies()[1].vitals.hp, 0);
+  ASSERT_LE(c.enemies()[0].vitals.hp, Stat{0});
+  ASSERT_GT(c.enemies()[1].vitals.hp, Stat{0});
 
   Recommendation rec;
   rec.action = Action{Action::kPlayCard, sts2::game::HandIndex{0}};

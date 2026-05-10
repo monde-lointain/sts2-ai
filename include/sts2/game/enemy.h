@@ -21,7 +21,7 @@ struct Enemy {
 };
 
 [[nodiscard]] inline bool is_alive(const Enemy& e) noexcept {
-  return e.vitals.hp > 0;
+  return e.vitals.hp > Stat{0};
 }
 
 [[nodiscard]] inline bool is_alive(const std::vector<Enemy>& enemies,

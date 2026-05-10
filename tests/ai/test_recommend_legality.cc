@@ -26,6 +26,7 @@ using sts2::game::CardId;
 using sts2::game::Combat;
 using sts2::game::Enemy;
 using sts2::game::MoveId;
+using sts2::game::Stat;
 using sts2::game::Vitals;
 using sts2::input::Action;
 using sts2::tests::helpers::KillEnemy;
@@ -47,7 +48,7 @@ std::vector<Card> MakeTinyStrikeDeck() {
 Combat MakeTinyCombat(uint64_t seed, int enemy_hp) {
   Combat c{seed};
   Enemy e{};
-  e.vitals = Vitals{enemy_hp, enemy_hp, 0, {}};
+  e.vitals = Vitals{Stat{enemy_hp}, Stat{enemy_hp}, Stat{0}, {}};
   e.dark_strike_base = 9;
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;

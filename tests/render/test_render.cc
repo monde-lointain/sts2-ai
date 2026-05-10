@@ -46,6 +46,7 @@ using Card = sts2::game::Card;
 using Combat = sts2::game::Combat;
 using Enemy = sts2::game::Enemy;
 using MoveId = sts2::game::MoveId;
+using Stat = sts2::game::Stat;
 using Vitals = sts2::game::Vitals;
 
 namespace ansi = sts2::ansi;
@@ -112,7 +113,7 @@ TEST(RenderCombat, T_RND_170_EnemyBlockVisible) {
   Combat c{kCombatTestSeed};
   Enemy e{};
   e.name = "Block Goblin";
-  e.vitals = Vitals{20, 20, 3, {}};
+  e.vitals = Vitals{Stat{20}, Stat{20}, Stat{3}, {}};
   c.add_enemy(std::move(e));
   c.start(sts2::cards::make_silent_starter_deck());
 

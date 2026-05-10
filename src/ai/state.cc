@@ -26,9 +26,9 @@ void tally(CardCounts& counts, std::span<const sts2::game::Card> pile) {
 
 EnemyState build_enemy_state(const sts2::game::Enemy& e) {
   EnemyState s;
-  s.alive = e.vitals.hp > 0;
-  s.hp = sts2::game::Stat{e.vitals.hp};
-  s.block = sts2::game::Stat{e.vitals.block};
+  s.alive = e.vitals.hp > sts2::game::Stat{0};
+  s.hp = e.vitals.hp;
+  s.block = e.vitals.block;
   s.strength = sts2::game::Stat{
       sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kStrength)};
   s.weak = sts2::game::Stat{
@@ -83,8 +83,8 @@ CompactState from_combat(const sts2::game::Combat& combat) {
          nullptr);
 
   CompactState s;
-  s.player_hp = sts2::game::Stat{p.vitals.hp};
-  s.player_block = sts2::game::Stat{p.vitals.block};
+  s.player_hp = p.vitals.hp;
+  s.player_block = p.vitals.block;
   s.player_strength = sts2::game::Stat{0};
   s.player_weak = sts2::game::Stat{0};
   s.energy = sts2::game::Stat{p.energy};
