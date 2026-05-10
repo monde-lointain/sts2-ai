@@ -49,7 +49,7 @@ Combat MakeLethalCombat(uint64_t seed) {
   Combat c{seed};
   Enemy e{};
   e.vitals = Vitals{Stat{6}, Stat{6}, Stat{0}, {}};
-  e.dark_strike_base = 9;
+  e.dark_strike_base = Stat{9};
   e.current_move = MoveId::kDarkStrike;
   e.performed_first_move = true;
   c.add_enemy(std::move(e));

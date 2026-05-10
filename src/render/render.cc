@@ -65,7 +65,7 @@ std::string format_intent(const sts2::game::Enemy& e) {
       break;
     case sts2::game::MoveId::kDarkStrike:
       os << ansi::kRed << glyphs::kSwords << ' '
-         << sts2::damage::compute_outgoing(e.vitals.powers, e.dark_strike_base)
+         << sts2::damage::compute_outgoing(e.vitals.powers, e.dark_strike_base.value())
          << ansi::kReset;
       break;
   }

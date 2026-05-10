@@ -13,8 +13,8 @@ sts2::game::Enemy make_calcified_cultist(sts2::game::Rng& rng) {
   int hp = rng.uniform_int(38, 41);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
-  e.dark_strike_base = 9;
-  e.ritual_amount = 2;
+  e.dark_strike_base = sts2::game::Stat{9};
+  e.ritual_amount = sts2::game::Stat{2};
   return e;
 }
 
@@ -24,8 +24,8 @@ sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
   int hp = rng.uniform_int(51, 53);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
-  e.dark_strike_base = 1;
-  e.ritual_amount = 5;
+  e.dark_strike_base = sts2::game::Stat{1};
+  e.ritual_amount = sts2::game::Stat{5};
   return e;
 }
 
@@ -38,10 +38,10 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
       e.current_move,
       [&]() {
         sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kRitual,
-                            e.ritual_amount);
+                            e.ritual_amount.value());
       },
       [&]() {
-        combat.enemy_attack_player(e, e.dark_strike_base);
+        combat.enemy_attack_player(e, e.dark_strike_base.value());
       });
 }
 

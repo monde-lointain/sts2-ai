@@ -16,8 +16,8 @@ struct Enemy {
   MoveId current_move = MoveId::kIncantation;
   bool performed_first_move = false;
 
-  int dark_strike_base = 0;
-  int ritual_amount = 0;
+  Stat dark_strike_base;
+  Stat ritual_amount;
 };
 
 [[nodiscard]] inline bool is_alive(const Enemy& e) noexcept {
