@@ -18,20 +18,8 @@ namespace sts2::damage {
   return d < 0 ? 0 : d;
 }
 
-// Canonical block-then-hp absorption. Mutates hp/block in place; returns the
-// hp lost (>=0). Caller is responsible for any death/cleanup logic.
-[[nodiscard]] inline int apply_to_defender(int& hp, int& block, int incoming) noexcept {
-  if (incoming <= block) {
-    block -= incoming;
-    return 0;
-  }
-  incoming -= block;
-  block = 0;
-  int hp_loss = incoming < hp ? incoming : hp;
-  hp -= hp_loss;
-  return hp_loss;
-}
-
+// Canonical block-then-hp absorption. Mutates hp/block; returns hp lost (>=0).
+// Caller is responsible for any death/cleanup logic.
 [[nodiscard]] inline int apply_to_defender(sts2::game::Stat& hp, sts2::game::Stat& block, int incoming) noexcept {
   if (incoming <= block.value()) {
     block -= incoming;
