@@ -78,6 +78,10 @@ struct EnemyState {
   bool operator==(const EnemyState&) const = default;
 };
 
+[[nodiscard]] inline bool is_alive(const EnemyState& e) noexcept {
+  return e.alive;
+}
+
 enum class Phase : uint8_t { kPlayerActing, kAtChanceDraw };
 
 struct CompactState {
