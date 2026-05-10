@@ -65,6 +65,7 @@ if(CLANG_TIDY_EXECUTABLE)
     ${CMAKE_SOURCE_DIR}/src/*.cc
     ${CMAKE_SOURCE_DIR}/include/*.h
     ${CMAKE_SOURCE_DIR}/tests/*.cc
+    ${CMAKE_SOURCE_DIR}/tests/*.h
   )
 
   add_custom_target(tidy
