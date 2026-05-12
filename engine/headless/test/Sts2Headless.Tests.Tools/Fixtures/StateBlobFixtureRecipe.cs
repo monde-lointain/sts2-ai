@@ -140,7 +140,8 @@ public static class StateBlobFixtureRecipe
             MetricsPort: null,
             ScriptPath: null,
             OutPath: null,
-            ProbeOutPath: null);
+            ProbeOutPath: null,
+            RegistryPath: null);
 
         CompositionRoot.CompositionRootBundle bundle = CompositionRoot.Build(args);
         CombatState state = bundle.Context.State;
