@@ -1,4 +1,12 @@
-// Sts2Headless.MockWorker — test-only Q8 simulator.
+// Sts2Headless.MockWorker — REFERENCE Q8 IPC PEER, NOT PRODUCTION.
+//
+// Pinned to hook.proto v0.1 (contracts/schemas/game-simulator/hook.proto).
+// Re-pin required on every minor bump; bumps after v0.1 should land in
+// Q8's substrate, not here. Scope is exactly what S9 needs to validate
+// the M2 hook-protocol latency hard gate (p99 < 500 µs). Do NOT extend
+// this worker beyond S9 verification scope — handling card-pick / map /
+// shop / event / rest / potion-out-of-combat / run-level messages is
+// Q8's quantum, not Q1's. See README.md in this directory.
 //
 // Invocation:
 //   dotnet run --project test/mock-worker -- \
