@@ -40,6 +40,15 @@ namespace Sts2Headless.Host;
 /// records is written here (one line per turn boundary + the initial state +
 /// the final state). Used by the S13 determinism probe.
 /// </param>
+/// <param name="RegistryPath">
+/// Optional path to the canonical Q4 token registry
+/// (e.g. <c>contracts/registry/phase1-silent.json</c>). When set, the SHA-256
+/// of the file's bytes is computed exactly once at boot and stamped into the
+/// emitted state-blob's <c>ManifestStamp.ContentHash</c> slot (the wire
+/// position for <c>state_blob.proto/registry_sha</c>). When null, the legacy
+/// catalog-id-derived hash is used (preserves the S8-T7 golden SHA for tests
+/// that don't supply a registry).
+/// </param>
 public sealed record CliArgs(
     uint Seed,
     string Character,
@@ -50,7 +59,8 @@ public sealed record CliArgs(
     int? MetricsPort,
     string? ScriptPath,
     string? OutPath,
-    string? ProbeOutPath)
+    string? ProbeOutPath,
+    string? RegistryPath)
 {
     /// <summary>The single canonical usage block. Emitted on parse failure and on <c>--help</c>.</summary>
     public const string UsageText =
@@ -58,7 +68,7 @@ public sealed record CliArgs(
         "                    --relics <id>[,<id>...] --encounter <id>" + "\n" +
         "                    --ascension <int>" + "\n" +
         "                    [--metrics-port <port>] [--script <path>] [--out <path>]" + "\n" +
-        "                    [--probe-out <path>]";
+        "                    [--probe-out <path>] [--registry <path>]";
 
     /// <summary>Parse a CLI argument vector. Throws <see cref="CliParseException"/> on any malformed input.</summary>
     public static CliArgs Parse(string[] args)
@@ -75,6 +85,7 @@ public sealed record CliArgs(
         string? scriptPath = null;
         string? outPath = null;
         string? probeOutPath = null;
+        string? registryPath = null;
 
         int i = 0;
         while (i < args.Length)
@@ -167,6 +178,9 @@ public sealed record CliArgs(
                 case "--probe-out":
                     probeOutPath = TakeValue(flag);
                     break;
+                case "--registry":
+                    registryPath = TakeValue(flag);
+                    break;
                 case "--help":
                 case "-h":
                     throw new CliParseException(UsageText) { IsHelp = true };
@@ -194,7 +208,8 @@ public sealed record CliArgs(
             MetricsPort: metricsPort,
             ScriptPath: scriptPath,
             OutPath: outPath,
-            ProbeOutPath: probeOutPath);
+            ProbeOutPath: probeOutPath,
+            RegistryPath: registryPath);
     }
 
     private static List<string> ParseCommaList(string raw, string flag)
