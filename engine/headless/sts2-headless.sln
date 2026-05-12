@@ -1,4 +1,3 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -22,6 +21,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sts2Headless.Tests.Host", "test\Sts2Headless.Tests.Host\Sts2Headless.Tests.Host.csproj", "{D608A542-0E61-4A3A-BB30-0FC338935121}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sts2Headless.Tests.EngineStrip", "test\Sts2Headless.Tests.EngineStrip\Sts2Headless.Tests.EngineStrip.csproj", "{29A6225F-D7A6-47C1-ABB2-9C36016D9156}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{4EDDEADC-3A12-406F-B44A-4F8AA209010A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateBlobDumper", "tools\StateBlobDumper\StateBlobDumper.csproj", "{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +67,10 @@ Global
 		{29A6225F-D7A6-47C1-ABB2-9C36016D9156}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{29A6225F-D7A6-47C1-ABB2-9C36016D9156}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{29A6225F-D7A6-47C1-ABB2-9C36016D9156}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B53AE57B-D349-4499-9F8F-F98EFD992409} = {F9B8689E-1E82-4419-88B5-F9D5500CFF4C}
@@ -74,5 +81,6 @@ Global
 		{9625A2F8-3E41-499C-969E-7AC56CF46530} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
 		{D608A542-0E61-4A3A-BB30-0FC338935121} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
 		{29A6225F-D7A6-47C1-ABB2-9C36016D9156} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
+		{6166939C-22BD-4E7E-A6A0-9CEFCE3DE9BF} = {4EDDEADC-3A12-406F-B44A-4F8AA209010A}
 	EndGlobalSection
 EndGlobal
