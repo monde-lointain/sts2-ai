@@ -2,7 +2,11 @@ SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
 export PATH := /usr/bin:$(PATH)
 
-.PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state gc-measurement
+.PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state gc-measurement consolehost-smoke
+
+# Canonical Steam install path for sts2.dll on the Q1 build host. Caller can
+# override via STS2_DLL=... (e.g. on a teammate's machine).
+STS2_DLL ?= $(HOME)/snap/steam/common/.local/share/Steam/steamapps/common/Slay the Spire 2/data_sts2_linuxbsd_x86_64/sts2.dll
 
 build:
 	@echo "==> dotnet build"
@@ -104,6 +108,19 @@ probe-upstream-capture:
 probe-upstream-initial-state: probe-build
 	@echo "==> probe-upstream-initial-state (22 encounters x 10 seeds; byte-compare vs upstream)"
 	dotnet run --project test/determinism-probe -c Debug --no-build -- --mode initial-state-upstream
+
+# === P-1.5-1 console host smoke ======================================
+#
+# Build-and-run smoke target for the Phase-1.5 console host
+# (tools/Sts2Q1ConsoleHost). Loads upstream sts2.dll from the Steam install
+# directory and emits the upstream_bound sentinel JSON to stdout. NOT on the
+# `make ci` path — `make ci` keeps Steam install optional. Use this for
+# manual P-1.5-1 verification on a dev box with Steam present.
+consolehost-smoke: build
+	@echo "==> consolehost-smoke (P-1.5-1.α; STS2_DLL=$(STS2_DLL))"
+	dotnet run --project tools/Sts2Q1ConsoleHost -c Debug --no-build -- \
+	  --sts2-dll "$(STS2_DLL)" --seed 42 --encounter CultistsNormal \
+	  --out /tmp/p151a-smoke.jsonl
 
 clean:
 	dotnet clean sts2-headless.sln
