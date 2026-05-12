@@ -31,8 +31,8 @@ target_sources(sts2_simulator PRIVATE
 target_compile_features(sts2_simulator PUBLIC cxx_std_20)
 
 target_include_directories(sts2_simulator
-    PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    PRIVATE ${PROJECT_SOURCE_DIR}/src
+    PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/engine/cpp/include>
+    PRIVATE ${PROJECT_SOURCE_DIR}/engine/cpp/src
 )
 
 sts2_apply_warnings(sts2_simulator)
@@ -54,8 +54,8 @@ target_sources(sts2_ai PRIVATE
 target_compile_features(sts2_ai PUBLIC cxx_std_20)
 
 target_include_directories(sts2_ai
-    PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-    PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/engine/cpp/include>
+    PRIVATE ${PROJECT_SOURCE_DIR}/engine/cpp/src)
 
 target_link_libraries(sts2_ai PUBLIC sts2::simulator)
 

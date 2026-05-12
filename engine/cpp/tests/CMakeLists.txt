@@ -51,8 +51,8 @@ target_link_libraries(sts2_simulator_tests PRIVATE
 # Resolves `#include "tests/seeds/expected_values.h"` from test sources, plus
 # `#include "render/render_internal.h"` etc. for internal-header tests.
 target_include_directories(sts2_simulator_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/engine/cpp
+    ${PROJECT_SOURCE_DIR}/engine/cpp/src
 )
 
 # Apply project warnings, then disable warnings-as-errors for tests only:

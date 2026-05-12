@@ -58,14 +58,9 @@ if(ENABLE_SANITIZERS)
   endif()
 endif()
 
-add_subdirectory(src)
-
 if(STS2_BUILD_TESTS)
     include(cmake/Dependencies.cmake)
     enable_testing()
-    add_subdirectory(tests)
-    # Seed pinner is a manual regenerator for tests/seeds/expected_values.h;
-    # not run automatically. Gated on STS2_BUILD_TESTS so production builds
-    # don't pull it in.
-    add_subdirectory(tools/seed-pinner)
 endif()
+
+add_subdirectory(engine/cpp)
