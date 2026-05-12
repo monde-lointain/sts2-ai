@@ -42,6 +42,7 @@ namespace Sts2Headless.Host;
 public sealed class PrometheusMetricsRegistry : IMetricsRegistry
 {
     private readonly Dictionary<string, long> _counters = new();
+    private readonly Dictionary<string, double> _floatCounters = new();
     private readonly Dictionary<string, double> _gauges = new();
     private readonly Dictionary<string, MetricDescriptor> _descriptors = new();
     // Labeled counter series, keyed by (familyName, labelName, labelValue).
@@ -82,6 +83,10 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
             if (kind == MetricKind.Counter)
             {
                 _counters.TryAdd(name, 0L);
+            }
+            else if (kind == MetricKind.FloatCounter)
+            {
+                _floatCounters.TryAdd(name, 0d);
             }
             else if (kind == MetricKind.Gauge)
             {
@@ -136,6 +141,21 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         {
             EnsureDescriptor(name, MetricKind.Counter);
             _counters[name] = _counters.TryGetValue(name, out long c) ? c + delta : delta;
+        }
+    }
+
+    /// <summary>
+    /// Add <paramref name="delta"/> to a float-valued cumulative counter.
+    /// Used for the seconds-shaped GC counter (<c>q1_gc_time_seconds</c>).
+    /// </summary>
+    public void IncrementCounterFloat(string name, double delta)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        if (delta == 0d) return;
+        lock (_lock)
+        {
+            EnsureDescriptor(name, MetricKind.FloatCounter);
+            _floatCounters[name] = _floatCounters.TryGetValue(name, out double c) ? c + delta : delta;
         }
     }
 
@@ -216,6 +236,9 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
                     case MetricKind.Counter:
                         RenderCounter(sb, d.Name);
                         break;
+                    case MetricKind.FloatCounter:
+                        RenderFloatCounter(sb, d.Name);
+                        break;
                     case MetricKind.Gauge:
                         RenderGauge(sb, d.Name);
                         break;
@@ -248,6 +271,15 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     {
         double v = _gauges.GetValueOrDefault(name, 0d);
         sb.Append(name).Append(' ').AppendLine(v.ToString("R", CultureInfo.InvariantCulture));
+    }
+
+    private void RenderFloatCounter(StringBuilder sb, string name)
+    {
+        double v = _floatCounters.GetValueOrDefault(name, 0d);
+        // Render zero as the integer literal "0" to keep the renderer's output
+        // stable with the integer-counter convention from boot.
+        string text = v == 0d ? "0" : v.ToString("R", CultureInfo.InvariantCulture);
+        sb.Append(name).Append(' ').AppendLine(text);
     }
 
     private void RenderHistogram(StringBuilder sb, string name)
@@ -284,6 +316,7 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     private static string TypeText(MetricKind kind) => kind switch
     {
         MetricKind.Counter => "counter",
+        MetricKind.FloatCounter => "counter",
         MetricKind.Gauge => "gauge",
         MetricKind.Histogram => "histogram",
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
@@ -295,6 +328,7 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         {
             _descriptors[name] = new MetricDescriptor(name, kind, name);
             if (kind == MetricKind.Counter) _counters.TryAdd(name, 0L);
+            else if (kind == MetricKind.FloatCounter) _floatCounters.TryAdd(name, 0d);
             else if (kind == MetricKind.Gauge) _gauges.TryAdd(name, 0d);
             return;
         }
@@ -305,8 +339,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         }
     }
 
-    /// <summary>Counter / gauge / histogram discriminator.</summary>
-    public enum MetricKind { Counter, Gauge, Histogram }
+    /// <summary>Counter / float-counter / gauge / histogram discriminator. Float-counter renders as Prometheus type <c>counter</c>.</summary>
+    public enum MetricKind { Counter, FloatCounter, Gauge, Histogram }
 
     private sealed record MetricDescriptor(string Name, MetricKind Kind, string Help);
 

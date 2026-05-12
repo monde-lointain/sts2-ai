@@ -30,7 +30,7 @@ public static class GcMetricsBootstrap
             "Per-collection GC pause wall-clock (from GC.GetTotalPauseDuration() deltas).");
         registry.Register(
             GcMetricNames.GcTimeSeconds,
-            PrometheusMetricsRegistry.MetricKind.Counter,
+            PrometheusMetricsRegistry.MetricKind.FloatCounter,
             "Cumulative GC pause time in seconds (project-lead R7 metric).");
     }
 }
