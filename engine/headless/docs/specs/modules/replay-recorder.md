@@ -36,6 +36,47 @@ M3 owns the **replay file format** — Q1's third versioned data contract.
 
 Files are append-only during a session; finalized (trailer SHA written) on session close.
 
+## Scope: not a cross-quantum contract
+
+Replay files are a **Q1-internal debug / regression artifact**, not a cross-quantum training-data
+contract. Per pipeline `docs/specs/modules/game-simulator.md` § Data Ownership, the replay file
+format is one of Q1's three versioned data contracts (state, hook, replay) — but its consumers are
+**Q1's own quanta-neighbors for debugging and pinned-seed verification**, not the training pipeline.
+
+The actual training-data contract is **`contracts/schemas/trajectory/trajectory.proto`** (Q8-produced,
+Q3-consumed; pipeline ADR-006). Trajectories carry rollout decisions + search statistics + value
+targets — the surface a learner needs. Replays carry `(seed, action_sequence, optional checkpoints)`
+— the surface a debugger needs.
+
+**Replays are NOT reverse-engineered into trajectories.** Q8 produces trajectories from its own
+MCTS process during rollout — search statistics (visit counts, prior probabilities, predicted
+values) are recorded by Q8 as decisions are made. A replay cannot reconstruct those statistics
+post-hoc; the MCTS tree exists only in Q8's process memory at decision time and is discarded after
+the action is emitted.
+
+Q1's replay sink lives in `engine/headless/` (Q1-local). The trajectory schema lives in
+`contracts/schemas/trajectory/` (cross-quantum, Q8 owns wire shape, Q3 owns ingest semantics).
+Both are versioned independently; an M3 replay schema bump does NOT trigger a trajectory schema
+bump and vice versa.
+
+### Consumers of replays (Q1-local debugging surface only)
+
+- **Q1's determinism probe** (`test/determinism-probe/`, Q1-ADR-007): replays a pinned seed,
+  asserts state hashes match per-step.
+- **Q12 Eval Harness**: replays pinned seeds for regression detection (Q12 may also produce its
+  own trajectories from its own rollouts; replays are a *secondary* artifact for Q12, not a
+  primary input).
+- **Debugging tools** (humans + Q1 engineers): walk a replay to localize a divergence.
+
+### NOT consumers of replays
+
+- **Q3 Experience Store**: ingests trajectories, not replays.
+- **Q10 Trainer**: samples trajectories, not replays.
+- **Q9 Inference Server**: never reads replays.
+
+If a future use-case wants "replay-as-training-input" semantics, that's a new contract — escalate
+to project lead before adding a Q3-side replay ingest path.
+
 ## Communication
 
 ### Synchronous (in-process calls)
