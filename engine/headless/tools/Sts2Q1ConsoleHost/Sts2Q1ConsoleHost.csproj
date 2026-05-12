@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!--
+      Phase-1.5 console host foundation (P-1.5-1.α). Loads upstream sts2.dll
+      from the Steam install directory via reflection + AssemblyLoadContext;
+      resolves the 12 SceneTree-coupled singletons via ISceneTreeSingletons
+      (whose bodies are P-1.5-1.β scope). The host MUST NOT mount a Godot
+      scene tree — it is a plain .NET console process.
+    -->
+    <AssemblyName>Sts2Q1ConsoleHost</AssemblyName>
+    <RootNamespace>Sts2Q1ConsoleHost</RootNamespace>
+    <!--
+      Don't fail on upstream's decompiled-artefact warnings as they surface
+      via reflection-only code paths. We still want our own code clean.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!--
+      Patch-level forward roll so the loaded sts2.dll (built against
+      .NET 9.0.7) runs against the installed runtime (e.g. 9.0.15).
+    -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+
+</Project>
