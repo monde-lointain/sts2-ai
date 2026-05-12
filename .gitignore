@@ -72,6 +72,9 @@ Thumbs.db
 # Virtual environment (Python)
 .venv/
 venv/
+__pycache__/
+*.py[cod]
+data/
 
 # AST analyzer outputs (regenerated on demand)
 tools/ast-analyzer/analysis.json

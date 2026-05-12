@@ -1,0 +1,5 @@
+{
+  "service": "rollout-workers",
+  "port": 18108,
+  "data_dir": "data/rollout-workers"
+}

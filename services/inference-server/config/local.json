@@ -1,0 +1,5 @@
+{
+  "service": "inference-server",
+  "port": 18109,
+  "data_dir": "data/inference-server"
+}

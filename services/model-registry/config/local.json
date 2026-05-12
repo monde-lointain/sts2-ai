@@ -1,0 +1,5 @@
+{
+  "service": "model-registry",
+  "port": 18105,
+  "data_dir": "data/model-registry"
+}

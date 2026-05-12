@@ -1,0 +1,5 @@
+{
+  "service": "observability",
+  "port": 18107,
+  "data_dir": "data/observability"
+}

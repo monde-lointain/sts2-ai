@@ -1,0 +1,5 @@
+{
+  "service": "experience-store",
+  "port": 18103,
+  "data_dir": "data/experience-store"
+}
