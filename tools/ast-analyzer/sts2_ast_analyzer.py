@@ -522,17 +522,27 @@ class BodyAnalyzer:
 # Driver
 
 TU_SOURCES = [
-    "src/game/rng.cc",
-    "src/game/powers.cc",
-    "src/game/damage.cc",
+    "src/ai/probability.cc",
+    "src/ai/recommend.cc",
+    "src/ai/search.cc",
+    "src/ai/state.cc",
+    "src/ai/transition.cc",
+    "src/app/args.cc",
+    "src/app/prompts.cc",
     "src/game/cards.cc",
-    "src/game/enemies.cc",
     "src/game/combat.cc",
+    "src/game/damage.cc",
+    "src/game/deck.cc",
+    "src/game/enemies.cc",
+    "src/game/hand.cc",
+    "src/game/powers.cc",
+    "src/game/rng.cc",
+    "src/input/input.cc",
+    "src/main.cc",
+    "src/render/ai_recommendation.cc",
     "src/render/bar.cc",
     "src/render/console.cc",
     "src/render/render.cc",
-    "src/input/input.cc",
-    "src/main.cc",
 ]
 
 
@@ -552,7 +562,7 @@ def collect_decls(c: ci.Cursor, world: WorldModel):
         ba.analyze(c)
         # Compact def-use into dict of dicts
         for name, du in ba.def_use.items():
-            fn.def_use[name] = asdict(dU)
+            fn.def_use[name] = asdict(du)
         world.funcs[fn.qualified] = fn
         # Attach to type if method
         if fn.is_method and fn.parent_name in world.types:
