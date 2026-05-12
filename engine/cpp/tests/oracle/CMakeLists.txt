@@ -12,6 +12,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_state_blob.cc
     test_envelope.cc
     test_cultists_projection.cc
+    test_adapter_facade.cc
     adapter_fixtures.h
 )
 
