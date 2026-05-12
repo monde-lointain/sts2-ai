@@ -1,8 +1,39 @@
 syntax = "proto3";
 
 // sts2.schema.major: 0
-// sts2.schema.minor: 0
+// sts2.schema.minor: 1
 package sts2.q1.v0;
+
+// StateBlobEnvelope is the OUTER frame for serialized Q1 combat / run state.
+// The inner `payload` is M1's versioned binary state format (see
+// engine/headless/docs/specs/modules/state-codec.md). M1 alone owns the
+// inner schema; no other quantum reads or writes it directly.
+//
+// Manifest-stamp invariants (verified by S7 bit-identical-roundtrip CI gate):
+//   1. (schema_major, schema_minor) MUST match Q1's compiled wire version.
+//      Mismatched majors REJECTED at session handshake (Q1-ADR-005).
+//   2. `game_version` is the upstream STS2 build identifier Q1 was ported
+//      from. Used by Q2 / Q12 for upstream-comparable validation.
+//   3. `simulator_build_sha` is Q1's git commit hash at the time the blob
+//      was emitted. Required for trace-back of probe divergences to source.
+//   4. `registry_sha` is the SHA-256 of the content registry file
+//      (`contracts/registry/phase1-silent.json`) as read at simulator boot.
+//      The SHA path is single-source: computed once by M9 at boot, stamped
+//      into every blob. Flipping a byte in the registry MUST change this SHA
+//      (regression test: `RegistryShaRoundtripTests`, D6 commit 807977b).
+//   5. `payload_sha256` is the SHA-256 of `payload` bytes only. Q2 / Q12
+//      verify by recomputing and comparing.
+//   6. The 5-tuple (schema_major, schema_minor, game_version,
+//      simulator_build_sha, registry_sha) is the state-snapshot half of the
+//      pipeline ADR-001 reproducibility chain. The model-artifact half is
+//      owned by Q5.
+//
+// Wire compatibility:
+//   - Adding NEW outer-envelope fields is a minor bump.
+//   - Removing any outer-envelope field is a major bump.
+//   - Inner-payload format bumps are M1's domain (state-codec.md own version).
+//   - This v0 envelope is COMBAT-ONLY per project-lead direction 2026-05-12.
+//     Run-state envelopes live behind a v1 release (S14+S15).
 
 message StateBlobEnvelope {
   uint32 schema_major = 1;

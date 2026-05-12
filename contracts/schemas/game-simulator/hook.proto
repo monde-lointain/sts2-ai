@@ -1,19 +1,99 @@
 syntax = "proto3";
 
 // sts2.schema.major: 0
-// sts2.schema.minor: 0
+// sts2.schema.minor: 1
 package sts2.q1.v0;
+
+// Wire-version invariants
+// ---------------------------
+// - All messages carry an explicit SchemaVersion in their first field.
+// - Q1 and Q8 reject mismatched (major, minor) at session-establish handshake
+//   per Q1-ADR-005 (hook-protocol schema co-versioned with state schema).
+// - Minor bumps are additive (oneof additions, new enum values appended last).
+// - Major bumps are cross-quantum coordination events (pipeline ADR-001).
+// - This v0 surface is COMBAT-ONLY per project-lead direction 2026-05-12.
+//   Run-level message types (card-pick, map, shop, event, rest, potion-out-
+//   of-combat) live behind a v1 release (S15).
 
 message SchemaVersion {
   uint32 major = 1;
   uint32 minor = 2;
 }
 
+// Decision phase — Q1 publishes which kind of decision Q8 must produce next.
+// Sequential-targeting (pipeline ADR-008) requires Q8 to emit each target as
+// a separate sub-action; AWAITING_TARGET_N tells Q8 "you committed to a
+// multi-target card N steps ago; pick the next target."
+//
+// CHANCE intentionally omitted from v0. Q1 resolves all RNG internally before
+// each player-decision boundary, so chance nodes do not cross the hook
+// protocol today. Reserved for v1 if chance-aware MCTS-via-protocol is added.
+// See Q1-ADR-012 negatives for consumer-side workarounds (single-sample vs
+// clone-and-resample via M4) until v1.
+enum DecisionPhase {
+  DECISION_PHASE_UNSPECIFIED = 0;
+  DECISION_PHASE_DECISION = 1;
+  DECISION_PHASE_AWAITING_TARGET_N = 2;
+}
+
+// Virtual targets (self / all-enemies / all-monsters-and-self).
+enum SpecialTarget {
+  SPECIAL_TARGET_UNSPECIFIED = 0;
+  SPECIAL_TARGET_SELF = 1;
+  SPECIAL_TARGET_ALL_ENEMIES = 2;
+  SPECIAL_TARGET_ALL_MONSTERS_AND_SELF = 3;
+}
+
+// Target encoding for the action surface.
+// - monster_slot_index: positional slot (0..MaxMonsters-1).
+// - monster_slot_name : named role within a multi-monster encounter (e.g.
+//                       "crusher" / "rocket" for KaiserCrabBoss); Q2 / Q8
+//                       resolve via state-blob's monster table.
+// - special           : virtual target (self / AoE / etc.); engine fans out
+//                       at action-resolve time.
+message TargetRef {
+  oneof kind {
+    uint32        monster_slot_index = 1;
+    string        monster_slot_name  = 2;
+    SpecialTarget special            = 3;
+  }
+}
+
 message LegalAction {
   uint32 action_id = 1;
   string action_type = 2;
+  // card_index / target_index retained for v0.0 callers; new code SHOULD use
+  // the structured `surface` oneof below. Removal is a major bump.
   uint32 card_index = 3;
   uint32 target_index = 4;
+
+  // Structured action surface (additive).
+  oneof surface {
+    PlayCardAction play_card     = 5;
+    EndTurnAction  end_turn      = 6;  // first-class; was action_type=="ENDTURN" string-match
+    PotionAction   potion        = 7;  // combat-only potions; out-of-combat -> v1
+    TargetChoice   target_choice = 8;  // sub-action for AWAITING_TARGET_N
+  }
+}
+
+// Play a card. For multi-target cards, the first target is supplied here;
+// subsequent targets arrive via TargetChoice sub-actions under
+// DECISION_PHASE_AWAITING_TARGET_N.
+message PlayCardAction {
+  uint32    hand_index   = 1;
+  TargetRef first_target = 2;  // unused if card has no target
+}
+
+message EndTurnAction {}
+
+message PotionAction {
+  uint32    potion_index = 1;
+  TargetRef target       = 2;  // unused if potion has no target
+}
+
+message TargetChoice {
+  uint32    target_n = 1;  // 0-indexed; counts up across the card's targets
+  TargetRef target   = 2;
 }
 
 message DecisionRequest {
@@ -22,6 +102,10 @@ message DecisionRequest {
   bytes state_blob = 3;
   repeated LegalAction legal_actions = 4;
   string manifest_sha = 5;
+  // Decision phase. Wire default is UNSPECIFIED (proto3 0-value). Q1 in v0.1+
+  // MUST set this field explicitly. Consumers MAY treat UNSPECIFIED as DECISION
+  // for v0.0 compatibility, but this is a consumer convention, not a wire default.
+  DecisionPhase phase = 6;
 }
 
 message DecisionResponse {
