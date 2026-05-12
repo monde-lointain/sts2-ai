@@ -7,7 +7,7 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CONFIG = ROOT / "schemas" / "codegen.json"
+CONFIG = ROOT / "contracts" / "schemas" / "codegen.json"
 MESSAGE_RE = re.compile(r"message\s+(\w+)\s*\{")
 
 
@@ -43,18 +43,24 @@ def write_csharp(out: Path, names: list[str], namespace: str) -> None:
     out.write_text("".join(body), encoding="utf-8")
 
 
+def _ident(part: str) -> str:
+    return part.replace("-", "_")
+
+
 def main() -> int:
     config = json.loads(CONFIG.read_text(encoding="utf-8"))
+    contracts_schemas = ROOT / "contracts" / "schemas"
+    contracts_generated = ROOT / "contracts" / "generated"
     for root in config["schema_roots"]:
         for proto in sorted((ROOT / root).glob("*.proto")):
-            rel = proto.relative_to(ROOT / "schemas")
+            rel = proto.relative_to(contracts_schemas)
             names = messages(proto.read_text(encoding="utf-8"))
             stem = proto.stem + "_pb"
-            write_python(ROOT / "generated" / "python" / rel.parent / f"{stem}.py", names)
-            cpp_namespace = "sts2::generated::" + "::".join(rel.parent.parts)
-            write_cpp(ROOT / "generated" / "cpp" / rel.parent / f"{stem}.h", names, cpp_namespace)
-            namespace = "Sts2.Generated." + ".".join(part.upper() for part in rel.parent.parts)
-            write_csharp(ROOT / "generated" / "csharp" / rel.parent / f"{proto.stem}.cs", names, namespace)
+            write_python(contracts_generated / "python" / rel.parent / f"{stem}.py", names)
+            cpp_namespace = "sts2::generated::" + "::".join(_ident(p) for p in rel.parent.parts)
+            write_cpp(contracts_generated / "cpp" / rel.parent / f"{stem}.h", names, cpp_namespace)
+            cs_namespace = "Sts2.Generated." + ".".join(_ident(p).upper() for p in rel.parent.parts)
+            write_csharp(contracts_generated / "csharp" / rel.parent / f"{proto.stem}.cs", names, cs_namespace)
     return 0
 
 

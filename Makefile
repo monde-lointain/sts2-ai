@@ -105,22 +105,22 @@ reconfig:
 	@cmake -B $(BUILD_DIR) -S . $(CMAKE_OPTS)
 
 q1-ci:
-	@$(MAKE) -C services/sim-headless ci
+	@$(MAKE) -C engine/headless ci
 
 schema-codegen:
 	@.venv/bin/python tools/schema/generate_bindings.py
 
 schema-test: schema-codegen
-	@.venv/bin/python -m unittest tests.schema.test_compatibility
+	@.venv/bin/python -m unittest tools.tests.schema.test_compatibility
 
 services-smoke:
-	@.venv/bin/python tests/services/smoke_services.py
+	@.venv/bin/python pipeline/tests/smoke_services.py
 
 content-registry:
 	@.venv/bin/python tools/content/seed_phase1_registry.py
 
 content-test: content-registry
-	@.venv/bin/python -m unittest tests.content.test_registry
+	@.venv/bin/python -m unittest tools.tests.content.test_registry
 
 phase0-gate: test q1-ci schema-test services-smoke content-test
 

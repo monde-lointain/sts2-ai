@@ -1,5 +1,11 @@
 {
-  "schema_roots": ["schemas/q1", "schemas/q3", "schemas/q4", "schemas/q5", "schemas/q6"],
+  "schema_roots": [
+    "contracts/schemas/game-simulator",
+    "contracts/schemas/trajectory",
+    "contracts/schemas/content-registry",
+    "contracts/schemas/artifact",
+    "contracts/schemas/eval-report"
+  ],
   "languages": ["csharp", "cpp", "python"],
-  "output_root": "generated"
+  "output_root": "contracts/generated"
 }

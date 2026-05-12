@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = Path("/home/clydew372/development/projects/cs/sts2-headless/test/fixtures/q4-manifest-phase1.json")
-OUT = ROOT / "content" / "registry" / "phase1-silent.json"
+OUT = ROOT / "contracts" / "registry" / "phase1-silent.json"
 
 
 KINDS = [

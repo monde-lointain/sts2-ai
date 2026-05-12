@@ -17,7 +17,7 @@ SERVICES = [
     "inference-server",
     "rollout-workers",
     "trainer",
-    "eval-harness",
+    "evaluation-harness",
     "observability",
 ]
 
@@ -42,7 +42,7 @@ def wait_for_health(port: int) -> dict:
 
 
 def smoke_service(service: str) -> None:
-    service_dir = REPO_ROOT / "services" / service
+    service_dir = REPO_ROOT / "pipeline" / service
     config_path = service_dir / "config" / "local.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
     env = os.environ.copy()
