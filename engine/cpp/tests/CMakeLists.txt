@@ -65,3 +65,8 @@ else()
 endif()
 
 gtest_discover_tests(sts2_simulator_tests)
+
+# ------------------------------------------------------------------
+# sts2_oracle_tests — Q2 oracle adapter tests (Q2-ADR-001)
+# ------------------------------------------------------------------
+add_subdirectory(oracle)

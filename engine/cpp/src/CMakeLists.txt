@@ -67,3 +67,8 @@ sts2_apply_warnings(sts2_ai)
 add_executable(sts2_fight main.cc)
 target_link_libraries(sts2_fight PRIVATE sts2::simulator sts2::ai)
 sts2_apply_warnings(sts2_fight)
+
+# ------------------------------------------------------------------
+# sts2::oracle_adapter — Q2 engine->CompactState adapter (Q2-ADR-001)
+# ------------------------------------------------------------------
+add_subdirectory(oracle/adapter)
