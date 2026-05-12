@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <!--
+      R7 GC measurement harness drives the same hook-protocol roundtrip as
+      the Tests.Adapters latency gate. The adapter uses pinned byte* inside
+      shared memory — unsafe is confined to the test layer.
+    -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +23,26 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Sts2Headless.Host\Sts2Headless.Host.csproj" />
+    <!--
+      R7 GC harness needs the HookProtocolAdapter to drive the 10K-RT workload.
+      Adding the Adapters reference is additive; it doesn't change Host's
+      production surface.
+    -->
+    <ProjectReference Include="..\..\src\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
   </ItemGroup>
+
+  <!--
+    The mock-worker is NOT part of sts2-headless.sln (mirrors Tests.Adapters).
+    The R7 GC harness spawns the mock-worker as a subprocess; this target
+    chains its build into ours so the binary is present whenever the harness
+    runs. Same pattern Tests.Adapters uses.
+  -->
+  <Target Name="BuildMockWorker" BeforeTargets="Build">
+    <MSBuild
+      Projects="..\mock-worker\Sts2Headless.MockWorker.csproj"
+      Targets="Restore;Build"
+      Properties="Configuration=$(Configuration)"
+      BuildInParallel="false" />
+  </Target>
 
 </Project>
