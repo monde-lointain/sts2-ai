@@ -125,9 +125,14 @@ std::set<std::string> collect_enemy_power_ids(
 
 AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   const ParsedStateBlob blob = read_state_blob(m1_payload);
+  // blob_canonical_hash mirrors Q1's CanonicalHash.Sha256Hex per
+  // state-codec.md §Data Ownership: SHA-256 over the FULL blob bytes
+  // (not the in-trailer hash, which covers only [start, trailer_magic)).
+  // The fixture corpus's expected_canonical_hash_hex pins exactly this
+  // shape so downstream consumers (oracle-agreement rows) can correlate.
+  const auto full_sha = detail::sha256(m1_payload);
   const std::string blob_hash = detail::to_hex_lower(
-      std::span<const std::uint8_t>(blob.trailer_sha256.data(),
-                                    blob.trailer_sha256.size()));
+      std::span<const std::uint8_t>(full_sha.data(), full_sha.size()));
   const auto manifest = current_manifest();
 
   if (is_cultists_normal(blob.combat_state)) {
