@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "encounter_id": "SmallSlimes",
+  "role": "B.1-\u03B5 DEFER \u2014 encounter cannot run end-to-end in Q1 Phase-1A; encounter-RNG plumbing deferred. Initial-state only; stresses Q2 MissingUpstream path.",
+  "expected_canonical_hash_hex": "d33371738949b606df7713b1b19c5645fb2e4d8c822c72c6224a6ce7c8cf1fbd",
+  "blob_bytes": 5549
+}
