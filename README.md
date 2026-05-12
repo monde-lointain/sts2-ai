@@ -109,9 +109,9 @@ build\ninja-debug\Debug\sts2_simulator_tests.exe
 
 Layout:
 
-- Public headers: `include/sts2/<module>/*.h`
-- Implementations: `src/<module>/*.cc`
-- Internal (test-visible only) headers: `src/<module>/*_internal.h`
+- Public headers: `engine/cpp/include/sts2/<module>/*.h`
+- Implementations: `engine/cpp/src/<module>/*.cc`
+- Internal (test-visible only) headers: `engine/cpp/src/<module>/*_internal.h`
 
 All code lives under the `sts2::` namespace.
 
@@ -119,7 +119,7 @@ All code lives under the `sts2::` namespace.
 - `sts2::render` — ANSI/UTF-8 rendering. Reads `Combat`, writes to `std::ostream`.
 - `sts2::input` — line-buffered action/index parser. Stream-driven, no globals.
 - `sts2::app` — argv parsing and prompt strings.
-- `src/main.cc` — wires layers: arg parsing, console init, combat setup, prompt loop.
+- `engine/cpp/src/main.cc` — wires layers: arg parsing, console init, combat setup, prompt loop.
 
 ## Tooling
 
@@ -130,12 +130,12 @@ All code lives under the `sts2::` namespace.
     .venv/bin/python tools/ast-analyzer/sts2_ast_analyzer.py --out tools/ast-analyzer/analysis.json
     .venv/bin/python tools/ast-analyzer/generate_part1_doc.py
 
-`tools/seed-pinner/` regenerates `tests/seeds/expected_values.h`. Re-run after toolchain change:
+`engine/cpp/tools/seed-pinner/` regenerates `engine/cpp/tests/seeds/expected_values.h`. Re-run after toolchain change:
 
     cmake --build build --target sts2_seed_pinner
-    build/$<CONFIG>/sts2_seed_pinner > tests/seeds/expected_values.h
+    build/$<CONFIG>/sts2_seed_pinner > engine/cpp/tests/seeds/expected_values.h
 
-The full design — and the encounter mechanics lifted from the STS2 source — is in `cultists_normal_overview.md`.
+The full design — and the encounter mechanics lifted from the STS2 source — is in `docs/cultists-normal-overview.md`.
 
 ## Make wrapper (Linux/macOS)
 
