@@ -27,6 +27,14 @@
     <ProjectReference Include="..\..\src\Sts2Headless.Domain\Sts2Headless.Domain.csproj" />
     <ProjectReference Include="..\..\src\Sts2Headless.Host\Sts2Headless.Host.csproj" />
     <ProjectReference Include="..\..\tools\StateBlobDumper\StateBlobDumper.csproj" />
+    <!--
+      The console host (P-1.5-1.α) is exercised by ConsoleHostSmokeTests via
+      subprocess (`dotnet run`). The reference is build-only — the test does
+      not import any console-host types — so the console host gets built
+      before the test runs even when the smoke test is auto-skipped on
+      worktree machines without Steam.
+    -->
+    <ProjectReference Include="..\..\tools\Sts2Q1ConsoleHost\Sts2Q1ConsoleHost.csproj" />
   </ItemGroup>
 
 </Project>
