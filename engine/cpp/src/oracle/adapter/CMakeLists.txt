@@ -14,6 +14,7 @@ target_sources(sts2_oracle_adapter PRIVATE
     manifest.cc
     state_blob.cc
     envelope.cc
+    cultists_projection.cc
 )
 
 target_compile_features(sts2_oracle_adapter PUBLIC cxx_std_20)
