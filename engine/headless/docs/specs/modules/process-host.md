@@ -61,6 +61,69 @@ No state is persistent in M9 itself.
 
 Aim: M9 is the *only* module that imports everything. All other modules have minimal afferent edges as designed.
 
+## Metrics Schema (Prometheus pull endpoint)
+
+Q7 scrapes M9's `/metrics` endpoint. Q7 substrate may not exist at the time of any given Q1
+build — Prometheus is pull-only, so this is non-blocking. Documenting the counter/gauge
+schema upfront lets Q7 boot against a stable contract.
+
+### Conventions
+
+- Metric names are snake_case, prefixed `q1_`.
+- Label values use lowercase snake_case.
+- Histograms use `_microseconds` / `_bytes` / `_seconds` suffixes by base unit.
+- Summaries are avoided in favor of histograms for cross-instance aggregation; per-quantile
+  measurements (e.g., p99 latency) are computed downstream from histogram buckets.
+
+### Counters
+
+| Metric | Labels | Description | Source module |
+|---|---|---|---|
+| `q1_decisions_total` | `action_type` | Player decisions resolved (cumulative). | M9 main loop |
+| `q1_hook_protocol_handshakes_total` | `result` ∈ {accept, reject_schema, reject_manifest} | Session-establish outcomes. | M2 |
+| `q1_hook_protocol_rt_total` | — | Hook-protocol roundtrips (cumulative). Pairs with `q1_hook_protocol_rt_microseconds` histogram. | M2 |
+| `q1_replay_steps_total` | — | Replay records appended (cumulative). | M3 |
+| `q1_state_codec_serializes_total` | — | State-blob serialize operations (cumulative). | M1 |
+| `q1_state_codec_deserializes_total` | — | State-blob deserialize operations (cumulative). | M1 |
+| `q1_stub_hit_total` | `category` ∈ {rendering, audio, animation, input, scene_tree, lifecycle, file_io, localization, sentry, steamworks, vortice, harmony} | Engine-strip stub invocations (per Q1-ADR-004 T1/T2 boundary). | M8 |
+| `q1_gc_gen_collections_total` | `gen` ∈ {0, 1, 2} | GC collections per generation (cumulative). Computed from `GC.CollectionCount`. | M9 utility thread |
+| `q1_gc_allocated_bytes_total` | — | Bytes allocated on managed heap (cumulative, from `GC.GetTotalAllocatedBytes(precise=false)`). | M9 utility thread |
+| `q1_unhandled_exceptions_total` | `module` | Top-level exception captures before exit. | M9 |
+
+### Gauges
+
+| Metric | Labels | Description | Source module |
+|---|---|---|---|
+| `q1_process_uptime_seconds` | — | Seconds since process start (deterministic clock). | M9 |
+| `q1_action_queue_depth` | — | Current pending actions in M6d queue. | M6d |
+| `q1_replay_disk_bytes_per_second` | — | Rolling 1s replay flush throughput. | M3 utility thread |
+| `q1_replay_drop_oldest_total` | — | Oldest-replay tail drops under disk pressure (cumulative — actually a counter; keep as gauge of last-drop wall-clock if simpler). | M3 |
+| `q1_supervisor_heartbeat_age_seconds` | — | Seconds since last heartbeat respond, where supervisor wires it. | M9 |
+| `q1_build_info` | `version`, `sha`, `state_schema_version`, `hook_schema_version`, `registry_sha` | Static gauge=1 with build-identity labels. | M9 boot |
+
+### Histograms
+
+| Metric | Buckets (µs / bytes) | Description | Source |
+|---|---|---|---|
+| `q1_decision_latency_microseconds` | 1, 5, 10, 50, 100, 500, 1k, 5k, 10k, 50k, 100k, +Inf | Q1 wall-clock per decision (queue.drain → action.applied). | M9 main loop |
+| `q1_hook_protocol_rt_microseconds` | 1, 2, 5, 10, 20, 50, 100, 200, 500, 1k, 2k, 5k, +Inf | Full M2 roundtrip (Q1 → Q8 → Q1). p99 < 500 µs hard gate per S9. | M2 |
+| `q1_state_codec_serialize_microseconds` | 10, 50, 100, 500, 1k, 5k, 10k, 50k, +Inf | M1 serialize wall-clock. | M1 |
+| `q1_state_codec_blob_bytes` | 1k, 5k, 10k, 50k, 100k, 500k, +Inf | M1 serialized blob size. | M1 |
+| `q1_gc_pause_microseconds` | 10, 50, 100, 500, 1k, 5k, 10k, 50k, +Inf | Per-collection GC pause wall-clock (from `GC.GetTotalPauseDuration()` deltas). | M9 utility thread |
+| `q1_gc_time_seconds` | (treated as cumulative counter for Prometheus `rate()` use) | Cumulative GC pause time. The `_seconds` suffix here follows Prometheus convention for `rate()`-friendly counters. Project-lead R7 metric. | M9 utility thread |
+
+### Compatibility with current S8-T5 implementation
+
+S8-T5 (`5a98004`) shipped a `PrometheusMetricsRegistry` + `MetricsHttpServer` with placeholder
+counters. Schema above is the **target** for full Phase-1A coverage. Counters/gauges/histograms
+land incrementally per quantum-internal need; this section is the contract Q7 codes against.
+
+### Re-surface trigger
+
+Adding metric *families* (new metric name) is a doc bump here + Q7 coordination. Adding *labels*
+to existing families is non-breaking. Removing labels or families is a major bump and triggers a
+schema-lock review event with the (then-existing) Q7 lead.
+
 ## Testing Strategy
 
 ### Unit Tests
