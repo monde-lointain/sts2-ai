@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -20,8 +21,8 @@ using sts2::oracle::adapter::EnvelopePayloadShaMismatch;
 using sts2::oracle::adapter::EnvelopeSchemaMismatch;
 using sts2::oracle::adapter::EnvelopeUnknownField;
 using sts2::oracle::adapter::EnvelopeWireTypeError;
-using sts2::oracle::adapter::ParsedEnvelope;
 using sts2::oracle::adapter::parse_envelope;
+using sts2::oracle::adapter::ParsedEnvelope;
 
 constexpr int kWireTypeVarint = 0;
 constexpr int kWireTypeLengthDelimited = 2;
@@ -80,9 +81,9 @@ constexpr std::uint32_t kK[64] = {
     0x682e6ff3U, 0x748f82eeU, 0x78a5636fU, 0x84c87814U, 0x8cc70208U,
     0x90befffaU, 0xa4506cebU, 0xbef9a3f7U, 0xc67178f2U};
 
-constexpr std::uint32_t kH0[8] = {
-    0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U, 0xa54ff53aU,
-    0x510e527fU, 0x9b05688cU, 0x1f83d9abU, 0x5be0cd19U};
+constexpr std::uint32_t kH0[8] = {0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U,
+                                  0xa54ff53aU, 0x510e527fU, 0x9b05688cU,
+                                  0x1f83d9abU, 0x5be0cd19U};
 
 constexpr std::uint32_t rotr(std::uint32_t x, unsigned n) {
   return (x >> n) | (x << (32U - n));
@@ -90,15 +91,16 @@ constexpr std::uint32_t rotr(std::uint32_t x, unsigned n) {
 
 std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
   std::uint32_t st[8];
-  for (unsigned i = 0; i < 8; ++i) st[i] = kH0[i];
+  for (unsigned i = 0; i < 8; ++i) { st[i] = kH0[i];
+}
   const std::uint64_t total_bits = static_cast<std::uint64_t>(data.size()) * 8U;
   auto compress = [&](const std::uint8_t* block) {
     std::uint32_t w[64];
     for (unsigned i = 0; i < 16; ++i) {
-      w[i] = (static_cast<std::uint32_t>(block[4U * i]) << 24) |
-             (static_cast<std::uint32_t>(block[4U * i + 1]) << 16) |
-             (static_cast<std::uint32_t>(block[4U * i + 2]) << 8) |
-             (static_cast<std::uint32_t>(block[4U * i + 3]));
+      w[i] = (static_cast<std::uint32_t>(block[static_cast<size_t>(4U * i)]) << 24) |
+             (static_cast<std::uint32_t>(block[(4U * i) + 1]) << 16) |
+             (static_cast<std::uint32_t>(block[(4U * i) + 2]) << 8) |
+             (static_cast<std::uint32_t>(block[(4U * i) + 3]));
     }
     for (unsigned i = 16; i < 64; ++i) {
       const std::uint32_t s0 =
@@ -107,8 +109,14 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
           rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
       w[i] = w[i - 16] + s0 + w[i - 7] + s1;
     }
-    std::uint32_t a = st[0], b = st[1], c2 = st[2], d = st[3];
-    std::uint32_t e = st[4], f = st[5], g = st[6], h = st[7];
+    std::uint32_t a = st[0];
+    std::uint32_t b = st[1];
+    std::uint32_t c2 = st[2];
+    std::uint32_t d = st[3];
+    std::uint32_t e = st[4];
+    std::uint32_t f = st[5];
+    std::uint32_t g = st[6];
+    std::uint32_t h = st[7];
     for (unsigned i = 0; i < 64; ++i) {
       const std::uint32_t s1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
       const std::uint32_t ch = (e & f) ^ (~e & g);
@@ -116,11 +124,23 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
       const std::uint32_t s0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
       const std::uint32_t mj = (a & b) ^ (a & c2) ^ (b & c2);
       const std::uint32_t t2 = s0 + mj;
-      h = g; g = f; f = e; e = d + t1;
-      d = c2; c2 = b; b = a; a = t1 + t2;
+      h = g;
+      g = f;
+      f = e;
+      e = d + t1;
+      d = c2;
+      c2 = b;
+      b = a;
+      a = t1 + t2;
     }
-    st[0] += a; st[1] += b; st[2] += c2; st[3] += d;
-    st[4] += e; st[5] += f; st[6] += g; st[7] += h;
+    st[0] += a;
+    st[1] += b;
+    st[2] += c2;
+    st[3] += d;
+    st[4] += e;
+    st[5] += f;
+    st[6] += g;
+    st[7] += h;
   };
   std::size_t pos = 0;
   while (data.size() - pos >= 64) {
@@ -129,7 +149,8 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
   }
   std::uint8_t tail[128] = {};
   const std::size_t rem = data.size() - pos;
-  for (std::size_t i = 0; i < rem; ++i) tail[i] = data[pos + i];
+  for (std::size_t i = 0; i < rem; ++i) { tail[i] = data[pos + i];
+}
   tail[rem] = 0x80U;
   const std::size_t tail_blocks = (rem + 9U > 64U) ? 2U : 1U;
   const std::size_t total_tail_bytes = tail_blocks * 64U;
@@ -137,13 +158,14 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
     tail[total_tail_bytes - 1U - i] =
         static_cast<std::uint8_t>((total_bits >> (8U * i)) & 0xFFU);
   }
-  for (std::size_t b = 0; b < tail_blocks; ++b) compress(tail + 64U * b);
+  for (std::size_t b = 0; b < tail_blocks; ++b) { compress(tail + (64U * b));
+}
   std::array<std::uint8_t, 32> out{};
   for (unsigned i = 0; i < 8; ++i) {
-    out[4U * i + 0] = static_cast<std::uint8_t>((st[i] >> 24) & 0xFFU);
-    out[4U * i + 1] = static_cast<std::uint8_t>((st[i] >> 16) & 0xFFU);
-    out[4U * i + 2] = static_cast<std::uint8_t>((st[i] >> 8) & 0xFFU);
-    out[4U * i + 3] = static_cast<std::uint8_t>(st[i] & 0xFFU);
+    out[(4U * i) + 0] = static_cast<std::uint8_t>((st[i] >> 24) & 0xFFU);
+    out[(4U * i) + 1] = static_cast<std::uint8_t>((st[i] >> 16) & 0xFFU);
+    out[(4U * i) + 2] = static_cast<std::uint8_t>((st[i] >> 8) & 0xFFU);
+    out[(4U * i) + 3] = static_cast<std::uint8_t>(st[i] & 0xFFU);
   }
   return out;
 }
@@ -153,7 +175,8 @@ struct EnvelopeFields {
   std::uint32_t schema_minor = 1;
   std::string game_version = "Q1-test-2026-05-12";
   std::string simulator_build_sha = "abc123";
-  std::string registry_sha = "0000000000000000000000000000000000000000000000000000000000000000";
+  std::string registry_sha =
+      "0000000000000000000000000000000000000000000000000000000000000000";
   std::vector<std::uint8_t> payload = {0x01, 0x02, 0x03, 0x04, 0x05};
 };
 
@@ -164,10 +187,11 @@ std::vector<std::uint8_t> encode_envelope(const EnvelopeFields& f) {
   put_string_field(out, 3, f.game_version);
   put_string_field(out, 4, f.simulator_build_sha);
   put_string_field(out, 5, f.registry_sha);
-  put_lp_field(out, 6,
-               std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
-  const auto sha = sha256(
+  put_lp_field(
+      out, 6,
       std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
+  const auto sha =
+      sha256(std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
   put_lp_field(out, 7, std::span<const std::uint8_t>(sha.data(), sha.size()));
   return out;
 }
@@ -196,10 +220,12 @@ TEST(EnvelopeParser, PayloadShaMismatch_Rejected) {
   put_string_field(out, 3, f.game_version);
   put_string_field(out, 4, f.simulator_build_sha);
   put_string_field(out, 5, f.registry_sha);
-  put_lp_field(out, 6,
-               std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
+  put_lp_field(
+      out, 6,
+      std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
   std::array<std::uint8_t, 32> wrong{};  // all-zero hash
-  put_lp_field(out, 7, std::span<const std::uint8_t>(wrong.data(), wrong.size()));
+  put_lp_field(out, 7,
+               std::span<const std::uint8_t>(wrong.data(), wrong.size()));
   EXPECT_THROW(parse_envelope(out), EnvelopePayloadShaMismatch);
 }
 
@@ -211,12 +237,13 @@ TEST(EnvelopeParser, PayloadShaWrongLength_Rejected) {
   put_string_field(out, 3, f.game_version);
   put_string_field(out, 4, f.simulator_build_sha);
   put_string_field(out, 5, f.registry_sha);
-  put_lp_field(out, 6,
-               std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
+  put_lp_field(
+      out, 6,
+      std::span<const std::uint8_t>(f.payload.data(), f.payload.size()));
   std::array<std::uint8_t, 16> short_hash{};  // wrong length
-  put_lp_field(out, 7,
-               std::span<const std::uint8_t>(short_hash.data(),
-                                             short_hash.size()));
+  put_lp_field(
+      out, 7,
+      std::span<const std::uint8_t>(short_hash.data(), short_hash.size()));
   EXPECT_THROW(parse_envelope(out), EnvelopePayloadShaMismatch);
 }
 

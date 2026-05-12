@@ -4,14 +4,14 @@
 // the AI transition simulator: block-reset gate, starting energy, and hand
 // draw size.
 
+#include <gtest/gtest.h>
+
 #include <cstddef>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
-
-#include "sts2/game/turn_flow.h"
 #include "sts2/game/turn_calc.h"
+#include "sts2/game/turn_flow.h"
 
 namespace {
 
@@ -71,9 +71,7 @@ struct RecordingEndTurnOps {
 
   [[nodiscard]] std::size_t enemy_count() const { return 3; }
 
-  [[nodiscard]] bool enemy_alive(std::size_t slot) const {
-    return alive[slot];
-  }
+  [[nodiscard]] bool enemy_alive(std::size_t slot) const { return alive[slot]; }
 
   void reset_enemy_block(std::size_t slot) {
     calls.push_back("reset_enemy_block:" + std::to_string(slot));

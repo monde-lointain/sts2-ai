@@ -22,8 +22,7 @@ TEST(MoveCalc, NextMove_DarkStrikeIsStable) {
 }
 
 TEST(MoveCalcCatalog, WireIdRoundTrips) {
-  EXPECT_EQ(move_calc::move_wire_id(MoveId::kIncantation),
-            "INCANTATION_MOVE");
+  EXPECT_EQ(move_calc::move_wire_id(MoveId::kIncantation), "INCANTATION_MOVE");
   EXPECT_EQ(move_calc::move_wire_id(MoveId::kDarkStrike), "DARK_STRIKE_MOVE");
   EXPECT_EQ(move_calc::move_id_from_wire_id("INCANTATION_MOVE"),
             MoveId::kIncantation);

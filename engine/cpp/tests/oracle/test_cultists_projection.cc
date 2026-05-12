@@ -98,9 +98,9 @@ TEST(CultistsProjection, Fixture1_ProducesSaneCompactState) {
   // hand has 4 Strike + 2 Defend + 1 Survivor + 1 Neutralize = 8? Actually
   // observed dump: hand=7, with 3 Strike + 2 Defend + 1 Neutralize +
   // 1 Survivor.  Total deck 12: hand 7 + draw 5).
-  EXPECT_EQ(s.get_hand().total() + s.get_draw().total() +
-                s.get_discard().total(),
-            12);
+  EXPECT_EQ(
+      s.get_hand().total() + s.get_draw().total() + s.get_discard().total(),
+      12);
   // Hand size exactly 7 (Ring of the Snake on round 1).
   EXPECT_EQ(s.get_hand().total(), 7);
   // Neutralize + Survivor are 1-of in Silent's deck → at most 1 across all
@@ -109,8 +109,7 @@ TEST(CultistsProjection, Fixture1_ProducesSaneCompactState) {
                 s.get_draw()[CardId::kNeutralize] +
                 s.get_discard()[CardId::kNeutralize],
             1);
-  EXPECT_LE(s.get_hand()[CardId::kSurvivor] +
-                s.get_draw()[CardId::kSurvivor] +
+  EXPECT_LE(s.get_hand()[CardId::kSurvivor] + s.get_draw()[CardId::kSurvivor] +
                 s.get_discard()[CardId::kSurvivor],
             1);
 }

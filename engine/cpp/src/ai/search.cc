@@ -89,9 +89,9 @@ SearchResult Search::solve(const CompactState& state) {
   // forever (test fixtures use non-zero values).
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{.expected_hp =
-                        static_cast<double>(state.get_player_hp().value()),
-                    .expected_rounds = 0.0};
+    r.score =
+        Score{.expected_hp = static_cast<double>(state.get_player_hp().value()),
+              .expected_rounds = 0.0};
     r.terminal = true;
     return r;
   }
@@ -130,10 +130,9 @@ SearchResult Search::solve_player(CompactState state) {
     if (action.kind == transition::ActionKind::kEndTurn) {
       child = solve_chance(next);
     } else if (transition::is_terminal(next)) {
-      child.score =
-          Score{.expected_hp =
-                    static_cast<double>(next.get_player_hp().value()),
-                .expected_rounds = 0.0};
+      child.score = Score{
+          .expected_hp = static_cast<double>(next.get_player_hp().value()),
+          .expected_rounds = 0.0};
       child.terminal = true;
     } else {
       child = solve_player(next);
@@ -162,9 +161,9 @@ SearchResult Search::solve_chance(CompactState state) {
 
   if (transition::is_terminal(state)) {
     SearchResult r;
-    r.score = Score{.expected_hp =
-                        static_cast<double>(state.get_player_hp().value()),
-                    .expected_rounds = 1.0};
+    r.score =
+        Score{.expected_hp = static_cast<double>(state.get_player_hp().value()),
+              .expected_rounds = 1.0};
     r.terminal = false;
     const auto [it, _] = tt_.emplace(key, r);
     return it->second;

@@ -22,7 +22,8 @@ namespace sts2::game::turn_flow {
 //
 // Resolves deterministic end-turn work up to, but not including, card draw.
 // Enemy slots are visited in ascending slot order. If terminal() becomes true
-// after an enemy acts, later enemy actions and all post-enemy steps are skipped.
+// after an enemy acts, later enemy actions and all post-enemy steps are
+// skipped.
 template <typename Ops>
 void resolve_end_turn_pre_draw(Ops& ops) {
   ops.end_player_turn();

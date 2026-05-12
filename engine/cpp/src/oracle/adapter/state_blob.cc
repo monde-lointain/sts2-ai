@@ -28,8 +28,8 @@ constexpr std::uint16_t kSectionIdCombatState = 2U;
 
 ParsedPowerInstance read_power_instance(BinaryCursor& c) {
   ParsedPowerInstance p;
-  p.model_id = c.read_lp_string<StateCodecError, std::uint32_t>(
-      "PowerInstance.ModelId");
+  p.model_id =
+      c.read_lp_string<StateCodecError, std::uint32_t>("PowerInstance.ModelId");
   p.stacks = c.read_i32<StateCodecError>("PowerInstance.Stacks");
   p.source_creature_id =
       c.read_u32<StateCodecError>("PowerInstance.SourceCreatureId");
@@ -52,9 +52,8 @@ ParsedMonsterIntent read_monster_intent(BinaryCursor& c) {
   }
   intent.applies.reserve(static_cast<std::size_t>(applies_count));
   for (std::int32_t i = 0; i < applies_count; ++i) {
-    std::string power_id =
-        c.read_lp_string<StateCodecError, std::uint32_t>(
-            "MonsterIntent.Applies.PowerId");
+    std::string power_id = c.read_lp_string<StateCodecError, std::uint32_t>(
+        "MonsterIntent.Applies.PowerId");
     const std::int32_t stacks =
         c.read_i32<StateCodecError>("MonsterIntent.Applies.Stacks");
     intent.applies.emplace_back(std::move(power_id), stacks);
@@ -68,8 +67,7 @@ ParsedMonsterIntent read_monster_intent(BinaryCursor& c) {
 ParsedCreature read_creature(BinaryCursor& c) {
   ParsedCreature cr;
   cr.id = c.read_u32<StateCodecError>("Creature.Id");
-  cr.name =
-      c.read_lp_string<StateCodecError, std::uint32_t>("Creature.Name");
+  cr.name = c.read_lp_string<StateCodecError, std::uint32_t>("Creature.Name");
   cr.current_hp = c.read_i32<StateCodecError>("Creature.CurrentHp");
   cr.max_hp = c.read_i32<StateCodecError>("Creature.MaxHp");
   cr.block = c.read_i32<StateCodecError>("Creature.Block");
@@ -97,8 +95,7 @@ ParsedCardInstance read_card_instance(BinaryCursor& c) {
   card.instance_id = c.read_u32<StateCodecError>("CardInstance.InstanceId");
   card.model_id =
       c.read_lp_string<StateCodecError, std::uint32_t>("CardInstance.ModelId");
-  card.upgrade_level =
-      c.read_i32<StateCodecError>("CardInstance.UpgradeLevel");
+  card.upgrade_level = c.read_i32<StateCodecError>("CardInstance.UpgradeLevel");
   card.cost_override_present =
       c.read_u8<StateCodecError>("CardInstance.CostOverridePresent") != 0U;
   if (card.cost_override_present) {
@@ -171,8 +168,8 @@ ManifestStamp read_manifest_stamp(BinaryCursor& c, std::size_t header_size) {
   ManifestStamp stamp;
   stamp.git_sha =
       c.read_lp_string<StateCodecError, std::uint8_t>("ManifestStamp.GitSha");
-  stamp.build_id = c.read_lp_string<StateCodecError, std::uint16_t>(
-      "ManifestStamp.BuildId");
+  stamp.build_id =
+      c.read_lp_string<StateCodecError, std::uint16_t>("ManifestStamp.BuildId");
   c.read_bytes_into<StateCodecError>(stamp.content_hash.data(), 32,
                                      "ManifestStamp.ContentHash");
   const std::size_t consumed = c.pos() - start;
@@ -210,8 +207,7 @@ ParsedStateBlob read_state_blob(std::span<const std::uint8_t> bytes) {
   bool seen_tokens = false;
   bool seen_combat = false;
   while (true) {
-    const std::uint16_t section_id =
-        c.read_u16<StateCodecError>("section.id");
+    const std::uint16_t section_id = c.read_u16<StateCodecError>("section.id");
     if (section_id == kSectionTerminator) {
       break;
     }

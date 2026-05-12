@@ -25,7 +25,7 @@
 namespace sts2::oracle::adapter {
 
 // Hard-coded wire constants pinned by state-codec.md.
-inline constexpr std::uint32_t kStateCodecMagic = 0x53435443U;     // "STCT"
+inline constexpr std::uint32_t kStateCodecMagic = 0x53435443U;         // "STCT"
 inline constexpr std::uint32_t kStateCodecTrailerMagic = 0x53544354U;  // "TCTS"
 inline constexpr std::uint16_t kStateCodecSchemaV3 = 3U;  // (0<<8)|3
 inline constexpr std::uint16_t kSectionTerminator = 0xFFFFU;
@@ -37,8 +37,8 @@ class StateCodecError : public std::runtime_error {
 };
 
 struct ManifestStamp {
-  std::string git_sha;                       // u8-length-prefixed UTF-8
-  std::string build_id;                      // u16-length-prefixed UTF-8
+  std::string git_sha;                          // u8-length-prefixed UTF-8
+  std::string build_id;                         // u16-length-prefixed UTF-8
   std::array<std::uint8_t, 32> content_hash{};  // raw 32 bytes (SHA-256)
 
   bool operator==(const ManifestStamp&) const = default;
@@ -46,7 +46,7 @@ struct ManifestStamp {
 
 // Per state-codec.md §Per-section codecs `PowerInstance`.
 struct ParsedPowerInstance {
-  std::string model_id;       // lp-utf8 (u32 prefix)
+  std::string model_id;  // lp-utf8 (u32 prefix)
   std::int32_t stacks = 0;
   std::uint32_t source_creature_id = 0;
   bool just_applied = false;
@@ -60,13 +60,13 @@ struct ParsedMonsterIntent {
   std::int32_t hit_count = 0;
   // applies: count-prefixed (PowerId lp-utf8, stacks i32) pairs
   std::vector<std::pair<std::string, std::int32_t>> applies;
-  std::string move_id;        // lp-utf8 (u32 prefix)
+  std::string move_id;  // lp-utf8 (u32 prefix)
 };
 
 // Per state-codec.md §Per-section codecs `Creature`.
 struct ParsedCreature {
   std::uint32_t id = 0;
-  std::string name;           // lp-utf8 (u32 prefix)
+  std::string name;  // lp-utf8 (u32 prefix)
   std::int32_t current_hp = 0;
   std::int32_t max_hp = 0;
   std::int32_t block = 0;
@@ -79,7 +79,7 @@ struct ParsedCreature {
 // Per state-codec.md §Per-section codecs `CardInstance`.
 struct ParsedCardInstance {
   std::uint32_t instance_id = 0;
-  std::string model_id;       // lp-utf8 (u32 prefix)
+  std::string model_id;  // lp-utf8 (u32 prefix)
   std::int32_t upgrade_level = 0;
   bool cost_override_present = false;
   std::int32_t cost_override = 0;
@@ -102,10 +102,10 @@ struct ParsedCombatState {
   std::vector<ParsedCardInstance> exhaust_pile;
   std::int32_t player_rng_counter = 0;
   std::int32_t monster_rng_counter = 0;
-  std::int32_t attacks_played_this_turn = 0;     // v2
-  std::int32_t cards_drawn_this_combat = 0;      // v2
-  std::int32_t last_spent_energy = 0;            // v3
-  std::int32_t exhausted_shiv_count = 0;         // v3
+  std::int32_t attacks_played_this_turn = 0;  // v2
+  std::int32_t cards_drawn_this_combat = 0;   // v2
+  std::int32_t last_spent_energy = 0;         // v3
+  std::int32_t exhausted_shiv_count = 0;      // v3
 };
 
 struct ParsedStateBlob {

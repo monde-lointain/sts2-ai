@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <string>
-#include <variant>
 #include <vector>
 
 #include "sts2/oracle/adapter/adapter.h"
@@ -35,27 +34,26 @@ const std::array<RejectCase, 5>& reject_cases() {
   // table. KaiserCrabBoss spawn-power expectations per the same README
   // header note (Q2-ADR-005 unknown-power diagnostic).
   static const std::array<RejectCase, 5> kCases = {{
-      {"02-fossil-stalker-elite-seed42", "FossilStalkerElite",
-       "ef1b2a5630ef9ebd067ae13b0831d5f8d5c4dcff6df61939bf20c572f96a7d0f",
-       false},
-      {"03-fossil-stalker-elite-seed1337", "FossilStalkerElite",
-       "92ebc2e91a62a521f055d791e624e293aed2ed51cbac17a963babf11dd295a45",
-       false},
-      {"04-kaiser-crab-boss-seed42", "KaiserCrabBoss",
-       "9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
-       true},
-      {"05-louse-progenitor-normal-seed42", "LouseProgenitorNormal",
-       "37e7517005a0a50c05240874a6e2969c490617711bdd4d2d04c3361eaaaab392",
-       false},
-      {"06-small-slimes-seed42", "SmallSlimes",
-       "d33371738949b606df7713b1b19c5645fb2e4d8c822c72c6224a6ce7c8cf1fbd",
-       false},
+      {.dir="02-fossil-stalker-elite-seed42", .expected_encounter_id="FossilStalkerElite",
+       .expected_canonical_hash="ef1b2a5630ef9ebd067ae13b0831d5f8d5c4dcff6df61939bf20c572f96a7d0f",
+       .expects_unknown_powers=false},
+      {.dir="03-fossil-stalker-elite-seed1337", .expected_encounter_id="FossilStalkerElite",
+       .expected_canonical_hash="92ebc2e91a62a521f055d791e624e293aed2ed51cbac17a963babf11dd295a45",
+       .expects_unknown_powers=false},
+      {.dir="04-kaiser-crab-boss-seed42", .expected_encounter_id="KaiserCrabBoss",
+       .expected_canonical_hash="9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
+       .expects_unknown_powers=true},
+      {.dir="05-louse-progenitor-normal-seed42", .expected_encounter_id="LouseProgenitorNormal",
+       .expected_canonical_hash="37e7517005a0a50c05240874a6e2969c490617711bdd4d2d04c3361eaaaab392",
+       .expects_unknown_powers=false},
+      {.dir="06-small-slimes-seed42", .expected_encounter_id="SmallSlimes",
+       .expected_canonical_hash="d33371738949b606df7713b1b19c5645fb2e4d8c822c72c6224a6ce7c8cf1fbd",
+       .expects_unknown_powers=false},
   }};
   return kCases;
 }
 
-class AdapterRejectParamTest
-    : public ::testing::TestWithParam<RejectCase> {};
+class AdapterRejectParamTest : public ::testing::TestWithParam<RejectCase> {};
 
 TEST_P(AdapterRejectParamTest, RejectsWithExpectedDiagnostic) {
   const RejectCase& tc = GetParam();
@@ -98,16 +96,16 @@ TEST_P(AdapterRejectParamTest, RejectsWithExpectedDiagnostic) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    NonCultistFixtures, AdapterRejectParamTest,
-    ::testing::ValuesIn(reject_cases()),
-    [](const ::testing::TestParamInfo<RejectCase>& info) {
-      // gtest names allow only alphanumeric + underscore.
-      std::string name = info.param.dir;
-      for (auto& c : name) {
-        if (!std::isalnum(static_cast<unsigned char>(c))) c = '_';
-      }
-      return name;
-    });
+INSTANTIATE_TEST_SUITE_P(NonCultistFixtures, AdapterRejectParamTest,
+                         ::testing::ValuesIn(reject_cases()),
+                         [](const ::testing::TestParamInfo<RejectCase>& info) {
+                           // gtest names allow only alphanumeric + underscore.
+                           std::string name = info.param.dir;
+                           for (auto& c : name) {
+                             if (!std::isalnum(static_cast<unsigned char>(c)))
+                               c = '_';
+                           }
+                           return name;
+                         });
 
 }  // namespace

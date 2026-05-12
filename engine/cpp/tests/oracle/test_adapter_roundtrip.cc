@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <variant>
 
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
@@ -28,10 +27,8 @@ namespace {
 
 using sts2::ai::CompactState;
 using sts2::ai::Phase;
-using sts2::ai::Score;
 using sts2::ai::Search;
 using sts2::ai::SearchResult;
-using sts2::ai::transition::Action;
 using sts2::ai::transition::ActionKind;
 using sts2::ai::transition::legal_actions;
 using sts2::game::CardId;
@@ -81,9 +78,9 @@ TEST(AdapterRoundtrip, DISABLED_Fixture1_AdapterPlusSearch_PinnedAgreement) {
   EXPECT_EQ(s.get_round(), 1U);
   EXPECT_EQ(s.get_phase(), Phase::kPlayerActing);
   EXPECT_EQ(s.get_hand().total(), 7);
-  EXPECT_EQ(s.get_hand().total() + s.get_draw().total() +
-                s.get_discard().total(),
-            12);
+  EXPECT_EQ(
+      s.get_hand().total() + s.get_draw().total() + s.get_discard().total(),
+      12);
 
   Search search;
   const SearchResult result = search.solve(s);

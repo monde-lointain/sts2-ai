@@ -5,7 +5,6 @@
 
 #include "sts2/game/card_effects.h"
 #include "sts2/game/damage_calc.h"
-#include "sts2/game/enemy.h"
 #include "sts2/game/index_types.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"
@@ -34,8 +33,7 @@ class StateMutator {
       EnemyState& e) noexcept {
     return e.dark_strike_base_;
   }
-  [[nodiscard]] static sts2::game::Stat& ritual_amount(
-      EnemyState& e) noexcept {
+  [[nodiscard]] static sts2::game::Stat& ritual_amount(EnemyState& e) noexcept {
     return e.ritual_amount_;
   }
   [[nodiscard]] static bool& just_applied_ritual(EnemyState& e) noexcept {
@@ -48,12 +46,9 @@ class StateMutator {
       EnemyState& e) noexcept {
     return e.current_move_;
   }
-  [[nodiscard]] static bool& alive(EnemyState& e) noexcept {
-    return e.alive_;
-  }
+  [[nodiscard]] static bool& alive(EnemyState& e) noexcept { return e.alive_; }
 
-  [[nodiscard]] static sts2::game::Stat& player_hp(
-      CompactState& s) noexcept {
+  [[nodiscard]] static sts2::game::Stat& player_hp(CompactState& s) noexcept {
     return s.player_hp_;
   }
   [[nodiscard]] static sts2::game::Stat& player_block(
@@ -64,8 +59,7 @@ class StateMutator {
       CompactState& s) noexcept {
     return s.player_strength_;
   }
-  [[nodiscard]] static sts2::game::Stat& player_weak(
-      CompactState& s) noexcept {
+  [[nodiscard]] static sts2::game::Stat& player_weak(CompactState& s) noexcept {
     return s.player_weak_;
   }
   [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
@@ -215,9 +209,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     void roll_enemy_next_move(std::size_t slot) {
       roll_next_move(M::enemies(state)[slot]);
     }
-    void reset_player_block() {
-      M::player_block(state) = sts2::game::Stat{0};
-    }
+    void reset_player_block() { M::player_block(state) = sts2::game::Stat{0}; }
     void refill_player_energy(int amount) {
       M::energy(state) = sts2::game::Stat{amount};
     }

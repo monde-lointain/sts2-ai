@@ -3,9 +3,7 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
-#include <stdexcept>
 #include <string>
-#include <utility>
 
 // Little-endian byte cursor used by both the M1 binary state-blob reader and
 // the proto3 envelope hand-parser. Adapter-internal — not in any public
@@ -23,7 +21,9 @@ class BinaryCursor {
   [[nodiscard]] std::size_t remaining() const noexcept {
     return bytes_.size() - pos_;
   }
-  [[nodiscard]] bool exhausted() const noexcept { return pos_ >= bytes_.size(); }
+  [[nodiscard]] bool exhausted() const noexcept {
+    return pos_ >= bytes_.size();
+  }
   [[nodiscard]] std::span<const std::uint8_t> all() const noexcept {
     return bytes_;
   }
@@ -44,9 +44,8 @@ class BinaryCursor {
   template <typename Ex>
   std::uint16_t read_u16(const char* what) {
     require<Ex>(2, what);
-    const std::uint16_t v =
-        static_cast<std::uint16_t>(bytes_[pos_]) |
-        (static_cast<std::uint16_t>(bytes_[pos_ + 1]) << 8);
+    const std::uint16_t v = static_cast<std::uint16_t>(bytes_[pos_]) |
+                            (static_cast<std::uint16_t>(bytes_[pos_ + 1]) << 8);
     pos_ += 2;
     return v;
   }

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <variant>
 
 #include "sts2/ai/state.h"
 #include "sts2/oracle/adapter/adapter.h"
@@ -46,8 +45,7 @@ TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {
         << "fixture: " << d;
     EXPECT_FALSE(reject.unsupported.manifest.algorithm_sha.empty())
         << "fixture: " << d;
-    EXPECT_FALSE(reject.unsupported.monster_ids.empty())
-        << "fixture: " << d;
+    EXPECT_FALSE(reject.unsupported.monster_ids.empty()) << "fixture: " << d;
   }
 }
 

@@ -1,7 +1,6 @@
 #include "sts2/oracle/adapter/cultists_projection.h"
 
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cstdint>
 #include <string>
@@ -35,13 +34,15 @@ constexpr std::string_view kPowerIdRitual = "Ritual";
 sts2::game::CardId map_card_model_id(std::string_view model_id) {
   const sts2::game::CardId id =
       sts2::game::card_effects::card_id_from_wire_model_id(model_id);
-  if (id != sts2::game::CardId::kNone) return id;
+  if (id != sts2::game::CardId::kNone) { return id;
+}
   throw StateCodecError("unknown card ModelId: " + std::string(model_id));
 }
 
 sts2::game::MoveId map_move_id(std::string_view move_id) {
   sts2::game::MoveId id = sts2::game::MoveId::kIncantation;
-  if (sts2::game::move_calc::try_move_id_from_wire_id(move_id, id)) return id;
+  if (sts2::game::move_calc::try_move_id_from_wire_id(move_id, id)) { return id;
+}
   throw StateCodecError("unknown MoveId: " + std::string(move_id));
 }
 
@@ -120,7 +121,8 @@ bool is_cultists_normal(const ParsedCombatState& combat) {
   // one cultist already dead is mid-combat and Phase-1A's prototype expects
   // the starter shape. Looser semantics can land later.
   for (const auto& e : combat.enemies) {
-    if (e.current_hp <= 0) return false;
+    if (e.current_hp <= 0) { return false;
+}
   }
   // The name pair must be exactly { Calcified, Damp } in either order.
   const std::string_view a = combat.enemies[0].name;
@@ -140,8 +142,7 @@ sts2::ai::CompactState project_cultists_normal(
       .player_block(sts2::game::Stat{combat.player.block})
       .player_strength(
           sts2::game::Stat{power_stacks(combat.player, kPowerIdStrength)})
-      .player_weak(
-          sts2::game::Stat{power_stacks(combat.player, kPowerIdWeak)})
+      .player_weak(sts2::game::Stat{power_stacks(combat.player, kPowerIdWeak)})
       .energy(sts2::game::Stat{combat.energy});
   // Q1's turn_counter is 1-based at the smoke fixture boot (turn=1, pre-
   // first-action). The C++ prototype's `round` field is also 1-based at

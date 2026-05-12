@@ -13,9 +13,9 @@ using sts2::ai::CompactStateBuilder;
 using sts2::ai::EnemyStateBuilder;
 using sts2::ai::from_combat;
 using sts2::ai::Phase;
-using sts2::tests::ai::make_counts;
 using sts2::game::MoveId;
 using sts2::game::Stat;
+using sts2::tests::ai::make_counts;
 using sts2::tests::helpers::make_starter_combat;
 
 TEST(AiState, FromCombat_FreshStarter_SnapshotMatches) {
@@ -47,9 +47,9 @@ TEST(AiState, FromCombat_FreshStarter_SnapshotMatches) {
   // Ring of the Snake: round-1 hand is 7.
   EXPECT_EQ(s.get_hand().total(), 7);
   // Silent starter deck has 12 cards total.
-  EXPECT_EQ(s.get_hand().total() + s.get_draw().total() +
-                s.get_discard().total(),
-            12);
+  EXPECT_EQ(
+      s.get_hand().total() + s.get_draw().total() + s.get_discard().total(),
+      12);
 }
 
 TEST(AiState, CompactStateBuilder_MatchesDirectSetup) {

@@ -35,8 +35,7 @@ using sts2::tests::ai::make_counts;
 using sts2::tests::helpers::make_starter_combat;
 
 CompactState make_test_state() {
-  const EnemyState enemy =
-      EnemyStateBuilder{}.hp(Stat{10}).alive(true).build();
+  const EnemyState enemy = EnemyStateBuilder{}.hp(Stat{10}).alive(true).build();
   return CompactStateBuilder{}
       .player_hp(Stat{70})
       .player_block(Stat{0})
@@ -114,9 +113,8 @@ TEST(Transition, Strike_OnDeadEnemy_ReturnsFalseStateUnchanged) {
   update_state(s, [](CompactStateBuilder& builder) {
     builder.hand(make_counts(1, 0, 0, 0)).energy(Stat{1});
   });
-  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
-    enemy.hp(Stat{0}).alive(false);
-  });
+  update_enemy(
+      s, 0, [](EnemyStateBuilder& enemy) { enemy.hp(Stat{0}).alive(false); });
 
   const CompactState before = s;
   EXPECT_FALSE(apply_player_action(s, play(CardId::kStrike, 0)).has_value());
@@ -156,8 +154,7 @@ TEST(Transition, Neutralize_StackingWeak_OnEnemyAlreadyWeak_Increments) {
   update_state(s, [](CompactStateBuilder& builder) {
     builder.hand(make_counts(0, 0, 1, 0)).energy(Stat{2});
   });
-  update_enemy(s, 0,
-               [](EnemyStateBuilder& enemy) { enemy.weak(Stat{2}); });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) { enemy.weak(Stat{2}); });
 
   apply_or_fail(s, play(CardId::kNeutralize, 0));
 
@@ -221,9 +218,9 @@ TEST(Transition, PlayCard_NotInHand_ReturnsFalse) {
                [](CompactStateBuilder& builder) { builder.energy(Stat{3}); });
 
   const CompactState before = s;
-  EXPECT_FALSE(apply_player_action(s, play(CardId::kSurvivor, -1,
-                                           CardId::kNone))
-                   .has_value());
+  EXPECT_FALSE(
+      apply_player_action(s, play(CardId::kSurvivor, -1, CardId::kNone))
+          .has_value());
   EXPECT_EQ(s, before);
 }
 
@@ -268,9 +265,8 @@ TEST(Transition, LegalActions_OneEnemyDead_OnlyAliveEnemyTargeted) {
   update_state(s, [](CompactStateBuilder& builder) {
     builder.hand(make_counts(1, 1, 1, 1)).energy(Stat{3});
   });
-  update_enemy(s, 1, [](EnemyStateBuilder& enemy) {
-    enemy.hp(Stat{0}).alive(false);
-  });
+  update_enemy(
+      s, 1, [](EnemyStateBuilder& enemy) { enemy.hp(Stat{0}).alive(false); });
 
   const auto actions = legal_actions(s);
 
@@ -324,10 +320,8 @@ TEST(Transition, EndTurn_PreDrawResolution_PlayerHandToDiscard) {
 TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
   sts2::game::Combat combat = make_starter_combat(0xC0FFEEULL);
   CompactState s = from_combat(combat);
-  update_enemy(s, 0,
-               [](EnemyStateBuilder& enemy) { enemy.block(Stat{7}); });
-  update_enemy(s, 1,
-               [](EnemyStateBuilder& enemy) { enemy.block(Stat{4}); });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) { enemy.block(Stat{7}); });
+  update_enemy(s, 1, [](EnemyStateBuilder& enemy) { enemy.block(Stat{4}); });
   // Drain hand to keep test focused on enemy phase.
   drain_hand_to_discard(s);
   const Stat hp_before = s.get_player_hp();
@@ -387,20 +381,15 @@ TEST(Transition,
   EXPECT_EQ(s.get_round(), 3);
   EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual());
   EXPECT_FALSE(s.get_enemy(1).get_just_applied_ritual());
-  EXPECT_EQ(s.get_enemy(0).get_strength(),
-            s.get_enemy(0).get_ritual_amount());
-  EXPECT_EQ(s.get_enemy(1).get_strength(),
-            s.get_enemy(1).get_ritual_amount());
+  EXPECT_EQ(s.get_enemy(0).get_strength(), s.get_enemy(0).get_ritual_amount());
+  EXPECT_EQ(s.get_enemy(1).get_strength(), s.get_enemy(1).get_ritual_amount());
   EXPECT_EQ(hp_before_r2.value() - s.get_player_hp().value(), 10);
 }
 
 TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeAgainstPlayerBlock) {
   CompactState s = make_test_state();
   update_state(s, [](CompactStateBuilder& builder) {
-    builder.player_hp(Stat{70})
-        .player_block(Stat{20})
-        .round(5)
-        .energy(Stat{0});
+    builder.player_hp(Stat{70}).player_block(Stat{20}).round(5).energy(Stat{0});
   });
   update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
     enemy.alive(true)
@@ -419,9 +408,8 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeAgainstPlayerBlock) {
         .performed_first_move(true);
   });
   // Hand empty so end_player_turn is a no-op for piles.
-  update_state(s, [](CompactStateBuilder& builder) {
-    builder.hand(CardCounts{});
-  });
+  update_state(
+      s, [](CompactStateBuilder& builder) { builder.hand(CardCounts{}); });
 
   apply_or_fail(s, end_turn());
   s = resolve_end_turn_pre_draw(s);
@@ -475,8 +463,7 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeKillsPlayer_StopsEarly) {
 TEST(Transition, EndTurn_PreDrawResolution_RoundIncrement_ResetsBlock) {
   CompactState s = make_test_state();
   update_state(s, [](CompactStateBuilder& builder) {
-    builder.round(3).player_block(Stat{15}).energy(Stat{0}).hand(
-        CardCounts{});
+    builder.round(3).player_block(Stat{15}).energy(Stat{0}).hand(CardCounts{});
   });
   // Make enemies harmless (Incantation, no damage).
   update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
@@ -513,15 +500,13 @@ TEST(Transition, EndTurn_PreDrawResolution_EnergyRefilledToThree) {
 
 TEST(Transition, DrawCount_Round1Returns7) {
   CompactState s = make_test_state();
-  update_state(s,
-               [](CompactStateBuilder& builder) { builder.round(1); });
+  update_state(s, [](CompactStateBuilder& builder) { builder.round(1); });
   EXPECT_EQ(draw_count(s), 7);
 }
 
 TEST(Transition, DrawCount_Round2Returns5) {
   CompactState s = make_test_state();
-  update_state(s,
-               [](CompactStateBuilder& builder) { builder.round(2); });
+  update_state(s, [](CompactStateBuilder& builder) { builder.round(2); });
   EXPECT_EQ(draw_count(s), 5);
 }
 
@@ -561,20 +546,17 @@ TEST(Transition, ApplyDraw_TriggersReshuffleWhenDrawShortOfRequest) {
 
 TEST(Transition, IsTerminal_PlayerDead) {
   CompactState s = make_test_state();
-  update_state(s, [](CompactStateBuilder& builder) {
-    builder.player_hp(Stat{0});
-  });
+  update_state(
+      s, [](CompactStateBuilder& builder) { builder.player_hp(Stat{0}); });
   EXPECT_TRUE(is_terminal(s));
 }
 
 TEST(Transition, IsTerminal_AllEnemiesDead) {
   CompactState s = make_test_state();
-  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
-    enemy.alive(false).hp(Stat{0});
-  });
-  update_enemy(s, 1, [](EnemyStateBuilder& enemy) {
-    enemy.alive(false).hp(Stat{0});
-  });
+  update_enemy(
+      s, 0, [](EnemyStateBuilder& enemy) { enemy.alive(false).hp(Stat{0}); });
+  update_enemy(
+      s, 1, [](EnemyStateBuilder& enemy) { enemy.alive(false).hp(Stat{0}); });
   EXPECT_TRUE(is_terminal(s));
 }
 

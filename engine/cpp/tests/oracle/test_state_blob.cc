@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -30,7 +29,7 @@ std::string to_hex_lower(std::span<const std::uint8_t> bytes) {
   out.resize(bytes.size() * 2);
   for (std::size_t i = 0; i < bytes.size(); ++i) {
     out[2U * i] = kHex[bytes[i] >> 4];
-    out[2U * i + 1] = kHex[bytes[i] & 0x0FU];
+    out[(2U * i) + 1] = kHex[bytes[i] & 0x0FU];
   }
   return out;
 }
@@ -61,12 +60,9 @@ TEST(StateBlobReader, Fixture1_AllFixturesParse) {
   // CULTISTS_NORMAL projection happens in T3+; here we just verify the
   // reader handles every fixture's wire shape.
   const std::vector<std::string> dirs = {
-      "01-cultists-normal-seed42",
-      "02-fossil-stalker-elite-seed42",
-      "03-fossil-stalker-elite-seed1337",
-      "04-kaiser-crab-boss-seed42",
-      "05-louse-progenitor-normal-seed42",
-      "06-small-slimes-seed42",
+      "01-cultists-normal-seed42",         "02-fossil-stalker-elite-seed42",
+      "03-fossil-stalker-elite-seed1337",  "04-kaiser-crab-boss-seed42",
+      "05-louse-progenitor-normal-seed42", "06-small-slimes-seed42",
   };
   for (const auto& d : dirs) {
     const auto bytes = load_fixture_blob(d);

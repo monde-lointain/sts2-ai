@@ -17,17 +17,20 @@
 namespace sts2::oracle::adapter::tests {
 
 inline std::filesystem::path fixtures_root() {
-  // Tests run with cwd = build dir; the source tree is under PROJECT_SOURCE_DIR.
-  // CMake target defines no preprocessor symbols, so we walk up from the
-  // current source file's path: this header lives at
+  // Tests run with cwd = build dir; the source tree is under
+  // PROJECT_SOURCE_DIR. CMake target defines no preprocessor symbols, so we
+  // walk up from the current source file's path: this header lives at
   //   <root>/engine/cpp/tests/oracle/adapter_fixtures.h
   // Fixture root:
   //   <root>/engine/headless/test/fixtures/state-blobs/
   const std::filesystem::path here(__FILE__);
   // here = .../engine/cpp/tests/oracle/adapter_fixtures.h
   // parent_path() x 4 = .../  (project root)
-  std::filesystem::path root =
-      here.parent_path().parent_path().parent_path().parent_path().parent_path();
+  std::filesystem::path root = here.parent_path()
+                                   .parent_path()
+                                   .parent_path()
+                                   .parent_path()
+                                   .parent_path();
   return root / "engine" / "headless" / "test" / "fixtures" / "state-blobs";
 }
 

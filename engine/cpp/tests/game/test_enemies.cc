@@ -69,8 +69,7 @@ TEST(EnemiesCultistArchetypeCatalog, LooksUpByWireName) {
 
 TEST(EnemiesCultistArchetypeCatalog, LooksUpByInternalName) {
   const auto* calcified =
-      sts2::enemies::cultist_archetype_from_internal_name(
-          "Calcified Cultist");
+      sts2::enemies::cultist_archetype_from_internal_name("Calcified Cultist");
   ASSERT_NE(calcified, nullptr);
   EXPECT_EQ(calcified->wire_name, "CalcifiedCultist");
 

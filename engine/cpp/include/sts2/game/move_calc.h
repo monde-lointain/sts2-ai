@@ -21,8 +21,8 @@ namespace sts2::game::move_calc {
   return "";
 }
 
-[[nodiscard]] constexpr bool try_move_id_from_wire_id(
-    std::string_view wire_id, MoveId& out) noexcept {
+[[nodiscard]] constexpr bool try_move_id_from_wire_id(std::string_view wire_id,
+                                                      MoveId& out) noexcept {
   if (wire_id == "INCANTATION_MOVE") {
     out = MoveId::kIncantation;
     return true;

@@ -24,7 +24,9 @@ class Cursor {
   explicit Cursor(std::span<const std::uint8_t> bytes) noexcept
       : bytes_(bytes), pos_(0) {}
 
-  [[nodiscard]] bool exhausted() const noexcept { return pos_ >= bytes_.size(); }
+  [[nodiscard]] bool exhausted() const noexcept {
+    return pos_ >= bytes_.size();
+  }
   [[nodiscard]] std::size_t remaining() const noexcept {
     return bytes_.size() - pos_;
   }
@@ -63,14 +65,13 @@ class Cursor {
 
 void expect_wire_type(int got, int want, std::uint32_t field_num) {
   if (got != want) {
-    throw EnvelopeWireTypeError(
-        "field " + std::to_string(field_num) +
-        " unexpected wire type " + std::to_string(got));
+    throw EnvelopeWireTypeError("field " + std::to_string(field_num) +
+                                " unexpected wire type " + std::to_string(got));
   }
 }
 
-std::string read_string(Cursor& c, std::uint32_t field_num,
-                        int wire_type, const char* what) {
+std::string read_string(Cursor& c, std::uint32_t field_num, int wire_type,
+                        const char* what) {
   expect_wire_type(wire_type, kWireTypeLengthDelimited, field_num);
   auto bytes = c.read_length_delimited(what);
   return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
@@ -83,8 +84,8 @@ std::vector<std::uint8_t> read_bytes(Cursor& c, std::uint32_t field_num,
   return std::vector<std::uint8_t>(span.begin(), span.end());
 }
 
-std::uint32_t read_uint32(Cursor& c, std::uint32_t field_num,
-                          int wire_type, const char* what) {
+std::uint32_t read_uint32(Cursor& c, std::uint32_t field_num, int wire_type,
+                          const char* what) {
   expect_wire_type(wire_type, kWireTypeVarint, field_num);
   const std::uint64_t v = c.read_varint(what);
   if (v > 0xFFFFFFFFULL) {
@@ -145,12 +146,12 @@ ParsedEnvelope parse_envelope(std::span<const std::uint8_t> bytes) {
 
   // payload_sha256 must be 32 bytes AND equal sha256(payload).
   if (env.payload_sha256.size() != 32U) {
-    throw EnvelopePayloadShaMismatch(
-        "payload_sha256 length != 32 (got " +
-        std::to_string(env.payload_sha256.size()) + ")");
+    throw EnvelopePayloadShaMismatch("payload_sha256 length != 32 (got " +
+                                     std::to_string(env.payload_sha256.size()) +
+                                     ")");
   }
-  const auto computed = detail::sha256(std::span<const std::uint8_t>(
-      env.payload.data(), env.payload.size()));
+  const auto computed = detail::sha256(
+      std::span<const std::uint8_t>(env.payload.data(), env.payload.size()));
   for (std::size_t i = 0; i < 32U; ++i) {
     if (computed[i] != env.payload_sha256[i]) {
       throw EnvelopePayloadShaMismatch(
@@ -162,9 +163,8 @@ ParsedEnvelope parse_envelope(std::span<const std::uint8_t> bytes) {
   if (env.schema_major != kEnvelopeSchemaMajor ||
       env.schema_minor != kEnvelopeSchemaMinor) {
     throw EnvelopeSchemaMismatch(
-        "envelope schema mismatch: got (" +
-        std::to_string(env.schema_major) + "." +
-        std::to_string(env.schema_minor) + "), want (" +
+        "envelope schema mismatch: got (" + std::to_string(env.schema_major) +
+        "." + std::to_string(env.schema_minor) + "), want (" +
         std::to_string(kEnvelopeSchemaMajor) + "." +
         std::to_string(kEnvelopeSchemaMinor) + ")");
   }

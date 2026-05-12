@@ -22,8 +22,8 @@ class StateMutator;
 
 namespace detail {
 constexpr bool counted_card_ids_are_ordered() noexcept {
-  for (std::size_t i = 0;
-       i < sts2::game::card_effects::kCountedCardIds.size(); ++i) {
+  for (std::size_t i = 0; i < sts2::game::card_effects::kCountedCardIds.size();
+       ++i) {
     if (static_cast<int>(sts2::game::card_effects::kCountedCardIds[i]) !=
         static_cast<int>(i) + 1) {
       return false;
@@ -185,13 +185,10 @@ class CompactState {
   [[nodiscard]] sts2::game::Stat get_player_weak() const noexcept {
     return player_weak_;
   }
-  [[nodiscard]] sts2::game::Stat get_energy() const noexcept {
-    return energy_;
-  }
+  [[nodiscard]] sts2::game::Stat get_energy() const noexcept { return energy_; }
   [[nodiscard]] uint16_t get_round() const noexcept { return round_; }
   [[nodiscard]] Phase get_phase() const noexcept { return phase_; }
-  [[nodiscard]] const std::array<EnemyState, 2>& get_enemies()
-      const noexcept {
+  [[nodiscard]] const std::array<EnemyState, 2>& get_enemies() const noexcept {
     return enemies_;
   }
   [[nodiscard]] const EnemyState& get_enemy(std::size_t index) const noexcept {

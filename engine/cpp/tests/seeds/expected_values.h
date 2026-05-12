@@ -9,7 +9,8 @@
 //
 // To regenerate after a toolchain change:
 //   cmake --build --preset ninja-debug
-//   build\ninja-debug\Debug\sts2_seed_pinner.exe > tests\seeds\expected_values.h
+//   build\ninja-debug\Debug\sts2_seed_pinner.exe >
+//   tests\seeds\expected_values.h
 
 #include <array>
 #include <cstdint>
@@ -18,22 +19,24 @@
 
 namespace sts2::tests::seeds {
 
-inline constexpr std::uint64_t kRngTestSeed     = 0xdeadbeefcafeULL;
-inline constexpr std::uint64_t kCombatTestSeed  = 0xc0ffeeULL;
+inline constexpr std::uint64_t kRngTestSeed = 0xdeadbeefcafeULL;
+inline constexpr std::uint64_t kCombatTestSeed = 0xc0ffeeULL;
 inline constexpr std::uint64_t kCultistTestSeed = 0x42ULL;
 
 // T-RNG-005: 10 successive uniform_int(0, 9) calls on Rng{kRngTestSeed}.
 inline constexpr std::array<int, 10> kRngSeq09 = {7, 3, 9, 2, 0, 8, 4, 7, 7, 9};
 
 // T-RNG-055: shuffle({1, 2}) on Rng{kRngTestSeed}.
-inline constexpr std::array<int, 2>  kShuffle2  = {1, 2};
+inline constexpr std::array<int, 2> kShuffle2 = {1, 2};
 
 // T-RNG-060: shuffle({0..9}) on Rng{kRngTestSeed}.
-inline constexpr std::array<int, 10> kShuffle10 = {5, 8, 2, 6, 4, 0, 1, 9, 3, 7};
+inline constexpr std::array<int, 10> kShuffle10 = {5, 8, 2, 6, 4,
+                                                   0, 1, 9, 3, 7};
 
-// T-ENM-005 / T-ENM-015: cultist HPs from make_*_cultist(Rng{kCultistTestSeed}).
+// T-ENM-005 / T-ENM-015: cultist HPs from
+// make_*_cultist(Rng{kCultistTestSeed}).
 inline constexpr int kCalcifiedHpSeed42 = 39;
-inline constexpr int kDampHpSeed42      = 52;
+inline constexpr int kDampHpSeed42 = 52;
 
 // T-ENM-010 / T-ENM-020: first seed in [0, 2^20) producing a given HP.
 inline constexpr std::uint64_t kCalcifiedSeedHp38 = 0x0ULL;
@@ -44,24 +47,19 @@ inline constexpr std::uint64_t kDampSeedHp51 = 0x0ULL;
 inline constexpr std::uint64_t kDampSeedHp52 = 0x3ULL;
 inline constexpr std::uint64_t kDampSeedHp53 = 0x2ULL;
 
-// Combat tests: order of make_silent_starter_deck() after Rng{kCombatTestSeed}.shuffle(deck).
-inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffledC0Ffee = {
-    sts2::game::CardId::kStrike,
-    sts2::game::CardId::kStrike,
-    sts2::game::CardId::kNeutralize,
-    sts2::game::CardId::kSurvivor,
-    sts2::game::CardId::kDefend,
-    sts2::game::CardId::kDefend,
-    sts2::game::CardId::kStrike,
-    sts2::game::CardId::kStrike,
-    sts2::game::CardId::kDefend,
-    sts2::game::CardId::kStrike,
-    sts2::game::CardId::kDefend,
-    sts2::game::CardId::kDefend
-};
+// Combat tests: order of make_silent_starter_deck() after
+// Rng{kCombatTestSeed}.shuffle(deck).
+inline constexpr std::array<sts2::game::CardId, 12> kSilentDeckShuffledC0Ffee =
+    {sts2::game::CardId::kStrike,     sts2::game::CardId::kStrike,
+     sts2::game::CardId::kNeutralize, sts2::game::CardId::kSurvivor,
+     sts2::game::CardId::kDefend,     sts2::game::CardId::kDefend,
+     sts2::game::CardId::kStrike,     sts2::game::CardId::kStrike,
+     sts2::game::CardId::kDefend,     sts2::game::CardId::kStrike,
+     sts2::game::CardId::kDefend,     sts2::game::CardId::kDefend};
 
-// Determinism reference: two consecutive uniform_int(0, INT_MAX) on Rng{kRngTestSeed}.
-inline constexpr int kRngFirstUniform0Intmax  = 1541086063;
+// Determinism reference: two consecutive uniform_int(0, INT_MAX) on
+// Rng{kRngTestSeed}.
+inline constexpr int kRngFirstUniform0Intmax = 1541086063;
 inline constexpr int kRngSecondUniform0Intmax = 765893422;
 
 }  // namespace sts2::tests::seeds

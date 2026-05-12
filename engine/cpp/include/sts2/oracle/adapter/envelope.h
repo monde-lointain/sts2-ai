@@ -63,12 +63,14 @@ struct ParsedEnvelope {
   std::vector<std::uint8_t> payload_sha256;  // 32 bytes (validated)
 };
 
+// clang-tidy off
 // Parses a StateBlobEnvelope. Throws on:
 //   - unknown field numbers (EnvelopeUnknownField)
 //   - unknown wire types (EnvelopeWireTypeError)
 //   - payload_sha256 length != 32 OR != sha256(payload) (EnvelopePayloadShaMismatch)
 //   - schema_major/minor != (0, 1) (EnvelopeSchemaMismatch)
 //   - truncated / malformed varints / length-prefixed reads (EnvelopeError)
+// clang-tidy on
 [[nodiscard]] ParsedEnvelope parse_envelope(
     std::span<const std::uint8_t> bytes);
 

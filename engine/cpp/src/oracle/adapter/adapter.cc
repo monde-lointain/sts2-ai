@@ -110,8 +110,7 @@ std::string detect_encounter_id(
 }
 
 // Collect all PowerInstance.ModelId strings from a CombatState's enemies.
-std::set<std::string> collect_enemy_power_ids(
-    const ParsedCombatState& combat) {
+std::set<std::string> collect_enemy_power_ids(const ParsedCombatState& combat) {
   std::set<std::string> ids;
   for (const auto& e : combat.enemies) {
     for (const auto& p : e.powers) {
@@ -147,8 +146,8 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   for (const auto& e : blob.combat_state.enemies) {
     reject.unsupported.monster_ids.push_back(e.name);
   }
-  reject.unsupported.encounter_id = detect_encounter_id(
-      sorted_monster_ids(blob.combat_state));
+  reject.unsupported.encounter_id =
+      detect_encounter_id(sorted_monster_ids(blob.combat_state));
   reject.unsupported.reason = "encounter_not_in_cpp_engine";
   reject.unsupported.manifest = manifest;
 
@@ -162,7 +161,7 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
     const auto observed = collect_enemy_power_ids(blob.combat_state);
     std::vector<std::string> absent;
     for (const auto& want : expected) {
-      if (observed.find(want) == observed.end()) {
+      if (!observed.contains(want)) {
         absent.push_back(want);
       }
     }
