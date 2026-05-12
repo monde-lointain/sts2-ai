@@ -1,6 +1,7 @@
 #include "sts2/game/hand.h"
 
 #include <cassert>
+#include <cstddef>
 #include <utility>
 
 #include "sts2/game/deck.h"
@@ -60,7 +61,7 @@ bool Hand::valid(HandIndex idx) const noexcept { return idx.in_range(cards_); }
 
 const Card& Hand::at(HandIndex idx) const noexcept {
   assert(valid(idx));
-  return idx.at(cards_);
+  return cards_[static_cast<std::size_t>(idx.raw())];
 }
 
 }  // namespace sts2::game
