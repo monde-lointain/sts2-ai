@@ -5,14 +5,14 @@ import sys
 import unittest
 
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
+ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "content"))
 
 import validate_registry
 
 
-REGISTRY_PATH = ROOT / "content" / "registry" / "phase1-silent.json"
-SCHEMA_PATH = ROOT / "content" / "registry" / "schema.json"
+REGISTRY_PATH = ROOT / "contracts" / "registry" / "phase1-silent.json"
+SCHEMA_PATH = ROOT / "contracts" / "registry" / "schema.json"
 
 
 def load_registry():
