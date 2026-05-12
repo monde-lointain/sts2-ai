@@ -19,7 +19,7 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
     rec.combat_over = true;
     rec.action = sts2::input::Action{.kind = sts2::input::Action::kEndTurn,
                                      .card_idx = sts2::game::HandIndex::none()};
-    rec.expected_hp = static_cast<double>(state.player_hp.value());
+    rec.expected_hp = static_cast<double>(state.get_player_hp().value());
     return rec;
   }
 
@@ -66,9 +66,9 @@ Recommendation Recommender::recommend(const sts2::game::Combat& combat) {
     step.survivor_discard_id = a.survivor_discard_id;
     rec.principal_variation.push_back(step);
 
-    const bool ok = transition::apply_player_action(pv_state, a);
-    assert(ok && "PV walk: TT-suggested action rejected");
-    (void)ok;
+    const auto next = transition::apply_player_action(pv_state, a);
+    assert(next.has_value() && "PV walk: TT-suggested action rejected");
+    pv_state = *next;
   }
 
   return rec;

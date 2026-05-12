@@ -145,8 +145,8 @@ TEST(Probability, EngineDistributionMonteCarlo) {
         [](const sts2::game::Combat&) { return sts2::game::HandIndex{0}; });
     c.start(sts2::cards::make_silent_starter_deck());
     const auto snap = sts2::ai::from_combat(c);
-    ASSERT_EQ(snap.hand.total(), k);
-    ++hist[snap.hand.counts];
+    ASSERT_EQ(snap.get_hand().total(), k);
+    ++hist[snap.get_hand().counts];
   }
 
   double chi2 = 0.0;

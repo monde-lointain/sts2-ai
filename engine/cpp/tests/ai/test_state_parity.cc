@@ -95,9 +95,10 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
       last_action = action;
 
       if (action.kind == ActionKind::kEndTurn) {
-        ASSERT_TRUE(apply_player_action(compact, action))
+        auto next = apply_player_action(compact, action);
+        ASSERT_TRUE(next.has_value())
             << "EndTurn rejected; seed=" << seed << " step=" << step;
-        resolve_end_turn_pre_draw(compact);
+        compact = resolve_end_turn_pre_draw(*next);
 
         if (is_terminal(compact)) {
           combat.end_turn();
@@ -120,7 +121,7 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
         }
 
         const CardCounts drawn = hand_to_counts(combat);
-        apply_draw(compact, drawn);
+        compact = apply_draw(compact, drawn);
       } else {
         const int hand_idx = find_hand_index(combat, action.card_id);
         ASSERT_GE(hand_idx, 0)
@@ -128,8 +129,10 @@ TEST(AiStateParity, RandomWalk_CompactStateMatchesCombat) {
             << " card=" << static_cast<int>(action.card_id);
         const sts2::game::EnemySlot target = action.target_idx;
 
-        ASSERT_TRUE(apply_player_action(compact, action))
+        auto next = apply_player_action(compact, action);
+        ASSERT_TRUE(next.has_value())
             << "AI rejected legal action; seed=" << seed << " step=" << step;
+        compact = *next;
         ASSERT_TRUE(combat.play_card(sts2::game::HandIndex{hand_idx}, target))
             << "engine rejected play; seed=" << seed << " step=" << step;
       }

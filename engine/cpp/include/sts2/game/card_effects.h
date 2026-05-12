@@ -14,6 +14,8 @@ namespace sts2::game::card_effects {
 
 struct CardEffect {
   std::string_view name;
+  std::string_view wire_model_id;
+  std::string_view cpp_name;
   std::string_view short_stats;
   std::array<std::string_view, 2> description;
   CardId id;
@@ -28,6 +30,8 @@ struct CardEffect {
 
 inline constexpr std::array<CardEffect, 4> kCardEffects = {{
     {.name = "Strike",
+     .wire_model_id = "StrikeSilent",
+     .cpp_name = "kStrike",
      .short_stats = "6dmg",
      .description = {"Deal 6 damage.", ""},
      .id = CardId::kStrike,
@@ -39,6 +43,8 @@ inline constexpr std::array<CardEffect, 4> kCardEffects = {{
      .weak_to_target = 0,
      .requires_discard = false},
     {.name = "Defend",
+     .wire_model_id = "DefendSilent",
+     .cpp_name = "kDefend",
      .short_stats = "5blk",
      .description = {"Gain 5 Block.", ""},
      .id = CardId::kDefend,
@@ -50,6 +56,8 @@ inline constexpr std::array<CardEffect, 4> kCardEffects = {{
      .weak_to_target = 0,
      .requires_discard = false},
     {.name = "Neutralize",
+     .wire_model_id = "Neutralize",
+     .cpp_name = "kNeutralize",
      .short_stats = "3dmg",
      .description = {"Deal 3 damage.", "Apply 1 Weak."},
      .id = CardId::kNeutralize,
@@ -61,6 +69,8 @@ inline constexpr std::array<CardEffect, 4> kCardEffects = {{
      .weak_to_target = 1,
      .requires_discard = false},
     {.name = "Survivor",
+     .wire_model_id = "Survivor",
+     .cpp_name = "kSurvivor",
      .short_stats = "8blk",
      .description = {"Gain 8 Block.", "Discard 1 card."},
      .id = CardId::kSurvivor,
@@ -88,6 +98,38 @@ inline constexpr std::array<CardId, 4> kCountedCardIds = {
   }
   assert(false && "card_effect_for: invalid CardId");
   return kCardEffects.front();
+}
+
+[[nodiscard]] constexpr std::string_view card_wire_model_id(
+    CardId id) noexcept {
+  for (const auto& e : kCardEffects) {
+    if (e.id == id) {
+      return e.wire_model_id;
+    }
+  }
+  return "";
+}
+
+[[nodiscard]] constexpr CardId card_id_from_wire_model_id(
+    std::string_view model_id) noexcept {
+  for (const auto& e : kCardEffects) {
+    if (e.wire_model_id == model_id) {
+      return e.id;
+    }
+  }
+  return CardId::kNone;
+}
+
+[[nodiscard]] constexpr std::string_view card_id_cpp_name(CardId id) noexcept {
+  if (id == CardId::kNone) {
+    return "kNone";
+  }
+  for (const auto& e : kCardEffects) {
+    if (e.id == id) {
+      return e.cpp_name;
+    }
+  }
+  return "";
 }
 
 }  // namespace sts2::game::card_effects

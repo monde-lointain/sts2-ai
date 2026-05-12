@@ -13,6 +13,8 @@ namespace {
 
 using sts2::ai::CardCounts;
 using sts2::ai::CompactState;
+using sts2::ai::CompactStateBuilder;
+using sts2::ai::EnemyStateBuilder;
 using sts2::ai::from_combat;
 using sts2::ai::Phase;
 using sts2::ai::Score;
@@ -24,36 +26,41 @@ using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::tests::helpers::make_starter_combat;
 
-CompactState make_lethal_position() {
-  CompactState s;
-  s.player_hp = Stat{70};
-  s.player_block = Stat{0};
-  s.player_strength = Stat{0};
-  s.player_weak = Stat{0};
-  s.energy = Stat{1};
-  s.round = 5;
-  s.phase = Phase::kPlayerActing;
-  s.enemies[0].alive = true;
-  s.enemies[0].hp = Stat{6};
+CompactState make_lethal_position(Stat enemy_hp = Stat{6}) {
+  CardCounts hand;
+  hand[CardId::kStrike] = 1;
+
   // Give the enemy a real attack so EndTurn branches terminate (kills player
   // eventually); this guarantees the search bottoms out via player death even
   // if Strike isn't chosen.
-  s.enemies[0].current_move = MoveId::kDarkStrike;
-  s.enemies[0].dark_strike_base = Stat{9};
-  s.enemies[0].performed_first_move = true;
-  s.enemies[1].alive = false;
-  s.enemies[1].hp = Stat{0};
-  s.hand[CardId::kStrike] = 1;
-  return s;
+  return CompactStateBuilder{}
+      .player_hp(Stat{70})
+      .player_block(Stat{0})
+      .player_strength(Stat{0})
+      .player_weak(Stat{0})
+      .energy(Stat{1})
+      .round(5)
+      .phase(Phase::kPlayerActing)
+      .enemy(0, EnemyStateBuilder{}
+                    .alive(true)
+                    .hp(enemy_hp)
+                    .current_move(MoveId::kDarkStrike)
+                    .dark_strike_base(Stat{9})
+                    .performed_first_move(true)
+                    .build())
+      .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+      .hand(hand)
+      .build();
 }
 
 TEST(Search, TerminalState_ReturnsImmediately) {
-  CompactState s;
-  s.player_hp = Stat{0};  // dead -> terminal
-  s.enemies[0].alive = true;
-  s.enemies[0].hp = Stat{10};
-  s.phase = Phase::kPlayerActing;
-  s.round = 3;
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{0})  // dead -> terminal
+          .enemy(0, EnemyStateBuilder{}.alive(true).hp(Stat{10}).build())
+          .phase(Phase::kPlayerActing)
+          .round(3)
+          .build();
 
   Search search;
   const SearchResult r = search.solve(s);
@@ -63,12 +70,13 @@ TEST(Search, TerminalState_ReturnsImmediately) {
 }
 
 TEST(Search, TerminalState_AllEnemiesDead) {
-  CompactState s;
-  s.player_hp = Stat{42};
-  s.enemies[0].alive = false;
-  s.enemies[1].alive = false;
-  s.phase = Phase::kPlayerActing;
-  s.round = 4;
+  CompactState s = CompactStateBuilder{}
+                       .player_hp(Stat{42})
+                       .enemy(0, EnemyStateBuilder{}.alive(false).build())
+                       .enemy(1, EnemyStateBuilder{}.alive(false).build())
+                       .phase(Phase::kPlayerActing)
+                       .round(4)
+                       .build();
 
   Search search;
   const SearchResult r = search.solve(s);
@@ -91,8 +99,7 @@ TEST(Search, LethalThisTurn_PreferStrike) {
 }
 
 TEST(Search, OverkillDamage_StillPicksKillingBlow) {
-  CompactState s = make_lethal_position();
-  s.enemies[0].hp = Stat{4};  // strike does 6, overkill
+  CompactState s = make_lethal_position(Stat{4});  // strike does 6, overkill
 
   Search search;
   const SearchResult r = search.solve(s);
@@ -110,24 +117,32 @@ TEST(Search, DefensivePlayPreservesHp) {
   // before next-turn kill -> Score{7, 1}. HP dominates -> Defend wins.
   // Ritual=2 ensures strength grows so the search terminates (no infinite
   // defending; eventually damage exceeds any block).
-  CompactState s;
-  s.player_hp = Stat{10};
-  s.player_block = Stat{0};
-  s.energy = Stat{1};
-  s.round = 5;
-  s.phase = Phase::kPlayerActing;
-  s.hand[CardId::kDefend] = 1;
-  s.draw[CardId::kStrike] = 1;  // drawn next turn to deliver lethal
-  s.enemies[0].alive = true;
-  s.enemies[0].hp = Stat{3};  // 1 Strike kills (6 dmg)
-  s.enemies[0].strength = Stat{0};
-  s.enemies[0].dark_strike_base = Stat{8};
-  s.enemies[0].ritual_amount = Stat{2};
-  s.enemies[0].current_move = MoveId::kDarkStrike;
-  s.enemies[0].just_applied_ritual = false;
-  s.enemies[0].performed_first_move = true;
-  s.enemies[1].alive = false;
-  s.enemies[1].hp = Stat{0};
+  CardCounts hand;
+  hand[CardId::kDefend] = 1;
+  CardCounts draw;
+  draw[CardId::kStrike] = 1;  // drawn next turn to deliver lethal
+
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{10})
+          .player_block(Stat{0})
+          .energy(Stat{1})
+          .round(5)
+          .phase(Phase::kPlayerActing)
+          .hand(hand)
+          .draw(draw)
+          .enemy(0, EnemyStateBuilder{}
+                        .alive(true)
+                        .hp(Stat{3})  // 1 Strike kills (6 dmg)
+                        .strength(Stat{0})
+                        .dark_strike_base(Stat{8})
+                        .ritual_amount(Stat{2})
+                        .current_move(MoveId::kDarkStrike)
+                        .just_applied_ritual(false)
+                        .performed_first_move(true)
+                        .build())
+          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .build();
 
   Search search;
   const SearchResult r = search.solve(s);
@@ -137,23 +152,23 @@ TEST(Search, DefensivePlayPreservesHp) {
 }
 
 TEST(Search, EmptyHand_PicksEndTurn) {
-  CompactState s;
-  s.player_hp = Stat{30};
-  s.energy = Stat{3};
-  s.round = 2;
-  s.phase = Phase::kPlayerActing;
-  s.hand = CardCounts{};
-  s.draw = CardCounts{};
-  s.discard = CardCounts{};
-  s.enemies[0].alive = true;
-  s.enemies[0].hp = Stat{50};
   // DarkStrike kills the player in finite turns; required so the search has a
   // terminal to back-propagate from when there are no playable cards.
-  s.enemies[0].current_move = MoveId::kDarkStrike;
-  s.enemies[0].dark_strike_base = Stat{9};
-  s.enemies[0].performed_first_move = true;
-  s.enemies[1].alive = false;
-  s.enemies[1].hp = Stat{0};
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{30})
+          .energy(Stat{3})
+          .round(2)
+          .phase(Phase::kPlayerActing)
+          .enemy(0, EnemyStateBuilder{}
+                        .alive(true)
+                        .hp(Stat{50})
+                        .current_move(MoveId::kDarkStrike)
+                        .dark_strike_base(Stat{9})
+                        .performed_first_move(true)
+                        .build())
+          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .build();
 
   Search search;
   const SearchResult r = search.solve(s);

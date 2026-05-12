@@ -25,22 +25,22 @@ void tally(CardCounts& counts, std::span<const sts2::game::Card> pile) {
 }
 
 EnemyState build_enemy_state(const sts2::game::Enemy& e) {
-  EnemyState s;
-  s.alive = e.vitals.hp > sts2::game::Stat{0};
-  s.hp = e.vitals.hp;
-  s.block = e.vitals.block;
-  s.strength = sts2::game::Stat{
-      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kStrength)};
-  s.weak = sts2::game::Stat{
-      sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak)};
-  s.dark_strike_base = e.dark_strike_base;
-  s.ritual_amount = e.ritual_amount;
   const sts2::game::Power* ritual =
       sts2::powers::find(e.vitals.powers, sts2::game::PowerKind::kRitual);
-  s.just_applied_ritual = ritual != nullptr && ritual->just_applied;
-  s.performed_first_move = e.performed_first_move;
-  s.current_move = e.current_move;
-  return s;
+  return EnemyStateBuilder{}
+      .alive(e.vitals.hp > sts2::game::Stat{0})
+      .hp(e.vitals.hp)
+      .block(e.vitals.block)
+      .strength(sts2::game::Stat{sts2::powers::amount(
+          e.vitals.powers, sts2::game::PowerKind::kStrength)})
+      .weak(sts2::game::Stat{
+          sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak)})
+      .dark_strike_base(e.dark_strike_base)
+      .ritual_amount(e.ritual_amount)
+      .just_applied_ritual(ritual != nullptr && ritual->just_applied)
+      .performed_first_move(e.performed_first_move)
+      .current_move(e.current_move)
+      .build();
 }
 
 }  // namespace
@@ -86,27 +86,31 @@ CompactState from_combat(const sts2::game::Combat& combat) {
   assert(sts2::powers::find(p.vitals.powers, sts2::game::PowerKind::kRitual) ==
          nullptr);
 
-  CompactState s;
-  s.player_hp = p.vitals.hp;
-  s.player_block = p.vitals.block;
-  s.player_strength = sts2::game::Stat{0};
-  s.player_weak = sts2::game::Stat{0};
-  s.energy = sts2::game::Stat{p.energy};
+  CompactStateBuilder builder;
+  builder.player_hp(p.vitals.hp)
+      .player_block(p.vitals.block)
+      .player_strength(sts2::game::Stat{0})
+      .player_weak(sts2::game::Stat{0})
+      .energy(sts2::game::Stat{p.energy});
   assert(combat.round() >= 0);
-  s.round = static_cast<uint16_t>(combat.round());
-  s.phase = Phase::kPlayerActing;
+  builder.round(static_cast<uint16_t>(combat.round()))
+      .phase(Phase::kPlayerActing);
 
   const auto& es = combat.enemies();
   assert(es.size() <= 2);
   for (std::size_t i = 0; i < es.size(); ++i) {
-    s.enemies[i] = build_enemy_state(es[i]);
+    builder.enemy(i, build_enemy_state(es[i]));
   }
 
-  tally(s.hand, p.hand.cards());
-  tally(s.draw, p.deck.draw_pile());
-  tally(s.discard, p.deck.discard_pile());
+  CardCounts hand;
+  CardCounts draw;
+  CardCounts discard;
+  tally(hand, p.hand.cards());
+  tally(draw, p.deck.draw_pile());
+  tally(discard, p.deck.discard_pile());
+  builder.hand(hand).draw(draw).discard(discard);
 
-  return s;
+  return builder.build();
 }
 
 }  // namespace sts2::ai

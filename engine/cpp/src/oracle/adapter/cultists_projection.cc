@@ -8,6 +8,9 @@
 #include <string_view>
 
 #include "sts2/ai/state.h"
+#include "sts2/game/card_effects.h"
+#include "sts2/game/enemies.h"
+#include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/types.h"
 #include "sts2/oracle/adapter/state_blob.h"
@@ -24,39 +27,21 @@ namespace sts2::oracle::adapter {
 
 namespace {
 
-// Q1-emitted Creature.Name strings on the cultist pair (verified against
-// fixture #1 bytes on 2026-05-12). Format note: Q1 wire uses single-token
-// names (no spaces); the C++ prototype's internal Enemy::name happens to
-// use "Calcified Cultist" / "Damp Cultist" with spaces — those are *not*
-// what flows over the wire.
-constexpr std::string_view kCalcifiedCultistName = "CalcifiedCultist";
-constexpr std::string_view kDampCultistName = "DampCultist";
-
-// Q1-emitted MonsterIntent.MoveId strings. The wire records the *next*
-// intent the enemy will perform; both cultists start round 1 with
-// INCANTATION_MOVE (ritual buff), then loop on DARK_STRIKE_MOVE.
-constexpr std::string_view kIncantationMoveId = "INCANTATION_MOVE";
-constexpr std::string_view kDarkStrikeMoveId = "DARK_STRIKE_MOVE";
-
 // Q1-emitted PowerInstance.ModelId strings consumed by the projection.
 constexpr std::string_view kPowerIdStrength = "Strength";
 constexpr std::string_view kPowerIdWeak = "Weak";
 constexpr std::string_view kPowerIdRitual = "Ritual";
 
-// Card ModelId → Q2 CardId enum. Phase-1A Silent starter deck only.
 sts2::game::CardId map_card_model_id(std::string_view model_id) {
-  if (model_id == "StrikeSilent") return sts2::game::CardId::kStrike;
-  if (model_id == "DefendSilent") return sts2::game::CardId::kDefend;
-  if (model_id == "Neutralize") return sts2::game::CardId::kNeutralize;
-  if (model_id == "Survivor") return sts2::game::CardId::kSurvivor;
+  const sts2::game::CardId id =
+      sts2::game::card_effects::card_id_from_wire_model_id(model_id);
+  if (id != sts2::game::CardId::kNone) return id;
   throw StateCodecError("unknown card ModelId: " + std::string(model_id));
 }
 
-// MoveId string → MoveId enum. Sentinel-on-unknown so the projection fails
-// loud rather than producing a Search-tractable but wrong state.
 sts2::game::MoveId map_move_id(std::string_view move_id) {
-  if (move_id == kIncantationMoveId) return sts2::game::MoveId::kIncantation;
-  if (move_id == kDarkStrikeMoveId) return sts2::game::MoveId::kDarkStrike;
+  sts2::game::MoveId id = sts2::game::MoveId::kIncantation;
+  if (sts2::game::move_calc::try_move_id_from_wire_id(move_id, id)) return id;
   throw StateCodecError("unknown MoveId: " + std::string(move_id));
 }
 
@@ -89,56 +74,40 @@ void tally_pile(sts2::ai::CardCounts& counts,
 }
 
 bool is_calcified_or_damp_name(std::string_view name) {
-  return name == kCalcifiedCultistName || name == kDampCultistName;
-}
-
-// Cultist-specific base damage. Sourced from C++ prototype
-// enemies.cc:make_calcified_cultist (dark_strike_base=9) and
-// make_damp_cultist (dark_strike_base=1); cross-verified against C# content
-// (CalcifiedCultist.DarkStrikeDamage=9, DampCultist.DarkStrikeDamage=1).
-// Ritual amounts: Calcified=2, Damp=5 per same sources.
-struct CultistParams {
-  sts2::game::Stat dark_strike_base;
-  sts2::game::Stat ritual_amount;
-};
-
-CultistParams params_for(std::string_view name) {
-  if (name == kCalcifiedCultistName) {
-    return CultistParams{sts2::game::Stat{9}, sts2::game::Stat{2}};
-  }
-  // Damp.
-  return CultistParams{sts2::game::Stat{1}, sts2::game::Stat{5}};
+  return sts2::enemies::cultist_archetype_from_wire_name(name) != nullptr;
 }
 
 sts2::ai::EnemyState project_one_enemy(const ParsedCreature& cr) {
-  sts2::ai::EnemyState e;
-  e.alive = cr.current_hp > 0;
-  e.hp = sts2::game::Stat{cr.current_hp};
-  e.block = sts2::game::Stat{cr.block};
-  e.strength = sts2::game::Stat{power_stacks(cr, kPowerIdStrength)};
-  e.weak = sts2::game::Stat{power_stacks(cr, kPowerIdWeak)};
+  const sts2::enemies::CultistArchetype* archetype =
+      sts2::enemies::cultist_archetype_from_wire_name(cr.name);
+  if (archetype == nullptr) {
+    throw StateCodecError("unknown cultist Creature.Name: " +
+                          std::string(cr.name));
+  }
 
-  const CultistParams params = params_for(cr.name);
-  e.dark_strike_base = params.dark_strike_base;
-  e.ritual_amount = params.ritual_amount;
-
-  e.just_applied_ritual = has_power_with_just_applied(cr, kPowerIdRitual);
   // performed_first_move is a C++-prototype-private bool tracking whether
   // the enemy has yet acted on its initial intent. Q1's wire doesn't expose
   // it directly; for a Q1-fixture-boot snapshot (post-StartCombat, pre-
   // first-script-action) the enemy has not yet acted, so this is false.
   // If a future fixture is mid-combat we'll need to infer this differently
   // — surfaced as a comment for future expansion.
-  e.performed_first_move = false;
-
   // The wire's intent.move_id records the enemy's CURRENT intent (the move
   // it will perform on its next act). Map to MoveId enum.
-  if (cr.intent_present) {
-    e.current_move = map_move_id(cr.intent.move_id);
-  } else {
-    e.current_move = sts2::game::MoveId::kIncantation;
-  }
-  return e;
+  const sts2::game::MoveId current_move =
+      cr.intent_present ? map_move_id(cr.intent.move_id)
+                        : sts2::game::MoveId::kIncantation;
+  return sts2::ai::EnemyStateBuilder{}
+      .alive(cr.current_hp > 0)
+      .hp(sts2::game::Stat{cr.current_hp})
+      .block(sts2::game::Stat{cr.block})
+      .strength(sts2::game::Stat{power_stacks(cr, kPowerIdStrength)})
+      .weak(sts2::game::Stat{power_stacks(cr, kPowerIdWeak)})
+      .dark_strike_base(sts2::game::Stat{archetype->dark_strike_base})
+      .ritual_amount(sts2::game::Stat{archetype->ritual_amount})
+      .just_applied_ritual(has_power_with_just_applied(cr, kPowerIdRitual))
+      .performed_first_move(false)
+      .current_move(current_move)
+      .build();
 }
 
 }  // namespace
@@ -166,31 +135,36 @@ sts2::ai::CompactState project_cultists_normal(
     const ParsedCombatState& combat) {
   assert(is_cultists_normal(combat));
 
-  sts2::ai::CompactState s;
-  s.player_hp = sts2::game::Stat{combat.player.current_hp};
-  s.player_block = sts2::game::Stat{combat.player.block};
-  s.player_strength =
-      sts2::game::Stat{power_stacks(combat.player, kPowerIdStrength)};
-  s.player_weak = sts2::game::Stat{power_stacks(combat.player, kPowerIdWeak)};
-  s.energy = sts2::game::Stat{combat.energy};
+  sts2::ai::CompactStateBuilder builder;
+  builder.player_hp(sts2::game::Stat{combat.player.current_hp})
+      .player_block(sts2::game::Stat{combat.player.block})
+      .player_strength(
+          sts2::game::Stat{power_stacks(combat.player, kPowerIdStrength)})
+      .player_weak(
+          sts2::game::Stat{power_stacks(combat.player, kPowerIdWeak)})
+      .energy(sts2::game::Stat{combat.energy});
   // Q1's turn_counter is 1-based at the smoke fixture boot (turn=1, pre-
   // first-action). The C++ prototype's `round` field is also 1-based at
   // combat start (round=1 enables Ring of the Snake's 7-card first-turn
   // draw). Map turn_counter -> round directly; floor at 1 for defense.
-  s.round = static_cast<std::uint16_t>(std::max(1, combat.turn_counter));
-  s.phase = sts2::ai::Phase::kPlayerActing;
+  builder.round(static_cast<std::uint16_t>(std::max(1, combat.turn_counter)))
+      .phase(sts2::ai::Phase::kPlayerActing);
 
-  s.enemies[0] = project_one_enemy(combat.enemies[0]);
-  s.enemies[1] = project_one_enemy(combat.enemies[1]);
+  builder.enemy(0, project_one_enemy(combat.enemies[0]))
+      .enemy(1, project_one_enemy(combat.enemies[1]));
 
-  tally_pile(s.hand, combat.hand_pile);
-  tally_pile(s.draw, combat.draw_pile);
-  tally_pile(s.discard, combat.discard_pile);
+  sts2::ai::CardCounts hand;
+  sts2::ai::CardCounts draw;
+  sts2::ai::CardCounts discard;
+  tally_pile(hand, combat.hand_pile);
+  tally_pile(draw, combat.draw_pile);
+  tally_pile(discard, combat.discard_pile);
+  builder.hand(hand).draw(draw).discard(discard);
   // ExhaustPile is intentionally not surfaced into CompactState — the
   // prototype doesn't model exhausted cards in the search state (Survivor
   // discard semantics are handled at action-time per transition.cc).
 
-  return s;
+  return builder.build();
 }
 
 }  // namespace sts2::oracle::adapter

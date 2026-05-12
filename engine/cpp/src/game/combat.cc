@@ -8,6 +8,7 @@
 #include "sts2/game/hand.h"
 #include "sts2/game/powers.h"
 #include "sts2/game/turn_calc.h"
+#include "sts2/game/turn_flow.h"
 
 namespace sts2::game {
 
@@ -67,13 +68,44 @@ void Combat::end_turn() {
   if (combat_over_) {
     return;
   }
-  end_player_turn();
-  enemy_phase();
+
+  struct EndTurnOps {
+    Combat& combat;
+
+    void end_player_turn() { combat.end_player_turn(); }
+    [[nodiscard]] std::size_t enemy_count() const {
+      return combat.enemies_.size();
+    }
+    [[nodiscard]] bool enemy_alive(std::size_t slot) const {
+      return is_alive(combat.enemies_[slot]);
+    }
+    void reset_enemy_block(std::size_t slot) {
+      combat.enemies_[slot].vitals.block = sts2::game::Stat{0};
+    }
+    void enemy_act(std::size_t slot) {
+      sts2::enemies::act(combat.enemies_[slot], combat);
+    }
+    [[nodiscard]] bool terminal() const { return combat.combat_over_; }
+    void tick_enemy_powers(std::size_t slot) {
+      sts2::powers::tick_at_turn_end(combat.enemies_[slot].vitals.powers);
+    }
+    void increment_round() { combat.round_ += 1; }
+    [[nodiscard]] int round() const { return combat.round_; }
+    void roll_enemy_next_move(std::size_t slot) {
+      sts2::enemies::roll_next_move(combat.enemies_[slot]);
+    }
+    void reset_player_block() {
+      combat.player_.vitals.block = sts2::game::Stat{0};
+    }
+    void refill_player_energy(int amount) { combat.player_.energy = amount; }
+  };
+
+  EndTurnOps ops{*this};
+  turn_flow::resolve_end_turn_pre_draw(ops);
   if (combat_over_) {
     return;
   }
-  round_ += 1;
-  start_player_turn();
+  player_.hand.draw_from(player_.deck, rng_, turn_calc::hand_draw_size(round_));
   check_win_or_lose();
 }
 

@@ -7,26 +7,28 @@
 
 namespace sts2::enemies {
 
-sts2::game::Enemy make_calcified_cultist(sts2::game::Rng& rng) {
+namespace {
+
+sts2::game::Enemy make_cultist(const CultistArchetype& archetype,
+                               sts2::game::Rng& rng) {
   sts2::game::Enemy e;
-  e.name = "Calcified Cultist";
-  int hp = rng.uniform_int(38, 41);
+  e.name = archetype.internal_name;
+  int hp = rng.uniform_int(archetype.hp_min, archetype.hp_max);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
-  e.dark_strike_base = sts2::game::Stat{9};
-  e.ritual_amount = sts2::game::Stat{2};
+  e.dark_strike_base = sts2::game::Stat{archetype.dark_strike_base};
+  e.ritual_amount = sts2::game::Stat{archetype.ritual_amount};
   return e;
 }
 
+}  // namespace
+
+sts2::game::Enemy make_calcified_cultist(sts2::game::Rng& rng) {
+  return make_cultist(kCultistArchetypes[0], rng);
+}
+
 sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Damp Cultist";
-  int hp = rng.uniform_int(51, 53);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.dark_strike_base = sts2::game::Stat{1};
-  e.ritual_amount = sts2::game::Stat{5};
-  return e;
+  return make_cultist(kCultistArchetypes[1], rng);
 }
 
 void roll_next_move(sts2::game::Enemy& e) {

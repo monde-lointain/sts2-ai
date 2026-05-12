@@ -45,6 +45,48 @@ using sts2::tests::seeds::kDampSeedHp51;
 using sts2::tests::seeds::kDampSeedHp52;
 using sts2::tests::seeds::kDampSeedHp53;
 
+TEST(EnemiesCultistArchetypeCatalog, LooksUpByWireName) {
+  const auto* calcified =
+      sts2::enemies::cultist_archetype_from_wire_name("CalcifiedCultist");
+  ASSERT_NE(calcified, nullptr);
+  EXPECT_EQ(calcified->internal_name, "Calcified Cultist");
+  EXPECT_EQ(calcified->wire_name, "CalcifiedCultist");
+  EXPECT_EQ(calcified->hp_min, 38);
+  EXPECT_EQ(calcified->hp_max, 41);
+  EXPECT_EQ(calcified->dark_strike_base, 9);
+  EXPECT_EQ(calcified->ritual_amount, 2);
+
+  const auto* damp =
+      sts2::enemies::cultist_archetype_from_wire_name("DampCultist");
+  ASSERT_NE(damp, nullptr);
+  EXPECT_EQ(damp->internal_name, "Damp Cultist");
+  EXPECT_EQ(damp->wire_name, "DampCultist");
+  EXPECT_EQ(damp->hp_min, 51);
+  EXPECT_EQ(damp->hp_max, 53);
+  EXPECT_EQ(damp->dark_strike_base, 1);
+  EXPECT_EQ(damp->ritual_amount, 5);
+}
+
+TEST(EnemiesCultistArchetypeCatalog, LooksUpByInternalName) {
+  const auto* calcified =
+      sts2::enemies::cultist_archetype_from_internal_name(
+          "Calcified Cultist");
+  ASSERT_NE(calcified, nullptr);
+  EXPECT_EQ(calcified->wire_name, "CalcifiedCultist");
+
+  const auto* damp =
+      sts2::enemies::cultist_archetype_from_internal_name("Damp Cultist");
+  ASSERT_NE(damp, nullptr);
+  EXPECT_EQ(damp->wire_name, "DampCultist");
+}
+
+TEST(EnemiesCultistArchetypeCatalog, UnknownNameReturnsNull) {
+  EXPECT_EQ(sts2::enemies::cultist_archetype_from_wire_name("JawWorm"),
+            nullptr);
+  EXPECT_EQ(sts2::enemies::cultist_archetype_from_internal_name("Jaw Worm"),
+            nullptr);
+}
+
 // -------------------------------------------------------------------------
 // 9.1  enemies::make_calcified_cultist(Rng&)
 // -------------------------------------------------------------------------

@@ -61,6 +61,34 @@ TEST(CardEffectFor, LooksUpById) {
   }
 }
 
+TEST(CardEffectsCatalog, WireModelIdRoundTrips) {
+  for (const CardEffect& e : kCardEffects) {
+    EXPECT_EQ(sts2::game::card_effects::card_id_from_wire_model_id(
+                  e.wire_model_id),
+              e.id);
+    EXPECT_EQ(sts2::game::card_effects::card_wire_model_id(e.id),
+              e.wire_model_id);
+  }
+}
+
+TEST(CardEffectsCatalog, UnknownWireModelIdReturnsNone) {
+  EXPECT_EQ(sts2::game::card_effects::card_id_from_wire_model_id("Zap"),
+            CardId::kNone);
+}
+
+TEST(CardEffectsCatalog, CppNamesMatchEnumTokens) {
+  EXPECT_EQ(sts2::game::card_effects::card_id_cpp_name(CardId::kStrike),
+            "kStrike");
+  EXPECT_EQ(sts2::game::card_effects::card_id_cpp_name(CardId::kDefend),
+            "kDefend");
+  EXPECT_EQ(sts2::game::card_effects::card_id_cpp_name(CardId::kNeutralize),
+            "kNeutralize");
+  EXPECT_EQ(sts2::game::card_effects::card_id_cpp_name(CardId::kSurvivor),
+            "kSurvivor");
+  EXPECT_EQ(sts2::game::card_effects::card_id_cpp_name(CardId::kNone),
+            "kNone");
+}
+
 // Spec consistency: table values match what the engine factories produce.
 TEST(CardEffectsTableConsistency, StrikeMatchesFactory) {
   const auto& fx = card_effect_for(CardId::kStrike);

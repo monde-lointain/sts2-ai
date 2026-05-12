@@ -71,17 +71,19 @@ TEST(AdapterRoundtrip, DISABLED_Fixture1_AdapterPlusSearch_PinnedAgreement) {
   const CompactState s = std::get<CompactState>(r);
 
   // Sanity: CompactState shape matches Silent starter @ seed 42 boot.
-  ASSERT_TRUE(s.enemies[0].alive);
-  ASSERT_TRUE(s.enemies[1].alive);
-  EXPECT_EQ(s.player_hp.value(), 70);
-  EXPECT_EQ(s.player_block.value(), 0);
-  EXPECT_EQ(s.player_strength.value(), 0);
-  EXPECT_EQ(s.player_weak.value(), 0);
-  EXPECT_EQ(s.energy.value(), 3);
-  EXPECT_EQ(s.round, 1U);
-  EXPECT_EQ(s.phase, Phase::kPlayerActing);
-  EXPECT_EQ(s.hand.total(), 7);
-  EXPECT_EQ(s.hand.total() + s.draw.total() + s.discard.total(), 12);
+  ASSERT_TRUE(s.get_enemy(0).get_alive());
+  ASSERT_TRUE(s.get_enemy(1).get_alive());
+  EXPECT_EQ(s.get_player_hp().value(), 70);
+  EXPECT_EQ(s.get_player_block().value(), 0);
+  EXPECT_EQ(s.get_player_strength().value(), 0);
+  EXPECT_EQ(s.get_player_weak().value(), 0);
+  EXPECT_EQ(s.get_energy().value(), 3);
+  EXPECT_EQ(s.get_round(), 1U);
+  EXPECT_EQ(s.get_phase(), Phase::kPlayerActing);
+  EXPECT_EQ(s.get_hand().total(), 7);
+  EXPECT_EQ(s.get_hand().total() + s.get_draw().total() +
+                s.get_discard().total(),
+            12);
 
   Search search;
   const SearchResult result = search.solve(s);

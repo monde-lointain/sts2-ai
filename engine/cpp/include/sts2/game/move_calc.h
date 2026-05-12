@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <utility>
 
 #include "sts2/game/types.h"
@@ -9,6 +10,36 @@
 // simulator (src/ai/transition.cc) to prevent silent divergence.
 
 namespace sts2::game::move_calc {
+
+[[nodiscard]] constexpr std::string_view move_wire_id(MoveId id) noexcept {
+  switch (id) {
+    case MoveId::kIncantation:
+      return "INCANTATION_MOVE";
+    case MoveId::kDarkStrike:
+      return "DARK_STRIKE_MOVE";
+  }
+  return "";
+}
+
+[[nodiscard]] constexpr bool try_move_id_from_wire_id(
+    std::string_view wire_id, MoveId& out) noexcept {
+  if (wire_id == "INCANTATION_MOVE") {
+    out = MoveId::kIncantation;
+    return true;
+  }
+  if (wire_id == "DARK_STRIKE_MOVE") {
+    out = MoveId::kDarkStrike;
+    return true;
+  }
+  return false;
+}
+
+[[nodiscard]] constexpr MoveId move_id_from_wire_id(
+    std::string_view wire_id) noexcept {
+  MoveId out = MoveId::kIncantation;
+  (void)try_move_id_from_wire_id(wire_id, out);
+  return out;
+}
 
 // Advance enemy intent through its move sequence. kIncantation -> kDarkStrike;
 // other moves are stable.

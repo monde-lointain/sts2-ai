@@ -8,6 +8,7 @@
 
 #include "sts2/game/cards.h"
 #include "sts2/game/card.h"
+#include "sts2/game/card_effects.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/rng.h"
@@ -29,15 +30,9 @@ namespace {
 // build instead of producing silently-wrong data).
 constexpr std::uint64_t kSeedSearchCap = 1ULL << 20;
 
-const char* card_id_name(sts2::game::CardId id) {
-    switch (id) {
-        case sts2::game::CardId::kNone:       return "sts2::game::CardId::kNone";
-        case sts2::game::CardId::kStrike:     return "sts2::game::CardId::kStrike";
-        case sts2::game::CardId::kDefend:     return "sts2::game::CardId::kDefend";
-        case sts2::game::CardId::kNeutralize: return "sts2::game::CardId::kNeutralize";
-        case sts2::game::CardId::kSurvivor:   return "sts2::game::CardId::kSurvivor";
-    }
-    return "sts2::game::CardId::kNone";
+std::string card_id_name(sts2::game::CardId id) {
+    return "sts2::game::CardId::" +
+           std::string(sts2::game::card_effects::card_id_cpp_name(id));
 }
 
 // Returns the first seed in [0, kSeedSearchCap) for which factory(Rng{seed})

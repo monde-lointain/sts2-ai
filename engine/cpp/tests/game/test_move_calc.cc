@@ -21,6 +21,21 @@ TEST(MoveCalc, NextMove_DarkStrikeIsStable) {
   EXPECT_EQ(move_calc::next_move(MoveId::kDarkStrike), MoveId::kDarkStrike);
 }
 
+TEST(MoveCalcCatalog, WireIdRoundTrips) {
+  EXPECT_EQ(move_calc::move_wire_id(MoveId::kIncantation),
+            "INCANTATION_MOVE");
+  EXPECT_EQ(move_calc::move_wire_id(MoveId::kDarkStrike), "DARK_STRIKE_MOVE");
+  EXPECT_EQ(move_calc::move_id_from_wire_id("INCANTATION_MOVE"),
+            MoveId::kIncantation);
+  EXPECT_EQ(move_calc::move_id_from_wire_id("DARK_STRIKE_MOVE"),
+            MoveId::kDarkStrike);
+}
+
+TEST(MoveCalcCatalog, UnknownWireIdUsesCurrentProjectionFallback) {
+  EXPECT_EQ(move_calc::move_id_from_wire_id("UNKNOWN_MOVE"),
+            MoveId::kIncantation);
+}
+
 TEST(MoveCalc, RitualShouldGrantStrength_JustAppliedSkipsAndClears) {
   bool flag = true;
   EXPECT_FALSE(move_calc::ritual_should_grant_strength(flag));

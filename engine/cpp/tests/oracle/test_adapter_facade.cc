@@ -24,8 +24,8 @@ TEST(AdapterFacade, Fixture1_ReturnsCompactState) {
   const AdapterResult r = from_blob_payload(bytes);
   ASSERT_EQ(r.index(), 0U) << "expected CompactState variant on cultists";
   const auto& cs = std::get<CompactState>(r);
-  EXPECT_TRUE(cs.enemies[0].alive);
-  EXPECT_TRUE(cs.enemies[1].alive);
+  EXPECT_TRUE(cs.get_enemy(0).get_alive());
+  EXPECT_TRUE(cs.get_enemy(1).get_alive());
 }
 
 TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {
