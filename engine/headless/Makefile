@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
 export PATH := /usr/bin:$(PATH)
 
-.PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state
+.PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state gc-measurement
 
 build:
 	@echo "==> dotnet build"
@@ -27,7 +27,18 @@ tripwire:
 	  fi; \
 	fi
 
-ci: build test tripwire
+# R7 GC measurement harness. Re-runs the 10K-RT hook-protocol workload with
+# the GcMetricsSampler wired in and emits a JSON line to stdout containing
+# cumulative gc_time_seconds, per-gen collection counts, and the
+# gc/wall ratio. CI captures stdout so the number is preserved in the
+# orchestrator's status round-up.
+gc-measurement: build
+	@echo "==> R7 GC measurement (10K-RT hook-protocol workload)"
+	dotnet test test/Sts2Headless.Tests.Host/Sts2Headless.Tests.Host.csproj \
+	  -c Debug --no-build --filter "FullyQualifiedName~Gc.GcMeasurementHarness" \
+	  --logger "console;verbosity=detailed" | grep -E "r7_gc_(measurement|variance)|R7-REOPEN" || true
+
+ci: build test tripwire gc-measurement
 	@echo "==> CI green"
 
 # === S13 determinism probe ============================================
