@@ -1,0 +1,43 @@
+﻿# rng-corpus manifest (informational, not parsed by tests)
+seeds: 0..99
+N: 32
+GaussN: 16
+NextItemN: 16
+ShufflePermutations: 8
+ShuffleSize: 10
+FastForwardSteps: 100
+NameSeedSamples: 32
+Names (in emit order):
+  - Rewards
+  - Shops
+  - Transformations
+  - UpFront
+  - Shuffle
+  - UnknownMapPoint
+  - CombatCardGeneration
+  - CombatPotionGeneration
+  - CombatCardSelection
+  - CombatEnergyCosts
+  - CombatTargets
+  - MonsterAi
+  - Niche
+  - CombatOrbs
+  - TreasureRoomRelics
+
+Section order per seed file:
+  NextBool x N (1 byte each)
+  NextInt(1000) x N (4 LE each)
+  NextInt(-50, 50) x N (4 LE each)
+  NextUnsignedInt(1000) x N (4 LE each)
+  NextUnsignedInt(10, 1_000_000) x N (4 LE each)
+  NextFloat(10) x N (4 LE each)
+  NextFloat(-3.5, 7.25) x N (4 LE each)
+  NextDouble() x N (8 LE each)
+  NextDouble(-1, 1) x N (8 LE each)
+  NextGaussianFloat(0.5, 0.2, 0, 1) x GaussN (4 LE each)
+  NextGaussianDouble(0.5, 0.2, 0, 1) x GaussN (8 LE each)
+  NextGaussianInt(50, 10, 0, 100) x GaussN (4 LE each)
+  NextItem on int[0..9] x NextItemN (4 LE each)
+  Shuffle(int[0..9]) x ShufflePermutations (ShuffleSize * 4 LE each)
+  FastForwardCounter(100): Counter (4 LE) + NextInt(1_000_000) (4 LE)
+  Name-seeded ctor for each Name: Seed (4 LE) + NextInt(1000) x NameSeedSamples (4 LE)

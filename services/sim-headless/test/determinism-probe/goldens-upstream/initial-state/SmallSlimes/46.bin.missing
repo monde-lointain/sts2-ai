@@ -1,0 +1,3 @@
+encounter=SmallSlimes
+reason=AcidSlime/SpikeSlime are STS1 monsters; upstream STS2 has Leaf/Twig slimes.
+monsters=AcidSlimeS,SpikeSlimeS

@@ -1,4 +1,4 @@
-.PHONY: help build test run clean distclean reconfig
+.PHONY: help build test run clean distclean reconfig q1-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
 .PHONY: format format-patch
 .PHONY: cppcheck cppcheck-xml scan-build tidy
 .PHONY: complexity complexity-full complexity-xml
@@ -46,6 +46,12 @@ help:
 	@echo "  clean             Clean build artifacts"
 	@echo "  distclean         Remove build directory"
 	@echo "  reconfig          Reconfigure CMake build"
+	@echo "  q1-ci             Run sim-headless CI"
+	@echo "  schema-codegen    Generate schema bindings"
+	@echo "  schema-test       Run schema compatibility tests"
+	@echo "  services-smoke    Run service skeleton smoke tests"
+	@echo "  content-test      Run content registry tests"
+	@echo "  phase0-gate       Run Phase 0 gate checks"
 	@echo ""
 	@echo "Formatting:"
 	@echo "  format            Run clang-format on sources"
@@ -97,6 +103,26 @@ distclean:
 reconfig:
 	@rm -rf $(BUILD_DIR)
 	@cmake -B $(BUILD_DIR) -S . $(CMAKE_OPTS)
+
+q1-ci:
+	@$(MAKE) -C services/sim-headless ci
+
+schema-codegen:
+	@.venv/bin/python tools/schema/generate_bindings.py
+
+schema-test: schema-codegen
+	@.venv/bin/python -m unittest tests.schema.test_compatibility
+
+services-smoke:
+	@.venv/bin/python tests/services/smoke_services.py
+
+content-registry:
+	@.venv/bin/python tools/content/seed_phase1_registry.py
+
+content-test: content-registry
+	@.venv/bin/python -m unittest tests.content.test_registry
+
+phase0-gate: test q1-ci schema-test services-smoke content-test
 
 # Formatting targets
 format: $(BUILD_DIR)/Makefile

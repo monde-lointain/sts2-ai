@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!--
+      HookProtocol tests poke the SPSC ring directly via pinned byte* — see
+      HookProtocol/SpscRingBufferTests.cs. Confined to the test layer.
+    -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
+  </ItemGroup>
+
+  <!--
+    The mock-worker is NOT part of sts2-headless.sln (intentionally) but the
+    E2E test in HookProtocol/EndToEndRoundtripTests.cs needs its compiled DLL.
+    This target chains its build into ours so the binary is present whenever
+    these tests run.
+
+    BuildInParallel=false ensures the build orders correctly even under
+    parallel msbuild.
+  -->
+  <Target Name="BuildMockWorker" BeforeTargets="Build">
+    <MSBuild
+      Projects="..\mock-worker\Sts2Headless.MockWorker.csproj"
+      Targets="Restore;Build"
+      Properties="Configuration=$(Configuration)"
+      BuildInParallel="false" />
+  </Target>
+
+</Project>

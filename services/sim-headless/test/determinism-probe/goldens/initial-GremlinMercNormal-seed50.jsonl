@@ -1,0 +1,2 @@
+{"step":0,"event":"combat_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"1779c06e1bbf23e040cb99cd26edf8dea6227d6555938c31ad605914d044cc01"}
+{"step":1,"event":"turn_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"1779c06e1bbf23e040cb99cd26edf8dea6227d6555938c31ad605914d044cc01"}

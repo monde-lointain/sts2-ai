@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      S9 HookProtocol uses unsafe pointers for cache-line-aligned ring-buffer
+      access (latency gate; see HookProtocol/PosixSemaphore.cs and RingBuffer.cs).
+      The unsafe scope is contained to HookProtocol/* — StateCodec stays
+      managed-only. Per stage prompt: the latency gate trumps idiomatic-C#
+      preferences.
+    -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sts2Headless.Domain\Sts2Headless.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

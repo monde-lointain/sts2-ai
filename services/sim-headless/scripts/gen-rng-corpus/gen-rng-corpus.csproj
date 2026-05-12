@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    One shot corpus generator for the M5 Determinism Kernel HARD GATE.
+
+    Builds a tiny console app that file LINKS upstream
+    ~/development/projects/godot/sts2/src/Core/Random/Rng.cs unmodified, plus a
+    minimal local StringHelper stub (`StringHelperStub.cs`) exposing
+    GetDeterministicHashCode in the upstream namespace so the file linked Rng.cs
+    compiles standalone (it imports MegaCrit.Sts2.Core.Helpers).
+
+    The generator emits binary golden vectors under
+    test/Sts2Headless.Tests.Domain/Fixtures/Determinism/rng-corpus/. The Q1 port
+    differential parity test reads those vectors and asserts byte for byte
+    equality against its own Rng outputs.
+
+    INTENTIONALLY EXCLUDED FROM THE .sln. This project lives outside src/ and
+    test/, runs only when ground truth needs to be regenerated, and must NOT be
+    referenced by domain code. Regeneration command:
+
+        dotnet run __project scripts/gen-rng-corpus
+
+    (Replace __project with the double dash project flag; we cannot write a
+    double dash here because the surrounding XML comment forbids it.)
+
+    Do not move or rename this without updating the comment in
+    test/Sts2Headless.Tests.Domain/Determinism/RngDifferentialParityTests.cs.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Harness only; suppress warnings-as-errors on upstream-style code. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CS8019</NoWarn>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Path is intentionally a hard absolute path. The harness only runs on
+      machines that have the upstream tree checked out at the canonical
+      location; in CI we either pre-generate the corpus or skip regeneration.
+    -->
+    <Compile Include="$([System.Environment]::GetEnvironmentVariable('HOME'))/development/projects/godot/sts2/src/Core/Random/Rng.cs"
+             Link="Upstream/Rng.cs" />
+  </ItemGroup>
+
+</Project>

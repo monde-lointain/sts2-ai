@@ -1,0 +1,12 @@
+{"step":0,"event":"combat_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":1,"hash":"77ae3d12e3fd5482b52297b5081e8b1ccfb4eadc0f2fb5012f8320bf94dd1f51"}
+{"step":1,"event":"turn_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":1,"hash":"77ae3d12e3fd5482b52297b5081e8b1ccfb4eadc0f2fb5012f8320bf94dd1f51"}
+{"step":2,"event":"enemy_turn","turn":1,"phase":"EnemyTurnEnd","player_hp":70,"energy":3,"enemy_count":1,"hash":"b1bd23e2b2c572a63d7b96e8f642fe85fa760b768772b83b2dcd9075172d9719"}
+{"step":3,"event":"turn_start","turn":2,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":1,"hash":"543db2c908a9225a74fa7e1a6efbf285b82085094135dc6fd64726fcd5d4deaf"}
+{"step":4,"event":"enemy_turn","turn":2,"phase":"EnemyTurnEnd","player_hp":52,"energy":3,"enemy_count":1,"hash":"2a049d53ffc7c2f295261c778f4d1a10d4f355086857a75f191bba5088aa689e"}
+{"step":5,"event":"turn_start","turn":3,"phase":"PlayerActing","player_hp":52,"energy":3,"enemy_count":1,"hash":"051a57b6cc4cab9a2d34b2e76e3720adade445adafb57835eb7c3a1a7af0cad4"}
+{"step":6,"event":"enemy_turn","turn":3,"phase":"EnemyTurnEnd","player_hp":34,"energy":3,"enemy_count":1,"hash":"81103e588fb277b2a8b0d8d94d984c406646eb4c589a0bf0017687f9b37d81a4"}
+{"step":7,"event":"turn_start","turn":4,"phase":"PlayerActing","player_hp":34,"energy":3,"enemy_count":1,"hash":"7ce53f85a6a8369014656e61481eb40e73e77512ccc551183fcb5a51dd911ae2"}
+{"step":8,"event":"enemy_turn","turn":4,"phase":"EnemyTurnEnd","player_hp":16,"energy":3,"enemy_count":1,"hash":"d50749b2504a6a572461ef09967c2d8d5f3ef1fe4fcac6435c03b96354983eff"}
+{"step":9,"event":"turn_start","turn":5,"phase":"PlayerActing","player_hp":16,"energy":3,"enemy_count":1,"hash":"3286c126da13457c72ea6b0af9814de2e5bf0b340c407fcb70e20a6481f8c0b3"}
+{"step":10,"event":"enemy_turn","turn":5,"phase":"CombatEnd","player_hp":0,"energy":3,"enemy_count":1,"hash":"ce9d3264cc2846576291af2d8d266bb4711f021e413a9ec2b52f5826fd2992ff"}
+{"step":11,"event":"combat_end","turn":5,"phase":"CombatEnd","player_hp":0,"energy":3,"enemy_count":1,"hash":"ce9d3264cc2846576291af2d8d266bb4711f021e413a9ec2b52f5826fd2992ff"}

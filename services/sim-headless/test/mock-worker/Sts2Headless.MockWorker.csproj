@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- Mock worker pokes the SPSC ring via byte* (same as production Adapters). -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!--
+      This project is INTENTIONALLY OUT of sts2-headless.sln. It's a test-only
+      auxiliary used by the end-to-end roundtrip tests in
+      Sts2Headless.Tests.Adapters, which spawn this binary as a subprocess.
+      Keeping it out of the solution avoids accidental coupling between Domain
+      builds and worker binaries.
+    -->
+    <IsPackable>false</IsPackable>
+    <!-- We treat warnings as errors but still allow CA1416 inside this exe (it's Linux-only). -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Reference the Adapters project so the worker shares the EXACT same
+      MessageHeader/MessageFrame/SpscRingBuffer/HookProtocolManifest types
+      Q1 emits. Any wire-format drift would be a build error.
+    -->
+    <ProjectReference Include="..\..\src\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
+  </ItemGroup>
+
+</Project>

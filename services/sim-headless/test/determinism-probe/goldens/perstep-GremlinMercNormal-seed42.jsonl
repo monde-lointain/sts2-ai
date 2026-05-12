@@ -1,0 +1,10 @@
+{"step":0,"event":"combat_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"bb039ee34f698a5bfd525f403a89cc1abf25d34250a50c85824f4c9dc80502b3"}
+{"step":1,"event":"turn_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"bb039ee34f698a5bfd525f403a89cc1abf25d34250a50c85824f4c9dc80502b3"}
+{"step":2,"event":"enemy_turn","turn":1,"phase":"EnemyTurnEnd","player_hp":52,"energy":3,"enemy_count":2,"hash":"2e334505c3a7d1ad6a83407aa329d4ac10feccbd89052a1bc9890695e4236a7a"}
+{"step":3,"event":"turn_start","turn":2,"phase":"PlayerActing","player_hp":52,"energy":3,"enemy_count":2,"hash":"743338f73a75a0b64c566a56a36343dc556f55e5a9939a66fb9adcc1797698fd"}
+{"step":4,"event":"enemy_turn","turn":2,"phase":"EnemyTurnEnd","player_hp":34,"energy":3,"enemy_count":2,"hash":"1b97973494a62cea864b4c93b3dccdee1b52ae6fb4bd0e3deba816e23236522f"}
+{"step":5,"event":"turn_start","turn":3,"phase":"PlayerActing","player_hp":34,"energy":3,"enemy_count":2,"hash":"6edd5affc6d8881c26edcd063314508a40e06bf7a1b48d11f7ebd916ea76aa20"}
+{"step":6,"event":"enemy_turn","turn":3,"phase":"EnemyTurnEnd","player_hp":16,"energy":3,"enemy_count":2,"hash":"b87639de811d9b56ac57ccd97eee6fee6c3a822688dbb4409ec6831840bf7630"}
+{"step":7,"event":"turn_start","turn":4,"phase":"PlayerActing","player_hp":16,"energy":3,"enemy_count":2,"hash":"03289e7f3f7519b66efcc5487d9e6e6dbb0f089a4ea7121a9d5e947ad1b7ebb7"}
+{"step":8,"event":"enemy_turn","turn":4,"phase":"CombatEnd","player_hp":0,"energy":3,"enemy_count":2,"hash":"dd07cf216de6bf2a396f9cb85e02f5891d808d1272da0fd358aae447f8f49ab1"}
+{"step":9,"event":"combat_end","turn":4,"phase":"CombatEnd","player_hp":0,"energy":3,"enemy_count":2,"hash":"dd07cf216de6bf2a396f9cb85e02f5891d808d1272da0fd358aae447f8f49ab1"}

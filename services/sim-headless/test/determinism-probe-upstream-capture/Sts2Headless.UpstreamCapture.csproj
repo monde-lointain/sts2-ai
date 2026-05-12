@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>Sts2Headless.UpstreamCapture</AssemblyName>
+    <RootNamespace>Sts2Headless.UpstreamCapture</RootNamespace>
+    <!--
+      This project is INTENTIONALLY OUT of sts2-headless.sln (mock-worker
+      precedent). It links the Steam-install upstream sts2.dll directly to
+      drive scene-tree-independent SetUpCombat. Keeping it out of the solution
+      avoids `make ci` ever needing the Steam install to be present.
+    -->
+    <IsPackable>false</IsPackable>
+    <!-- Don't fail on upstream's unfixable warnings (it's a decompiled artefact). -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS0436;CS8632;CS0108;CS0114;NU1701;CS8625;CS8618</NoWarn>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!--
+      Match upstream's tfm and rollForward so the loaded sts2.dll runs against
+      the runtime it was compiled against. .NET 9.0.7 (Steam) -> 9.0.15
+      (installed) is a patch-level forward roll.
+    -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Reference the Steam-install upstream DLL plus its companion assemblies.
+      Path is hard-coded — the upstream tree is a developer-machine artifact,
+      not portable. CI never builds this project (it's out of the solution).
+    -->
+    <Reference Include="sts2">
+      <HintPath>$(SteamSts2Dir)/sts2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="GodotSharp">
+      <HintPath>$(SteamSts2Dir)/GodotSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SmartFormat">
+      <HintPath>$(SteamSts2Dir)/SmartFormat.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="SmartFormat.ZString">
+      <HintPath>$(SteamSts2Dir)/SmartFormat.ZString.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Steamworks.NET">
+      <HintPath>$(SteamSts2Dir)/Steamworks.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(SteamSts2Dir)/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="JetBrains.Annotations">
+      <HintPath>$(SteamSts2Dir)/JetBrains.Annotations.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.Backports">
+      <HintPath>$(SteamSts2Dir)/MonoMod.Backports.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoMod.ILHelpers">
+      <HintPath>$(SteamSts2Dir)/MonoMod.ILHelpers.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Sentry">
+      <HintPath>$(SteamSts2Dir)/Sentry.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(SteamSts2Dir)' == ''">
+    <SteamSts2Dir>$(HOME)/snap/steam/common/.local/share/Steam/steamapps/common/Slay the Spire 2/data_sts2_linuxbsd_x86_64</SteamSts2Dir>
+  </PropertyGroup>
+
+</Project>

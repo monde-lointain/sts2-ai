@@ -1,0 +1,43 @@
+// === Time / clock (use M5 IClock — S1) ===
+P:System.DateTime.Now;Use M5 IClock instead (S1)
+P:System.DateTime.UtcNow;Use M5 IClock instead (S1)
+P:System.DateTime.Today;Use M5 IClock instead (S1)
+P:System.DateTimeOffset.Now;Use M5 IClock instead (S1)
+P:System.DateTimeOffset.UtcNow;Use M5 IClock instead (S1)
+T:System.Diagnostics.Stopwatch;Use M5 IClock instead (S1)
+P:System.Environment.TickCount;Use M5 IClock instead (S1)
+P:System.Environment.TickCount64;Use M5 IClock instead (S1)
+
+// === RNG (use M5 IRngSource — S1) ===
+T:System.Random;Use M5 IRngSource instead (S1)
+T:System.Security.Cryptography.RandomNumberGenerator;Use M5 IRngSource instead (S1)
+M:System.Guid.NewGuid;Uses RNG and time; use M5 IRngSource (S1)
+
+// === Concurrency (Q1-ADR-008 forbids parallel work in domain) ===
+M:System.Threading.Thread.Sleep(System.Int32);Wall-clock time; not allowed in domain
+M:System.Threading.Tasks.Task.Delay(System.Int32);Wall-clock time; not allowed in domain
+M:System.Threading.Tasks.Task.Run(System.Action);Q1-ADR-008 forbids parallel work in domain
+T:System.Threading.ThreadPool;Q1-ADR-008 forbids parallel work in domain
+
+// === File / directory IO (use M3 ReplaySink or M9 Host) ===
+T:System.IO.File;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.Directory;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.FileInfo;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.DirectoryInfo;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.Path;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.FileStream;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.StreamReader;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.StreamWriter;Domain must not perform IO; use M3 ReplaySink or M9 Host
+T:System.IO.MemoryMappedFiles.MemoryMappedFile;Domain must not perform IO
+N:System.IO.Pipes;Domain must not perform IO
+
+// === Console (Domain must not perform stdio) ===
+T:System.Console;Domain must not perform IO
+
+// === Network IO ===
+N:System.Net;Domain must not perform network IO
+N:System.Net.Http;Domain must not perform network IO
+N:System.Net.Sockets;Domain must not perform network IO
+
+// === Process ===
+T:System.Diagnostics.Process;Domain must not spawn processes
