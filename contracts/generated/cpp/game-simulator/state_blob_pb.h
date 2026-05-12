@@ -1,8 +1,8 @@
-#ifndef GENERATED_CPP_Q1_STATE_BLOB_PB_H
-#define GENERATED_CPP_Q1_STATE_BLOB_PB_H
+#ifndef CONTRACTS_GENERATED_CPP_GAME_SIMULATOR_STATE_BLOB_PB_H
+#define CONTRACTS_GENERATED_CPP_GAME_SIMULATOR_STATE_BLOB_PB_H
 
-namespace sts2::generated::q1 {
+namespace sts2::generated::game_simulator {
 struct StateBlobEnvelope {};
-}  // namespace sts2::generated::q1
+}  // namespace sts2::generated::game_simulator
 
 #endif

@@ -1,4 +1,4 @@
-namespace Sts2.Generated.Q1;
+namespace Sts2.Generated.GAME_SIMULATOR;
 
 public sealed class SchemaVersion {}
 public sealed class LegalAction {}

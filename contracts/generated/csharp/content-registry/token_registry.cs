@@ -1,4 +1,4 @@
-namespace Sts2.Generated.Q4;
+namespace Sts2.Generated.CONTENT_REGISTRY;
 
 public sealed class TokenEntry {}
 public sealed class DeprecationEntry {}
