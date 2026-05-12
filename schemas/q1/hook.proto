@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+// sts2.schema.major: 0
+// sts2.schema.minor: 0
+package sts2.q1.v0;
+
+message SchemaVersion {
+  uint32 major = 1;
+  uint32 minor = 2;
+}
+
+message LegalAction {
+  uint32 action_id = 1;
+  string action_type = 2;
+  uint32 card_index = 3;
+  uint32 target_index = 4;
+}
+
+message DecisionRequest {
+  SchemaVersion schema_version = 1;
+  string request_id = 2;
+  bytes state_blob = 3;
+  repeated LegalAction legal_actions = 4;
+  string manifest_sha = 5;
+}
+
+message DecisionResponse {
+  SchemaVersion schema_version = 1;
+  string request_id = 2;
+  uint32 action_id = 3;
+}

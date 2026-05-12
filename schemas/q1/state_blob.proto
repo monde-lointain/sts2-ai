@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+// sts2.schema.major: 0
+// sts2.schema.minor: 0
+package sts2.q1.v0;
+
+message StateBlobEnvelope {
+  uint32 schema_major = 1;
+  uint32 schema_minor = 2;
+  string game_version = 3;
+  string simulator_build_sha = 4;
+  string registry_sha = 5;
+  bytes payload = 6;
+  bytes payload_sha256 = 7;
+}

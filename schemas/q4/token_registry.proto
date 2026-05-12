@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+// sts2.schema.major: 0
+// sts2.schema.minor: 0
+package sts2.q4.v0;
+
+message TokenEntry {
+  uint32 token_id = 1;
+  string token = 2;
+  string kind = 3;
+  string name = 4;
+  string content_hash = 5;
+  string since_version = 6;
+  string deprecated_in = 7;
+}
+
+message DeprecationEntry {
+  uint32 token_id = 1;
+  string deprecated_in_version = 2;
+  string reason = 3;
+}
+
+message TokenRegistry {
+  string version = 1;
+  uint32 schema_major = 2;
+  uint32 schema_minor = 3;
+  string content_hash = 4;
+  repeated TokenEntry tokens = 5;
+  repeated DeprecationEntry deprecation_log = 6;
+}

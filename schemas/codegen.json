@@ -1,0 +1,5 @@
+{
+  "schema_roots": ["schemas/q1", "schemas/q3", "schemas/q4", "schemas/q5", "schemas/q6"],
+  "languages": ["csharp", "cpp", "python"],
+  "output_root": "generated"
+}

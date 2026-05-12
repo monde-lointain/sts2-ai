@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+// sts2.schema.major: 0
+// sts2.schema.minor: 0
+package sts2.q5.v0;
+
+message ArtifactBlob {
+  string path = 1;
+  string sha256 = 2;
+  uint64 bytes = 3;
+}
+
+message ArtifactManifest {
+  uint32 schema_major = 1;
+  uint32 schema_minor = 2;
+  string artifact_id = 3;
+  ArtifactBlob checkpoint = 4;
+  ArtifactBlob onnx = 5;
+  ArtifactBlob registry = 6;
+  string code_sha = 7;
+  string dataset_sha = 8;
+  uint64 seed = 9;
+  string hyperparameters_json = 10;
+  string registry_sha = 11;
+  string parent_artifact_id = 12;
+}

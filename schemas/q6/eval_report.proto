@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+// sts2.schema.major: 0
+// sts2.schema.minor: 0
+package sts2.q6.v0;
+
+message EvalReportRow {
+  uint32 schema_major = 1;
+  uint32 schema_minor = 2;
+  string report_id = 3;
+  string artifact_id = 4;
+  string suite_version = 5;
+  string criterion = 6;
+  double value = 7;
+  double threshold = 8;
+  bool passed = 9;
+  string details_json = 10;
+}
