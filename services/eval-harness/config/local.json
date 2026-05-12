@@ -1,5 +1,0 @@
-{
-  "service": "eval-harness",
-  "port": 18112,
-  "data_dir": "data/eval-harness"
-}
