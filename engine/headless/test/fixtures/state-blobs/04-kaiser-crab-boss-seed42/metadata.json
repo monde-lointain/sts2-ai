@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "encounter_id": "KaiserCrabBoss",
+  "role": "Phase-1 boss; spawns Crusher \u002B Rocket. Exercises named-slot encoding (\u0022crusher\u0022 / \u0022rocket\u0022); spawn-time powers reference ids absent from Phase-1 power catalog (escalated to Q2 S0 ADRs).",
+  "expected_canonical_hash_hex": "9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
+  "blob_bytes": 5562
+}

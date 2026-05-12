@@ -1,0 +1,7 @@
+{
+  "seed": 42,
+  "encounter_id": "LouseProgenitorNormal",
+  "role": "Single-monster non-smoke normal. Drop-in for the deleted TwoLouseNormal slot.",
+  "expected_canonical_hash_hex": "37e7517005a0a50c05240874a6e2969c490617711bdd4d2d04c3361eaaaab392",
+  "blob_bytes": 5524
+}
