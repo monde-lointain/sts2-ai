@@ -22,6 +22,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
+    <!--
+      D6 (2026-05-12): RegistryShaRoundtripTests boots the Q1 host via
+      Program.Run against a temp-dir registry copy. Host transitively pulls
+      Adapters, Domain, EngineStrip — no circular risk.
+    -->
+    <ProjectReference Include="..\..\src\Sts2Headless.Host\Sts2Headless.Host.csproj" />
   </ItemGroup>
 
   <!--
