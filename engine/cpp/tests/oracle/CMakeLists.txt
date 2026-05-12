@@ -10,6 +10,7 @@ add_executable(sts2_oracle_tests)
 target_sources(sts2_oracle_tests PRIVATE
     test_manifest.cc
     test_state_blob.cc
+    test_envelope.cc
     adapter_fixtures.h
 )
 

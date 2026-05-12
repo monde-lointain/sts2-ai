@@ -13,6 +13,7 @@ target_sources(sts2_oracle_adapter PRIVATE
     # envelope.cc, cultists_projection.cc, adapter.cc).
     manifest.cc
     state_blob.cc
+    envelope.cc
 )
 
 target_compile_features(sts2_oracle_adapter PUBLIC cxx_std_20)
