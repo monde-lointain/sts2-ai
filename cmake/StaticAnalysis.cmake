@@ -1,4 +1,16 @@
 # cppcheck target
+set(STS2_ENGINE_CPP_ROOT ${CMAKE_SOURCE_DIR}/engine/cpp)
+set(STS2_ANALYSIS_INCLUDE_DIRS
+  ${CMAKE_SOURCE_DIR}
+  ${STS2_ENGINE_CPP_ROOT}
+  ${STS2_ENGINE_CPP_ROOT}/include
+  ${STS2_ENGINE_CPP_ROOT}/src
+)
+set(STS2_CPPCHECK_PATHS
+  ${STS2_ENGINE_CPP_ROOT}/src
+  ${STS2_ENGINE_CPP_ROOT}/include
+)
+
 find_program(CPPCHECK_EXECUTABLE NAMES cppcheck)
 if(CPPCHECK_EXECUTABLE)
   # Collect custom rule files from submodule
@@ -23,11 +35,11 @@ if(CPPCHECK_EXECUTABLE)
       --error-exitcode=1
       --check-level=exhaustive
       -I${CMAKE_SOURCE_DIR}
-      -I${CMAKE_SOURCE_DIR}/include
-      -I${CMAKE_SOURCE_DIR}/src
+      -I${STS2_ENGINE_CPP_ROOT}
+      -I${STS2_ENGINE_CPP_ROOT}/include
+      -I${STS2_ENGINE_CPP_ROOT}/src
       ${CPPCHECK_RULE_ARGS}
-      ${CMAKE_SOURCE_DIR}/src
-      ${CMAKE_SOURCE_DIR}/include
+      ${STS2_CPPCHECK_PATHS}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT "Running cppcheck with custom rules"
   )
@@ -44,11 +56,11 @@ if(CPPCHECK_EXECUTABLE)
       --xml
       --xml-version=2
       -I${CMAKE_SOURCE_DIR}
-      -I${CMAKE_SOURCE_DIR}/include
-      -I${CMAKE_SOURCE_DIR}/src
+      -I${STS2_ENGINE_CPP_ROOT}
+      -I${STS2_ENGINE_CPP_ROOT}/include
+      -I${STS2_ENGINE_CPP_ROOT}/src
       ${CPPCHECK_RULE_ARGS}
-      ${CMAKE_SOURCE_DIR}/src
-      ${CMAKE_SOURCE_DIR}/include
+      ${STS2_CPPCHECK_PATHS}
       2> cppcheck-report.xml
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running cppcheck with custom rules (XML output)"
@@ -62,10 +74,13 @@ if(CLANG_TIDY_EXECUTABLE)
   # gtest/gmock sources live under ${CMAKE_BINARY_DIR}/_deps and are not
   # picked up here.
   file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
-    ${CMAKE_SOURCE_DIR}/src/*.cc
-    ${CMAKE_SOURCE_DIR}/include/*.h
-    ${CMAKE_SOURCE_DIR}/tests/*.cc
-    ${CMAKE_SOURCE_DIR}/tests/*.h
+    ${STS2_ENGINE_CPP_ROOT}/src/*.cc
+    ${STS2_ENGINE_CPP_ROOT}/src/*.h
+    ${STS2_ENGINE_CPP_ROOT}/include/*.h
+    ${STS2_ENGINE_CPP_ROOT}/tests/*.cc
+    ${STS2_ENGINE_CPP_ROOT}/tests/*.h
+    ${STS2_ENGINE_CPP_ROOT}/tools/*.cc
+    ${STS2_ENGINE_CPP_ROOT}/tools/*.h
   )
 
   add_custom_target(tidy
