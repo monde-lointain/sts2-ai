@@ -1,0 +1,3603 @@
+{
+  "card_dsl": [
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:StrikeSilent",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:DefendSilent",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Neutralize",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Survivor",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Slice",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:DeadlyPoison",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Backflip",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Acrobatics",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:DodgeAndRoll",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Abrasive",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Accelerant",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Accuracy",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Adrenaline",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Afterimage",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Anticipate",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Assassinate",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Backstab",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:BladeOfInk",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:BladeDance",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Blur",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:BouncingFlask",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:BubbleBubble",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:BulletTime",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Burst",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:CalculatedGamble",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:CloakAndDagger",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:CorrosiveWave",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:DaggerSpray",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:DaggerThrow",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Dash",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Deflect",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:EchoingSlash",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Envenom",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:EscapePlan",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Expertise",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Expose",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:FanOfKnives",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Finisher",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Flanking",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Flechettes",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:FlickFlack",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:FollowThrough",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Footwork",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:GrandFinale",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:HandTrick",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Haze",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:HiddenDaggers",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:InfiniteBlades",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:KnifeTrap",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:LeadingStrike",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:LegSweep",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Malaise",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:MasterPlanner",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:MementoMori",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Mirage",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Murder",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Nightmare",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:NoxiousFumes",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Outbreak",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:PhantomBlades",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:PiercingWail",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Pinpoint",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:PoisonedStab",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Pounce",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:PreciseCut",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Predator",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Prepared",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Reflex",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Ricochet",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:SerpentForm",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:ShadowStep",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Shadowmeld",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Shiv",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Skewer",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Snakebite",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Sneaky",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Speedster",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:StormOfSteel",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Strangle",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:SuckerPunch",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Suppress",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Tactician",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:TheHunt",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:ToolsOfTheTrade",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Tracking",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Untouchable",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:UpMySleeve",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:WellLaidPlans",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:WraithForm",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Wound",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Slimed",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Burn",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Dazed",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:AscendersBane",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Clumsy",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Doubt",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Regret",
+      "type": "stub"
+    },
+    {
+      "cost": "unknown",
+      "effects": [
+        {
+          "op": "stub",
+          "source": "phase1-seed"
+        }
+      ],
+      "target": "unknown",
+      "token": "card:Injury",
+      "type": "stub"
+    }
+  ],
+  "deprecation_log": [],
+  "manifest": {
+    "parent_version": null,
+    "schema_version": {
+      "major": 0,
+      "minor": 0
+    },
+    "source_fixture": "/home/clydew372/development/projects/cs/sts2-headless/test/fixtures/q4-manifest-phase1.json",
+    "upstream_source": "/home/clydew372/development/projects/godot/sts2/src",
+    "version": "phase1-silent.0"
+  },
+  "tokens": [
+    {
+      "content_hash": "9e1e153519367bdd8d257a3c1cb42ad5617b74f7a3c7bd27933a54d36ace688d",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[CLS]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[CLS]",
+      "token_id": 1
+    },
+    {
+      "content_hash": "6bafb96a738f54783850b50847f150ed7011c0c3e4cbc2008bf70aa9186e1d27",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[MASK]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[MASK]",
+      "token_id": 2
+    },
+    {
+      "content_hash": "b09dc622eec1b983bf6f4a284f668b6d788e64713b2bf88bd6981e312d1427f3",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[CHAR_SILENT]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[CHAR_SILENT]",
+      "token_id": 3
+    },
+    {
+      "content_hash": "2278ee2384890702e36deabcd9dbef4941b53d5c4b070e8e969cddaa5dc942ad",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[ACT_1]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[ACT_1]",
+      "token_id": 4
+    },
+    {
+      "content_hash": "8e5861a50cca5c16631f0bf5ad6134c353473316e0753e7476c1ea06b379493d",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[ACT_2]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[ACT_2]",
+      "token_id": 5
+    },
+    {
+      "content_hash": "1100d9d962c5bef83490db97b3a44f76bad411f12e3a3136e0770560b9f8f475",
+      "deprecated_in": null,
+      "kind": "special",
+      "name": "[ACT_3]",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "[ACT_3]",
+      "token_id": 6
+    },
+    {
+      "content_hash": "258afa05fd28bbd5e161aa323076608d3ad1e554cfc8ba463a11dfafaf855e95",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "StrikeSilent",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:StrikeSilent",
+      "token_id": 7
+    },
+    {
+      "content_hash": "0ad63d28bc05b008e446577f486a148e65f3c0b398b8b587270dbf06ae9d32f2",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "DefendSilent",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:DefendSilent",
+      "token_id": 8
+    },
+    {
+      "content_hash": "4c7ecba89e9a510915437b110ea7b97196ff336091c309e7a6267d6ee247b246",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Neutralize",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Neutralize",
+      "token_id": 9
+    },
+    {
+      "content_hash": "a199f3782558bbd6ef974f31a5f4142156cc3777d70fd9c1c1d0c68ae67bc70e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Survivor",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Survivor",
+      "token_id": 10
+    },
+    {
+      "content_hash": "9002c2826c9c9744415d47e55a75eb2325ca0b26e0da8268eb7fe7786a7be67c",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Slice",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Slice",
+      "token_id": 11
+    },
+    {
+      "content_hash": "c91feeee089fd1bf9dc7a87306f82e564810bbd05d403012ff920261857b41e4",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "DeadlyPoison",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:DeadlyPoison",
+      "token_id": 12
+    },
+    {
+      "content_hash": "679c7c77acf263ac60e7b317fab8a5505c92db10a56ad3fffab0c31b50925301",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Backflip",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Backflip",
+      "token_id": 13
+    },
+    {
+      "content_hash": "3451a160590426cdd8b066a4fe9e31181a85a56af3af6f93f9d3df2cb6f9054f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Acrobatics",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Acrobatics",
+      "token_id": 14
+    },
+    {
+      "content_hash": "fe5175d957058172ce245fa3206cc10f97f458d546a916a54aebba88926935fd",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "DodgeAndRoll",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:DodgeAndRoll",
+      "token_id": 15
+    },
+    {
+      "content_hash": "7fbcea3b43bb936efddf101bf653b8b09e325b16c65ebba631a361f040917c4d",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Abrasive",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Abrasive",
+      "token_id": 16
+    },
+    {
+      "content_hash": "d7c66c9d42da937f62b54be34a8f8baa18ebaaabea52d39a38004e4d83b6e5aa",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Accelerant",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Accelerant",
+      "token_id": 17
+    },
+    {
+      "content_hash": "f5065bf76b9c81b8e48dbc2038e516716d61d5f4279d76e90b70a5b692ca70a1",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Accuracy",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Accuracy",
+      "token_id": 18
+    },
+    {
+      "content_hash": "6720d9c3937c1c555026de782ec1284bfa1dcf75a156d937b15fd1e014eecfae",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Adrenaline",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Adrenaline",
+      "token_id": 19
+    },
+    {
+      "content_hash": "7bc2e4b6e54000b1a8745d013dd8ccffb085abf4d7b5283d5ab814fbee6bc154",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Afterimage",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Afterimage",
+      "token_id": 20
+    },
+    {
+      "content_hash": "ba242ea7f830941336db054c20ef79edf9727eaac5769dc00b18b20b8804d373",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Anticipate",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Anticipate",
+      "token_id": 21
+    },
+    {
+      "content_hash": "4ae0ca1a65923736f90740b07667ca8c018c2b27174156a433dba98b19480332",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Assassinate",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Assassinate",
+      "token_id": 22
+    },
+    {
+      "content_hash": "dc05bcc77779bed6d2612f0aabff28d6faa21fc8fe6cdfe778cfe4d1444fcb70",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Backstab",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Backstab",
+      "token_id": 23
+    },
+    {
+      "content_hash": "9b5224135e7d87c8b21ab801d937956d44e05d5102d93fc4e84352b934b1fa87",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "BladeOfInk",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:BladeOfInk",
+      "token_id": 24
+    },
+    {
+      "content_hash": "df1f75a8170363385c63649e651917011e18b231c58d9697b7be58515eac0377",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "BladeDance",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:BladeDance",
+      "token_id": 25
+    },
+    {
+      "content_hash": "2494c1f086261171d146f15f962dc534dc6e765f41b721c9468f3377ea9c07c8",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Blur",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Blur",
+      "token_id": 26
+    },
+    {
+      "content_hash": "ca542dec457c6efa58421ad3044c533be3627571f6fa8ad201795acb93eb43d0",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "BouncingFlask",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:BouncingFlask",
+      "token_id": 27
+    },
+    {
+      "content_hash": "d0e75eadff394aaf268ff128f3367c92f1f43d3651c1cedb62d356cec0fcfee7",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "BubbleBubble",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:BubbleBubble",
+      "token_id": 28
+    },
+    {
+      "content_hash": "011d06c9473a83105858db21fc6672f26f04d3fb27c2bc5f9043e04831ae2569",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "BulletTime",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:BulletTime",
+      "token_id": 29
+    },
+    {
+      "content_hash": "8ef8e58f53dda4b4490ed7fd688235b6333b35ce56483bd1ea871971d0354280",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Burst",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Burst",
+      "token_id": 30
+    },
+    {
+      "content_hash": "109a307a783ac5219665413d082d182b1c623cbfbacfa9a318b0c980eccd01fd",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "CalculatedGamble",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:CalculatedGamble",
+      "token_id": 31
+    },
+    {
+      "content_hash": "9cd9a0b934322e81a7e0cf1de894d5aa384b4ba85f91c2373797df1521a6ccf3",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "CloakAndDagger",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:CloakAndDagger",
+      "token_id": 32
+    },
+    {
+      "content_hash": "b95ee1daf6b9e5d4b50dd2a5415dd7b51800e12445faee51a4a3a8a5652c7751",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "CorrosiveWave",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:CorrosiveWave",
+      "token_id": 33
+    },
+    {
+      "content_hash": "f2b3a5890386386d1174acd2b04004599b7b34446ed63c412f4e349bd10fc3bd",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "DaggerSpray",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:DaggerSpray",
+      "token_id": 34
+    },
+    {
+      "content_hash": "b493ba5bab07b69c9e6c88bb1eb94954a3e1d66b3a0c821ab0f56e2f195bbcc2",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "DaggerThrow",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:DaggerThrow",
+      "token_id": 35
+    },
+    {
+      "content_hash": "06d728fa5ed181dec48feffff806572d57f0ae88fc301ba7661e6138bbf7c6f7",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Dash",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Dash",
+      "token_id": 36
+    },
+    {
+      "content_hash": "cca4bda44301d83a59f552d31a06f1c1a75e8570ab8ad462aa0073312f3ad22a",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Deflect",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Deflect",
+      "token_id": 37
+    },
+    {
+      "content_hash": "d32f958e7bb2ca8b4ea4c4252b9fdf14d4138164335bc21d703d0dfd97620b35",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "EchoingSlash",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:EchoingSlash",
+      "token_id": 38
+    },
+    {
+      "content_hash": "ed0648ef468845b2386ed2e39f3128d738e0527883a7b747d77d227c3a8760c6",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Envenom",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Envenom",
+      "token_id": 39
+    },
+    {
+      "content_hash": "93d3b11e2e22711b75002fbe1627a7189d22aeeae8edb99101aa5641b180f5e0",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "EscapePlan",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:EscapePlan",
+      "token_id": 40
+    },
+    {
+      "content_hash": "d16ea8def043ef38c3234c3f137d02dc92973f47bd62b458595866164696829e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Expertise",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Expertise",
+      "token_id": 41
+    },
+    {
+      "content_hash": "0e9e48a0154312a89f3653abbe3fed21b1914e6442053d3155aafccefdc905c2",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Expose",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Expose",
+      "token_id": 42
+    },
+    {
+      "content_hash": "d9956387b694c88f5cae787ba14aecd21cdf25f1f36db4361765489b1c7dd44f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "FanOfKnives",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:FanOfKnives",
+      "token_id": 43
+    },
+    {
+      "content_hash": "055670de27b76b6a1164f0cfcdcc89ab89edd5794068a97c07400f2f7c799b18",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Finisher",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Finisher",
+      "token_id": 44
+    },
+    {
+      "content_hash": "0e9e6f66daad777e0685d10704cf6888433b5b17a0a90eb2193422972a21a348",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Flanking",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Flanking",
+      "token_id": 45
+    },
+    {
+      "content_hash": "b083dc8bb9c858946a5563b5421cdd16ebe2905c9ec83f582ce63a302fc81375",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Flechettes",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Flechettes",
+      "token_id": 46
+    },
+    {
+      "content_hash": "5ccbef8a7e1bcc8a519b1cc2548eb197dfc676fbea50b8f3b75c7a9efb29e8ad",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "FlickFlack",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:FlickFlack",
+      "token_id": 47
+    },
+    {
+      "content_hash": "18174b3f6a88ed9dc3606d8a3979296282ba24705d917d2f5a2a244930f8fb93",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "FollowThrough",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:FollowThrough",
+      "token_id": 48
+    },
+    {
+      "content_hash": "91541813818311f21f772add48308ad1855f3b264411d1f9e5113221d596f443",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Footwork",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Footwork",
+      "token_id": 49
+    },
+    {
+      "content_hash": "50f3c21487e2685f5a00764b0ac1472ea36d7043ef5dd78c92f58d8fec12f435",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "GrandFinale",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:GrandFinale",
+      "token_id": 50
+    },
+    {
+      "content_hash": "5205ed35175a66d66e217e72d03c19c355d38d52ebe94f7714437f3d2420db6d",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "HandTrick",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:HandTrick",
+      "token_id": 51
+    },
+    {
+      "content_hash": "31e19f12701877b369440f36ffe40cb066bf06a582b90f2d7577009d3a19238b",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Haze",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Haze",
+      "token_id": 52
+    },
+    {
+      "content_hash": "0e08ceaf55d5ebee33803434fccdb405ed81b1ee9a695d1b15d64d274bc8e65e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "HiddenDaggers",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:HiddenDaggers",
+      "token_id": 53
+    },
+    {
+      "content_hash": "f65e376865e7b453775a4272f907fad4a0e71f3f8cb62d5615a9c820afb1f6a6",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "InfiniteBlades",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:InfiniteBlades",
+      "token_id": 54
+    },
+    {
+      "content_hash": "b308881acbba0c9de7c57ecf1c7777a0dfdb0f7cf451aca6633348e4633819ab",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "KnifeTrap",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:KnifeTrap",
+      "token_id": 55
+    },
+    {
+      "content_hash": "ccf50fdce7017fc893ae76d4492bc760216440076710b96f833eb7c473fa474b",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "LeadingStrike",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:LeadingStrike",
+      "token_id": 56
+    },
+    {
+      "content_hash": "faa497bdad5f9358adc3c018a34523161b31bb62ab6b89ddabe434377925e7e4",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "LegSweep",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:LegSweep",
+      "token_id": 57
+    },
+    {
+      "content_hash": "cfe6c11d9a211d693e5eb1e8131b5f67437561de8e850b08b9dca59949a90aa0",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Malaise",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Malaise",
+      "token_id": 58
+    },
+    {
+      "content_hash": "d8892f05c78d2196c146a4f31e80d0977cd71c7b637bbae3708e1079320520c5",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "MasterPlanner",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:MasterPlanner",
+      "token_id": 59
+    },
+    {
+      "content_hash": "4aea18512ed02d08f0143853b715a58bb5b2ef64f702a63cff67e4092d61ae0f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "MementoMori",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:MementoMori",
+      "token_id": 60
+    },
+    {
+      "content_hash": "8d6db88fb508122788380ad21087e908e26af4193b0aaa252f49122e4060255c",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Mirage",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Mirage",
+      "token_id": 61
+    },
+    {
+      "content_hash": "d0514601e687c952b794cf6ba96ab140052736cfa04720e2249384018327af5f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Murder",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Murder",
+      "token_id": 62
+    },
+    {
+      "content_hash": "ea4cb5591b3e143c8f7fc947f80dd566f886a239e8e9686d0cd7c55673b70f8a",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Nightmare",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Nightmare",
+      "token_id": 63
+    },
+    {
+      "content_hash": "e6284138d7505bd9af0b9dee474b141d8a0b02f53f1cfed00a8f3ac9d85e628d",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "NoxiousFumes",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:NoxiousFumes",
+      "token_id": 64
+    },
+    {
+      "content_hash": "abfcba5e9b1334ba795ea38967db9b4d9426dbaa6c112113f4f43266d36581c4",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Outbreak",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Outbreak",
+      "token_id": 65
+    },
+    {
+      "content_hash": "f27f813b3c1285a6c75516b98974a283d09f86c4180a962733a39ffe50b8a7ad",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "PhantomBlades",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:PhantomBlades",
+      "token_id": 66
+    },
+    {
+      "content_hash": "fa149595c7342bcd0c0c2da430b93ab1f53cee018fbe6969d2e3fabb75ff150f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "PiercingWail",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:PiercingWail",
+      "token_id": 67
+    },
+    {
+      "content_hash": "7c6ee7204d67f25f5bff7218b24be1ca9de5ee78428cdabafcbdd6993ce019f7",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Pinpoint",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Pinpoint",
+      "token_id": 68
+    },
+    {
+      "content_hash": "e4d404289a3bfb942b12a240668116b0f340bb139d3a4be9f88cd923150af28c",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "PoisonedStab",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:PoisonedStab",
+      "token_id": 69
+    },
+    {
+      "content_hash": "34cf02a99fb86c21b03a39a808f076e08928b87684a60759adf2b1cedaba9950",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Pounce",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Pounce",
+      "token_id": 70
+    },
+    {
+      "content_hash": "9cf11458d906f2cbb7e1a48246aa95eca33949a25ed714d117ee661b4ec988ba",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "PreciseCut",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:PreciseCut",
+      "token_id": 71
+    },
+    {
+      "content_hash": "c620315da00484b5902c51c7f0594d44197de221c8e66461c3b906660081326f",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Predator",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Predator",
+      "token_id": 72
+    },
+    {
+      "content_hash": "a4d56e04a87226837084a1c5180b8a18c736d32cc72b75219d4b2197c8263b5d",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Prepared",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Prepared",
+      "token_id": 73
+    },
+    {
+      "content_hash": "75348ad73874f0a5cdbae56573f838743e7c8f1abb47408520b83c9431341166",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Reflex",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Reflex",
+      "token_id": 74
+    },
+    {
+      "content_hash": "187447203a0b512b7915424405e972ec1d0eecfcdb656568ecf5d3cc18978997",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Ricochet",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Ricochet",
+      "token_id": 75
+    },
+    {
+      "content_hash": "5d39032b10ae33f9748d4eb59471d2111d22a2fa0b3dd60ef0c50f9489dbd440",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "SerpentForm",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:SerpentForm",
+      "token_id": 76
+    },
+    {
+      "content_hash": "52e37c7b3c73982763899a4206b507f42ed3143c4f7fc327a9730bbd541cfc40",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "ShadowStep",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:ShadowStep",
+      "token_id": 77
+    },
+    {
+      "content_hash": "02065d6c803f53c1de18bdd40d427370b99cfa3fa32ec57a8eab825ac599823e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Shadowmeld",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Shadowmeld",
+      "token_id": 78
+    },
+    {
+      "content_hash": "b9a2c876ee2018620200dfb1c7ff590f5332dbfb0f86bc2fd6721da8b74dd924",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Shiv",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Shiv",
+      "token_id": 79
+    },
+    {
+      "content_hash": "5cff3a5a6856fd79bdd7155951f253b941ec1ae911554603ef9522917ac81f30",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Skewer",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Skewer",
+      "token_id": 80
+    },
+    {
+      "content_hash": "85edbab005eb711c16ac02d55b56c06c457cf94c78e138d3209cf80c8ec7fac9",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Snakebite",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Snakebite",
+      "token_id": 81
+    },
+    {
+      "content_hash": "02f98fb2d9397e06e660e147df8eb6134815901c2d2867487a7933f3dae0f415",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Sneaky",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Sneaky",
+      "token_id": 82
+    },
+    {
+      "content_hash": "2f444d2a185aae2a3e630451e7a27b371139578ad5d001fe8c2d79b163f18bae",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Speedster",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Speedster",
+      "token_id": 83
+    },
+    {
+      "content_hash": "8cf8c6f1d3f73332426b8d2d01c4311b7238f4b85e95886e9d95c51af02d4418",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "StormOfSteel",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:StormOfSteel",
+      "token_id": 84
+    },
+    {
+      "content_hash": "74d367438c049eab7055938c4faefdb2496e52dc61169cc86add79c8eab8aaae",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Strangle",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Strangle",
+      "token_id": 85
+    },
+    {
+      "content_hash": "ed698c1dcd030fff10e9c594f08487b00ee75b00d97fb6be3df7a02bd17f5b9b",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "SuckerPunch",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:SuckerPunch",
+      "token_id": 86
+    },
+    {
+      "content_hash": "6508e7e682f5f26a493cc28c2a0a9e05e7292ffaaaa37752a63e2c92f3ba977e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Suppress",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Suppress",
+      "token_id": 87
+    },
+    {
+      "content_hash": "bdde1eccbd5ef42466cd1cc86593b8a02abc920517ae6e220115ed028292637e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Tactician",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Tactician",
+      "token_id": 88
+    },
+    {
+      "content_hash": "47fa3ad2814403254de942fbe7d9844d9e59c6d41910ab847b30fb4cd0b6199b",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "TheHunt",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:TheHunt",
+      "token_id": 89
+    },
+    {
+      "content_hash": "da48bbc9544cbd727257628ad00fad80663c578a306eaab84efa92e26191b203",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "ToolsOfTheTrade",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:ToolsOfTheTrade",
+      "token_id": 90
+    },
+    {
+      "content_hash": "d9d7a0d5d78bd323f7c505a024e6a8463136e166c8976bcda40690bce5e92cd1",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Tracking",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Tracking",
+      "token_id": 91
+    },
+    {
+      "content_hash": "972a9b786594bd04f43564b8b5b27c86f2fd195c6be5a4e46cde9ea9bffabff7",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Untouchable",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Untouchable",
+      "token_id": 92
+    },
+    {
+      "content_hash": "c7770e370a9588882d8a70c93426333d207327b71b934999d83338af5540acdd",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "UpMySleeve",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:UpMySleeve",
+      "token_id": 93
+    },
+    {
+      "content_hash": "5b31f975ee25ea2490aa0fdfd2ba0c7b8f8d297498fa31f50afa242a852626ee",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "WellLaidPlans",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:WellLaidPlans",
+      "token_id": 94
+    },
+    {
+      "content_hash": "a14ddad8a5561e50999a7bf287f66cdc1281cbbd82a07e9427fcd573f6b6b6d9",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "WraithForm",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:WraithForm",
+      "token_id": 95
+    },
+    {
+      "content_hash": "09429ce7de0ceb199b9498fc81463780b87a891a75f5cb7d1cc67e60e53b9ebe",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Wound",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Wound",
+      "token_id": 96
+    },
+    {
+      "content_hash": "248830c353a7fedbaa7b8b51ccf1ff2b9056354eec2ae074abc791ff0aaa58bc",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Slimed",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Slimed",
+      "token_id": 97
+    },
+    {
+      "content_hash": "691405eed9f24bf2ce88d140c22ae0280f5a98466f575ec16b57f6e322ff407e",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Burn",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Burn",
+      "token_id": 98
+    },
+    {
+      "content_hash": "a62bc0c3e1b9533bbd95c6de0775338694a870033a81d91ef47d8109dbf2e8c5",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Dazed",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Dazed",
+      "token_id": 99
+    },
+    {
+      "content_hash": "061cfda272bead93847529095fde04cdaab9e6ea227c29d125d2868902c86e56",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "AscendersBane",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:AscendersBane",
+      "token_id": 100
+    },
+    {
+      "content_hash": "f0eaa9895e1622a1d38c3e5de9e246fc387765f2e2541938eda41b778aa2199a",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Clumsy",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Clumsy",
+      "token_id": 101
+    },
+    {
+      "content_hash": "1c213263191de73b9cb011ad9bbddbd72c5bee3e0cba50f7cacaafae73529f45",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Doubt",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Doubt",
+      "token_id": 102
+    },
+    {
+      "content_hash": "8372dfed733aaed640aeb76b13520aba3a0b2917c1122894d57698d84d67ba6c",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Regret",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Regret",
+      "token_id": 103
+    },
+    {
+      "content_hash": "1b82bc3cf203a2654f6e63a6e7d4ed44ff353b6c19728ea77b51070c66e65bb4",
+      "deprecated_in": null,
+      "kind": "card",
+      "name": "Injury",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "card:Injury",
+      "token_id": 104
+    },
+    {
+      "content_hash": "6e469884414e4633c065aa4b4ef2b7f7702615947c5b8e494d9721d81ec7afcf",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "RingOfTheSnake",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:RingOfTheSnake",
+      "token_id": 105
+    },
+    {
+      "content_hash": "e9d87c484aab8e7bc7537316c3bc1b9c4884182d2fed06aac7154f866687b3bc",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Anchor",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Anchor",
+      "token_id": 106
+    },
+    {
+      "content_hash": "cdff7813ffc433bbfe3d3f207fa6f5efb721fc13be1f82e8337733fb373e2f33",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Vajra",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Vajra",
+      "token_id": 107
+    },
+    {
+      "content_hash": "c153d007a698a600f567d9e156425f7c73fdfc7983e9f9bbc3afd299f290442b",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BagOfPreparation",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BagOfPreparation",
+      "token_id": 108
+    },
+    {
+      "content_hash": "dfa4951c97f0b1a4db1804dfa18c4973110798672a4cf1ff15f43ee44e263234",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BloodVial",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BloodVial",
+      "token_id": 109
+    },
+    {
+      "content_hash": "70a7c939737a1091498e5bd1d37adbbb162a36f258ea7c083d6f44e7510b4a0d",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Akabeko",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Akabeko",
+      "token_id": 110
+    },
+    {
+      "content_hash": "03aa7ac3f3a9aa97a3e5313d1a13d08fd9290fe3b9158968c950cb6ca3f22d51",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BagOfMarbles",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BagOfMarbles",
+      "token_id": 111
+    },
+    {
+      "content_hash": "b8551f12d0b953b0ca8ffaf64cf5f0524c38bdfa91380c1ab6ce37103fca03b3",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BronzeScales",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BronzeScales",
+      "token_id": 112
+    },
+    {
+      "content_hash": "79d99c9c232f706faa4a73f54c1324aae4e68477c5df200a318a5e1dd3c3a6d6",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "CentennialPuzzle",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:CentennialPuzzle",
+      "token_id": 113
+    },
+    {
+      "content_hash": "6817d8853e82fc8b794710df0d1e5077bb61c235320f3111bc504a57b850ccf8",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "HappyFlower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:HappyFlower",
+      "token_id": 114
+    },
+    {
+      "content_hash": "0e7a864ce0bafc81c9191047b511075eb7de91429d652214f5dc33e79c80cec4",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "OddlySmoothStone",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:OddlySmoothStone",
+      "token_id": 115
+    },
+    {
+      "content_hash": "c4132343ad41e13a908237e621fcc4d574c18d0320ee4944c2631ddffadb437d",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "RedSkull",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:RedSkull",
+      "token_id": 116
+    },
+    {
+      "content_hash": "4ab447218b95d8bf83dab898d94fc7959df1225d2dec451445c0658e9f7be253",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Whetstone",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Whetstone",
+      "token_id": 117
+    },
+    {
+      "content_hash": "6a2c7b24250c7a4fa241deed242df16e985d1b1be64f51c304527775ad964aed",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "DataDisk",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:DataDisk",
+      "token_id": 118
+    },
+    {
+      "content_hash": "ce9c591204d252e2af8e0edb08fb7b1a4c86e6091b6c6fe0aaed1092a1c1de9d",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "MealTicket",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:MealTicket",
+      "token_id": 119
+    },
+    {
+      "content_hash": "2a96e1a5c38b7d649801d99598a72a7bf1e0e064369cd8cbc09b643e9e8180cc",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "PenNib",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:PenNib",
+      "token_id": 120
+    },
+    {
+      "content_hash": "ab192594c34c7d210e49023f07e1d1c7fa7ffec00a9689c9c4de165585497fee",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Pantograph",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Pantograph",
+      "token_id": 121
+    },
+    {
+      "content_hash": "2984e4db28511fcf365eabdaa402b0c6a912eac698bd94bb93cdf538386c5612",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "MercuryHourglass",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:MercuryHourglass",
+      "token_id": 122
+    },
+    {
+      "content_hash": "dec167cb3326890cd1d1d008a6e81d777a3bf754aba604d04b71fb051e09f13d",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "PaperPhrog",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:PaperPhrog",
+      "token_id": 123
+    },
+    {
+      "content_hash": "26a9a360aae42e5ef3c8137a50e64ad93a780bb8209439f76495d64fbed1843a",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "GamblingChip",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:GamblingChip",
+      "token_id": 124
+    },
+    {
+      "content_hash": "b1904a99e87f0c769d3de137dc6f12765552eea663da7157815336256e7e0e30",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Mango",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Mango",
+      "token_id": 125
+    },
+    {
+      "content_hash": "bfd84568598402f831bc0d12822d73e5c2404e4fef228341eab23630314f9249",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Pocketwatch",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Pocketwatch",
+      "token_id": 126
+    },
+    {
+      "content_hash": "3afaf9c1df26165ad2c31a86734a21d5be9478a1f78c8da4802816e993482372",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Shovel",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Shovel",
+      "token_id": 127
+    },
+    {
+      "content_hash": "4724cfee1f0d7bac7e8e21f1b3760cab4e33879f09dd387e3fa777ddfc3d842f",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "ArtOfWar",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:ArtOfWar",
+      "token_id": 128
+    },
+    {
+      "content_hash": "a71b8e523945387782e1d2e0b566a5ab180be5c68ee0cfcf3915c2e7cf18ed62",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Bellows",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Bellows",
+      "token_id": 129
+    },
+    {
+      "content_hash": "83d344425b928315220f483dc3799fb701af2f7abb47e11233bccb3738df7bcf",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Bookmark",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Bookmark",
+      "token_id": 130
+    },
+    {
+      "content_hash": "1c88b00f1e50307537587cf9f3580830a077e9de551a944d93d4dc00dbce20a2",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "MeatOnTheBone",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:MeatOnTheBone",
+      "token_id": 131
+    },
+    {
+      "content_hash": "dadfbae8df7a026c9533a5d9307d940d409069440c372817b4f9280d16ba0702",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BeautifulBracelet",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BeautifulBracelet",
+      "token_id": 132
+    },
+    {
+      "content_hash": "1ff9b6e8403514354bc34f86a1a9135d3e9e701b45178067632e785921ab4fdc",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "BiiigHug",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:BiiigHug",
+      "token_id": 133
+    },
+    {
+      "content_hash": "eb2ade12da3572d498297f3540a3e03b21f830c6364dcedaa169927700c7b89e",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "CallingBell",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:CallingBell",
+      "token_id": 134
+    },
+    {
+      "content_hash": "931fa7a55f7306dcf4dba56467e18370dfd991e557af1f4750e0ea3ba152b7ab",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Ectoplasm",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Ectoplasm",
+      "token_id": 135
+    },
+    {
+      "content_hash": "935c14f6b4e96738bdc5fe218e788ddc6d8840860677547501c045a41068e27a",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Cauldron",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Cauldron",
+      "token_id": 136
+    },
+    {
+      "content_hash": "85fcbeffbc43588d5b542917e84b25b8cfdee709add99401ee16e83ec15db47a",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "DollysMirror",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:DollysMirror",
+      "token_id": 137
+    },
+    {
+      "content_hash": "81ad20f87af3b089411817bdb49311d98b3efcd6db54a3a5b470e2d5edad2ae8",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "LeesWaffle",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:LeesWaffle",
+      "token_id": 138
+    },
+    {
+      "content_hash": "de69aaf22c660d9be436ef0ed6ce184766bb8ad00a2c0f6bb9e77dc3e164442c",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "TheBoot",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:TheBoot",
+      "token_id": 139
+    },
+    {
+      "content_hash": "ab13cf1c0d671601594e5f3af5ecb88a92eb19608696cc39850f540195f77439",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "SneckosEye",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:SneckosEye",
+      "token_id": 140
+    },
+    {
+      "content_hash": "ce074613bab86a3730bd19af9e94941a3ba32ef1a7fe8ffb9d3b9dcdeeece879",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "SnakeSkull",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:SnakeSkull",
+      "token_id": 141
+    },
+    {
+      "content_hash": "9d7270695c98e50dd71170f58a1aa1dad6f3de6cc7447a51f778ecd7cb0e3a52",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "NinjaScroll",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:NinjaScroll",
+      "token_id": 142
+    },
+    {
+      "content_hash": "dfe823806627e5f6223e95ecd6f191fcaede8bb6ebcf4a11336f151ff657c9d6",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "PaintedFan",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:PaintedFan",
+      "token_id": 143
+    },
+    {
+      "content_hash": "4fbfacef98fb257030b204ea42a8015f046ad8df4fbf479254bed81afb07aabb",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "TwistedFunnel",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:TwistedFunnel",
+      "token_id": 144
+    },
+    {
+      "content_hash": "34de454966892e3d27ac0f2a67518850caf9c7b9b961f8de31dace03755367b7",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "WristBlade",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:WristBlade",
+      "token_id": 145
+    },
+    {
+      "content_hash": "2817f2383c9250f89cbf9273366d9c1d19c2d0f08771c716caf289ccf41350ba",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Tingsha",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Tingsha",
+      "token_id": 146
+    },
+    {
+      "content_hash": "d832d9386b04fd076055e8c29b4f306f9eac0b8d485cde77d8b474a0d28ea8b1",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "TheTotem",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:TheTotem",
+      "token_id": 147
+    },
+    {
+      "content_hash": "95d994faed81ab9455dfbb479037e46a10d8dc96c000a4a7e5ba1548afb74ddd",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "TornCard",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:TornCard",
+      "token_id": 148
+    },
+    {
+      "content_hash": "687831427c39091671e2decd2da78b6f7c4df4adba7fb89174787548612ef212",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "HoveringKite",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:HoveringKite",
+      "token_id": 149
+    },
+    {
+      "content_hash": "17089dc967b99698ceba0dcd311808d1cc272fb5d551d20b7e4fede33fc725bd",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "CeramicFish",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:CeramicFish",
+      "token_id": 150
+    },
+    {
+      "content_hash": "d9d12be1c63033cbebe44f3984071c82710278a7b5f224f49f71f32c6c3d65f2",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Strawberry",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Strawberry",
+      "token_id": 151
+    },
+    {
+      "content_hash": "933906d76901763e20e5215bc10114e9a5136a92bcfc38fc91872cad0ee7c8ac",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Pear",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Pear",
+      "token_id": 152
+    },
+    {
+      "content_hash": "a99e49ee2739830428e386ecce1f699131c48593cca8ce231c8ced0e1c220b34",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Anchovy",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Anchovy",
+      "token_id": 153
+    },
+    {
+      "content_hash": "bdd2f36e01fc1807f646d5d9e1024a95c59eb95f463603b4b5465b8282fd3692",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Lantern",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Lantern",
+      "token_id": 154
+    },
+    {
+      "content_hash": "818bb70716ccbfb9cd5cd1d5ee614a2314bfaa1ee4369523a68ad5644743fa8d",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Cookbook",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Cookbook",
+      "token_id": 155
+    },
+    {
+      "content_hash": "fecc721155bc9df94c9e32e59384ebeaea9c0b464c240192fb7b285f2a9be8ee",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "GremlinHorn",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:GremlinHorn",
+      "token_id": 156
+    },
+    {
+      "content_hash": "9d43c3c5a581cbf4b03ae716101822719f692a1fa2cb10d065d99ee890b51053",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "HornCleat",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:HornCleat",
+      "token_id": 157
+    },
+    {
+      "content_hash": "6c969c811631db2e59dbedfca00e75dae6b58c29a513e6f116686097016c9443",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "LetterOpener",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:LetterOpener",
+      "token_id": 158
+    },
+    {
+      "content_hash": "cf1c36960fe21662285126abaab0b2b32d6e2f684c5c4b1c861542078e1fd13e",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "OrnamentalFan",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:OrnamentalFan",
+      "token_id": 159
+    },
+    {
+      "content_hash": "3cf02ea6026562b75b768ba72068e62fa818bd47f63c02a3e1bd1bcfc409a2d4",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Orichalcum",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Orichalcum",
+      "token_id": 160
+    },
+    {
+      "content_hash": "b2dee13cd0ee591dffdc1a9acc2dd52047a46efc318f7375acf360c82f40003a",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Kunai",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Kunai",
+      "token_id": 161
+    },
+    {
+      "content_hash": "2f430992f9b8f74bcfb0366466b71fab5636535a2aa095b0fd403471d8720768",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "Shuriken",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:Shuriken",
+      "token_id": 162
+    },
+    {
+      "content_hash": "b623efb3cdd59e8185578310187818b4c65ad65f82a3d3db1abed2997b3e426f",
+      "deprecated_in": null,
+      "kind": "relic",
+      "name": "ToyOrnithopter",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "relic:ToyOrnithopter",
+      "token_id": 163
+    },
+    {
+      "content_hash": "c19820264353eaf31485a3fc1fed2b30c96a95422ad6408841c55c1d223ef62e",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "PoisonPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:PoisonPower",
+      "token_id": 164
+    },
+    {
+      "content_hash": "5b4f988d1e2939e5ccf24313528d28d3a38ba35c160362e91acc4498dc2f5a52",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "VulnerablePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:VulnerablePower",
+      "token_id": 165
+    },
+    {
+      "content_hash": "4d056ddf03022b2179eb19f980317083d07ce2b2c779869f6e137a97878a42dc",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "WeakPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:WeakPower",
+      "token_id": 166
+    },
+    {
+      "content_hash": "8c914bf57622f9aa06e057070ce0baf33f53342e10b82bf22f48b06cf83413ea",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "StrengthPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:StrengthPower",
+      "token_id": 167
+    },
+    {
+      "content_hash": "12c339fb91132baa91398f450631392febb00aa8bd896371b7974fdc72464f2b",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "RitualPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:RitualPower",
+      "token_id": 168
+    },
+    {
+      "content_hash": "eec15a18039a2085ace1e1a61fe6f0bd9b1806df69a87b816d267bd9bd521710",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "ThornsPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:ThornsPower",
+      "token_id": 169
+    },
+    {
+      "content_hash": "1877611898f65519df4708cca2823c32cc827ef4e5914fc30ff11b2ed1b62f6f",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "DexterityPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:DexterityPower",
+      "token_id": 170
+    },
+    {
+      "content_hash": "9f1d3776a3773da71dce89b43311aee38f783070cb08f5b910ec217358a2704a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "IntangiblePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:IntangiblePower",
+      "token_id": 171
+    },
+    {
+      "content_hash": "2ed11d0bdf61567012423c3379346e801ac4bdcdb24cbb9c0702294f6806e044",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "ArtifactPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:ArtifactPower",
+      "token_id": 172
+    },
+    {
+      "content_hash": "1bc01c5e4c8f99005e1573a3998628906096bef8109b6aaf7eaf90e6bfc5f867",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "FrailPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:FrailPower",
+      "token_id": 173
+    },
+    {
+      "content_hash": "24a14b51ea0d943f9c8c1270a1ab6d4c918cac9f0d6e7f1f187b040dfa823819",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "AccelerantPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:AccelerantPower",
+      "token_id": 174
+    },
+    {
+      "content_hash": "072e1bb51021bcfcbe701af71c8553d4919c8ff1fd4f360c2849bd92dd4a5014",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "AccuracyPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:AccuracyPower",
+      "token_id": 175
+    },
+    {
+      "content_hash": "5d6113d8d1d1078f9242fd2c4fb88888eb8570a0d973b2fb6ed6492231977409",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "AfterimagePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:AfterimagePower",
+      "token_id": 176
+    },
+    {
+      "content_hash": "239ade86b7b73fc7f4dedf54bc5225bf1c045629a5cdf674440799c05a942662",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "EnvenomPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:EnvenomPower",
+      "token_id": 177
+    },
+    {
+      "content_hash": "593e39d099068e21b7b12fcd8443a914bc0ac02143c703e2a8f951fbd9171bab",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "SerpentFormPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:SerpentFormPower",
+      "token_id": 178
+    },
+    {
+      "content_hash": "b4f6a7734bf5febf90732b3460f30fe146755f82530b941bd4bd1eb8102bd79e",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "OutbreakPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:OutbreakPower",
+      "token_id": 179
+    },
+    {
+      "content_hash": "1aa25906a4cb90fb425b1accc6f62e6f61735b85061f53b82029fc99a3e07d5a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "PhantomBladesPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:PhantomBladesPower",
+      "token_id": 180
+    },
+    {
+      "content_hash": "e4fbab00fc6e441009d310b774c749d86b2603c06ec0ef91e2606fd126a65175",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "StranglePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:StranglePower",
+      "token_id": 181
+    },
+    {
+      "content_hash": "f355edd31338b3986630e84e3e137c21f2532edf9ad232d23bad624a2feecbf1",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "SneakyPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:SneakyPower",
+      "token_id": 182
+    },
+    {
+      "content_hash": "738187393215e27296483a8d7d12edf9791be7beb68d69585ba1948bbea7fb37",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "SpeedsterPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:SpeedsterPower",
+      "token_id": 183
+    },
+    {
+      "content_hash": "030c1af798801afb2d757e2d3e0d0ce0200e3514b5e141d534239d698dc7a91a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "WraithFormPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:WraithFormPower",
+      "token_id": 184
+    },
+    {
+      "content_hash": "f83893489b7de8d229a2e246b182a5d80beb7154ac78fdffa6804e0feb087cdd",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "BurstPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:BurstPower",
+      "token_id": 185
+    },
+    {
+      "content_hash": "af858bb56f34d44e0e7f2b4f9905d7c8b66e88b3ab98cf80c5ffe296db4e9a4b",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "MasterPlannerPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:MasterPlannerPower",
+      "token_id": 186
+    },
+    {
+      "content_hash": "f08911ea2b9be954dc5395b485eeb49b7c440f582ec9923f8328bd1f379a572a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "InfiniteBladesPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:InfiniteBladesPower",
+      "token_id": 187
+    },
+    {
+      "content_hash": "7a775d2d8dec90f104ab658c2abc8af8dfc4c424098c4984d8b17ae05d11df43",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "FanOfKnivesPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:FanOfKnivesPower",
+      "token_id": 188
+    },
+    {
+      "content_hash": "9fd285c442f98456ac146d3da245113e62204bee37cdd020f8532b91ecd2aaee",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "TrackingPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:TrackingPower",
+      "token_id": 189
+    },
+    {
+      "content_hash": "63673ebe2acee1eea1680c0d07cea06acf083c8d778fe2641fde6b219e39e4f8",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "ToolsOfTheTradePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:ToolsOfTheTradePower",
+      "token_id": 190
+    },
+    {
+      "content_hash": "1decd562dcf43c7cc77366de1909ad4ae5794d0868f97c66c4dacb6424d6f83d",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "CurlUpPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:CurlUpPower",
+      "token_id": 191
+    },
+    {
+      "content_hash": "6ea628d2b5d1fa8c5e60a3324e66154bb1198171b7ba87ed499c461f24f9a8e3",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "AngerPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:AngerPower",
+      "token_id": 192
+    },
+    {
+      "content_hash": "bd02b397f20c242105c16f5a77058f236123f88b3b27e4c49457b41b2d310ff2",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "EnragePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:EnragePower",
+      "token_id": 193
+    },
+    {
+      "content_hash": "516e4e5c744315392db02c77ae29d1d844e9b62f3309fabf554a9f3a41f3b68a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "MetallicizePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:MetallicizePower",
+      "token_id": 194
+    },
+    {
+      "content_hash": "e992f2f2ef8dd8132f1f8fce60053a96266563e63a8f9463ab7a6347e2a36620",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "PlatedArmorPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:PlatedArmorPower",
+      "token_id": 195
+    },
+    {
+      "content_hash": "110128866390476bd92be7946f8e660515d3530603310024e19c68fddf77bbe6",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "RegenPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:RegenPower",
+      "token_id": 196
+    },
+    {
+      "content_hash": "b407834666faa2f5db19b4ebe91c23b6560b8b619368aceafb6b0d9f160c6a05",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "ModeShiftPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:ModeShiftPower",
+      "token_id": 197
+    },
+    {
+      "content_hash": "f9be4b81587cb2aa0cf100180599bb8977ed1d4d8c07fed50a4d3e2bfe739050",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "PenNibPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:PenNibPower",
+      "token_id": 198
+    },
+    {
+      "content_hash": "a40cef0b292ade06ff3d46e10c410ac89ca9154dd6d8467cb1de410e6de3993f",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "EnergizedPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:EnergizedPower",
+      "token_id": 199
+    },
+    {
+      "content_hash": "c1fb72a2b5cc234457b00b9437710c85157d75ba6288bf0dbf4fb4b17ad1f67d",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "BlockPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:BlockPower",
+      "token_id": 200
+    },
+    {
+      "content_hash": "1d3ffe54f5cbc69a41b9f7e9b717a04508292b541a5819e91f8e4c3941567eee",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "DexterityLossPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:DexterityLossPower",
+      "token_id": 201
+    },
+    {
+      "content_hash": "de1d7a1b9987a10067d1aa516d568a1f9a1af3609e2c74a6584ab19a685be2da",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "StrengthDownPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:StrengthDownPower",
+      "token_id": 202
+    },
+    {
+      "content_hash": "c0b1de45a7079b65ac1de8dce97c1c4a3e52121aed00ab63bcfc3c8e37b3297f",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "EntangledPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:EntangledPower",
+      "token_id": 203
+    },
+    {
+      "content_hash": "6d634d9d587a3d5aefcb9c9bc49f705449fdb1c444c4e369a01228be70fc7c1b",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "NoBlockPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:NoBlockPower",
+      "token_id": 204
+    },
+    {
+      "content_hash": "975b96e1be74c6064df85289f40712201c0af3c2757869c15cdcdc55096c695a",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "NoDrawPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:NoDrawPower",
+      "token_id": 205
+    },
+    {
+      "content_hash": "457ad36d22dde2f4738a23de2b4354c5960690cee10b155461ed7f3aa32c775f",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "ConfusedPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:ConfusedPower",
+      "token_id": 206
+    },
+    {
+      "content_hash": "eb24a86ade8e8a0468ceb228606ce603357c331fed7522eb10aa7d5c5cabb658",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "BarricadePower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:BarricadePower",
+      "token_id": 207
+    },
+    {
+      "content_hash": "d7feac374831ad17bb31ecc77c5b966ee08f4698fcecb7bba4b6b98715b27d06",
+      "deprecated_in": null,
+      "kind": "power",
+      "name": "BlurPower",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "power:BlurPower",
+      "token_id": 208
+    },
+    {
+      "content_hash": "b38fb0cfa13520a42d425250994fee5e8bdc6e0a077b61cb49eb4486875be508",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "CalcifiedCultist",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:CalcifiedCultist",
+      "token_id": 209
+    },
+    {
+      "content_hash": "f01901f111c36e66982db596d4217a6097cd40380b2b6d94b4c924d782f27032",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "DampCultist",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:DampCultist",
+      "token_id": 210
+    },
+    {
+      "content_hash": "fce11aff071648d267ced90827cbb375385905b107d1bfbf6131e2a19b405c01",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "Chomper",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:Chomper",
+      "token_id": 211
+    },
+    {
+      "content_hash": "e75cb263d0a20032c5e5acfc47b324545a31afa23b8c7ad648d062f86b08a287",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "Exoskeleton",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:Exoskeleton",
+      "token_id": 212
+    },
+    {
+      "content_hash": "d0922562fb431188eb72fc6718a76d39694961deb17cf9667ca0012f25129834",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "FuzzyWurmCrawler",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:FuzzyWurmCrawler",
+      "token_id": 213
+    },
+    {
+      "content_hash": "55384f0b64f2027292830a504d1b332f66f93fb2d696edf4992b4bf6d04010c7",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "LouseProgenitor",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:LouseProgenitor",
+      "token_id": 214
+    },
+    {
+      "content_hash": "20c5176561fe121c36a244e721878356aefd041279968b4df7167bba10174fec",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "GremlinMerc",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:GremlinMerc",
+      "token_id": 215
+    },
+    {
+      "content_hash": "ed165d196f6afb95b7b56273317caa49e0c042063cf5e15134e309da484e0426",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "HauntedShip",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:HauntedShip",
+      "token_id": 216
+    },
+    {
+      "content_hash": "4c0c7f18944378d0a82dde23647dd653c1bb0dfc08c3e3431c26d1b26d9c685f",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "LivingFog",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:LivingFog",
+      "token_id": 217
+    },
+    {
+      "content_hash": "118e3f5142f1a92e01c0bde380b061d4e2028d5fa72c7f7522ab5bc1b17c77d0",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "CeremonialBeast",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:CeremonialBeast",
+      "token_id": 218
+    },
+    {
+      "content_hash": "bfd2555676a282abd8adf76acfda9f34f69a3a1b883cdf01c2cfc9c9f38bbca4",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "JawWorm",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:JawWorm",
+      "token_id": 219
+    },
+    {
+      "content_hash": "d1998b3052849fa020408a0deaa0afb882bb1871179b5bd1723765145848e2a0",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "RedLouse",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:RedLouse",
+      "token_id": 220
+    },
+    {
+      "content_hash": "c01cd28384c372173fe2321c941ab8b1810cc035a5a74576c270b2e90dbe36b8",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "GreenLouse",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:GreenLouse",
+      "token_id": 221
+    },
+    {
+      "content_hash": "6c7afe452975188907bc7db3433eb5986e52450bd11108f934e91e24aebc3085",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "AcidSlimeS",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:AcidSlimeS",
+      "token_id": 222
+    },
+    {
+      "content_hash": "6da96123cfc79504b7ce451958ab67a554db2a891a75ffecad2267af781494dc",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "AcidSlimeM",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:AcidSlimeM",
+      "token_id": 223
+    },
+    {
+      "content_hash": "1e67a68934ddb87e5f72cf9e473edd125dc2168673641c99fb265f4080efac83",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "AcidSlimeL",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:AcidSlimeL",
+      "token_id": 224
+    },
+    {
+      "content_hash": "3e8fba7ea1a3824896e52047fb197ed8d95372d1fc7339ab2948f17fd0093bf2",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "SpikeSlimeS",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:SpikeSlimeS",
+      "token_id": 225
+    },
+    {
+      "content_hash": "50b81a5e6619ecd94f297fd2724adf44098ac70d421c2ab0ca65abf07db405ec",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "SpikeSlimeM",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:SpikeSlimeM",
+      "token_id": 226
+    },
+    {
+      "content_hash": "b2a39f9e1829d93896d52afff75f6d7449eefd87c5180080fd2d563f74e4ff8b",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "SpikeSlimeL",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:SpikeSlimeL",
+      "token_id": 227
+    },
+    {
+      "content_hash": "39140aabab8a08a81f308bcecba0f8fccca91c85fb0e5bae6a1719bdc9c2ac4c",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "FungalBoss",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:FungalBoss",
+      "token_id": 228
+    },
+    {
+      "content_hash": "88549916c37a72a40c7c8a30ea817fbcaa9444fdea15bd3854bf2acd7ad91593",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "SnakePlant",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:SnakePlant",
+      "token_id": 229
+    },
+    {
+      "content_hash": "ef5551a1ac608805cee728aff9fca90b0d0a5c4d9306154cd181151b0c2225e4",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "Sentry",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:Sentry",
+      "token_id": 230
+    },
+    {
+      "content_hash": "7b015c3c384439fe3823bb4c78b295d2724f37133c07cb0add2f2c108ba53030",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "LagavulinMatriarch",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:LagavulinMatriarch",
+      "token_id": 231
+    },
+    {
+      "content_hash": "68c2ba7fe3b1e9e0d4962e7c0e216e64466462a150fa47875811812486a5e991",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "CenturyGuard",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:CenturyGuard",
+      "token_id": 232
+    },
+    {
+      "content_hash": "4e6362112f4315a833c4e7a3888661eba44d5ea9e2766c8069433776693db76d",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "SilverMage",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:SilverMage",
+      "token_id": 233
+    },
+    {
+      "content_hash": "1c2eb68a7c61676db2ba1afc5985ca0d2d895b172a9116a882f6ba43a76974b3",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "Crusher",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:Crusher",
+      "token_id": 234
+    },
+    {
+      "content_hash": "cbd4c4f09e3d8d692365387a894e4072dea32a034f2108d2cb42d080f0a4c256",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "Rocket",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:Rocket",
+      "token_id": 235
+    },
+    {
+      "content_hash": "9a0e44ebe153e967bf5675f2bfb2ef131add3feef769d53758d15e95747286f6",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "BowlbugEgg",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:BowlbugEgg",
+      "token_id": 236
+    },
+    {
+      "content_hash": "28e8b311187625008081b6cf923b5692720e3acba79889833ec2a0f23a84b2bc",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "BowlbugNectar",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:BowlbugNectar",
+      "token_id": 237
+    },
+    {
+      "content_hash": "9142552e9597e18e6be150aa984e97deee126c616cf49928b6fd10316d45a5c1",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "BowlbugRock",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:BowlbugRock",
+      "token_id": 238
+    },
+    {
+      "content_hash": "1bee1079d21674fc0c3e275cbe18f55c35593cdd1dcc5bb129f5e5b48d9ad359",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "BowlbugSilk",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:BowlbugSilk",
+      "token_id": 239
+    },
+    {
+      "content_hash": "bac84a06c9bda1161c8e7b4aeab680e8b4f34dab9330583dd779a6cc4a4e8f03",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "FossilStalker",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:FossilStalker",
+      "token_id": 240
+    },
+    {
+      "content_hash": "2dbca0dfbe9cb713d954fd9b25f300822a630ffc2540d755c18a1e15c14d26e3",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "FrogKnight",
+      "references": [],
+      "since_version": "phase1-silent.0",
+      "token": "enemy:FrogKnight",
+      "token_id": 241
+    }
+  ]
+}

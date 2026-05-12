@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "STS2 Phase 1 Token Registry",
+  "type": "object",
+  "required": ["manifest", "tokens", "deprecation_log", "card_dsl"],
+  "properties": {
+    "manifest": {"type": "object"},
+    "tokens": {"type": "array"},
+    "deprecation_log": {"type": "array"},
+    "card_dsl": {"type": "array"}
+  }
+}
