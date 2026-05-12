@@ -17,6 +17,8 @@ These ADRs are **subordinate** to pipeline-level ADRs at `~/development/projects
 | Q1-ADR-009 | Strip Multiplayer Entirely | Accepted |
 | Q1-ADR-010 | Soft Reuse of `Core/AutoSlay/AutoSlayer.cs` Patterns Where Aligned | Accepted |
 | Q1-ADR-011 | Parallel Sub-Streams Must Partition by File, Not Code Region | Accepted |
+| Q1-ADR-012 | Schema Lock for `contracts/schemas/game-simulator/` v0.1 (combat-only) | Accepted |
+| Q1-ADR-013 | Caller-Callee Contract Gap Mitigation (Q1-ADR-011 follow-up) | Accepted |
 
 ---
 
@@ -239,3 +241,82 @@ Practical guidance for the dispatch loop:
 **Cross-references.** Tracks risk R8 (parallel-edit conflict surface) in the project risk register.
 
 **Origin.** Lead's directive 2026-05-11 after the B.1-β/γ merge incident.
+
+---
+
+## Q1-ADR-012 — Schema Lock for `contracts/schemas/game-simulator/` v0.1 (combat-only)
+
+**Status:** Accepted (project-lead Q8-proxy review 2026-05-12; committed as `chore(contracts): bump game-simulator schemas to v0.1` `d94afa6`).
+
+**Context.** D1 deliverable per project-lead direction 2026-05-12. Phase-1A ratification depends on locking the cross-quantum schemas in `contracts/schemas/game-simulator/` so Q2 (post-D1 boot) and Q8 (substrate work) can target a stable wire contract. Pipeline ADR-001 makes schema migrations versioned releases; this lock formalizes v0.0 (skeleton) → v0.1 (combat-complete surface).
+
+The v0.0 envelope+`LegalAction` proto3 surface was skeleton-grade and predated M1 (S7) / M2 (S9) final shapes. Specifically: `state_blob.proto` envelope fields were fine but lacked a comment-block on inner-payload SHA rule or manifest-stamp invariants; `hook.proto` `LegalAction` carried only `card_index` + `target_index` — missing pipeline-ADR-008 sequential-targeting payload, decision-phase enum, first-class end-turn action.
+
+Two evolution shapes considered:
+
+- (a) Extend in place under v0.1 (additive minor bump). v0.0 callers still see `card_index`/`target_index` field positions intact.
+- (b) Carve a v1 package and leave v0 Phase-1-only.
+
+**Decision.** Option (a): minor bump v0.0 → v0.1. v0 surface is COMBAT-ONLY. Run-level message types (card-pick, map, shop, event, rest, potion-out-of-combat) live behind a future v1 release (S15 per stage manifest). v1 is a cross-quantum coordination event for the (then-existing) Q8 lead; v0.x review is by project-lead-as-Q8-proxy per 2026-05-12 directive until Q8 lead boots.
+
+Specific additions (full diff in commit `d94afa6`):
+
+1. `state_blob.proto` adds comment-block fixing manifest-stamp invariants and inner-payload SHA rule. 5-tuple state-snapshot provenance identity stated.
+2. `hook.proto` adds:
+   - `DecisionPhase` enum `{UNSPECIFIED, DECISION, AWAITING_TARGET_N}` — pipeline-ADR-008 sequential-targeting support. CHANCE intentionally omitted from v0; Q1 resolves all RNG internally before each player-decision boundary.
+   - `SpecialTarget` enum + `TargetRef` oneof — indexed slot / named slot (e.g. "crusher" / "rocket" per D3 fixture #4) / virtual target.
+   - `LegalAction.surface` oneof — first-class `PlayCardAction`, `EndTurnAction`, `PotionAction`, `TargetChoice` sub-actions.
+   - `DecisionRequest.phase` field — Q1 publishes phase per request. Wire default is `UNSPECIFIED` (proto3 0-value); Q1 in v0.1+ MUST set explicitly. Consumer `UNSPECIFIED`→`DECISION` fallback is a convention, not a wire default.
+3. Both files' `// sts2.schema.minor` header bumped 0 → 1.
+4. v0 surface explicitly noted as combat-only; v1 carve-out reserved.
+
+**Consequences.**
+
+- *Negative:* Q1 codegen + Q2 codegen must regenerate against v0.1 protos. One round-trip in the rollout.
+- *Negative:* `LegalAction.card_index` + `target_index` (v0.0 fields) retained for backwards-compat; new code SHOULD prefer the `surface` oneof. Discipline cost in code review to prevent dual-API drift.
+- *Negative:* v0 locked combat-only means Phase-2 run-level messages cannot reuse v0 surface — they MUST live behind v1. Cannot future-proof v0 against Phase-2 needs (lead's explicit constraint 2026-05-12).
+- *Negative:* CHANCE phase omission means Phase-1A MCTS at Q8 cannot natively branch over chance nodes on the wire. Workarounds: single-sample (weakens search on draw-sensitive states — Silent + Ring of the Snake is a worst case), or clone-and-resample via M4 (correctness via expense). Chance-on-wire reserved for v1; revisit when real Q8 lead boots and MCTS chance-handling is scoped.
+- *Negative:* No real Q8 lead exists yet; lead-as-Q8-proxy review carries forward-compat risk. Mitigation: v1 carve-out reserved for rebalancing exactly when Q8 lead boots.
+- *Positive:* Q2 / Q8 / Q12 substrate work can boot against a stable contract without further blocking on Q1.
+- *Positive:* Sequential-targeting is structurally encoded — Q1 publishes `phase=AWAITING_TARGET_N`, Q8 emits `TargetChoice` sub-action, no string-matching on `action_type`.
+- *Positive:* state-snapshot provenance is self-describing — 5-tuple in the envelope identifies the producing simulator + wire format. This is the state-snapshot half of the pipeline ADR-001 reproducibility chain; the model-artifact half is owned by Q5.
+
+**Origin.** Lead's directive 2026-05-12. Q8-proxy review by project lead 2026-05-12.
+
+---
+
+## Q1-ADR-013 — Caller-Callee Contract Gap Mitigation (Q1-ADR-011 follow-up)
+
+**Status:** Accepted (project-lead direction 2026-05-12).
+
+**Context.** Q1-ADR-011 mandates parallel sub-streams partition by file. The B.1-β/γ incident that motivated Q1-ADR-011 was direct file overlap with silent change-loss via `--theirs` resolution. The wave-2 D3/D6 merge surfaced a related but distinct failure mode:
+
+- D3 owned `engine/headless/test/Sts2Headless.Tests.Tools/Fixtures/StateBlobFixtureRecipe.cs` (new file).
+- D6 owned `engine/headless/src/Sts2Headless.Host/CliArgs.cs` (modified to add a required positional `RegistryPath` parameter).
+- D3 USED `Sts2Headless.Host.CliArgs` from D6's owned module.
+- Both sub-streams' `make ci` was green individually.
+- Merge into `main` failed to compile (`CS7036 RegistryPath required`).
+
+Q1-ADR-011's partition-by-file rule does not catch caller-callee contract changes where stream X uses a type that stream Y extends. The new failure mode is "loud at integration" (compile error) rather than "silent change loss" — strictly better than the original B.1 bug, but still a wave-level wall-clock cost the orchestrator must mitigate. Surface size grows for P-1.5-1 where 5+ sub-streams have substantial cross-module type usage (console host + 12 stubs + Pinned harness + driver + tests).
+
+**Decision.** Three elements added on top of Q1-ADR-011:
+
+1. **Declarative public-surface diffs.** Each sub-stream's DONE report MUST enumerate any public-type-signature change (record/class/interface) in modules the stream owns. One line per signature change is enough. Empty if the stream made no public-surface changes.
+
+2. **Orchestrator post-merge compile gate.** After merging a parallel wave into `main` and before reporting wave-complete to the project lead, run `make ci` (or a faster `dotnet build`) across the merged tree. If red, re-dispatch the affected caller-side sub-stream with the new signature. The integration fix may be done inline by the orchestrator if ≤ 20 LOC per role-prompt §4 (caller-side wire-up) — the failure must still be reported in the wave status, not silently absorbed.
+
+3. **Pre-dispatch heuristic (optional).** When constructing parallel dispatches, scan each sub-stream's prompt for "uses public type from a module owned by another sub-stream." Flag as a serialization point unless the modifying stream promises additive-only changes. Use when wall-clock cost of misfire exceeds the cost of serialization.
+
+**Consequences.**
+
+- *Negative:* sub-stream DONE-report scope grows by one section. Trivial in practice; most streams have zero public-surface changes.
+- *Negative:* orchestrator's post-merge step adds one `make ci` invocation per wave (~30 s for current Q1 build). Cumulative cost grows with wave count.
+- *Negative:* pre-dispatch heuristic is judgment-based. Easy to over-fire (over-serialize, losing parallelism) or under-fire (miss a contract change, hit the gate at merge time).
+- *Negative:* "additive-only" promises in stream prompts are not auditable from a prompt alone. Verification still happens at merge time.
+- *Positive:* eliminates the integration-time-compile-fail class of bugs entirely when the heuristic fires correctly.
+- *Positive:* the post-merge compile gate is a definite catch (deterministic), independent of the pre-dispatch heuristic's accuracy.
+- *Positive:* DONE-report public-surface diffs become an auditable record of which streams change which contracts. Useful for future cross-stream coordination.
+
+**Cross-references.** Q1-ADR-011 (parent: partition-by-file rule). The D3/D6 incident is recorded in wave-2 status.
+
+**Origin.** Lead's directive 2026-05-12 after the D3/D6 caller-callee integration break (orchestrator fix at commit `30840c5`).
