@@ -12,6 +12,7 @@ target_sources(sts2_oracle_adapter PRIVATE
     # target has at least one TU. Real sources land in S1-T1+ (state_blob.cc,
     # envelope.cc, cultists_projection.cc, adapter.cc).
     manifest.cc
+    state_blob.cc
 )
 
 target_compile_features(sts2_oracle_adapter PUBLIC cxx_std_20)

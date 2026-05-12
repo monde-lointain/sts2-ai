@@ -9,6 +9,8 @@ add_executable(sts2_oracle_tests)
 
 target_sources(sts2_oracle_tests PRIVATE
     test_manifest.cc
+    test_state_blob.cc
+    adapter_fixtures.h
 )
 
 target_compile_features(sts2_oracle_tests PRIVATE cxx_std_20)
