@@ -97,12 +97,17 @@ test: $(BUILD_DIR)/Makefile
 #   - Q1 prototype:  Search.DISABLED_StarterCombatSolves_LogsDiagnostics
 #   - Q2 adapter:    AdapterRoundtrip.DISABLED_Fixture1_*
 # As Q2 pin set grows (S2+), each new DISABLED_* test joins the second filter.
-ci-slow: $(BUILD_DIR)/Makefile
-	@cmake --build $(BUILD_DIR) -j$(JOBS)
-	@$(BUILD_DIR)/$(BUILD_TYPE)/sts2_simulator_tests \
+#
+# Force BUILD_TYPE=Release internally regardless of caller env (lead Ask #2,
+# 2026-05-12). Wave gate is self-contained: a Debug tree lying around does not
+# satisfy the build dep. Release headroom (~5 min projection) leaves slack for
+# pin-set growth before the 30-min aggregate re-surface trigger fires.
+ci-slow:
+	@$(MAKE) BUILD_TYPE=Release build
+	@$(BUILD_DIR)/Release/sts2_simulator_tests \
 		--gtest_also_run_disabled_tests \
 		--gtest_filter='Search.DISABLED_StarterCombatSolves*'
-	@$(BUILD_DIR)/$(BUILD_TYPE)/sts2_oracle_tests \
+	@$(BUILD_DIR)/Release/sts2_oracle_tests \
 		--gtest_also_run_disabled_tests \
 		--gtest_filter='*DISABLED_*'
 
