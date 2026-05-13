@@ -1,4 +1,4 @@
-.PHONY: help build test run clean distclean reconfig q1-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
+.PHONY: help build test ci-slow run clean distclean reconfig q1-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
 .PHONY: format format-patch
 .PHONY: cppcheck cppcheck-xml scan-build tidy
 .PHONY: complexity complexity-full complexity-xml
@@ -42,6 +42,7 @@ help:
 	@echo "  help              Show this help message (default)"
 	@echo "  build             Build the project"
 	@echo "  test              Build and run unit tests"
+	@echo "  ci-slow           Run slow regression tests (DISABLED gtest; ~6 min/test). Q2 wave gate."
 	@echo "  run               Run executable (use FILE=path to specify input)"
 	@echo "  clean             Clean build artifacts"
 	@echo "  distclean         Remove build directory"
@@ -89,6 +90,21 @@ build: $(BUILD_DIR)/Makefile
 test: $(BUILD_DIR)/Makefile
 	@cmake --build $(BUILD_DIR) -j$(JOBS)
 	@cd $(BUILD_DIR) && ctest --output-on-failure
+
+# Slow regression tests. DISABLED-by-default in default ctest so `make test`
+# stays fast; ~6 min per test. Required at wave gate per project-lead direction
+# 2026-05-12 — Q2 lead runs this before sending any S{N+1} status. Folds:
+#   - Q1 prototype:  Search.DISABLED_StarterCombatSolves_LogsDiagnostics
+#   - Q2 adapter:    AdapterRoundtrip.DISABLED_Fixture1_*
+# As Q2 pin set grows (S2+), each new DISABLED_* test joins the second filter.
+ci-slow: $(BUILD_DIR)/Makefile
+	@cmake --build $(BUILD_DIR) -j$(JOBS)
+	@$(BUILD_DIR)/$(BUILD_TYPE)/sts2_simulator_tests \
+		--gtest_also_run_disabled_tests \
+		--gtest_filter='Search.DISABLED_StarterCombatSolves*'
+	@$(BUILD_DIR)/$(BUILD_TYPE)/sts2_oracle_tests \
+		--gtest_also_run_disabled_tests \
+		--gtest_filter='*DISABLED_*'
 
 run: $(BUILD_DIR)/Makefile
 	@cmake --build $(BUILD_DIR) -j$(JOBS)
