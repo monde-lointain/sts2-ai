@@ -17,6 +17,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_adapter_reject.cc
     test_registry_sha.cc
     test_pin_row.cc
+    test_cultists_search_pins.cc
     adapter_fixtures.h
 )
 
