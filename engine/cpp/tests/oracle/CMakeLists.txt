@@ -16,6 +16,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_adapter_roundtrip.cc
     test_adapter_reject.cc
     test_registry_sha.cc
+    test_pin_row.cc
     adapter_fixtures.h
 )
 
