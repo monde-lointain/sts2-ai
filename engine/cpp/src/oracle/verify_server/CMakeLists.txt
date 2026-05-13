@@ -10,27 +10,27 @@
 # decoder are implemented in this library; no nlohmann_json or other deps.
 # Links sts2::oracle_adapter (envelope + adapter facade) + sts2::ai (Search
 # + transition) + sts2::simulator (CardEffect table for card_id stringify).
-add_library(sts2_oracle_verify_server STATIC)
-add_library(sts2::oracle_verify_server ALIAS sts2_oracle_verify_server)
+add_library(sts2_oracle_verify_server_lib STATIC)
+add_library(sts2::oracle_verify_server ALIAS sts2_oracle_verify_server_lib)
 
-target_sources(sts2_oracle_verify_server PRIVATE
+target_sources(sts2_oracle_verify_server_lib PRIVATE
     protocol.cc
     server.cc
     base64_internal.h
     json_internal.h
 )
 
-target_compile_features(sts2_oracle_verify_server PUBLIC cxx_std_20)
+target_compile_features(sts2_oracle_verify_server_lib PUBLIC cxx_std_20)
 
-target_include_directories(sts2_oracle_verify_server
+target_include_directories(sts2_oracle_verify_server_lib
     PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/engine/cpp/include>
     PRIVATE ${PROJECT_SOURCE_DIR}/engine/cpp/src
 )
 
-target_link_libraries(sts2_oracle_verify_server PUBLIC
+target_link_libraries(sts2_oracle_verify_server_lib PUBLIC
     sts2::oracle_adapter
     sts2::ai
     sts2::simulator
 )
 
-sts2_apply_warnings(sts2_oracle_verify_server)
+sts2_apply_warnings(sts2_oracle_verify_server_lib)

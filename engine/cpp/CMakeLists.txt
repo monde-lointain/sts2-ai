@@ -1,5 +1,12 @@
 add_subdirectory(src)
 
+# S4-T5: sts2_oracle_verify_server (Q2-ADR-003) — verify-server executable.
+# Unconditional: deployable tool, not a test artifact. Links the same
+# adapter + AI stack as the existing tests but does NOT pull Arrow/Parquet,
+# so it lives outside both STS2_BUILD_TESTS and STS2_BUILD_ORACLE_SINK
+# gates. Forward-laid for Q12 boot.
+add_subdirectory(tools/oracle-verify-server)
+
 if(STS2_BUILD_TESTS)
     add_subdirectory(tests)
     add_subdirectory(tools/seed-pinner)
