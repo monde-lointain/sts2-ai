@@ -242,7 +242,26 @@ Q1 build.
 
 ## Q2-ADR-004 — Oracle-agreement sink = Parquet on local filesystem
 
-**Status:** Accepted.
+**Status:** Accepted. **Schema FROZEN as of S3 ship (2026-05-12).**
+
+**Schema freeze.** The 15-column row schema below is now load-bearing. Two
+evolution regimes apply:
+
+- *Pre-Q10-boot (current).* Any schema change is a Q2-internal ADR-bump
+  event — bump the ADR Status to "Accepted (revised)", add an entry to the
+  Phase-1A schema-history table below, regen `data/oracle/agreement/`
+  partitions if the change is non-additive.
+- *Post-Q10-boot.* The schema becomes a cross-quantum contract (Q10 is the
+  consumer). Any schema change is then a coordination event per ADR-001
+  (versioned schema migrations). Promotion to
+  `contracts/schemas/oracle-agreement/` lands at Q10-boot.
+
+Schema history (Phase-1A):
+
+| Version | Date | Change | Driver |
+|---|---|---|---|
+| v0 | 2026-05-12 | Initial 15-column schema (this ADR) | S3 land |
+
 
 **Context.** `oracle.md` Communication: oracle-agreement rows pushed to a
 Q3 sideband or dedicated table consumable by Q10. Neither Q3 nor Q10 booted.
