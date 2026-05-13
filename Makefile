@@ -7,6 +7,7 @@
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
 
 BUILD_DIR := build
+CI_SLOW_BUILD_DIR := build-ci-slow
 SANITIZE_BUILD_DIR := build-sanitize
 
 JOBS ?= $(nproc)
@@ -98,16 +99,19 @@ test: $(BUILD_DIR)/Makefile
 #   - Q2 adapter:    AdapterRoundtrip.DISABLED_Fixture1_*
 # As Q2 pin set grows (S2+), each new DISABLED_* test joins the second filter.
 #
-# Force BUILD_TYPE=Release internally regardless of caller env (lead Ask #2,
-# 2026-05-12). Wave gate is self-contained: a Debug tree lying around does not
-# satisfy the build dep. Release headroom (~5 min projection) leaves slack for
-# pin-set growth before the 30-min aggregate re-surface trigger fires.
+# Lead Ask #2 (2026-05-12): wave gate is self-contained. Uses a dedicated
+# build dir ($(CI_SLOW_BUILD_DIR)) configured Release; never inherits the
+# caller's $(BUILD_DIR) cache. Prior recursive-make approach was a no-op
+# when the developer's build/ was Debug — recursive make passed BUILD_TYPE
+# but cmake's existing cache won the configure step. Dedicated dir avoids
+# the trap and leaves the dev's build/ untouched. One-time configure cost.
 ci-slow:
-	@$(MAKE) BUILD_TYPE=Release build
-	@$(BUILD_DIR)/Release/sts2_simulator_tests \
+	@cmake -B $(CI_SLOW_BUILD_DIR) -S . -DCMAKE_BUILD_TYPE=Release
+	@cmake --build $(CI_SLOW_BUILD_DIR) -j$(JOBS)
+	@$(CI_SLOW_BUILD_DIR)/Release/sts2_simulator_tests \
 		--gtest_also_run_disabled_tests \
 		--gtest_filter='Search.DISABLED_StarterCombatSolves*'
-	@$(BUILD_DIR)/Release/sts2_oracle_tests \
+	@$(CI_SLOW_BUILD_DIR)/Release/sts2_oracle_tests \
 		--gtest_also_run_disabled_tests \
 		--gtest_filter='*DISABLED_*'
 
