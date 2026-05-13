@@ -54,8 +54,8 @@ constexpr double kPinTolerance = 1e-6;
 // existing Search.DISABLED_StarterCombatSolves_LogsDiagnostics pattern in
 // engine/cpp/tests/ai/test_search_known.cc. Run explicitly:
 //
-//   ./build/Release/sts2_oracle_tests \
-//     --gtest_also_run_disabled_tests \
+//   ./build/Release/sts2_oracle_tests
+//     --gtest_also_run_disabled_tests
 //     --gtest_filter='AdapterRoundtrip.DISABLED_*'
 //
 // CI runs this on the post-S1 verification gate (not on every commit).
