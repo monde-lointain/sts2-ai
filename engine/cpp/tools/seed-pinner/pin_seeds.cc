@@ -3,6 +3,11 @@
 // Build only when STS2_BUILD_TESTS is ON, then run:
 //   build\ninja-debug\Debug\sts2_seed_pinner.exe > tests\seeds\expected_values.h
 //
+// Optional flag:
+//   --manifest   Emit AlgorithmManifest JSON + registry-SHA + per-encounter
+//                seed list to stderr (Q2-ADR-005 stamping discipline). The
+//                generated header on stdout is unchanged regardless of flag.
+//
 // Pinned values are STL-implementation-specific (std::uniform_int_distribution
 // differs across libstdc++ / libc++ / MSVC STL). Re-pin on toolchain change.
 
@@ -13,6 +18,8 @@
 #include "sts2/game/enemy.h"
 #include "sts2/game/rng.h"
 #include "sts2/game/types.h"
+#include "sts2/oracle/adapter/manifest.h"
+#include "sts2/oracle/registry/sha.h"
 
 #include <array>
 #include <climits>
@@ -21,6 +28,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace {
@@ -29,6 +37,20 @@ namespace {
 // #error directives at the top of the header so a regen failure breaks the
 // build instead of producing silently-wrong data).
 constexpr std::uint64_t kSeedSearchCap = 1ULL << 20;
+
+// Q2 per-encounter pin registry (S2-T5). Forward-laid: today's entries cover
+// only CULTISTS_NORMAL; per-encounter coverage grows in Phase-1.5+. Per-entry
+// HP / shuffle / deck constants stay where they are below; this table is the
+// shape consumed by the `--manifest` sidecar emission per Q2-ADR-005.
+struct EncounterSeedEntry {
+    std::string_view encounter_id;
+    std::uint64_t seed;
+};
+
+constexpr std::array<EncounterSeedEntry, 2> kEncounterSeeds = {{
+    {"CULTISTS_NORMAL", 0x42ULL},
+    {"CULTISTS_NORMAL", 0xC0FFEEULL},
+}};
 
 std::string card_id_name(sts2::game::CardId id) {
     return "sts2::game::CardId::" +
@@ -71,9 +93,68 @@ void emit_seed_or_record_failure(
     }
 }
 
+// Emit the Q2-ADR-005 AlgorithmManifest JSON sidecar to stderr. Shape:
+//   {
+//     "algorithm_sha": "...",
+//     "build_sha": "...",
+//     "version_tag": "...",
+//     "registry_sha": "<64-hex>",
+//     "encounters": [{"encounter_id": "...", "seeds": [..]}]
+//   }
+// Hand-rolled formatter — no external JSON dep. Encounter IDs in the table
+// are simple ASCII identifiers (CULTISTS_NORMAL etc.), so no escaping logic
+// is needed; if that ever changes the formatter must learn to escape.
+void emit_manifest_json(std::ostream& os) {
+    const auto manifest = sts2::oracle::adapter::current_manifest();
+    const std::string registry_sha =
+        sts2::oracle::registry::current_phase1_registry_sha256();
+
+    os << "{\n";
+    os << "  \"algorithm_sha\": \"" << manifest.algorithm_sha << "\",\n";
+    os << "  \"build_sha\": \"" << manifest.build_sha << "\",\n";
+    os << "  \"version_tag\": \"" << manifest.version_tag << "\",\n";
+    os << "  \"registry_sha\": \"" << registry_sha << "\",\n";
+    os << "  \"encounters\": [\n";
+
+    // Group consecutive same-encounter entries into a single "seeds" array.
+    // The constexpr table is already laid out per-encounter so a simple
+    // single-pass group works without sorting.
+    for (std::size_t i = 0; i < kEncounterSeeds.size();) {
+        const std::string_view enc = kEncounterSeeds[i].encounter_id;
+        os << "    {\"encounter_id\": \"" << enc << "\", \"seeds\": [";
+        std::size_t j = i;
+        bool first = true;
+        while (j < kEncounterSeeds.size() &&
+               kEncounterSeeds[j].encounter_id == enc) {
+            if (!first) { os << ", "; }
+            os << kEncounterSeeds[j].seed;
+            first = false;
+            ++j;
+        }
+        os << "]}";
+        if (j < kEncounterSeeds.size()) { os << ","; }
+        os << "\n";
+        i = j;
+    }
+
+    os << "  ]\n";
+    os << "}\n";
+}
+
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    bool emit_manifest = false;
+    for (int i = 1; i < argc; ++i) {
+        const std::string_view arg{argv[i]};
+        if (arg == "--manifest") {
+            emit_manifest = true;
+        } else {
+            std::cerr << "seed-pinner: unknown argument: " << arg << "\n";
+            return 2;
+        }
+    }
+
     constexpr std::uint64_t kRngTestSeed     = 0xDEADBEEFCAFEULL;
     constexpr std::uint64_t kCombatTestSeed  = 0xC0FFEEULL;
     constexpr std::uint64_t kCultistTestSeed = 0x42ULL;
@@ -264,6 +345,10 @@ int main() {
     report("kDampSeedHp51",      s_damp_51);
     report("kDampSeedHp52",      s_damp_52);
     report("kDampSeedHp53",      s_damp_53);
+
+    if (emit_manifest) {
+        emit_manifest_json(std::cerr);
+    }
 
     return 0;
 }
