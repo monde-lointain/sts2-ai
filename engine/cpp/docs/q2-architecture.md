@@ -218,3 +218,58 @@ registry (S2-T2 onwards) is the data-shape vehicle; the dual-path
 invariant scales 1:1 with each new pinned encounter that exists in
 both Q1's direct-init helpers and the Q2 adapter scope (currently
 CULTISTS_NORMAL only; Q2-ADR-002).
+
+## 10. Reproducibility / evidence-collection notes
+
+Q2's Python tooling is **evidence-collection-only** (status-report
+artifacts; cross-format validation; ad-hoc inspection). It is *not*
+production code. Phase-1A policy (lead-ratified 2026-05-12) is ad-hoc
+venv installs per-need; a tracked `requirements.txt` is deferred to
+Q10-boot when the Python consumer stack solidifies.
+
+Per project memory: every Python invocation goes through `.venv/bin/python`
+(never system `python3`).
+
+**pyarrow schema cross-check (S3 evidence):**
+
+```bash
+.venv/bin/pip install pyarrow   # one-time per fresh checkout
+.venv/bin/python - <<'PY'
+import pyarrow.parquet as pq
+t = pq.read_table('data/oracle/agreement/year=2025/month=05/day=12/model=phase1a-stub-model-sha.parquet')
+print('schema:'); print(t.schema)
+print('rows:', t.num_rows)
+for i in range(t.num_rows):
+    print(f'--- row {i} ---')
+    for c in t.schema: print(f'  {c.name}:', t[c.name][i].as_py())
+PY
+```
+
+Output reproduces the 15-column Q2-ADR-004 schema + 3 partition columns
+(year/month/day auto-detected from the path). When schema-freeze gtest
+(S4) lands, pyarrow becomes optional — the gtest enforces the same
+property at build time. Pyarrow stays useful for inspecting real
+production parquet captures during Phase-1A→Q10-boot operations.
+
+## 11. Build-modes lesson (S3-T10 pinned)
+
+S3-T0 wave-gate recipe used `$(MAKE) BUILD_TYPE=Release build` to force
+Release. It silently failed when `$(BUILD_DIR)/CMakeCache.txt` already
+existed with `CMAKE_BUILD_TYPE=Debug` — the child make passed
+`BUILD_TYPE=Release` in its env, but cmake's *existing cache* won the
+configure step. Wave gate then built Debug binaries and tried to invoke
+`$(BUILD_DIR)/Release/sts2_*_tests`, which either did not exist or were
+stale. S3-T10 fixed via dedicated `$(CI_SLOW_BUILD_DIR) := build-ci-slow`
++ direct `cmake -B build-ci-slow -S . -DCMAKE_BUILD_TYPE=Release`
+invocation. Self-contained; one-time configure cost per fresh checkout.
+
+**Rule for future Makefile build-flavor targets** (sanitize-, ci-,
+verify-server-debug, etc.):
+
+- Each distinct flavor uses its own build dir.
+- Configure via direct `cmake -B <dir> -S . -D<flavor flags>`, *not*
+  `$(MAKE) BUILD_TYPE=X build`.
+- Add the build dir to `distclean` so `make distclean` is exhaustive.
+
+Recursive-make plus cmake-cache is a known foot-gun. Dedicated dir +
+direct cmake invocation closes the trap.
