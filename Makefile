@@ -123,7 +123,7 @@ clean:
 	@if [ -d $(BUILD_DIR) ]; then cmake --build $(BUILD_DIR) --target clean; fi
 
 distclean:
-	@rm -rf $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR) $(CI_SLOW_BUILD_DIR) build-on
 
 reconfig:
 	@rm -rf $(BUILD_DIR)
