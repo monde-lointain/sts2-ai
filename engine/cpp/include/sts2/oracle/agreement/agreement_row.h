@@ -38,10 +38,11 @@ struct AgreementRow {
   double model_value_rounds = std::numeric_limits<double>::quiet_NaN();
 
   // Manifest stamping tuple (Q2-ADR-005).
-  std::string model_version;         // Q5 artifact sha (also the Parquet partition tag).
-  std::string algorithm_sha;         // Q2 algorithm manifest sha.
-  std::string registry_sha;          // Q4 token-registry sha echoed from input blob.
-  std::string simulator_build_sha;   // Q1 build sha echoed from input blob.
+  std::string
+      model_version;  // Q5 artifact sha (also the Parquet partition tag).
+  std::string algorithm_sha;  // Q2 algorithm manifest sha.
+  std::string registry_sha;   // Q4 token-registry sha echoed from input blob.
+  std::string simulator_build_sha;  // Q1 build sha echoed from input blob.
 
   // True iff the oracle fully expanded the state (no budget cap hit).
   bool expansion_complete = false;

@@ -77,3 +77,12 @@ add_subdirectory(oracle/adapter)
 # sts2::oracle_registry — Q2 per-encounter pin registry (Q2-ADR-005)
 # ------------------------------------------------------------------
 add_subdirectory(oracle/registry)
+
+# ------------------------------------------------------------------
+# sts2::oracle_agreement — Q2 oracle-agreement Parquet sink (Q2-ADR-004)
+# ------------------------------------------------------------------
+# Gated: pulls Apache Arrow + Parquet. OFF by default; existing adapter /
+# registry / search 474-test battery does not depend on Arrow.
+if(STS2_BUILD_ORACLE_SINK)
+    add_subdirectory(oracle/agreement)
+endif()
