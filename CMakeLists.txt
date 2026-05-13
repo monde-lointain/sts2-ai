@@ -36,6 +36,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIG>")
 
 option(STS2_BUILD_TESTS "Build the unit test executable" ON)
 option(STS2_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
+option(STS2_BUILD_ORACLE_SINK
+    "Build the Q2 oracle-agreement Parquet sink (Q2-ADR-004; pulls Apache Arrow + Parquet)"
+    OFF)
 option(ENABLE_SANITIZERS "Enable AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 
 # CMake helper modules.
@@ -61,6 +64,17 @@ endif()
 if(STS2_BUILD_TESTS)
     include(cmake/Dependencies.cmake)
     enable_testing()
+endif()
+
+# Q2-ADR-004: oracle-agreement sink lives under sts2::oracle_agreement and pulls
+# Apache Arrow + Parquet. Off by default — adapter / search / existing 424 tests
+# do not depend on Arrow. Gate kept in the root so engine/cpp consumers see
+# `Arrow::arrow_shared` / `Parquet::parquet_shared` imported targets at the
+# point of use.
+if(STS2_BUILD_ORACLE_SINK)
+    find_package(Arrow REQUIRED)
+    find_package(Parquet REQUIRED)
+    message(STATUS "Q2 oracle-agreement sink ON — Arrow ${Arrow_VERSION}, Parquet ${Parquet_VERSION}")
 endif()
 
 add_subdirectory(engine/cpp)
