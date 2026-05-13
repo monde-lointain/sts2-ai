@@ -86,3 +86,11 @@ add_subdirectory(oracle/registry)
 if(STS2_BUILD_ORACLE_SINK)
     add_subdirectory(oracle/agreement)
 endif()
+
+# ------------------------------------------------------------------
+# sts2::oracle_verify_server — Q2 verify-server library (Q2-ADR-003)
+# ------------------------------------------------------------------
+# JSON-over-Unix-socket cold-path verify RPC for Q12 (forward-laid). The
+# socket-bind concern lives in tools/oracle-verify-server/. Unconditional —
+# library does not pull Arrow, only sts2::oracle_adapter + sts2::ai.
+add_subdirectory(oracle/verify_server)
