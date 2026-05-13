@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"

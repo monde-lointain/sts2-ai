@@ -23,13 +23,14 @@ namespace sts2::oracle::registry {
 struct PinnedScenarioRow {
   std::string encounter_id;
   std::uint64_t seed = 0;
-  std::string algorithm_sha;    // sts2::oracle::adapter::current_manifest().algorithm_sha
-  std::string registry_sha;     // current_phase1_registry_sha256()
+  std::string
+      algorithm_sha;  // sts2::oracle::adapter::current_manifest().algorithm_sha
+  std::string registry_sha;  // current_phase1_registry_sha256()
   // Pin payload — matches the AdapterRoundtrip pinned triple shape.
   sts2::ai::transition::ActionKind action_kind =
       sts2::ai::transition::ActionKind::kEndTurn;
   sts2::game::CardId action_card_id = sts2::game::CardId::kNone;
-  int action_target_idx = -1;   // EnemySlot underlying value; -1 = none.
+  int action_target_idx = -1;  // EnemySlot underlying value; -1 = none.
   double expected_hp = 0.0;
   double expected_rounds = 0.0;
 

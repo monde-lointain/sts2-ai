@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-
 #include "sts2/ai/state.h"
 #include "sts2/oracle/adapter/adapter.h"
 #include "tests/oracle/adapter_fixtures.h"

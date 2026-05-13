@@ -91,13 +91,15 @@ constexpr std::uint32_t rotr(std::uint32_t x, unsigned n) {
 
 std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
   std::uint32_t st[8];
-  for (unsigned i = 0; i < 8; ++i) { st[i] = kH0[i];
-}
+  for (unsigned i = 0; i < 8; ++i) {
+    st[i] = kH0[i];
+  }
   const std::uint64_t total_bits = static_cast<std::uint64_t>(data.size()) * 8U;
   auto compress = [&](const std::uint8_t* block) {
     std::uint32_t w[64];
     for (unsigned i = 0; i < 16; ++i) {
-      w[i] = (static_cast<std::uint32_t>(block[static_cast<size_t>(4U * i)]) << 24) |
+      w[i] = (static_cast<std::uint32_t>(block[static_cast<size_t>(4U * i)])
+              << 24) |
              (static_cast<std::uint32_t>(block[(4U * i) + 1]) << 16) |
              (static_cast<std::uint32_t>(block[(4U * i) + 2]) << 8) |
              (static_cast<std::uint32_t>(block[(4U * i) + 3]));
@@ -149,8 +151,9 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
   }
   std::uint8_t tail[128] = {};
   const std::size_t rem = data.size() - pos;
-  for (std::size_t i = 0; i < rem; ++i) { tail[i] = data[pos + i];
-}
+  for (std::size_t i = 0; i < rem; ++i) {
+    tail[i] = data[pos + i];
+  }
   tail[rem] = 0x80U;
   const std::size_t tail_blocks = (rem + 9U > 64U) ? 2U : 1U;
   const std::size_t total_tail_bytes = tail_blocks * 64U;
@@ -158,8 +161,9 @@ std::array<std::uint8_t, 32> sha256(std::span<const std::uint8_t> data) {
     tail[total_tail_bytes - 1U - i] =
         static_cast<std::uint8_t>((total_bits >> (8U * i)) & 0xFFU);
   }
-  for (std::size_t b = 0; b < tail_blocks; ++b) { compress(tail + (64U * b));
-}
+  for (std::size_t b = 0; b < tail_blocks; ++b) {
+    compress(tail + (64U * b));
+  }
   std::array<std::uint8_t, 32> out{};
   for (unsigned i = 0; i < 8; ++i) {
     out[(4U * i) + 0] = static_cast<std::uint8_t>((st[i] >> 24) & 0xFFU);

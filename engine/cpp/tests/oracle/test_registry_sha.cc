@@ -29,8 +29,7 @@ class ScopedTempFile {
     path_ = std::filesystem::temp_directory_path() /
             (std::string("sts2_registry_sha_") + std::string(tag) + ".tmp");
     std::ofstream out(path_, std::ios::binary | std::ios::trunc);
-    out.write(content.data(),
-              static_cast<std::streamsize>(content.size()));
+    out.write(content.data(), static_cast<std::streamsize>(content.size()));
   }
   ~ScopedTempFile() {
     std::error_code ec;
@@ -81,8 +80,7 @@ TEST(RegistrySha, CurrentPhase1RegistrySha_ShapeIsLowercaseHex64) {
   const std::string digest = current_phase1_registry_sha256();
   ASSERT_EQ(digest.size(), 64U);
   for (char c : digest) {
-    const bool is_hex_lower =
-        (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+    const bool is_hex_lower = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
     EXPECT_TRUE(is_hex_lower) << "non-lowercase-hex char: " << c;
   }
 }
