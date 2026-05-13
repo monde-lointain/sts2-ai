@@ -47,7 +47,10 @@ target_compile_definitions(sts2_oracle_tests PRIVATE
 # The compile_definition lets test_sink.cc #if-guard its TEST(...) blocks
 # defensively (belt + suspenders).
 if(STS2_BUILD_ORACLE_SINK)
-    target_sources(sts2_oracle_tests PRIVATE test_sink.cc)
+    target_sources(sts2_oracle_tests PRIVATE
+        test_sink.cc
+        test_agreement_schema_freeze.cc
+    )
     target_link_libraries(sts2_oracle_tests PRIVATE
         sts2::oracle_agreement
         Arrow::arrow_shared
