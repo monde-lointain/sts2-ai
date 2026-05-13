@@ -72,3 +72,8 @@ sts2_apply_warnings(sts2_fight)
 # sts2::oracle_adapter — Q2 engine->CompactState adapter (Q2-ADR-001)
 # ------------------------------------------------------------------
 add_subdirectory(oracle/adapter)
+
+# ------------------------------------------------------------------
+# sts2::oracle_registry — Q2 per-encounter pin registry (Q2-ADR-005)
+# ------------------------------------------------------------------
+add_subdirectory(oracle/registry)

@@ -15,6 +15,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_adapter_facade.cc
     test_adapter_roundtrip.cc
     test_adapter_reject.cc
+    test_registry_sha.cc
     adapter_fixtures.h
 )
 
@@ -22,10 +23,17 @@ target_compile_features(sts2_oracle_tests PRIVATE cxx_std_20)
 
 target_link_libraries(sts2_oracle_tests PRIVATE
     sts2::oracle_adapter
+    sts2::oracle_registry
     sts2::simulator
     sts2::ai
     GTest::gtest_main
     GTest::gmock
+)
+
+# S2-T1: STS2_CONTRACTS_ROOT lets test cases call current_phase1_registry_sha256()
+# and cross-check via direct compute_registry_sha256(path).
+target_compile_definitions(sts2_oracle_tests PRIVATE
+    STS2_CONTRACTS_ROOT="${PROJECT_SOURCE_DIR}/contracts"
 )
 
 # Mirror the simulator_tests include shape so headers under
