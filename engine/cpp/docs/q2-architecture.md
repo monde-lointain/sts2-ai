@@ -177,3 +177,44 @@ Decisions in this brief reference:
   (project-level risks).
 - Module spec: `docs/specs/modules/oracle.md` (responsibilities, data
   ownership, communication, coupling, open risks).
+
+## 9. Cross-quantum compositional invariant (R6 dual-path)
+
+S2 surfaced an emergent compositional invariant: the CULTISTS_NORMAL combat
+at seed `0xC0FFEE` resolves to **bit-identical** expectimax values via two
+independent code paths.
+
+| Path | Where pinned | Code-path summary |
+|---|---|---|
+| Q1 direct | `engine/cpp/tests/test_search.cc :: Search.DISABLED_StarterCombatSolves_LogsDiagnostics` | hardcoded `from_combat()` init → expectimax → pinned `(expected_hp, expected_rounds)` |
+| Q2 adapter | `engine/cpp/tests/oracle/test_cultists_search_pins.cc :: CultistsSearchPins.DISABLED_StarterCombatSeedC0ffee_PinnedAgreement` | D3 fixture `01-cultists-normal-seed42` bytes → `adapter::from_blob_payload` → `CompactState` → expectimax → same pinned `(expected_hp, expected_rounds)` |
+
+Pinned values, 2026-05-12 (Linux x86_64 GCC + libstdc++):
+`expected_hp = 40.90829202578665`, `expected_rounds = 6.4579809748486445`.
+
+**Why this matters.** This is exactly the localization chain R6 (probe
+localization) was meant to provide. The two paths share only the
+expectimax + transition + state implementation; they differ on **how
+they reach the initial `CompactState`**. If these ever drift in the
+same toolchain:
+
+- Same expected_hp + rounds in both → no regression in the shared
+  algorithm core. Drift is upstream of the pin (registry version,
+  encounter content).
+- Q1-path drift but Q2-path stable → regression in `from_combat()` or
+  related cultist-init Q1 helpers.
+- Q2-path drift but Q1-path stable → regression in the Q2 adapter (M1
+  decoder, envelope parser, or `cultists_projection`).
+- Both paths drift identically → regression in expectimax / transition /
+  state / scoring (i.e., `algorithm_sha` change per Q2-ADR-005).
+
+Both pins fire from the `make ci-slow` Release wave gate. Q2 surfaces
+diagnostic-class divergence as a top-line concern in its next status to
+the project lead — divergence is never silent.
+
+**Forward-laid:** as Q1 Phase-1.5 adds the BowlbugsTrio encounter, the
+parallel invariant extends per-encounter. The Q2 per-encounter pin
+registry (S2-T2 onwards) is the data-shape vehicle; the dual-path
+invariant scales 1:1 with each new pinned encounter that exists in
+both Q1's direct-init helpers and the Q2 adapter scope (currently
+CULTISTS_NORMAL only; Q2-ADR-002).
