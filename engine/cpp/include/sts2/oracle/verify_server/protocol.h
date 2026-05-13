@@ -19,12 +19,12 @@ inline constexpr std::string_view kProtocolVersion = "1";
 
 // Reject reasons. Vocabulary fixed by Q2-ADR-003 §Phase-1A.
 enum class RejectReason : std::uint8_t {
-  kEncounterNotInCppEngine,   // AdapterReject (Q2-ADR-002).
-  kBudgetExceeded,            // Reserved for Q12; never emitted in Phase-1A.
-  kMalformedBlob,             // parse_envelope / read_state_blob threw.
-  kMalformedRequest,          // JSON parse failure / missing fields.
-  kProtocolVersionMismatch,   // request.protocol_version != "1".
-  kUnknownPowerDiagnostic,    // Reserved (forward-laid).
+  kEncounterNotInCppEngine,  // AdapterReject (Q2-ADR-002).
+  kBudgetExceeded,           // Reserved for Q12; never emitted in Phase-1A.
+  kMalformedBlob,            // parse_envelope / read_state_blob threw.
+  kMalformedRequest,         // JSON parse failure / missing fields.
+  kProtocolVersionMismatch,  // request.protocol_version != "1".
+  kUnknownPowerDiagnostic,   // Reserved (forward-laid).
 };
 
 [[nodiscard]] std::string_view reject_reason_to_wire(RejectReason r) noexcept;
@@ -43,10 +43,11 @@ struct VerifyRequest {
 
 // Action payload mirroring sts2::ai::transition::Action for the wire.
 //   kind ∈ {"play_card", "end_turn"}
-//   card_id is the canonical game::CardId .name from card_effects (e.g. "Strike")
+//   card_id is the canonical game::CardId .name from card_effects (e.g.
+//   "Strike")
 struct ActionPayload {
-  std::string kind;           // "play_card" or "end_turn"
-  std::string card_id;        // populated for "play_card" only
+  std::string kind;             // "play_card" or "end_turn"
+  std::string card_id;          // populated for "play_card" only
   std::int32_t target_idx = 0;  // populated for "play_card" only
 };
 

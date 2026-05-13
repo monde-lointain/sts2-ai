@@ -17,6 +17,11 @@
 // request per connection). This mirrors the simplest cold-path protocol
 // the gtests don't need to exercise — they call handle_request directly.
 
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <unistd.h>
+
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
@@ -26,10 +31,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
 
 #include "sts2/oracle/verify_server/server.h"
 
@@ -53,7 +54,7 @@ extern "C" void on_signal(int /*sig*/) {
 }
 
 void install_signal_handlers() {
-  struct sigaction sa{};
+  struct sigaction sa {};
   sa.sa_handler = on_signal;
   ::sigemptyset(&sa.sa_mask);
   sa.sa_flags = 0;  // No SA_RESTART — accept() should fail with EINTR.
@@ -65,7 +66,7 @@ void install_signal_handlers() {
   }
   // Ignore SIGPIPE — a client that hangs up before we finish writing would
   // otherwise tear down the entire daemon.
-  struct sigaction sp{};
+  struct sigaction sp {};
   sp.sa_handler = SIG_IGN;
   ::sigemptyset(&sp.sa_mask);
   if (::sigaction(SIGPIPE, &sp, nullptr) != 0) {

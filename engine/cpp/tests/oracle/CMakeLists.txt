@@ -19,7 +19,9 @@ target_sources(sts2_oracle_tests PRIVATE
     test_pin_row.cc
     test_cultists_search_pins.cc
     test_agreement_row.cc
+    test_verify_server.cc
     adapter_fixtures.h
+    envelope_test_helpers.h
 )
 
 target_compile_features(sts2_oracle_tests PRIVATE cxx_std_20)
@@ -27,6 +29,7 @@ target_compile_features(sts2_oracle_tests PRIVATE cxx_std_20)
 target_link_libraries(sts2_oracle_tests PRIVATE
     sts2::oracle_adapter
     sts2::oracle_registry
+    sts2::oracle_verify_server
     sts2::simulator
     sts2::ai
     GTest::gtest_main

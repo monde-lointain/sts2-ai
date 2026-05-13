@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include "oracle/verify_server/json_internal.h"
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
@@ -18,8 +19,6 @@
 #include "sts2/oracle/adapter/envelope.h"
 #include "sts2/oracle/adapter/manifest.h"
 #include "sts2/oracle/verify_server/protocol.h"
-
-#include "oracle/verify_server/json_internal.h"
 
 namespace sts2::oracle::verify_server {
 
@@ -172,7 +171,8 @@ std::string handle_request(std::string_view request_json) {
         raw_envelope_bytes.size());
     env = parse_envelope(bytes);
   } catch (const std::exception& e) {
-    return reject(RejectReason::kMalformedBlob, build_what_diagnostic(e.what()));
+    return reject(RejectReason::kMalformedBlob,
+                  build_what_diagnostic(e.what()));
   }
 
   // -------------------------------------------------------------------------
@@ -183,7 +183,8 @@ std::string handle_request(std::string_view request_json) {
     adapter_result = from_blob_payload(
         std::span<const std::uint8_t>(env.payload.data(), env.payload.size()));
   } catch (const std::exception& e) {
-    return reject(RejectReason::kMalformedBlob, build_what_diagnostic(e.what()));
+    return reject(RejectReason::kMalformedBlob,
+                  build_what_diagnostic(e.what()));
   }
 
   if (adapter_result.index() == 1U) {
@@ -204,7 +205,8 @@ std::string handle_request(std::string_view request_json) {
   } catch (const std::exception& e) {
     // Search throwing is a real bug, not a wire-shape issue. Surface as a
     // malformed_blob diagnostic so the client sees the exception text.
-    return reject(RejectReason::kMalformedBlob, build_what_diagnostic(e.what()));
+    return reject(RejectReason::kMalformedBlob,
+                  build_what_diagnostic(e.what()));
   }
 
   // -------------------------------------------------------------------------
