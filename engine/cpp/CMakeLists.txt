@@ -16,6 +16,12 @@ endif()
 # (the tool produces real Parquet under data/oracle/agreement/ regardless of
 # whether tests are built). Gated on STS2_BUILD_ORACLE_SINK because it links
 # sts2::oracle_agreement → Arrow + Parquet.
+#
+# S4-T7: oracle-golden-emit — schema-freeze golden parquet emitter (one-shot).
+# Same STS2_BUILD_ORACLE_SINK gate; produces the artifact at
+# tests/oracle/golden/<partition>/<file>.parquet read by
+# test_agreement_schema_freeze.cc.
 if(STS2_BUILD_ORACLE_SINK)
     add_subdirectory(tools/emit-sample-rows)
+    add_subdirectory(tools/oracle-golden-emit)
 endif()
