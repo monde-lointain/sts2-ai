@@ -39,6 +39,20 @@ target_compile_definitions(sts2_oracle_tests PRIVATE
     STS2_CONTRACTS_ROOT="${PROJECT_SOURCE_DIR}/contracts"
 )
 
+# S3-T5 (Stream C): Parquet sink round-trip tests. Gated under
+# STS2_BUILD_ORACLE_SINK because sts2::oracle_agreement pulls Arrow + Parquet.
+# The compile_definition lets test_sink.cc #if-guard its TEST(...) blocks
+# defensively (belt + suspenders).
+if(STS2_BUILD_ORACLE_SINK)
+    target_sources(sts2_oracle_tests PRIVATE test_sink.cc)
+    target_link_libraries(sts2_oracle_tests PRIVATE
+        sts2::oracle_agreement
+        Arrow::arrow_shared
+        Parquet::parquet_shared
+    )
+    target_compile_definitions(sts2_oracle_tests PRIVATE STS2_BUILD_ORACLE_SINK)
+endif()
+
 # Mirror the simulator_tests include shape so headers under
 # engine/cpp/include/ resolve normally.
 target_include_directories(sts2_oracle_tests PRIVATE
