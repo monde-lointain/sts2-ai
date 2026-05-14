@@ -1,4 +1,4 @@
-.PHONY: help build test ci-slow run clean distclean reconfig q1-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
+.PHONY: help build test ci-slow run clean distclean reconfig q1-ci q3-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
 .PHONY: format format-patch
 .PHONY: cppcheck cppcheck-xml scan-build tidy
 .PHONY: complexity complexity-full complexity-xml
@@ -49,6 +49,7 @@ help:
 	@echo "  distclean         Remove build directory"
 	@echo "  reconfig          Reconfigure CMake build"
 	@echo "  q1-ci             Run sim-headless CI"
+	@echo "  q3-ci             Run Q3 experience-store pytest suite"
 	@echo "  schema-codegen    Generate schema bindings"
 	@echo "  schema-test       Run schema compatibility tests"
 	@echo "  services-smoke    Run service skeleton smoke tests"
@@ -132,6 +133,9 @@ reconfig:
 q1-ci:
 	@$(MAKE) -C engine/headless ci
 
+q3-ci:
+	@.venv/bin/pytest pipeline/experience-store/ -q
+
 schema-codegen:
 	@.venv/bin/python tools/schema/generate_bindings.py
 
@@ -147,7 +151,7 @@ content-registry:
 content-test: content-registry
 	@.venv/bin/python -m unittest tools.tests.content.test_registry
 
-phase0-gate: test q1-ci schema-test services-smoke content-test
+phase0-gate: test q1-ci schema-test services-smoke content-test q3-ci
 
 # Formatting targets
 format: $(BUILD_DIR)/Makefile
