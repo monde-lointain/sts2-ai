@@ -1,5 +1,12 @@
 {
   "service": "experience-store",
   "port": 18103,
-  "data_dir": "data/experience-store"
+  "data_dir": "data/experience-store",
+  "hot_high_water_bytes": 53687091200,
+  "hot_overflow_bytes": 107374182400,
+  "ingest_queue_capacity": 4096,
+  "max_body_bytes": 67108864,
+  "tick_interval_seconds": 60,
+  "cursor_cache_capacity": 1024,
+  "cursor_idle_timeout_seconds": 300
 }
