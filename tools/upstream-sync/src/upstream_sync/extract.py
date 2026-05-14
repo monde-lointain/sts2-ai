@@ -33,8 +33,14 @@ logger = logging.getLogger(__name__)
 
 # Top-level rsync include patterns; mirrors the negated entries in the
 # .gitignore allowlist (see git_ops.ALLOWLIST_GITIGNORE).
+#
+# IMPORTANT: do NOT include `/.gitignore` here. The .gitignore in the upstream
+# tree is a tooling artifact written by git_ops.bootstrap(); it does NOT exist
+# in the GDRE staging dir. If we listed it in includes, `rsync --delete` would
+# treat the target's .gitignore as an "extra" file outside the source and
+# delete it — and then `git add -A` would slurp every untracked file in the
+# working tree because no ignore rules remain.
 ALLOWLIST_RSYNC_INCLUDES: list[str] = [
-    "/.gitignore",
     "/src/",
     "/src/***",
     "/scenes/",
@@ -215,6 +221,9 @@ def rsync_with_delete(
     runner = _subprocess_run if _subprocess_run is not None else subprocess.run
 
     cmd: list[str] = ["rsync", "-a", "--delete"]
+    # Protect the tooling-owned .gitignore in the target before any include
+    # rules consider it — rsync evaluates filters top-down, first-match wins.
+    cmd.append("--exclude=/.gitignore")
     for pattern in ALLOWLIST_RSYNC_INCLUDES:
         cmd.append(f"--include={pattern}")
     cmd.append("--exclude=*")

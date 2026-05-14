@@ -43,12 +43,16 @@ def _make_subprocess_result(returncode: int = 0, stdout: str = "", stderr: str =
 
 class TestSurveilAllowlist:
     def test_all_allowed_paths_returns_empty(self, tmp_path: Path) -> None:
-        """Staging with only allowed top-level paths produces no unmatched."""
+        """Staging with only allowed top-level paths produces no unmatched.
+
+        Note: .gitignore is NOT in the allowlist (GDRE never emits one; the
+        upstream tree's .gitignore is a tooling artifact preserved by rsync's
+        explicit --exclude=/.gitignore filter, not the include allowlist).
+        """
         _make_file(tmp_path / "src" / "foo.cs")
         _make_file(tmp_path / "scenes" / "main.tscn")
         _make_file(tmp_path / "project.godot")
         _make_file(tmp_path / "global.json")
-        _make_file(tmp_path / ".gitignore")
 
         assert extract.surveil_allowlist(tmp_path) == []
 
