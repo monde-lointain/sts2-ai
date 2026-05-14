@@ -15,6 +15,8 @@ import json
 import os
 import pathlib
 
+from schema_registry.versions import SchemaVersion
+
 PROVENANCE_FILE = "provenance.ndjson"
 
 
@@ -51,39 +53,27 @@ class ProvenanceLog:
         sampling_mode: str,
         generator: str,
         ingest_ts_ns: int,
-        schema_version: tuple[int, int],
+        schema_version: SchemaVersion | tuple[int, int],
     ) -> None:
-        """Append one provenance record; fsync before returning.
-
-        Signature matches spec lines 93-95. `schema_version` is a
-        `(major, minor)` tuple serialized as flat `schema_major` and
-        `schema_minor` fields per the spec NDJSON shape (lines 38-42).
-
-        Raises ValueError if any of model_version, sampling_mode, or
-        generator is empty (Q3-ADR-001 mandates non-droppable provenance;
-        an empty critical field would silently poison the audit log).
-        """
         if not model_version:
             raise ValueError("model_version must not be empty")
         if not sampling_mode:
             raise ValueError("sampling_mode must not be empty")
         if not generator:
             raise ValueError("generator must not be empty")
-
-        schema_major, schema_minor = schema_version
+        if isinstance(schema_version, tuple):
+            schema_version = SchemaVersion.from_tuple(schema_version)
         payload = {
             "trajectory_id": str(trajectory_id),
             "model_version": str(model_version),
             "sampling_mode": str(sampling_mode),
             "generator": str(generator),
             "ingest_ts_ns": int(ingest_ts_ns),
-            "schema_major": int(schema_major),
-            "schema_minor": int(schema_minor),
+            "schema_major": schema_version.major,
+            "schema_minor": schema_version.minor,
         }
         line = json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n"
         encoded = line.encode("utf-8")
-        # Open-append-fsync-close per write keeps the audit log durable
-        # under crash without holding an FD across calls.
         fd = os.open(self._path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o644)
         try:
             os.write(fd, encoded)
