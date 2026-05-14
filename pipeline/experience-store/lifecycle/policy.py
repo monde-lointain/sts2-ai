@@ -16,6 +16,8 @@ import json
 import pathlib
 from typing import Any
 
+from _atomic_io import atomic_write_json
+
 POLICY_DIR = "lifecycle"
 POLICY_FILE = "policy.json"
 
@@ -159,8 +161,4 @@ class LifecyclePolicy:
         return self.as_dict()
 
     def _persist(self) -> None:
-        tmp = self._path.with_suffix(".json.tmp")
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(self._policy, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-        tmp.replace(self._path)
+        atomic_write_json(self._path, self._policy)
