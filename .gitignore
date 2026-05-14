@@ -84,3 +84,7 @@ docs/test-plan/
 tools/upstream-sync/src/*.egg-info/
 tools/upstream-sync/.pytest_cache/
 tools/upstream-sync/**/__pycache__/
+
+# tools/upstream-sync runtime state
+.upstream-sync-state.json
+tools/upstream-sync/cache/
