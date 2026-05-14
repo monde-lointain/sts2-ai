@@ -622,6 +622,12 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as exc:
         print(f"upstream-sync: {exc}", file=sys.stderr)
         return 1
+    except FileNotFoundError as exc:
+        print(f"upstream-sync: {exc}", file=sys.stderr)
+        return 1
+    except ValueError as exc:
+        print(f"upstream-sync: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover
