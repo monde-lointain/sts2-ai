@@ -1,6 +1,10 @@
 # Module: Experience Store (Q3)
 
 > Append-only trajectory store. The async backbone of the training pipeline (ADR-006).
+>
+> **Internal architecture, ADRs, and per-submodule specs:** see
+> [`pipeline/experience-store/docs/specs/00-system-overview.md`](../../../pipeline/experience-store/docs/specs/00-system-overview.md)
+> (8 submodules, Q3-ADR-001..010). Cross-quantum mirrors: ADR-020, ADR-021 in `01-decisions-log.md`.
 
 ## Responsibilities
 

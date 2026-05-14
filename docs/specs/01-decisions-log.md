@@ -23,6 +23,8 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-017 | Counterfactuals Stay Observational | Accepted |
 | ADR-018 | Reward Valuation Stays Macro-Owned | Accepted |
 | ADR-019 | Macro Context Derivation Policy | Deferred |
+| ADR-020 | Oracle-Agreement Sideband Routes through Q3 | Accepted |
+| ADR-021 | Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention | Accepted |
 
 ---
 
@@ -397,3 +399,45 @@ Run-level search composes these outcomes with reward generation, reward-choice h
 - *Positive:* avoids premature lock-in on a derivation policy that may not survive empirical contact.
 
 **Origin.** Architecture note 2026-05-14 (surfaced as open question during cascade of ADR-014..018).
+
+---
+
+## ADR-020 — Oracle-Agreement Sideband Routes through Q3
+
+**Status:** Accepted (2026-05-14). Mirrors Q3-ADR-004 at `pipeline/experience-store/docs/specs/01-decisions-log.md`.
+
+**Context.** Per ADR-017 carve-out, oracle-agreement (Q2-vs-network labeled comparison) remains a training-eligible signal feeding Q10 prioritized sampling. Routing options identified during Q3 boot: (a) Q2 → Q3 SidebandRouter → PriorityIndex → served via Sampler prioritized mode; (b) Q2 → direct table consumed by Q10 out-of-band; (c) Q2 → Kafka-like stream, no Q3 storage.
+
+**Decision.** Route through Q3. Q2 emits to `POST /sideband/oracle-agreement` on Q3; Q3's SidebandRouter writes to `sideband/oracle.ndjson` and (Phase 2+) updates Q3's PriorityIndex. Trainer reads via Sampler `mode=prioritized` — one front door, one durability surface.
+
+**Consequences.**
+
+- *Negative:* Q3 becomes a hard dependency for oracle-agreement durability — Q3 outage queues at Q2 with a bounded buffer; long Q3 outage drops oracle-agreement signals. Mitigation: alerting on Q2-side queue depth, not architecture.
+- *Negative:* Q3 must ship SidebandRouter at Q3 boot even though Q2's emit path may lag — SidebandRouter ships as a no-op write-and-store stub Phase 1 until Q2 wires it.
+- *Negative:* couples oracle-agreement schema evolution to Q3 schema lifecycle; future oracle-agreement format changes require Q3 schema-migration coordination.
+- *Positive:* trainer has one read path for everything it samples (trajectories + oracle-agreement); no out-of-band table to track.
+- *Positive:* priority scores live next to the data they prioritize (same RocksDB DB file under different CF per Q3-ADR-010).
+- *Positive:* migration path simple — Phase 2 just wires SidebandRouter into PriorityIndex; no consumer-side change.
+
+**Origin.** Q3 boot directive cascade 2026-05-14. Q3-ADR-004 is the load-bearing version; this entry is the cross-quantum mirror.
+
+---
+
+## ADR-021 — Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention
+
+**Status:** Accepted (2026-05-14). Mirrors Q3-ADR-005 at `pipeline/experience-store/docs/specs/01-decisions-log.md`.
+
+**Context.** Per ADR-014 and `contracts/schemas/trajectory/trajectory.proto:35-37`, Phase-1 trajectories populate `combat_outcome_summary.expected_hp_delta` from the scalar HP-fraction prediction. The exact `combat_outcome_samples[]` populating convention was deferred to Q3 boot. Two viable options: (i) empty array, (ii) degenerate single sample with `probability_weight=1.0` and `hp_delta` mirroring the summary.
+
+**Decision.** Degenerate single sample. Phase-1 combat steps populate `combat_outcome_samples = [Sample(hp_delta=summary.expected_hp_delta, probability_weight=1.0, ...other_fields_zero)]`. Phase-2+ swaps to a real K-sample distribution as a population change — no schema bump required.
+
+**Consequences.**
+
+- *Negative:* downstream distributional analyses must filter degenerate rows (`len(samples)==1 AND probability_weight==1.0 AND sample.hp_delta==summary.expected_hp_delta`) to avoid biasing Phase-2+ variance estimates. Mitigation: filter recipe documented at `pipeline/experience-store/docs/specs/modules/sampler.md`.
+- *Negative:* Q10 trainer reader code must account for the convention from boot; readers expecting "non-empty samples = real distribution" need to update detection logic. Mirror entry surfaces this for the cross-quantum reader.
+- *Negative:* slightly larger Phase-1 rows than the empty-array option (one zero-padded `CombatOutcomeSample` per combat step).
+- *Positive:* one code path for samples iteration on the consumer side (no `if samples_empty` branches in Q10).
+- *Positive:* Phase-2 transition is a population change, not a schema bump — no migration event during the cascade.
+- *Positive:* preserves the invariant that combat steps always carry at least one sample (good for sample-quality dashboards per `docs/specs/modules/observability.md:40`).
+
+**Origin.** Q3 boot directive cascade 2026-05-14. Q3-ADR-005 is the load-bearing version; this entry is the cross-quantum mirror.
