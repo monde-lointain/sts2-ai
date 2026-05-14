@@ -85,10 +85,13 @@ class Lifecycle:
         self._policy = LifecyclePolicy(self._data_dir)
         self._audit = AuditLog(self._data_dir)
         self._cursor_path = self._lifecycle_dir / CURSOR_FILE
+
+        # Lock must precede `_load_or_init_cursor()` because that path may
+        # call `_write_cursor`, which now acquires `self._lock`.
+        self._lock = threading.Lock()
         self._cursor = self._load_or_init_cursor()
 
         # Metric backing state.
-        self._lock = threading.Lock()
         self._dropped_total: dict[str, int] = {
             "overflow": 0,
             "sustained_pressure": 0,
@@ -168,13 +171,10 @@ class Lifecycle:
                 "tick_ts_ns": tick_ts_ns,
             }
             self._tick_seconds_total += time.monotonic() - tick_started_monotonic
-
-        # Persist cursor (always advances last_tick_ts_ns; last_promoted_ts_ns
-        # only on actual drop).
-        new_cursor = dict(self._cursor)
-        new_cursor["last_tick_ts_ns"] = tick_ts_ns
-        if action == "drop" and until_ts_ns > 0:
-            new_cursor["last_promoted_ts_ns"] = until_ts_ns
+            new_cursor = dict(self._cursor)
+            new_cursor["last_tick_ts_ns"] = tick_ts_ns
+            if action == "drop" and until_ts_ns > 0:
+                new_cursor["last_promoted_ts_ns"] = until_ts_ns
         self._write_cursor(new_cursor)
 
         # Append audit record (one entry per tick that took action).
@@ -318,9 +318,10 @@ class Lifecycle:
         with self._lock:
             last_tick = dict(self._last_tick_action)
             dropped = sum(self._dropped_total.values())
+            cursor_snapshot = dict(self._cursor)
         body = {
             "policy": self._policy.as_dict(),
-            "cursor": dict(self._cursor),
+            "cursor": cursor_snapshot,
             "last_tick_action": last_tick,
             "hot_bytes": int(self._hot_store.range_size_bytes()),
             "cold_bytes": 0,  # Phase-1A: cold disabled.
@@ -490,7 +491,8 @@ class Lifecycle:
             json.dump(cursor, handle, sort_keys=True)
             handle.write("\n")
         tmp.replace(self._cursor_path)
-        self._cursor = dict(cursor)
+        with self._lock:
+            self._cursor = dict(cursor)
 
     # ------------------------------------------------------------------
     # Helpers
@@ -515,4 +517,5 @@ class Lifecycle:
 
     @property
     def cursor(self) -> dict[str, int]:
-        return dict(self._cursor)
+        with self._lock:
+            return dict(self._cursor)

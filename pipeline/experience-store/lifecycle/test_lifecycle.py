@@ -671,3 +671,27 @@ def test_constructor_rejects_zero_capacity(tmp_path):
             queue_capacity=0,
             data_dir=tmp_path,
         )
+
+
+import inspect
+from lifecycle.lifecycle import Lifecycle
+
+def test_handle_get_lifecycle_status_reads_cursor_under_lock():
+    src = inspect.getsource(Lifecycle.handle_get_lifecycle_status)
+    assert "with self._lock:" in src, "missing lock acquisition"
+    lock_idx = src.find("with self._lock:")
+    cursor_idx = src.find("self._cursor")
+    assert lock_idx >= 0 and cursor_idx > lock_idx, (
+        "_cursor must be read AFTER `with self._lock:` opens"
+    )
+
+def test_tick_writes_cursor_under_lock():
+    src = inspect.getsource(Lifecycle.tick)
+    cursor_read_idx = src.find("new_cursor = dict(self._cursor)")
+    assert cursor_read_idx > 0
+    block_starts = [i for i in range(cursor_read_idx) if src.startswith("with self._lock:", i)]
+    assert block_starts, "no `with self._lock:` precedes the cursor read in tick()"
+
+def test_cursor_property_takes_lock():
+    src = inspect.getsource(Lifecycle.cursor.fget)  # type: ignore[union-attr]
+    assert "with self._lock:" in src
