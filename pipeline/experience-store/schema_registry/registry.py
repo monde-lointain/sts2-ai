@@ -33,14 +33,11 @@ import threading
 from typing import Literal
 
 from .decision import Accept, Decision, Reject
+from .versions import PHASE1, SchemaVersion
 
 SCHEMA_DIR = "schema"
 REGISTRY_FILE = "registry.json"
 MIGRATION_LOG_FILE = "migration_log.ndjson"
-
-# Phase-1A wire version (LOCKED — contracts/schemas/trajectory/trajectory.proto:3-4).
-_PHASE1_MAJOR = 1
-_PHASE1_MINOR = 0
 
 DrainState = Literal["open", "draining", "locked"]
 
@@ -94,7 +91,9 @@ class SchemaRegistry:
         # `current_write_target` exists. Phase-2+ flip is responsible for
         # removing the prior sentinel; Phase-1A there's only one target so
         # we just touch.
-        sentinel = self._schema_dir / _sentinel_name(*self._current_write_target)
+        sentinel = self._schema_dir / _sentinel_name(
+            self._current_write_target.major, self._current_write_target.minor
+        )
         if not sentinel.exists():
             sentinel.touch()
 
@@ -104,25 +103,20 @@ class SchemaRegistry:
             self._migration_log_path.touch()
 
     def _init_fresh(self) -> None:
-        self._accepted: list[tuple[int, int]] = [(_PHASE1_MAJOR, _PHASE1_MINOR)]
-        self._current_write_target: tuple[int, int] = (_PHASE1_MAJOR, _PHASE1_MINOR)
+        self._accepted: list[SchemaVersion] = [PHASE1]
+        self._current_write_target: SchemaVersion = PHASE1
         self._drain_state: DrainState = "open"
-        self._drain_target: tuple[int, int] | None = None
+        self._drain_target: SchemaVersion | None = None
         self._persist()
 
     def _load(self) -> None:
         with self._registry_path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
-        self._accepted = [
-            (int(item["major"]), int(item["minor"])) for item in data["accepted"]
-        ]
-        cwt = data["current_write_target"]
-        self._current_write_target = (int(cwt["major"]), int(cwt["minor"]))
+        self._accepted = [SchemaVersion.from_fields(item) for item in data["accepted"]]
+        self._current_write_target = SchemaVersion.from_fields(data["current_write_target"])
         self._drain_state = data["drain_state"]
         dt = data.get("drain_target")
-        self._drain_target = (
-            (int(dt["major"]), int(dt["minor"])) if dt else None
-        )
+        self._drain_target = SchemaVersion.from_fields(dt) if dt else None
 
     def _persist(self) -> None:
         """Atomic write of registry.json via tempfile + os.replace.
@@ -132,18 +126,11 @@ class SchemaRegistry:
         consistent under crash.
         """
         payload = {
-            "accepted": [
-                {"major": maj, "minor": minr} for (maj, minr) in self._accepted
-            ],
-            "current_write_target": {
-                "major": self._current_write_target[0],
-                "minor": self._current_write_target[1],
-            },
+            "accepted": [v.as_fields() for v in self._accepted],
+            "current_write_target": self._current_write_target.as_fields(),
             "drain_state": self._drain_state,
             "drain_target": (
-                {"major": self._drain_target[0], "minor": self._drain_target[1]}
-                if self._drain_target is not None
-                else None
+                self._drain_target.as_fields() if self._drain_target is not None else None
             ),
         }
         # NamedTemporaryFile in the same dir so os.replace is atomic on
@@ -184,7 +171,7 @@ class SchemaRegistry:
         """
         if op not in ("read", "write"):
             raise ValueError(f"op must be 'read' or 'write'; got {op!r}")
-        ver = (int(version[0]), int(version[1]))
+        ver = SchemaVersion.from_tuple((int(version[0]), int(version[1])))
 
         with self._lock:
             accepted_snapshot = list(self._accepted)
@@ -198,7 +185,7 @@ class SchemaRegistry:
                 return Reject(
                     reason="schema_unknown",
                     http_status=400,
-                    accepted=accepted_snapshot,
+                    accepted=[v.as_tuple() for v in accepted_snapshot],
                 )
 
             if op == "write" and drain_state == "draining" and ver != drain_target:
@@ -226,15 +213,15 @@ class SchemaRegistry:
         """Major of current write target; ControlPlane.ObservabilityAdapter
         reads this to override the stock `/health` `"schema": 0`."""
         with self._lock:
-            return int(self._current_write_target[0])
+            return self._current_write_target.major
 
     def current_write_target(self) -> tuple[int, int]:
         with self._lock:
-            return tuple(self._current_write_target)  # type: ignore[return-value]
+            return self._current_write_target.as_tuple()
 
     def accepted(self) -> list[tuple[int, int]]:
         with self._lock:
-            return list(self._accepted)
+            return [v.as_tuple() for v in self._accepted]
 
     def drain_state(self) -> DrainState:
         with self._lock:
@@ -244,19 +231,11 @@ class SchemaRegistry:
         """registry.json content as a dict for GET /schema (W3 handler)."""
         with self._lock:
             return {
-                "accepted": [
-                    {"major": maj, "minor": minr} for (maj, minr) in self._accepted
-                ],
-                "current_write_target": {
-                    "major": self._current_write_target[0],
-                    "minor": self._current_write_target[1],
-                },
+                "accepted": [v.as_fields() for v in self._accepted],
+                "current_write_target": self._current_write_target.as_fields(),
                 "drain_state": self._drain_state,
                 "drain_target": (
-                    {
-                        "major": self._drain_target[0],
-                        "minor": self._drain_target[1],
-                    }
+                    self._drain_target.as_fields()
                     if self._drain_target is not None
                     else None
                 ),
@@ -280,7 +259,7 @@ class SchemaRegistry:
         with self._lock:
             current_state = self._drain_state
             counts = dict(self._validate_counts)
-            (cwt_major, cwt_minor) = self._current_write_target
+            cwt = self._current_write_target
 
         lines: list[bytes] = []
         for state in ("open", "draining", "locked"):
@@ -299,7 +278,7 @@ class SchemaRegistry:
                 .encode("utf-8")
             )
 
-        baseline = f"{cwt_major}.{cwt_minor}"
+        baseline = str(cwt)
         lines.append(
             f'sts2_q3_schema_migration_total{{from="{baseline}",to="{baseline}",'
             f'service="{service}"}} 0'
