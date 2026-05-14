@@ -26,11 +26,12 @@ Cross-submodule consumers (W3+):
 from __future__ import annotations
 
 import json
-import os
 import pathlib
-import tempfile
 import threading
 from typing import Literal
+
+from _atomic_io import atomic_write_json
+from _metrics import PrometheusLineBuilder
 
 from .decision import Accept, Decision, Reject
 from .versions import PHASE1, SchemaVersion
@@ -119,7 +120,7 @@ class SchemaRegistry:
         self._drain_target = SchemaVersion.from_fields(dt) if dt else None
 
     def _persist(self) -> None:
-        """Atomic write of registry.json via tempfile + os.replace.
+        """Atomic write of registry.json via `atomic_write_json` helper.
 
         Phase-1A never calls this after _init_fresh; the path exists for
         Phase-2+ drain/flip transitions to keep the on-disk state
@@ -133,30 +134,8 @@ class SchemaRegistry:
                 self._drain_target.as_fields() if self._drain_target is not None else None
             ),
         }
-        # NamedTemporaryFile in the same dir so os.replace is atomic on
-        # POSIX (cross-device rename would fall back to copy).
         self._schema_dir.mkdir(parents=True, exist_ok=True)
-        tmp = tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=str(self._schema_dir),
-            prefix=".registry.",
-            suffix=".tmp",
-            delete=False,
-        )
-        try:
-            json.dump(payload, tmp, indent=2, sort_keys=True)
-            tmp.write("\n")
-            tmp.flush()
-            os.fsync(tmp.fileno())
-            tmp.close()
-            os.replace(tmp.name, self._registry_path)
-        except BaseException:
-            try:
-                os.unlink(tmp.name)
-            except FileNotFoundError:
-                pass
-            raise
+        atomic_write_json(self._registry_path, payload)
 
     # ---------- public API per spec ----------
 
@@ -255,36 +234,35 @@ class SchemaRegistry:
           baseline line for the no-op (1.0)->(1.0) so the metric is
           discoverable in Phase-1A.
         """
-        service = str(service_name)
         with self._lock:
             current_state = self._drain_state
             counts = dict(self._validate_counts)
             cwt = self._current_write_target
 
-        lines: list[bytes] = []
+        builder = PrometheusLineBuilder(str(service_name))
         for state in ("open", "draining", "locked"):
-            value = 1 if state == current_state else 0
-            lines.append(
-                f'sts2_q3_schema_state{{state="{state}",service="{service}"}} {value}'
-                .encode("utf-8")
+            builder.gauge(
+                "sts2_q3_schema_state",
+                {"state": state},
+                1 if state == current_state else 0,
             )
 
         # Counter lines are emitted in a stable sort order (op asc, result
         # asc) so test assertions and scrape diffs are deterministic.
         for (op, result), count in sorted(counts.items()):
-            lines.append(
-                f'sts2_q3_schema_validate_total{{op="{op}",result="{result}",'
-                f'service="{service}"}} {count}'
-                .encode("utf-8")
+            builder.counter(
+                "sts2_q3_schema_validate_total",
+                {"op": op, "result": result},
+                count,
             )
 
         baseline = str(cwt)
-        lines.append(
-            f'sts2_q3_schema_migration_total{{from="{baseline}",to="{baseline}",'
-            f'service="{service}"}} 0'
-            .encode("utf-8")
+        builder.counter(
+            "sts2_q3_schema_migration_total",
+            {"from": baseline, "to": baseline},
+            0,
         )
-        return lines
+        return builder.lines()
 
     # ---------- operator API (Phase-1 close) ----------
 
