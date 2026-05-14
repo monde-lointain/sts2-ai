@@ -1,0 +1,49 @@
+{
+  "appnews": {
+    "appid": 2868840,
+    "newsitems": [
+      {
+        "gid": "1832065502816737",
+        "title": "Beta Hotfix Notes - v0.105.1",
+        "url": "https://example.steam/news/1832065502816737",
+        "is_external_url": true,
+        "author": "demileaf",
+        "contents": "Quick hotfix today addressing several bugs.\n\n[h3]USER INTERFACE & EXPERIENCE:[/h3]\n- Updated the [b]Aeonglass[/b] boss icon\n\n[h3]BUG FIXES:[/h3]\n[b]Enemies:[/b]\n- Fixed [b]Aeonglass[/b] first move intent showing a buff instead of a debuff",
+        "feedlabel": "Community Announcements",
+        "date": 1778296466,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 2868840,
+        "tags": ["patchnotes"]
+      },
+      {
+        "gid": "1832065502818411",
+        "title": "Rejoice, Doormaker haters: Mega Crit removed him",
+        "url": "https://example.rps/news/1832065502818411",
+        "is_external_url": true,
+        "author": "",
+        "contents": "External article body.",
+        "feedlabel": "Rock, Paper, Shotgun",
+        "date": 1778363688,
+        "feedname": "Rock, Paper, Shotgun",
+        "feed_type": 0,
+        "appid": 2868840
+      },
+      {
+        "gid": "1832065502813730",
+        "title": "Beta Patch Notes - v0.105.0",
+        "url": "https://example.steam/news/1832065502813730",
+        "is_external_url": true,
+        "author": "demileaf",
+        "contents": "[h2]CONTENT & BALANCE:[/h2]\n[b]Silent:[/b]\n[list]\n[*]Nerfed [b]Blade of Ink[/b] card: damage decreased from +2 -> +1\n[/list]\n[b]Defect:[/b]\n[list]\n[*]Buffed [b]Hyperbeam[/b]: damage increased from 26(34) -> 28(36)\n[/list]\n[h2]BUG FIXES:[/h2]\n[b]Enemies:[/b]\n[list]\n[*]Fixed [b]Kaiser Crab[/b] appearing if you load into an already completed boss room\n[/list]",
+        "feedlabel": "Community Announcements",
+        "date": 1778201610,
+        "feedname": "steam_community_announcements",
+        "feed_type": 1,
+        "appid": 2868840,
+        "tags": ["patchnotes"]
+      }
+    ],
+    "count": 3
+  }
+}
