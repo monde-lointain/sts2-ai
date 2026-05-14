@@ -4,8 +4,9 @@ One record per accepted trajectory; fsync per write so an unclean shutdown
 loses at most the in-flight write. Caller (IngestAPI in W3) holds the
 single-writer responsibility; this module performs no in-process locking.
 
-See pipeline/experience-store/docs/specs/modules/control-plane.md
-(ProvenanceIndex section).
+The class is named `ProvenanceLog` (implementation name); the Q3-internal
+spec uses the conceptual name `ProvenanceIndex` for the same responsibility
+(see modules/control-plane.md, ProvenanceIndex section).
 """
 
 from __future__ import annotations
@@ -20,13 +21,16 @@ PROVENANCE_FILE = "provenance.ndjson"
 class ProvenanceLog:
     """Append-only NDJSON log of trajectory provenance.
 
-    Each line is a UTF-8 JSON object with shape:
-        {"ingest_ts_ns": int, "trajectory_id": str, "model_version": str,
-         "sampling_mode": str, "generator": str}
+    Each line is a UTF-8 JSON object with shape (per
+    docs/specs/modules/control-plane.md lines 38-42):
+        {"trajectory_id": str, "model_version": str, "sampling_mode": str,
+         "generator": str, "ingest_ts_ns": int,
+         "schema_major": int, "schema_minor": int}
 
-    Phase-1: schema_major/schema_minor are not yet populated here; the
-    SchemaRegistry submodule (S0.B.beta) owns wire-version state and
-    will join the schema overlay at W3+.
+    `schema_major` and `schema_minor` are emitted as flat fields, NOT as
+    a nested `schema_version` object. The `append(...)` API takes a tuple
+    `schema_version=(major, minor)` for callsite ergonomics, then
+    serializes it flat.
     """
 
     def __init__(self, data_dir: pathlib.Path) -> None:
@@ -40,15 +44,20 @@ class ProvenanceLog:
     def path(self) -> pathlib.Path:
         return self._path
 
-    def record(
+    def append(
         self,
-        ingest_ts_ns: int,
         trajectory_id: str,
         model_version: str,
         sampling_mode: str,
         generator: str,
+        ingest_ts_ns: int,
+        schema_version: tuple[int, int],
     ) -> None:
         """Append one provenance record; fsync before returning.
+
+        Signature matches spec lines 93-95. `schema_version` is a
+        `(major, minor)` tuple serialized as flat `schema_major` and
+        `schema_minor` fields per the spec NDJSON shape (lines 38-42).
 
         Raises ValueError if any of model_version, sampling_mode, or
         generator is empty (Q3-ADR-001 mandates non-droppable provenance;
@@ -61,12 +70,15 @@ class ProvenanceLog:
         if not generator:
             raise ValueError("generator must not be empty")
 
+        schema_major, schema_minor = schema_version
         payload = {
-            "ingest_ts_ns": int(ingest_ts_ns),
             "trajectory_id": str(trajectory_id),
             "model_version": str(model_version),
             "sampling_mode": str(sampling_mode),
             "generator": str(generator),
+            "ingest_ts_ns": int(ingest_ts_ns),
+            "schema_major": int(schema_major),
+            "schema_minor": int(schema_minor),
         }
         line = json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n"
         encoded = line.encode("utf-8")
@@ -78,6 +90,24 @@ class ProvenanceLog:
             os.fsync(fd)
         finally:
             os.close(fd)
+
+    def lookup(self, trajectory_id: str) -> dict | None:
+        """Return the first matching provenance row for `trajectory_id`, or None.
+
+        Phase-1 implementation: linear scan of provenance.ndjson. Phase-2+
+        will replace with the Bloom-filter accelerated lookup per spec
+        line 46. Sampler enrichment (P2+) is the primary caller.
+        """
+        target = str(trajectory_id)
+        with self._path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                line = line.strip()
+                if not line:
+                    continue
+                row = json.loads(line)
+                if row.get("trajectory_id") == target:
+                    return row
+        return None
 
     def query_recent(self, n: int) -> list[dict]:
         """Return the last `n` records in append order, deserialized.
