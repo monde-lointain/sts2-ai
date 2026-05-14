@@ -1,0 +1,14 @@
+M	src/Core/Combat/CombatManager.cs
+A	src/Core/Models/Monsters/Aeonglass.cs
+D	src/Core/Models/Monsters/Doormaker.cs
+M	src/Core/Models/Cards/StrikeSilent.cs
+A	src/Core/Models/Cards/StrikeIronclad.cs
+R092	src/Core/Models/Encounters/OldEncounter.cs	src/Core/Models/Encounters/NewEncounter.cs
+M	src/Core/Models/Orbs/LightningOrb.cs
+M	src/Core/Multiplayer/MultiplayerHost.cs
+M	src/Core/Random/Rng.cs
+A	src/Core/Models/ModelDb.cs
+M	scenes/combat/combat.tscn
+M	scenes/main_menu/main_menu.tscn
+M	sts2.csproj
+A	unrelated/something/new.txt
