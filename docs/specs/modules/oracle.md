@@ -44,3 +44,12 @@ Out of scope: anything network-side. Q2 does not call the inference server, does
 - **Tractability frontier.** Q2 only meaningfully labels states the oracle can fully expand. As deck/relic complexity grows, the fraction of states Q2 can verify shrinks. Mitigation: monitor coverage; do not let oracle-agreement metric become a low-information statistic.
 - **Adapter version drift.** If Q1's binary schema changes faster than Q2 absorbs, agreement signal stalls. Mitigation: adapter version pinned in CI; Q1 schema changes block on Q2 adapter update.
 - **Algorithm-version drift in the report rows.** A report row only makes sense relative to the oracle's algorithm version (scoring rule, TT shape). Mitigation: stamp algorithm SHA on every row; treat algorithm change as a regression-set rebuild.
+
+## ADR-014..018 cascade addendum (2026-05-14)
+
+The architecture-note cascade (ADR-009 amendment + ADR-014..018) does **not** change Q2's interface or scope:
+
+- Q2's `verify()` RPC operates on `CompactState` and is **orthogonal to** `evaluate_combat()` — Q2 is the small-state verifier, not the run-conditioned combat policy. No interface change.
+- Oracle-agreement signal remains training-eligible per ADR-017 carve-out (it is a labeled comparison, not a path-counterfactual).
+- Q2-ADR-002 Phase-1A scope (CULTISTS_NORMAL only) defines the agreement denominator; non-cultist states reject-with-diagnostic.
+- The oracle-agreement row's `model_value` column needs a defined reduction policy now that the model's value head is `sample + summary` per ADR-014. **Phase-1A:** scalar `model_value` reduces from `summary.expected_hp_delta`. Full reduction policy (and possible additional columns to capture sample-level distributional comparison) deferred to Q10 boot, when Q2-ADR-004 schema promotes to `contracts/schemas/oracle-agreement/` (cross-quantum coordination event per ADR-001).

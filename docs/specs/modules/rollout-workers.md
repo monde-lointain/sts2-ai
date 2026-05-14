@@ -4,8 +4,9 @@
 
 ## Responsibilities
 
-- Run AlphaZero-style PUCT MCTS over Q1's combat MDP (per ADR-009). At each node, query Q9 for prior + value; use Q1 to expand children.
-- Emit `(state, search_policy, search_value)` triples to Q3 as completed trajectories.
+- Run AlphaZero-style PUCT MCTS over Q1's combat MDP (per ADR-009-amended). At each node, query Q9 for prior + outcome samples + summary (per ADR-014); use Q1 to expand children.
+- Propagate `macro_context` (HP shadow price, potion shadow prices, risk tolerance, pressure indicators per ADR-015) from external orchestration through Q1 hook to Q9 inference calls. Phase-1A `macro_context` may be zero-stub until Phase-2 derivation is wired (per ADR-019 deferred).
+- Emit `(state, search_policy, combat_outcome_samples, combat_outcome_summary, decision_type, macro_context, resource_deltas, reward_context, observability_regime)` to Q3 as completed trajectories per trajectory.proto v1 (per ADR-014, ADR-015, ADR-016, ADR-018). Reward valuation stays macro-owned — workers expose room-completion facts in `reward_context` but do not bake reward value into the samples.
 - Maintain a local **weight cache** of the current production model artifact (fetched via Q5 → Q9 in-process or from a pinned ONNX file). Refresh on a configured cadence.
 - Pull the **Content Registry** (Q4) bundled with the loaded artifact (per ADR-010); use it to translate Q1's internal IDs to token IDs in trajectory output.
 - Stateless: any worker can be killed or restarted without affecting any other worker. No per-worker durable data. Cattle, not pets.

@@ -99,10 +99,10 @@ We compare the four naive frames and reject all of them in favor of a hybrid.
 
 **Chosen architecture: staged hybrid.** The components and their responsibilities:
 
-- **Combat tactical policy.** AlphaZero-style PUCT MCTS over the combat MDP. Network outputs (a) prior over legal actions, (b) state-value (expected end-of-combat HP normalized to a run-aware target). Trained on (state, search-improved policy, search-improved value) triples. Search uses a learned value function as the leaf evaluator; expectimax remains the gold-standard verifier for tractable sub-states.
-- **Run-level meta-policy.** Hierarchical: a strategic planner that operates over "decision points" (card pick, map fork, shop visit, event choice, rest site, potion use). Combat outcomes are wrapped as macro-actions: the meta-policy queries the combat policy for an *expected damage taken* value given current deck and an upcoming encounter.
+- **Combat tactical policy.** AlphaZero-style PUCT MCTS over the combat MDP. Network outputs (a) prior over legal actions, (b) outcome samples + summary stats (the run-conditioned combat outcome oracle per ADR-014); HP-fraction-at-end-of-combat is kept as an auxiliary prediction target, not the run-level objective. Trained on (state, search-improved policy, search-improved outcomes) triples. Search uses a learned value function as the leaf evaluator; expectimax remains the gold-standard verifier for tractable sub-states.
+- **Run-level meta-policy.** Hierarchical: a strategic planner that operates over "decision points" (card pick, map fork, shop visit, event choice, rest site, potion use). Combat outcomes are wrapped as macro-actions: the meta-policy queries the combat policy via `evaluate_combat(observable_run_state, encounter_spec, macro_context, budget)` and composes returned outcome samples through reward generation + `V_run` (per ADR-014, ADR-015, ADR-018). `macro_context` carries shadow prices (HP, per-potion), risk tolerance, and pressure indicators.
 - **Card / relic / event evaluators.** Specialized value heads. The card-pick head scores `(deck, relic_set, floor, character, candidate_card)` → expected run-value delta. Same shape for relic offers, potion offers, event branches.
-- **Search augmentation at runtime.** At decision-time, the meta-policy runs short MCTS rollouts to *the next combat resolution* using a deck-conditional combat-value oracle, optionally with the rest of the run *imagined* via a learned world model.
+- **Search augmentation at runtime.** At decision-time, the meta-policy runs short MCTS rollouts to *the next combat resolution* using the run-conditioned combat outcome oracle (ADR-014), optionally with the rest of the run *imagined* via a learned world model.
 - **Opponent modeling.** Not adversarial; we model *encounter generation* and *card/relic offer distributions*. These are stationary modulo balance patches; we estimate them once per patch from sim rollouts.
 
 ### 2.2 Why staged hybrid (and not "just AlphaZero everything")
@@ -160,8 +160,9 @@ We do not need a learned model of card mechanics. We have the source. Use it.
                 │ Combat Policy (AlphaZero-style)│
                 │   - PUCT MCTS                  │
                 │   - prior π(a|s)               │
-                │   - value V(s)  → expected     │
-                │     end-of-combat HP norm.     │
+                │   - evaluate_combat → outcome  │
+                │     samples + summary stats    │
+                │     (HP-fraction = aux target) │
                 └─────────────┬─────────────────┘
                               │
               ┌───────────────▼───────────────┐
@@ -190,6 +191,16 @@ The argument for one shared embedding table (rather than per-component) is twofo
 - **In-run memory:** a learned summary updated at each decision point, fed back as context. Implementation: an LSTM/GRU over decision-point embeddings, OR a transformer with growing context. We start with GRU (cheaper, simpler) and revisit if attention helps.
 - **Across-run memory:** none. Every run starts fresh modulo character/ascension.
 - **Patch adaptation strategy:** maintain a *content-token table* with stable IDs across patches when cards are unchanged, new IDs when cards are added, and a *deprecation* mechanism for removed cards. Embeddings for new cards are initialized from a "card description" subnetwork that consumes structured card text (cost, type, effects-as-DSL). This is the closest we get to zero-shot patch adaptation. Even with this, expect 1–3 weeks of fine-tuning per major patch and budget for it.
+
+### 2.8 Observability regime (per ADR-016)
+
+Q1's serialized state contains hidden source state (RNG counters, future encounter/event queues, action queues, hook-private saved fields, unpopulated rewards). Each field in Q1's emitted state schema carries one of three observability tags:
+
+- **`SOURCE_PERFECT`** — hidden from the player; usable only for simulator correctness, labeling, debugging, counterfactual analysis. **Never** in deployed-policy inference inputs.
+- **`POLICY_VISIBLE`** — fully player-observable; safe for deployed inputs.
+- **`BELIEF_SAMPLED`** — hidden from the player; deployed policy reads a sampled belief over its value (e.g., posterior over draw-pile ordering), never the true value.
+
+Q1 emits all fields; Q8/Q9/Q10 filter at the inference boundary via the tag manifest co-located with the state schema. Q12 evaluation harness enforces no-hidden-state-leak audits as part of every gate evaluation. Training on perfect-source-info overstates agent strength and produces exploit-shaped policies — this regime exists to prevent that drift structurally.
 
 ---
 
@@ -339,7 +350,7 @@ Each phase has hard gating metrics. **Do not advance to the next phase until the
 - Potion-use: timing decision (combat-internal, integrated into combat policy via an action extension).
 
 **Search augmentation.**
-- At map decisions: enumerate all path completions to next boss, score each via summed expected damage taken (queried from combat-policy value oracle conditioned on current deck), discounted by reward expected at each node.
+- At map decisions: enumerate all path completions to next boss, score each by `mean_over_samples(V_run(apply_room_rewards(sample.after_combat_observable_state, room_type)))` (per ADR-014, ADR-018) — i.e., compose the combat outcome oracle's samples through reward generation and the run-value head, NOT by summing scalar expected HP loss.
 - At shop: enumerate purchase combinations under budget (small combinatorial; brute-force or beam search), evaluate each via deck-update-rerun-value-head.
 - At events: most events have ≤3 branches; evaluate all.
 - At rest sites: 2 options usually; evaluate both with quick value-head queries.
@@ -397,7 +408,7 @@ Each phase has hard gating metrics. **Do not advance to the next phase until the
 **Architectural additions.**
 - **MCTS hybrids at higher decision levels.** AlphaZero-style search at run-level decisions (not just combat). Tractable because we have a strong value function from Phase 3.
 - **Learned world model** for run-level imagination: given a run state and a sequence of actions, predict run state K decisions ahead. This is the analog of MuZero's world model. Train on real run trajectories; gate on whether imagined rollouts improve decisions vs. simulator rollouts.
-- **Trajectory search**: at decision time, search over `(map_path, card_picks)` tuples over the next act, evaluate via combat-value oracle + run-value head. Beam search; pruning by gradient-of-value.
+- **Trajectory search**: at decision time, search over `(map_path, card_picks)` tuples over the next act, evaluate via the run-conditioned combat outcome oracle (ADR-014) composed through `V_run` (ADR-018). Beam search; pruning by gradient-of-value.
 - **Distributed self-improvement loop**: continuous training pipeline with auto-evaluation, regression detection, and rollback.
 
 **Hardest sub-problems in Phase 5.**
@@ -539,6 +550,9 @@ We recommend sequential targeting for simplicity, accept the ply cost.
 - **Robustness to RNG.** Variance of win rate across 10K-seed batches. Lower is better but only after mean is high.
 - **Exploit incidence.** Number of detected exploit-class behaviors per 10K runs. Should be 0 or trending toward 0.
 - **Calibration.** Predicted run-value vs. empirical win rate by predicted-value decile.
+- **Tradeoff tests.** Targeted scenario suites that exercise the macro/micro composition (per ADR-014..018): elite-vs-hallway path choice, monster-vs-rest stop choice, potion-spend-vs-preserve under combat pressure, low-HP high-upside event/fight choices, OOD deck/relic combinations. The point is to verify the agent makes the *strategically correct* tradeoff, not just survives.
+- **`macro_context` shadow-price calibration.** Predicted HP / potion shadow prices vs. realized run-value lift per unit resource. Detects miscalibrated macro→micro composition.
+- **Observability-regime audit.** No `SOURCE_PERFECT` field appears in any deployed inference input (per ADR-016). Run on every checkpoint promotion.
 
 **Eval harness components:**
 
@@ -617,7 +631,7 @@ The prototype already has this for combat (`tools/seed-pinner`). Extend it to ru
 ### 6.1 Long-horizon credit assignment
 
 - **The problem.** A floor-3 card pick ripples to floor-50 win rate. Naive return propagation is too noisy at this distance.
-- **Mitigations.** (a) Hierarchical decomposition with intermediate value functions per decision type. (b) Run-value bootstrapping: V(state) trained against multi-step TD targets, not raw return. (c) Search-augmented training: at decision time, n-step lookahead with combat-value oracle reduces variance. (d) Counterfactual evaluation tools to measure decision impact in retrospect.
+- **Mitigations.** (a) Hierarchical decomposition with intermediate value functions per decision type. (b) Run-value bootstrapping: V(state) trained against multi-step TD targets, not raw return. (c) Search-augmented training: at decision time, n-step lookahead with the run-conditioned combat outcome oracle (ADR-014) reduces variance. (d) Counterfactual evaluation tools to measure decision impact in retrospect (observational only per ADR-017).
 - **Open question.** Whether to train V(state) end-to-end via REINFORCE (high-variance, low-bias) or via TD bootstrapping (low-variance, high-bias). Recommend hybrid (TD with eligibility traces / V-trace).
 
 ### 6.2 Combinatorial deck/relic interactions

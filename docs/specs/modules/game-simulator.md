@@ -5,11 +5,12 @@
 ## Responsibilities
 
 - Run STS2 logic deterministically from a seed: combat, map traversal, shops, events, rewards, potion use, rest sites, run progression.
-- Expose a hook protocol: at every player-decision boundary, return state + legal-action mask, await an action, validate, apply.
+- Expose a hook protocol: at every player-decision boundary, return state + legal-action mask, await an action, validate, apply. Phase-2: hook protocol input extended to carry `macro_context` (shadow prices, risk tolerance, pressure indicators) per ADR-015 — out of scope for Q1 Phase-1A; v1 hook-protocol bump at S15 (run-level message types) per Q1's existing manifest.
 - Provide save/restore primitives: `(CombatState, RunState) ↔ binary blob`. Bit-identical round-trip is a hard requirement, enforced by CI per `scaling-strategy.md` §4.1 #4.
 - Support branchable rollouts: from any saved state, executing K alternative actions yields K independent continuations (the basis for MCTS).
 - Emit replay files: every rollout produces `(seed, action_sequence, optional state checkpoints)` sufficient to reconstruct.
 - Run as out-of-tree mod via `Core/Modding` where possible; minimize patches to the upstream tree to keep rebases cheap (per ADR-002 positives).
+- **Tag emitted state fields with observability regime** (per ADR-016): each field in the M1 binary state schema classified `SOURCE_PERFECT` / `POLICY_VISIBLE` / `BELIEF_SAMPLED`. Q1 emits all fields; consumer-side (Q8/Q9/Q10) filtering enforces no hidden-state leak in deployed inference. Tag manifest co-located with the state schema; see `engine/headless/docs/specs/modules/state-codec.md § Field observability tagging`. Phase-2+ implementation; Q1 Phase-1A scope unaffected (no deployed inference exists yet).
 
 Out of scope: rendering, animation, audio, UI, networking, multiplayer, anti-cheat — all stripped from the headless build.
 

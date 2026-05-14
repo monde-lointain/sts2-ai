@@ -12,11 +12,17 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-006 | Experience Store as the Principal Async Backbone | Accepted |
 | ADR-007 | Model Registry Separated from Serving Authority | Accepted |
 | ADR-008 | Sequential Targeting for Multi-Target Cards | Accepted |
-| ADR-009 | AlphaZero at Combat Layer; Hierarchical Heads at Run Level | Accepted |
+| ADR-009 | AlphaZero at Combat Layer; Hierarchical Heads at Run Level | Accepted (Amended 2026-05-14) |
 | ADR-010 | Content Registry Packaged with Model Artifact | Accepted |
 | ADR-011 | Oracle Owns the Engine→CompactState Adapter | Accepted |
 | ADR-012 | Compute Hosting (cloud vs on-prem) | Deferred |
 | ADR-013 | Megacrit Headless / Automation API | Deferred |
+| ADR-014 | Combat Oracle Output Uses Samples + Summary | Accepted |
+| ADR-015 | Combat Conditioned by Observable Run State + Explicit Macro Context | Accepted |
+| ADR-016 | Deployed Policy Inputs Are Player-Observable / Belief-Sampled | Accepted |
+| ADR-017 | Counterfactuals Stay Observational | Accepted |
+| ADR-018 | Reward Valuation Stays Macro-Owned | Accepted |
+| ADR-019 | Macro Context Derivation Policy | Deferred |
 
 ---
 
@@ -167,17 +173,26 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 
 ## ADR-009 — AlphaZero at Combat Layer; Hierarchical Heads at Run Level
 
-**Status:** Accepted.
+**Status:** Accepted. **Amended 2026-05-14** — see ADR-014..018; the run↔combat interface specification is superseded per `docs/micro-macro-policy-architecture-note.md`.
 
 **Context.** `scaling-strategy.md` §2.1. Pure AlphaZero does not fit run-level (variable horizon, no shared evaluator across decision types). Pure hierarchical RL does not fit combat (decision-level granularity is exactly where MCTS shines). Strategy commits to a hybrid; this ADR makes that commitment structural.
 
-**Decision.** Combat: AlphaZero (PUCT MCTS, prior + value heads, network leaf evaluator, expectimax oracle on small states). Run-level: hierarchical, shared encoder, per-decision-type heads (map, card-pick, shop, event, rest, potion), shared run-value function. Combat policy exposes a `value(deck, encounter)` oracle interface for run-level search to query.
+**Decision.** Combat: AlphaZero (PUCT MCTS, prior + value heads, network leaf evaluator, expectimax oracle on small states). Run-level: hierarchical, shared encoder, per-decision-type heads (map, card-pick, shop, event, rest, potion), shared run-value function.
+
+Combat policy exposes a run-conditioned outcome oracle:
+
+```
+evaluate_combat(observable_run_state, encounter_spec, macro_context, budget)
+  -> combat_outcome_samples + summary_stats.
+```
+
+Run-level search composes these outcomes with reward generation, reward-choice heads, and V_run. Combat HP loss remains an auxiliary prediction target, not the run-level objective. (See ADR-014..018 for the five resolved decisions that constitute this amendment.)
 
 **Consequences.**
 
 - *Negative:* two stacks to maintain — search infrastructure plus per-head training. Higher engineering surface and two distinct failure modes.
 - *Negative:* joint training of both layers is a known instability source (Phase 2 failure modes in `scaling-strategy.md`). Freeze-unfreeze schedule must be explicit.
-- *Negative:* the combat-policy `value(deck, encounter)` interface is now load-bearing. Changes here ripple to the run-level search.
+- *Negative:* the combat-policy `evaluate_combat` interface is now load-bearing; sample-based output and `macro_context` input both ripple to run-level search and trainer loss heads.
 - *Negative:* Phase 5 may add MCTS at run-level too (`scaling-strategy.md` §3.5). That is a second integration we may have to add — ADR-revisit reserved.
 - *Positive:* combat works as a standalone deliverable in Phase 1 — verifiable against the existing expectimax oracle before run-level even exists.
 - *Positive:* matches the strengths of each algorithm to the layer where it works.
@@ -249,3 +264,136 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 
 - *Negative:* may end up doing work Megacrit would have done for us.
 - *Positive:* not blocked on an external partner; Q1's interface contract is what other quanta depend on, and that is ours to define regardless.
+
+---
+
+## ADR-014 — Combat Oracle Output Uses Samples + Summary
+
+**Status:** Accepted (2026-05-14).
+
+**Context.** `docs/micro-macro-policy-architecture-note.md` §Resolved Decisions #1. ADR-009's original `value(deck, encounter)` interface produced a scalar HP-loss estimate. STS2 combat is a run-state transformer: a single fight mutates HP, potions, energy/stars, card piles, relic counters, power state, RNG counters, reward hooks. A scalar return destroys strategic correlations (e.g. "low HP but potion preserved" vs. "higher HP but potion spent"). Averaging away the correlation makes the macro-policy strictly weaker than playing the structured tradeoff.
+
+**Decision.** Canonical combat output is `{ samples: CombatOutcomeSample[], summary: CombatOutcomeSummary }`. Each sample is a terminal-state snapshot with `(survived, after_combat_observable_state, hp_delta, potion_delta, card_instance_deltas, relic_counter_deltas, rng_public_belief_delta, turns_taken, timeout, probability_weight)`. The summary aggregates for cheap pruning: `(survival_probability, expected_hp_delta, hp_delta_quantiles, potion_use_probabilities, expected_turns, timeout_probability, uncertainty)`.
+
+**Phase-1 transitional convention.** Phase-1 training keeps scalar HP-fraction prediction as the bootstrap target (architecture note §Training Implications). Phase-1 trajectory rows populate `summary.expected_hp_delta` from the scalar value; the exact `samples[]` populating convention (empty vs. degenerate single-sample with `probability_weight=1.0`) is deferred to the Q3 boot directive. Phase-2+ produces real multi-sample output.
+
+**Consequences.**
+
+- *Negative:* samples preserve resource-correlation in Phase-2+ but at storage cost: each sample carries `after_combat_observable_state` (a nested struct). K samples × N decisions/combat × M combats/day multiplies fast. Mitigation: design delta encoding / sample-by-reference / sample-count reduction at Q3 storage layer.
+- *Negative:* combat-policy training pipeline grows a sample-prediction head; summary head is auxiliary.
+- *Negative:* Phase-1 trajectories carry partly-populated v1 rows; downstream code must handle degenerate-sample case.
+- *Positive:* macro-policy can reason about resource tradeoffs natively.
+- *Positive:* summary supports cheap pruning at search nodes without inspecting samples.
+
+**Origin.** Architecture note 2026-05-14.
+
+---
+
+## ADR-015 — Combat Conditioned by Observable Run State + Explicit Macro Context
+
+**Status:** Accepted (2026-05-14).
+
+**Context.** `docs/micro-macro-policy-architecture-note.md` §Resolved Decisions #2. Combat outcome is not a function of `(deck, encounter)` alone — it depends on HP/max HP, potion slots, relic counters, current relic/power hooks, and *macro-strategic prices* (how valuable is HP relative to gold this run, what is the per-potion shadow price given remaining elites). Pure inference from facts requires the combat head to re-derive prices every call.
+
+**Decision.** `evaluate_combat` inputs are `(observable_run_state, encounter_spec, macro_context, budget)`. `macro_context` carries: HP shadow price, per-potion shadow prices, risk tolerance, upcoming pressure (next elite / next boss / shop / rest indicators), search budget. `observable_run_state` is the full visible run snapshot (deck, relics, gold, floor, etc.).
+
+**Consequences.**
+
+- *Negative:* combat policy's input surface grows; network must encode shadow-price tokens.
+- *Negative:* `macro_context` derivation introduces a circular dependency (shadow prices are macro-policy outputs but combat-policy inputs) — see ADR-019.
+- *Negative:* `evaluate_combat` interface must version `macro_context` shape alongside the rest of the wire contract (ADR-001).
+- *Positive:* combat head no longer has to infer strategic preferences from scratch.
+- *Positive:* clean separation: facts (observable_run_state) vs. prices (macro_context). Auditability + observability simpler.
+
+**Origin.** Architecture note 2026-05-14.
+
+---
+
+## ADR-016 — Deployed Policy Inputs Are Player-Observable / Belief-Sampled
+
+**Status:** Accepted (2026-05-14).
+
+**Context.** `docs/micro-macro-policy-architecture-note.md` §Resolved Decisions #3. Q1's serialized state contains hidden source state useful for simulator correctness, labeling, debugging, and counterfactual analysis: RNG counters, future encounter/event queues, action queues, hook-private saved fields, unpopulated rewards. Training on perfect-source-info teaches choices a player cannot justify from visible information, overstating agent strength and producing exploit-shaped policies.
+
+**Decision.** Deployed-policy inference inputs are restricted to player-observable or explicitly belief-sampled fields. Hidden source state remains in the simulator's state schema but is filtered out at the inference boundary. Each field in Q1's emitted state schema is classified `SOURCE_PERFECT` / `POLICY_VISIBLE` / `BELIEF_SAMPLED`. Q1 emits all fields; Q8/Q9/Q10 enforce the filter consumer-side. When hidden state matters for a decision, the policy reads sampled beliefs (e.g., posterior over draw-pile ordering) rather than the true value.
+
+**Consequences.**
+
+- *Negative:* every Q1 schema field needs a tag; tag manifest is now a versioned artifact alongside the state schema.
+- *Negative:* belief-sampling infrastructure is Phase-2+ scope (no implementation exists today).
+- *Negative:* Q12 evaluation must include observable-input audits (no hidden-state leak) to catch regressions.
+- *Positive:* training-time and deployed-time information surfaces match; no skill overstatement.
+- *Positive:* simulator-internal use (correctness checks, labeling, counterfactual analysis) is unrestricted.
+
+**Origin.** Architecture note 2026-05-14.
+
+---
+
+## ADR-017 — Counterfactuals Stay Observational
+
+**Status:** Accepted (2026-05-14).
+
+**Context.** `docs/micro-macro-policy-architecture-note.md` §Resolved Decisions #4. Q12 path-counterfactual rollouts (taken-vs-not-taken map paths, alternative card-pick branches) are high-value diagnostics: they reveal whether the agent's choices were defensible relative to alternatives the same run could have produced. They are also high-variance: simulator stochasticity compounds with value-head bias when used as a training signal, amplifying noise rather than informativeness.
+
+**Decision.** Q12 path-counterfactual rollouts drive evaluation, curriculum scenario selection, replay priority metadata, and human debugging — not direct supervised training targets.
+
+**Carve-out.** Q2's oracle-agreement signal is NOT a path-counterfactual. It is a labeled comparison between expectimax ground truth and model output on the same state, not "what would have happened if a different path had been taken." Oracle-agreement continues to feed Q10 prioritized sampling per ADR-006 / ADR-009-amended, unchanged.
+
+**Reopen trigger.** Revisit if a later ADR proves counterfactual estimates are calibrated and not variance-amplifying — for example, doubly-robust estimators with bounded variance proofs against the production policy distribution.
+
+**Consequences.**
+
+- *Negative:* counterfactual data is high-value but training-ineligible; expensive to compute and use only diagnostically.
+- *Negative:* Q12 must clearly separate counterfactual-derived rows from labeled-comparison rows (oracle-agreement); schema discipline at Q6 report ingestion.
+- *Positive:* variance-amplification risk avoided; Q12 reports stay diagnostic.
+- *Positive:* oracle-agreement remains training-eligible — no impact on Q10 prioritization pipeline.
+
+**Origin.** Architecture note 2026-05-14.
+
+---
+
+## ADR-018 — Reward Valuation Stays Macro-Owned
+
+**Status:** Accepted (2026-05-14).
+
+**Context.** `docs/micro-macro-policy-architecture-note.md` §Resolved Decisions #5. Combat outcome contains the post-combat state, but the *valuation* of room rewards (card / gold / relic / potion offers) is macro-level: it depends on archetype, current deck composition, upcoming pressure, alternative-path opportunity cost. Conflating reward valuation into combat output double-counts card/gold/relic/potion value and forces the combat head to learn the run-level value function in miniature.
+
+**Decision.** Combat policy estimates fight costs + terminal combat state only. Reward generation and reward-choice valuation compose at macro/reward heads *after* combat. Combat may expose room-completion facts needed by reward hooks (e.g., "boss defeated", "elite cleared without potion use") but does not bake reward value into its output.
+
+**Consequences.**
+
+- *Negative:* macro-policy carries the full reward-valuation surface (card-pick head, relic-pick head, potion-pick head, event head).
+- *Negative:* combat-vs-reward boundary needs disciplined enforcement — easy to leak reward value into combat training accidentally.
+- *Positive:* no double-counting of reward value.
+- *Positive:* reward-specific learning stays in the run layer where the right context (archetype, opportunity cost, multi-floor planning) lives.
+- *Positive:* combat policy stays compact; transfer across decks improves because reward-specific noise is excluded from combat training signal.
+
+**Origin.** Architecture note 2026-05-14.
+
+---
+
+## ADR-019 — Macro Context Derivation Policy
+
+**Status:** Deferred. Owner: Research Lead. Target decision: Phase-2 training-design kickoff.
+
+**Context.** ADR-015 specifies `macro_context` as input to `evaluate_combat` (HP shadow price, potion shadow prices, risk tolerance, pressure indicators). It does NOT specify *how* those values are computed. Shadow prices are typically Lagrangian duals output by the macro-policy itself — but the macro-policy needs them as input to score paths via combat queries. Chicken-and-egg at inference time.
+
+**Candidate derivation policies (none ratified):**
+
+- (a) Bootstrap from prior iteration's shadow prices (last-step values held over).
+- (b) Separate learned shadow-price head, co-trained with V_run.
+- (c) Heuristic-curve warmup for Phase-2 cold-start (empirical HP-per-floor curves from prior runs).
+- (d) Joint proximal updates with explicit damping on the macro/micro coupling.
+
+**Decision deferred** until Phase-2 training design surfaces empirical evidence on which method stabilizes. Phase-2 substrate boot (Q8/Q9/Q10) does NOT gate on this ADR — they plumb the `macro_context` interface using any candidate initially; the chosen derivation can change without rewiring the wire contract.
+
+**Reopen trigger.** First Phase-2 training spike that exercises macro/micro coupling end-to-end and produces calibration evidence.
+
+**Consequences of deferral.**
+
+- *Negative:* Phase-2 training may iterate through 2–3 derivation policies before one stabilizes; experimental compute cost.
+- *Negative:* `macro_context` row-level interpretation in trajectory.proto v1 carries "this was derived via method X" provenance — schema must accommodate.
+- *Positive:* Phase-2 substrate work unblocked; the interface contract holds regardless of derivation.
+- *Positive:* avoids premature lock-in on a derivation policy that may not survive empirical contact.
+
+**Origin.** Architecture note 2026-05-14 (surfaced as open question during cascade of ADR-014..018).

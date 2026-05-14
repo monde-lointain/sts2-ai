@@ -34,9 +34,9 @@ Out of scope: producing the evaluations (that is Q12); deciding what to evaluate
 
 ## Phase Expectations
 
-- **Phase 1.** Combat-only reports: A0 encounter-pool win rate, expectimax-agreement rate, inference-latency distribution. CI gate enforces Phase 1 numerical thresholds.
-- **Phase 2.** Adds card-pick top-1 agreement, calibration deciles, deck-archetype entropy, run-value-vs-empirical-win-rate calibration.
-- **Phase 3+.** Adds counterfactual map-decision evaluator output, full ascension ladder rows, exploit-detector incidence, patch-adaptation timing.
+- **Phase 1.** Combat-only reports: A0 encounter-pool win rate, expectimax-agreement rate (denominator bounded by CULTISTS_NORMAL per Q2-ADR-002), inference-latency distribution. CI gate enforces Phase 1 numerical thresholds.
+- **Phase 2.** Adds card-pick top-1 agreement, calibration deciles, deck-archetype entropy, run-value-vs-empirical-win-rate calibration. Adds **tradeoff-test rows** per ADR-014..018 (HP-spent-per-reward-value, potion shadow-price calibration, elite-vs-hallway, observable-input audits).
+- **Phase 3+.** Adds counterfactual map-decision evaluator output (observational only per ADR-017 — Q6 reports the data but no training loop consumes it), full ascension ladder rows, exploit-detector incidence, patch-adaptation timing.
 
 ## Open Risks
 

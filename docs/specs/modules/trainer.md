@@ -5,9 +5,9 @@
 ## Responsibilities
 
 - Sample minibatches from Q3 under the configured sampling mode.
-- Compute the AlphaZero-style training loss for combat policy: cross-entropy on policy, MSE on value, L2 weight decay, KL penalty against the prior policy for stability (`scaling-strategy.md` §3 Phase 1).
-- Compute multi-head losses in Phase 2+ (card-pick categorical, run-value MSE, calibration penalty).
-- Use **oracle-agreement signal from Q2** to upweight states where the network disagrees with expectimax (priority replay scaling).
+- Compute the AlphaZero-style training loss for combat policy: cross-entropy on policy, sample-prediction loss + summary-prediction loss on combat outcomes (per ADR-014), L2 weight decay, KL penalty against the prior policy for stability (`scaling-strategy.md` §3 Phase 1). HP-fraction prediction is an **auxiliary** loss head, not the primary value-head training target (per ADR-014, ADR-018 — combat does not bake reward value, so HP-fraction stays as a diagnostic and Phase-1 bootstrap target).
+- Compute multi-head losses in Phase 2+ (card-pick categorical, run-value MSE, calibration penalty, `macro_context` shadow-price calibration per ADR-015).
+- Use **oracle-agreement signal from Q2** to upweight states where the network disagrees with expectimax (priority replay scaling). Per ADR-017 carve-out: oracle-agreement remains a training-eligible labeled comparison; *path-counterfactual* signals from Q12 stay observational and do NOT feed training.
 - **Publish checkpoints** to Q5 on a fixed cadence (e.g., every N steps + every M minutes, atomic via temp+rename).
 - **Evaluate before promoting:** the trainer does not promote artifacts. It publishes; promotion goes through the workflow that talks to Q12 + reviewer sign-off (per ADR-007).
 
@@ -40,8 +40,8 @@ Published checkpoints are owned by Q5.
 
 ## Phase Expectations
 
-- **Phase 1.** Single GPU. Combat-only loss. Uniform + priority sampling. KL penalty + L2.
-- **Phase 2.** Add run-level heads. Combat policy frozen by default; unfrozen for joint fine-tuning *only after* meta-policy stabilizes (per ADR-009 Consequences).
+- **Phase 1.** Single GPU. Combat-only loss with sample-prediction + summary-prediction heads (per ADR-014); HP-fraction auxiliary loss bootstrapped from the existing Phase-1 scalar target. Uniform + priority sampling. KL penalty + L2.
+- **Phase 2.** Add run-level heads. Combat policy frozen by default; unfrozen for joint fine-tuning *only after* meta-policy stabilizes (per ADR-009-amended Consequences). `macro_context` derivation policy per ADR-019 (deferred — bootstrap from prior iteration or heuristic curve until Phase-2 evidence ratifies).
 - **Phase 3+.** Joint training of all worker heads + value function. Replay buffers per decision-type with balanced sampling. PCGrad / gradient projection if Phase 4+ shows gradient interference.
 
 ## Open Risks

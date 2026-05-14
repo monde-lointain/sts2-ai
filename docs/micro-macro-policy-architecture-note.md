@@ -153,3 +153,7 @@ Run-level search composes these outcomes with reward generation, reward-choice h
 ## Unresolved Questions
 
 None.
+
+---
+
+**Cascaded into canonical specs on 2026-05-14:** see ADR-009 amendment + ADR-014..018 (Accepted) and ADR-019 (Deferred — macro_context derivation policy) in `docs/specs/01-decisions-log.md`; `contracts/schemas/trajectory/trajectory.proto` major bump v0→v1 (package `sts2.q3.v1`); module specs updated for Q1 (`game-simulator.md`), Q3 (`experience-store.md`), Q6 (`evaluation-reports.md`), Q7 (`observability.md`), Q8 (`rollout-workers.md`), Q9 (`inference-server.md`), Q10 (`trainer.md`), Q11 (`curriculum-generator.md`), Q12 (`evaluation-harness.md`); Q2 echo in `docs/specs/modules/oracle.md` + `engine/cpp/docs/q2-architecture.md §12`; observability-regime anchor in `engine/headless/docs/specs/modules/state-codec.md § Field observability tagging`; mechanics-notes backlog tracked in project auto-memory.

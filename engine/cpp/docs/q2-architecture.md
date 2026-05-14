@@ -273,3 +273,33 @@ verify-server-debug, etc.):
 
 Recursive-make plus cmake-cache is a known foot-gun. Dedicated dir +
 direct cmake invocation closes the trap.
+
+## 12. Architecture-note cascade addendum (2026-05-14)
+
+The pipeline-level architecture-note cascade
+(`docs/micro-macro-policy-architecture-note.md`, commit `92acc33`) added
+ADR-009 amendment + ADR-014..018 specifying a run-conditioned combat
+outcome oracle interface. **Q2's scope is unaffected:**
+
+- Q2's `verify()` RPC (S4) operates on `CompactState` and is **orthogonal
+  to** the pipeline's `evaluate_combat()` interface. `verify()` answers
+  "what does small-state expectimax conclude about this state?";
+  `evaluate_combat()` answers "what does the run-conditioned combat
+  policy expect when given observable run state + macro context?" Two
+  different surfaces, two different callers (Q12 vs. Q8/Q9), no
+  conflation.
+- Oracle-agreement signal remains training-eligible per ADR-017's
+  explicit carve-out: it is a labeled comparison between expectimax
+  ground truth and model output, NOT a path-counterfactual.
+  Q10 prioritized sampling continues to consume it per ADR-006.
+- Q2-ADR-002 Phase-1A scope (CULTISTS_NORMAL only) holds; the cascade
+  does not pressure the encounter scope.
+- Q2-ADR-004 oracle-agreement Parquet schema's `model_value_*` columns
+  reduce from `summary.expected_hp_delta` when the model's value head
+  becomes `sample + summary` per ADR-014 — Phase-1A is scalar-against-
+  scalar comparison; Q10 boot will revisit at the Q2-ADR-004 schema-
+  promotion event (cross-quantum coordination per ADR-001).
+
+No Phase-1A code change required. This addendum exists so future readers
+do not conflate `verify()` with `evaluate_combat()` after reading the
+cascade documents.

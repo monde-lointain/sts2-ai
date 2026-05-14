@@ -1,31 +1,183 @@
 syntax = "proto3";
 
-// sts2.schema.major: 0
+// sts2.schema.major: 1
 // sts2.schema.minor: 0
-package sts2.q3.v0;
+package sts2.q3.v1;
+
+// Major bump v0 -> v1 (2026-05-14).
+//
+// v0 was combat-MDP-specific: scalar `search_value`, no decision_type,
+// no macro context, no observability tagging. Cascade of ADR-014..018
+// (per docs/micro-macro-policy-architecture-note.md and
+// docs/specs/01-decisions-log.md) redesigns the trajectory shape to
+// support all decision types (combat, card-pick, map, shop, event, rest,
+// out-of-combat potion), sample+summary combat outputs, macro_context
+// inputs, and field-level observability tagging.
+//
+// No v0 consumers existed at the time of the bump (Q3 not yet booted,
+// Q8 / Q10 / Q11 / Q12 substrate empty). The break is free. Matches
+// Q1-ADR-012 schema-lock-before-consumer-boots pattern.
+//
+// Wire-version invariants
+// ---------------------------
+// - Every Trajectory carries an explicit SchemaVersion as its first field.
+// - Q3 / Q8 / Q10 reject mismatched (major, minor) at session/append.
+// - Minor bumps within v1.x are additive (new TrajectoryStep oneof variants,
+//   new MacroContext optional fields, new ObservabilityRegime enum values
+//   appended last).
+// - Major bumps are coordinated cross-quantum (ADR-001).
+//
+// ADR anchors
+// -----------
+// - ADR-014: combat output is samples + summary; HP-fraction is auxiliary.
+//   Phase-1 transitional convention populates summary.expected_hp_delta
+//   from the scalar HP-fraction; samples[] population convention is the
+//   Q3 boot directive's decision.
+// - ADR-015: combat conditioned on observable_run_state + macro_context.
+// - ADR-016: deployed-policy inputs filter by observability_regime; Q1
+//   emits all fields with tags, consumers filter SOURCE_PERFECT out.
+// - ADR-017: counterfactuals (Q12 path-counterfactual rollouts) are
+//   observational only — not encoded here as a training-input field.
+//   Oracle-agreement rows ride a separate Q2 sideband (per ADR-006 + Q2
+//   module spec).
+// - ADR-018: reward valuation stays macro-owned; combat exposes
+//   room-completion facts via reward_context but does NOT bake reward
+//   value into samples.
+// - ADR-019 (Deferred): macro_context derivation policy unspecified;
+//   Phase-2 substrate plumbs the field shape, derivation method may
+//   change without rewiring.
 
 message SchemaVersion {
   uint32 major = 1;
   uint32 minor = 2;
 }
 
+// Decision type for a trajectory step. Per ADR-014: each step in a
+// trajectory may correspond to any of these decision categories.
+enum DecisionType {
+  DECISION_TYPE_UNSPECIFIED          = 0;
+  DECISION_TYPE_COMBAT               = 1;
+  DECISION_TYPE_CARD_PICK            = 2;
+  DECISION_TYPE_MAP                  = 3;
+  DECISION_TYPE_SHOP                 = 4;
+  DECISION_TYPE_EVENT                = 5;
+  DECISION_TYPE_REST                 = 6;
+  DECISION_TYPE_POTION_OUT_OF_COMBAT = 7;
+}
+
+// Observability classification for the state encoding of a step. Per
+// ADR-016: deployed policy inputs filter by this regime. Each step
+// records the regime it was produced under; Q12 audits use this to
+// detect hidden-state leak in deployed inference.
+enum ObservabilityRegime {
+  OBSERVABILITY_REGIME_UNSPECIFIED    = 0;
+  OBSERVABILITY_REGIME_SOURCE_PERFECT = 1;  // simulator-internal; NEVER deployed input
+  OBSERVABILITY_REGIME_POLICY_VISIBLE = 2;  // player-observable; safe for deployed
+  OBSERVABILITY_REGIME_BELIEF_SAMPLED = 3;  // hidden field replaced by sampled belief
+}
+
+// Macro context per ADR-015. Shadow prices and pressure indicators
+// supplied by the run-level meta-policy at decision time. Derivation
+// policy is deferred (ADR-019); Phase-2 substrate may populate via
+// bootstrap-from-prior, learned shadow-price head, heuristic curves,
+// or proximal updates.
+message MacroContext {
+  float hp_shadow_price                  = 1;   // value-per-HP at this decision
+  repeated float potion_shadow_prices    = 2;   // per-potion-slot, indexed by slot
+  float risk_tolerance                   = 3;   // [0, 1]; macro's appetite for variance
+  float next_elite_pressure              = 4;   // [0, 1]; floors-to-next-elite, normalized
+  float next_boss_pressure               = 5;
+  float next_shop_pressure               = 6;
+  float next_rest_pressure               = 7;
+  uint32 search_budget                   = 8;   // max sims/expansions the caller authorizes
+  string derivation_method               = 9;   // provenance: "bootstrap", "learned", "heuristic", ...
+}
+
+// Per ADR-014. One terminal-state sample drawn from the combat outcome
+// distribution. Multiple samples preserve the resource correlations
+// that a scalar value-head would average away.
+message CombatOutcomeSample {
+  bool   survived                        = 1;
+  bytes  after_combat_observable_state   = 2;  // RichState bytes, post-combat
+  float  hp_delta                        = 3;
+  repeated float potion_delta            = 4;  // per-slot
+  bytes  card_instance_deltas            = 5;  // domain-specific encoding (TBD)
+  bytes  relic_counter_deltas            = 6;
+  bytes  rng_public_belief_delta         = 7;  // public-only RNG state change
+  uint32 turns_taken                     = 8;
+  bool   timeout                         = 9;
+  float  probability_weight              = 10; // for importance / weighted aggregation
+}
+
+// Per ADR-014. Cheap aggregate for search-time pruning without
+// inspecting individual samples.
+message CombatOutcomeSummary {
+  float survival_probability             = 1;
+  float expected_hp_delta                = 2;
+  repeated float hp_delta_quantiles      = 3;  // e.g., q10, q25, q50, q75, q90
+  repeated float potion_use_probabilities = 4; // per-slot
+  float expected_turns                   = 5;
+  float timeout_probability              = 6;
+  float uncertainty                      = 7;  // model's own uncertainty signal
+}
+
+// Per ADR-014/018. Resource transitions across this step — distinct
+// from per-sample combat outcomes; aggregated for non-combat steps.
+message ResourceDeltas {
+  float hp_delta                         = 1;
+  repeated float potion_delta            = 2;
+  bytes  card_pile_deltas                = 3;
+  bytes  relic_counter_deltas            = 4;
+  float  gold_delta                      = 5;
+}
+
+// Per ADR-018. Reward-side context (room type, reward offers, post-state
+// reference). Combat exposes room-completion facts here but does NOT
+// bake reward value into the step or samples; valuation happens at
+// macro/reward heads composing CombatOutcomeSample.after_combat_observable_state
+// with reward generation.
+message RewardContext {
+  string  room_type                      = 1;  // "monster" | "elite" | "boss" | "shop" | ...
+  bytes   reward_offers                  = 2;  // raw offers as emitted by Q1
+  bytes   post_combat_observable_state   = 3;  // optional; references the combat sample post-state
+}
+
 message TrajectoryStep {
-  bytes rich_state = 1;
-  repeated uint32 legal_action_ids = 2;
-  repeated float search_policy = 3;
-  float search_value = 4;
-  uint32 action_taken = 5;
-  float reward = 6;
-  bool terminal = 7;
+  // Carried from v0 — applicable across all decision types:
+  bytes  rich_state                      = 1;
+  repeated uint32 legal_action_ids       = 2;
+  repeated float  search_policy          = 3;
+  uint32 action_taken                    = 5;
+  float  reward                          = 6;
+  bool   terminal                        = 7;
+
+  // v0 field 4 (scalar `search_value`) REMOVED. Replaced by
+  // combat_outcome_summary for combat steps; non-combat steps had no
+  // meaningful search_value anyway.
+
+  // Per ADR-014..018:
+  DecisionType         decision_type            = 8;
+  MacroContext         macro_context            = 9;
+
+  // Populated when decision_type == DECISION_TYPE_COMBAT. Phase-1
+  // transitional convention: summary.expected_hp_delta from the scalar
+  // HP-fraction; samples[] populating convention (degenerate single
+  // sample vs. empty) is the Q3 boot directive's decision.
+  repeated CombatOutcomeSample combat_outcome_samples = 10;
+  CombatOutcomeSummary         combat_outcome_summary = 11;
+
+  ResourceDeltas        resource_deltas          = 12;
+  RewardContext         reward_context           = 13;
+  ObservabilityRegime   observability_regime     = 14;
 }
 
 message Trajectory {
   SchemaVersion schema_version = 1;
-  string trajectory_id = 2;
-  string episode_id = 3;
-  uint64 seed = 4;
-  string model_version = 5;
-  string sampling_mode = 6;
-  string generator = 7;
+  string trajectory_id         = 2;
+  string episode_id            = 3;
+  uint64 seed                  = 4;
+  string model_version         = 5;
+  string sampling_mode         = 6;
+  string generator             = 7;
   repeated TrajectoryStep steps = 8;
 }

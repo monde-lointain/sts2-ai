@@ -230,6 +230,42 @@ Each bump is additive — older blobs cannot be read by a newer codec without an
 explicit migrator. Migrator authoring is Phase 3+ scope; today we reject and
 move on.
 
+### Field observability tagging (per pipeline ADR-016)
+
+Per pipeline ADR-016 (architecture-note cascade, 2026-05-14), deployed-policy
+inference inputs are restricted to player-observable or explicitly
+belief-sampled fields. **M1 emits all fields — including hidden source state
+useful for simulator correctness, labeling, debugging, and counterfactual
+analysis.** Filtering is the **consumer-side** responsibility (Q8 rollout
+workers, Q9 inference server, Q10 trainer's deployed-input audits). Q1's
+contract is to tag each emitted field with one of three observability classes
+so consumers know what to filter:
+
+| Tag                    | Meaning                                                                                              | Deployed-input eligibility |
+|------------------------|------------------------------------------------------------------------------------------------------|----------------------------|
+| `SOURCE_PERFECT`       | Hidden from the player. Examples: RNG counters, future encounter/event queues, hook-private fields. | **Never.** Q9 must filter. |
+| `POLICY_VISIBLE`       | Player-observable. Examples: current HP, hand contents, visible enemy intents.                       | **Yes.**                   |
+| `BELIEF_SAMPLED`       | Hidden, but Q9 reads a sampled belief over its value rather than the true value.                     | **Yes (as belief sample).** |
+
+**Tag manifest location.** A `field-observability-tags.md` manifest table lives
+next to this spec (Phase-2 deliverable; not present in Phase-1A). The manifest
+enumerates each field reachable through the section-table layout above and
+records its tag. For Phase-2 substrate boot (Q8/Q9/Q10), the manifest is the
+contract — Q9 reads it at startup, builds a per-field include/exclude bitmap,
+and the bitmap is applied at the deployed-input boundary.
+
+**Phase-1A scope.** Phase-1A has no deployed inference; no consumer reads the
+tag manifest yet. The tagging requirement is **anchored here** so the
+manifest's authoring is a Phase-2 deliverable when Q9 boots, not a
+retroactive retrofit. Q1 Phase-1A and Phase-1.5 emit fields unchanged; the
+observability classification is a documentation artifact only until Q9
+substrate exists.
+
+**Audit.** Q12 evaluation harness adds a `no-hidden-state-leak` audit (per
+pipeline `evaluation-harness.md` §Tradeoff-test reports) that scans deployed
+inference inputs and asserts no `SOURCE_PERFECT` field appears. Any non-zero
+count is a P0 alert per pipeline `observability.md`.
+
 ## Communication
 
 ### Synchronous (in-process calls)
