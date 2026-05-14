@@ -160,14 +160,20 @@ def _resolve_monorepo(args: argparse.Namespace) -> Path:
 
 
 def _pck_path(steam_home: Path, installdir: str) -> Path:
-    """Default GDRE input PCK path for an appmanifest's installdir."""
-    return (
-        steam_home
-        / "steamapps"
-        / "common"
-        / installdir
-        / "Slay the Spire 2.pck"
-    )
+    """Default GDRE input PCK path for an appmanifest's installdir.
+
+    Megacrit's convention: installdir uses display name with spaces
+    ("Slay the Spire 2"), but the .pck file uses CamelCase
+    ("SlayTheSpire2.pck"). We glob for *.pck in the install dir to
+    accommodate any future rename.
+    """
+    install_dir = steam_home / "steamapps" / "common" / installdir
+    pcks = sorted(install_dir.glob("*.pck"))
+    if not pcks:
+        # Fall through to a canonical default path so error messages still
+        # point somewhere meaningful when GDRE wraps in extract.py.
+        return install_dir / "SlayTheSpire2.pck"
+    return pcks[0]
 
 
 # --------------------------------------------------------------------------- #
