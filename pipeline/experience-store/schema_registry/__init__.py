@@ -9,3 +9,4 @@ from .decision import Accept, Decision, Reject
 from .registry import SchemaRegistry
 
 __all__ = ["Accept", "Decision", "Reject", "SchemaRegistry"]
+from .versions import SchemaVersion, PHASE1  # noqa: F401
