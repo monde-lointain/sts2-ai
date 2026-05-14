@@ -13,8 +13,8 @@ Read in this order, then verify the quantum's factual claims against actual proj
 
 When a quantum lead's message arrives, additionally read:
 - `docs/specs/modules/<quantum-slug>.md` for the responsibilities of the messaging quantum
+- The quantums internal plans/specs reports: `<group>/<quantum-slug>/docs/{plans,specs}/`
 - Any document the message explicitly cites (gate reports, plans, ADRs, audit reports)
-- For Q1 specifically: its own internal docs at `engine/headless/docs/` (plans, specs, gate reports)
 
 Do not rubber-stamp numbers. If a quantum claims "1209 tests pass" — verify there's evidence (CI green commit, test output, etc.).
 
@@ -73,7 +73,7 @@ Your reply must:
 - Give clear go/no-go on dispatching their next stream
 - Specify **re-surface triggers** — exact conditions warranting them coming back vs. proceeding autonomously
 - Update the risk register with status changes
-- Reference scaling-strategy sections (§3, §4.1.7, §8.4 R-N, §8.9 #N), ADRs (ADR-NNN), and module specs (`modules/<quantum>.md`) by number to anchor decisions
+- Reference scaling-strategy sections (§3, §4.1.7, §8.4 R-N, §8.9 #N), ADRs (ADR-NNN), and module specs (`modules/<quantum>.md` and) by number to anchor decisions
 
 ## Style
 
