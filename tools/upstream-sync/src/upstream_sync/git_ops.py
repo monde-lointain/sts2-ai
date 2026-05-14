@@ -149,13 +149,16 @@ def commit_and_tag(
 
     _run_git(tree, "add", "-A", op="add")
 
-    # Sanity: after `add -A`, every porcelain line should start with [AM ]
-    # (added / modified-staged / modified-in-worktree). Anything else (?? for
-    # untracked, etc.) indicates the allowlist let something through it
-    # shouldn't have.
+    # Sanity: after `add -A`, every porcelain line should be a legitimate
+    # staged change (A added / M modified / D deleted / R renamed / C copied)
+    # or a fully-clean entry (leading space). Anything else — notably "??"
+    # for untracked — indicates the allowlist let something through it
+    # shouldn't have. Deletions are legitimate here because rsync --delete
+    # drops upstream-removed files; git add -A then stages those deletions.
     status = _run_git(tree, "status", "--porcelain", op="status").stdout
     offending = [
-        line for line in status.splitlines() if line and line[:1] not in ("A", "M", " ")
+        line for line in status.splitlines()
+        if line and line[:1] not in ("A", "M", "D", "R", "C", " ")
     ]
     if offending:
         joined = "\n".join(offending)
