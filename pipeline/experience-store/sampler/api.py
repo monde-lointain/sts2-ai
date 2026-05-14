@@ -38,6 +38,7 @@ from typing import Any, Iterator
 
 from proto import DecisionType, Trajectory, TrajectoryStep
 from schema_registry import Accept, Reject, SchemaRegistry
+from schema_registry.versions import SchemaVersion
 
 from .cursor import CursorCache, CursorState
 from .framing import frame_payload, frame_trailer
@@ -482,6 +483,13 @@ class Sampler:
         generator_filter = self._build_str_set(filters.get("generator"))
         sampling_mode_filter = self._build_str_set(filters.get("sampling_mode"))
         schema_filter = filters.get("schema_version")
+        filter_version: SchemaVersion | None = (
+            SchemaVersion(
+                int(schema_filter["major"]), int(schema_filter["minor"])
+            )
+            if schema_filter is not None
+            else None
+        )
 
         scan_limit = max(_SCAN_OVERFETCH_MIN, int(batch_size) * _SCAN_OVERFETCH)
         emitted_frames: list[bytes] = []
@@ -537,9 +545,12 @@ class Sampler:
                 last_fully_drained_ts = ts_ns
                 pending_offset = 0
                 continue
-            if schema_filter is not None and (
-                int(traj.schema_version.major) != schema_filter["major"]
-                or int(traj.schema_version.minor) != schema_filter["minor"]
+            if filter_version is not None and (
+                SchemaVersion(
+                    int(traj.schema_version.major),
+                    int(traj.schema_version.minor),
+                )
+                != filter_version
             ):
                 last_fully_drained_ts = ts_ns
                 pending_offset = 0
