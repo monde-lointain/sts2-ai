@@ -107,3 +107,68 @@ def test_reinit_on_existing_dir_preserves_audit(tmp_path):
 def test_audit_filename_is_canonical(tmp_path):
     log = AuditLog(tmp_path)
     assert log.path.name == AUDIT_FILE
+
+
+# ---------------------------------------------------------------------------
+# Typed append helpers (R3b.3)
+# ---------------------------------------------------------------------------
+
+
+def test_append_tick_writes_expected_record(tmp_path):
+    from lifecycle.lifecycle import TickResult
+
+    log = AuditLog(tmp_path)
+    result = TickResult(
+        pressure="overflow",
+        action="drop",
+        reason="overflow",
+        hot_bytes=120 * 1024**3,
+        queue_depth=10,
+        rows_dropped=42,
+        until_ts_ns=987,
+        tick_ts_ns=100,
+    )
+    log.append_tick(result, bytes_freed=1024)
+    rows = log.read_all()
+    assert rows == [
+        {
+            "ts_ns": 100,
+            "action": "drop",
+            "until_ts_ns": 987,
+            "rows": 42,
+            "bytes": 1024,
+            "reason": "overflow",
+        }
+    ]
+
+
+def test_append_tick_error_writes_expected_record(tmp_path):
+    log = AuditLog(tmp_path)
+    log.append_tick_error(RuntimeError("kaboom"))
+    rows = log.read_all()
+    assert len(rows) == 1
+    rec = rows[0]
+    assert rec["action"] == "tick_error"
+    assert rec["until_ts_ns"] == 0
+    assert rec["rows"] == 0
+    assert rec["bytes"] == 0
+    assert rec["reason"] == "RuntimeError: kaboom"
+    assert isinstance(rec["ts_ns"], int) and rec["ts_ns"] > 0
+
+
+def test_append_policy_update_writes_expected_record(tmp_path):
+    log = AuditLog(tmp_path)
+    before = {"hot_overflow_bytes": 1}
+    after = {"hot_overflow_bytes": 2}
+    log.append_policy_update(before, after)
+    rows = log.read_all()
+    assert len(rows) == 1
+    rec = rows[0]
+    assert rec["action"] == "policy_update"
+    assert rec["until_ts_ns"] == 0
+    assert rec["rows"] == 0
+    assert rec["bytes"] == 0
+    assert rec["reason"] == "operator_update"
+    assert rec["before"] == before
+    assert rec["after"] == after
+    assert isinstance(rec["ts_ns"], int) and rec["ts_ns"] > 0

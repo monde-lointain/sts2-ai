@@ -183,15 +183,8 @@ class Lifecycle:
 
         # Append audit record (one entry per tick that took action).
         if action != "noop":
-            self._audit.append(
-                {
-                    "ts_ns": tick_ts_ns,
-                    "action": action,
-                    "until_ts_ns": int(until_ts_ns),
-                    "rows": int(rows_dropped),
-                    "bytes": int(self._drop_target_bytes(hot_bytes)),
-                    "reason": reason,
-                }
+            self._audit.append_tick(
+                result, bytes_freed=self._drop_target_bytes(hot_bytes)
             )
 
         return result
@@ -221,18 +214,7 @@ class Lifecycle:
         """
         old_dict = self._policy.as_dict()
         new_dict = self._policy.update(policy)
-        self._audit.append(
-            {
-                "ts_ns": time.time_ns(),
-                "action": "policy_update",
-                "until_ts_ns": 0,
-                "rows": 0,
-                "bytes": 0,
-                "reason": "operator_update",
-                "before": old_dict,
-                "after": new_dict,
-            }
-        )
+        self._audit.append_policy_update(old_dict, new_dict)
         return new_dict
 
     # ------------------------------------------------------------------
@@ -257,16 +239,7 @@ class Lifecycle:
         HotStore hiccup is recorded but doesn't kill the daemon.
         """
         try:
-            self._audit.append(
-                {
-                    "ts_ns": time.time_ns(),
-                    "action": "tick_error",
-                    "until_ts_ns": 0,
-                    "rows": 0,
-                    "bytes": 0,
-                    "reason": f"{type(exc).__name__}: {exc}",
-                }
-            )
+            self._audit.append_tick_error(exc)
         except Exception:
             # If even the audit log is broken, swallow rather
             # than tear down the daemon.

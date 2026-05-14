@@ -16,7 +16,10 @@ import json
 import os
 import pathlib
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .lifecycle import TickResult
 
 AUDIT_FILE = "audit.ndjson"
 
@@ -78,6 +81,54 @@ class AuditLog:
         except FileNotFoundError:
             # Defensive: someone deleted the live file between write+stat.
             return
+
+    # ------------------------------------------------------------------
+    # Typed append helpers (R3b.3) — single source-of-truth for the dict
+    # shapes Lifecycle persists; keeps wire format centralized here.
+    # ------------------------------------------------------------------
+
+    def append_tick(self, result: "TickResult", bytes_freed: int) -> None:
+        """Audit one drop tick. Caller passes the TickResult and bytes-freed target."""
+        self.append(
+            {
+                "ts_ns": int(result.tick_ts_ns),
+                "action": result.action,
+                "until_ts_ns": int(result.until_ts_ns),
+                "rows": int(result.rows_dropped),
+                "bytes": int(bytes_freed),
+                "reason": result.reason,
+            }
+        )
+
+    def append_tick_error(self, exc: Exception) -> None:
+        """Audit a tick exception (daemon-thread fault) without re-raising."""
+        self.append(
+            {
+                "ts_ns": time.time_ns(),
+                "action": "tick_error",
+                "until_ts_ns": 0,
+                "rows": 0,
+                "bytes": 0,
+                "reason": f"{type(exc).__name__}: {exc}",
+            }
+        )
+
+    def append_policy_update(
+        self, before: dict[str, Any], after: dict[str, Any]
+    ) -> None:
+        """Audit an operator policy POST so drift is traceable."""
+        self.append(
+            {
+                "ts_ns": time.time_ns(),
+                "action": "policy_update",
+                "until_ts_ns": 0,
+                "rows": 0,
+                "bytes": 0,
+                "reason": "operator_update",
+                "before": before,
+                "after": after,
+            }
+        )
 
     def _rotate(self) -> None:
         """Move ``audit.ndjson`` to a timestamped sibling, prune oldest survivors."""
