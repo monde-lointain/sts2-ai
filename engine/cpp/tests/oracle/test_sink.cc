@@ -2,12 +2,12 @@
 //
 // Gated under STS2_BUILD_ORACLE_SINK because sts2::oracle_agreement links
 // Apache Arrow + Parquet. Defensive #if guard mirrors the
-// target_compile_definitions in tests/oracle/CMakeLists.txt — belt + suspenders.
+// target_compile_definitions in tests/oracle/CMakeLists.txt — belt +
+// suspenders.
 
 #if defined(STS2_BUILD_ORACLE_SINK)
 
 #include <gtest/gtest.h>
-
 #include <unistd.h>
 
 #include <array>
@@ -30,9 +30,10 @@ using sts2::oracle::agreement::AgreementRow;
 using sts2::oracle::agreement::read_parquet;
 using sts2::oracle::agreement::write_parquet;
 
-// Deterministic timestamp_ms = 2025-05-12T00:00:00Z → year=2025/month=05/day=12.
-// Aligned with the emit-sample-rows driver (S3-T6) so manual cross-inspection
-// of the test corpus matches the on-disk repo data/oracle/agreement layout.
+// Deterministic timestamp_ms = 2025-05-12T00:00:00Z →
+// year=2025/month=05/day=12. Aligned with the emit-sample-rows driver (S3-T6)
+// so manual cross-inspection of the test corpus matches the on-disk repo
+// data/oracle/agreement layout.
 constexpr std::int64_t kFixedTimestampMs = 1747008000000;
 constexpr const char* kModelSha = "abc123stub";
 
@@ -44,9 +45,8 @@ class SinkTest : public ::testing::Test {
     // ctest) never collide on filesystem state.
     std::random_device rd;
     std::uniform_int_distribution<std::uint64_t> dist;
-    const std::string suffix = "sts2_sink_test_" +
-                               std::to_string(::getpid()) + "_" +
-                               std::to_string(dist(rd));
+    const std::string suffix = "sts2_sink_test_" + std::to_string(::getpid()) +
+                               "_" + std::to_string(dist(rd));
     root_ = std::filesystem::temp_directory_path() / suffix;
     std::filesystem::create_directories(root_);
   }
@@ -58,8 +58,8 @@ class SinkTest : public ::testing::Test {
   }
 
   // Helper: build a fully-populated row sharing the test partition.
-  static AgreementRow make_row(const std::string& state_hash,
-                               double oracle_hp, double oracle_rounds) {
+  static AgreementRow make_row(const std::string& state_hash, double oracle_hp,
+                               double oracle_rounds) {
     AgreementRow row;
     row.state_hash = state_hash;
     row.oracle_action_json = R"({"kind":"play_card","card_id":"Strike"})";
@@ -139,8 +139,7 @@ TEST_F(SinkTest, PartitionPathLayout) {
 
   // 2025-05-12T00:00:00Z + model_version=abc123stub → exact path below.
   const std::filesystem::path expected =
-      root_ / "year=2025" / "month=05" / "day=12" /
-      "model=abc123stub.parquet";
+      root_ / "year=2025" / "month=05" / "day=12" / "model=abc123stub.parquet";
   EXPECT_TRUE(std::filesystem::exists(expected))
       << "expected partition path missing: " << expected;
   EXPECT_TRUE(std::filesystem::is_regular_file(expected));

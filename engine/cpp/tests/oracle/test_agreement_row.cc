@@ -1,9 +1,9 @@
+#include <gtest/gtest.h>
+
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <string>
-
-#include <gtest/gtest.h>
 
 #include "sts2/oracle/agreement/agreement_row.h"
 
