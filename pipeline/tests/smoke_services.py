@@ -20,6 +20,10 @@ SERVICES = [
     "evaluation-harness",
     "observability",
 ]
+# Services whose /health "schema" field deviates from the default 0; per
+# spec, Q3 experience-store reports its current write-target major (=1 in
+# Phase-1A) so smoke can verify SchemaRegistry wiring end-to-end.
+SERVICE_HEALTH_SCHEMAS: dict[str, int] = {"experience-store": 1}
 
 
 def request(url: str) -> tuple[int, bytes]:
@@ -58,7 +62,8 @@ def smoke_service(service: str) -> None:
     )
     try:
         health = wait_for_health(int(config["port"]))
-        if health != {"service": service, "status": "ok", "schema": 0}:
+        expected_schema = SERVICE_HEALTH_SCHEMAS.get(service, 0)
+        if health != {"service": service, "status": "ok", "schema": expected_schema}:
             raise AssertionError(f"{service} bad health: {health}")
         data_dir = REPO_ROOT / config["data_dir"]
         if not data_dir.is_dir():
