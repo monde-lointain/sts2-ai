@@ -53,6 +53,7 @@ import queue
 import threading
 from typing import Any
 
+from _metrics import PrometheusLineBuilder
 from control_plane.provenance import ProvenanceLog
 from hot_store import HotStore
 from proto import DecisionType, ObservabilityRegime, Trajectory
@@ -284,30 +285,20 @@ class IngestAPI:
             bytes_total = self._bytes_total
         depth = self.queue_depth()
 
-        lines: list[bytes] = []
-        lines.append(
-            f'sts2_q3_ingest_accepted_total{{service="{svc}"}} {accepted}'.encode(
-                "utf-8"
-            )
-        )
+        builder = PrometheusLineBuilder(svc)
+        builder.counter("sts2_q3_ingest_accepted_total", value=accepted)
         # Emit a stable sorted order for determinism in tests.
         for reason in sorted(rejected_by_reason):
             count = rejected_by_reason[reason]
-            if count == 0:
-                continue
-            lines.append(
-                f'sts2_q3_ingest_rejected_total{{reason="{reason}",'
-                f'service="{svc}"}} {count}'.encode("utf-8")
-            )
-        lines.append(
-            f'sts2_q3_ingest_queue_depth{{service="{svc}"}} {depth}'.encode("utf-8")
-        )
-        lines.append(
-            f'sts2_q3_ingest_bytes_total{{service="{svc}"}} {bytes_total}'.encode(
-                "utf-8"
-            )
-        )
-        return lines
+            if count > 0:
+                builder.counter(
+                    "sts2_q3_ingest_rejected_total",
+                    {"reason": reason},
+                    value=count,
+                )
+        builder.gauge("sts2_q3_ingest_queue_depth", value=depth)
+        builder.counter("sts2_q3_ingest_bytes_total", value=bytes_total)
+        return builder.lines()
 
     # ----------------------------- internals ---------------------------------
 
