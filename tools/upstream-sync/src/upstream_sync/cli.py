@@ -402,7 +402,8 @@ def _cmd_sync(args: argparse.Namespace) -> int:
 
     if args.dry_run:
         # Skip the GDRE/rsync mutations. If upstream tree is not under git yet,
-        # bootstrap from current contents (no extract).
+        # bootstrap from current contents (no extract) — same shape as the
+        # extract-mode bootstrap branch below: bootstrap, write state, return.
         if not (cfg.upstream_tree / ".git").exists():
             bootstrap(
                 cfg.upstream_tree,
@@ -410,6 +411,21 @@ def _cmd_sync(args: argparse.Namespace) -> int:
                 meta.buildid,
                 gdre_version=GDRE_VERSION_FALLBACK,
             )
+            _write_state(
+                monorepo,
+                {
+                    "tool_version": _tool_version(),
+                    "last_synced_buildid": meta.buildid,
+                    "last_synced_version": version_spec.raw,
+                    "last_synced_at": _utc_now_iso(),
+                    "upstream_tree_path": str(cfg.upstream_tree),
+                },
+            )
+            print(
+                f"[dry-run] Bootstrap complete for {version_spec.raw}; "
+                "skipping diff (no prior tag)"
+            )
+            return 0
         print(f"[dry-run] skipping GDRE extract for {version_spec.raw}")
     else:
         # Full extract flow.
