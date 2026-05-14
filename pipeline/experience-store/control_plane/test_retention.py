@@ -411,3 +411,28 @@ def test_sustained_pressure_shim_preserves_ring_buffer(tmp_path):
         # same monotonic time must still be HIGH_WATER (not SUSTAINED).
         t[0] = 0.0
         assert policy.classify_pressure(1500, 0, 100) == Pressure.HIGH_WATER
+
+
+import threading
+
+def test_classify_pressure_threadsafe_under_concurrent_load(tmp_path):
+    """8 threads x 2k iters of classify+windowed-read; deque must remain
+    structurally valid (1..64 3-tuples) and no exceptions."""
+    rc = RetentionController({}, tmp_path)
+    barrier = threading.Barrier(8)
+    errors: list[Exception] = []
+    def hammer():
+        barrier.wait()
+        try:
+            for _ in range(2000):
+                rc.classify_pressure(rc.high_water_bytes() + 1, 0, 1000)
+                rc._sustained_fires(1000)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(exc)
+    ts = [threading.Thread(target=hammer) for _ in range(8)]
+    for t in ts: t.start()
+    for t in ts: t.join()
+    assert errors == []
+    assert 1 <= len(rc._samples) <= 64
+    for entry in rc._samples:
+        assert isinstance(entry, tuple) and len(entry) == 3

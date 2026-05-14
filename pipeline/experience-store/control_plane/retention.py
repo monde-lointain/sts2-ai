@@ -22,6 +22,7 @@ import collections
 import enum
 import json
 import pathlib
+import threading
 import time
 from typing import Iterable
 
@@ -131,6 +132,7 @@ class RetentionController:
         self._samples: collections.deque[tuple[float, int, int]] = collections.deque(
             maxlen=_RING_BUFFER_SIZE
         )
+        self._samples_lock = threading.Lock()
 
     def _persist(self) -> None:
         payload = {
@@ -172,79 +174,47 @@ class RetentionController:
     def classify_pressure(
         self, hot_bytes: int, queue_depth: int, queue_capacity: int
     ) -> Pressure:
-        """Classify current pressure per spec lines 98-100.
-
-        - `Overflow` -- hot_bytes > overflow (immediate-drop trigger).
-        - `Sustained` -- Q3-ADR-008 dual-window predicate fires:
-            (hot_bytes > high_water for >= hot_bytes_window_seconds)
-            OR (queue_depth > queue_threshold for >= queue_depth_window_seconds).
-        - `HighWater` -- high_water < hot_bytes <= overflow
-            OR queue_depth >= 0.8 * capacity (transient).
-        - `Normal` -- otherwise.
-
-        Precedence on tie: Overflow > Sustained > HighWater > Normal.
-        Appends the current sample to the internal ring buffer (using
-        `time.monotonic()`) before evaluating, so the buffer always
-        contains the latest observation.
-        """
         now = time.monotonic()
-        self._samples.append((now, int(hot_bytes), int(queue_depth)))
-
-        # Overflow takes precedence: immediate-drop trigger.
+        with self._samples_lock:
+            self._samples.append((now, int(hot_bytes), int(queue_depth)))
         if hot_bytes > self._overflow:
             return Pressure.OVERFLOW
-
-        # Sustained-window check (ADR-008 dual predicate).
         if self._sustained_fires(int(queue_capacity)):
             return Pressure.SUSTAINED
-
-        # HighWater: transient pressure (above high_water but <= overflow,
-        # or queue depth >= threshold fraction of capacity).
         queue_threshold = int(queue_capacity) * self._queue_threshold_frac
         if hot_bytes > self._high_water:
             return Pressure.HIGH_WATER
         if queue_depth >= queue_threshold:
             return Pressure.HIGH_WATER
-
         return Pressure.NORMAL
 
     def _sustained_fires(self, queue_capacity: int) -> bool:
-        """Return True iff Q3-ADR-008 dual condition fires against the ring buffer.
-
-        Walks backwards from the latest sample for each branch; counts
-        the run length while the branch's predicate holds; if the run
-        spans >= the configured window, that branch fires.
-        """
-        if not self._samples:
-            return False
-
+        with self._samples_lock:
+            if not self._samples:
+                return False
+            samples = list(self._samples)
         queue_threshold = float(queue_capacity) * self._queue_threshold_frac
-        latest_ts, latest_hb, latest_qd = self._samples[-1]
-
-        # Current observation must itself be above threshold for the
-        # branch to fire (otherwise the run-length is 0 at the present).
+        latest_ts, latest_hb, latest_qd = samples[-1]
         hot_fires = False
         if latest_hb > self._high_water:
             run_start_hot = latest_ts
-            for ts, hb, _qd in reversed(self._samples):
+            for ts, hb, _qd in reversed(samples):
                 if hb > self._high_water:
                     run_start_hot = ts
                 else:
                     break
             if (latest_ts - run_start_hot) >= self._hot_window_s:
                 hot_fires = True
-
         queue_fires = False
         if latest_qd > queue_threshold:
             run_start_queue = latest_ts
-            for ts, _hb, qd in reversed(self._samples):
+            for ts, _hb, qd in reversed(samples):
                 if qd > queue_threshold:
                     run_start_queue = ts
                 else:
                     break
             if (latest_ts - run_start_queue) >= self._queue_window_s:
                 queue_fires = True
-
         return hot_fires or queue_fires
 
     def sustained_pressure(
@@ -274,17 +244,18 @@ class RetentionController:
         ]
         synthetic.append((float(now_ts), int(hot_bytes), int(queue_depth)))
 
-        saved = list(self._samples)
-        self._samples.clear()
-        # Replay so deque-maxlen semantics are preserved.
-        for sample in synthetic[-_RING_BUFFER_SIZE:]:
-            self._samples.append(sample)
+        with self._samples_lock:
+            saved = list(self._samples)
+            self._samples.clear()
+            for sample in synthetic[-_RING_BUFFER_SIZE:]:
+                self._samples.append(sample)
         try:
             return self._sustained_fires(self._capacity)
         finally:
-            self._samples.clear()
-            for sample in saved[-_RING_BUFFER_SIZE:]:
-                self._samples.append(sample)
+            with self._samples_lock:
+                self._samples.clear()
+                for sample in saved[-_RING_BUFFER_SIZE:]:
+                    self._samples.append(sample)
 
 
 # Backward-compat alias for one wave. W3 dispatches will switch to
