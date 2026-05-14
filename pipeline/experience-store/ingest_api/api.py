@@ -57,6 +57,7 @@ from control_plane.provenance import ProvenanceLog
 from hot_store import HotStore
 from proto import DecisionType, ObservabilityRegime, Trajectory
 from schema_registry import Reject, SchemaRegistry
+from schema_registry.versions import SchemaVersion
 
 # Content type accepted on writes (Q3-ADR-003).
 _CONTENT_TYPE = "application/x-protobuf"
@@ -325,8 +326,12 @@ class IngestAPI:
         6. Enqueue + return 202.
         """
         # 1. Schema gate. Maps Reject.http_status -> response per spec.
+        schema_version = SchemaVersion(
+            int(trajectory.schema_version.major),
+            int(trajectory.schema_version.minor),
+        )
         decision = self._schema_registry.validate(
-            (trajectory.schema_version.major, trajectory.schema_version.minor),
+            schema_version.as_tuple(),
             op="write",
         )
         if isinstance(decision, Reject):
@@ -381,10 +386,7 @@ class IngestAPI:
                 sampling_mode=trajectory.sampling_mode,
                 generator=trajectory.generator,
                 ingest_ts_ns=ingest_ts_ns,
-                schema_version=(
-                    trajectory.schema_version.major,
-                    trajectory.schema_version.minor,
-                ),
+                schema_version=schema_version.as_tuple(),
             )
         except Exception as prov_err:
             return self._json(
