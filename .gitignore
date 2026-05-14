@@ -79,3 +79,8 @@ data/
 # AST analyzer outputs (regenerated on demand)
 tools/ast-analyzer/analysis.json
 docs/test-plan/
+
+# tools/upstream-sync build artifacts
+tools/upstream-sync/src/*.egg-info/
+tools/upstream-sync/.pytest_cache/
+tools/upstream-sync/**/__pycache__/
