@@ -22,6 +22,7 @@ from typing import Any, Callable
 
 from .audit import AuditLog
 from .policy import LifecyclePolicy
+from .thread_manager import LifecycleThreadManager
 
 CURSOR_FILE = "cursor.json"
 
@@ -102,9 +103,13 @@ class Lifecycle:
         self._last_tick_state: TickResult | None = None
         self._tick_seconds_total = 0.0
 
-        # Background thread bookkeeping.
-        self._thread: threading.Thread | None = None
-        self._stop_event: threading.Event | None = None
+        # Background thread mechanics live in a dedicated manager so the
+        # tick logic above stays unit-testable without a real thread.
+        self._thread_manager = LifecycleThreadManager(
+            tick_fn=self.tick,
+            interval_fn=self._policy.tick_interval_seconds,
+            on_error=self._audit_tick_error,
+        )
 
     # ------------------------------------------------------------------
     # Public tick API
@@ -235,69 +240,37 @@ class Lifecycle:
     # ------------------------------------------------------------------
 
     def start(self, stop_event: threading.Event) -> None:
-        """Start the background tick loop (daemon thread).
-
-        ``stop_event`` is the shutdown signal; the loop wakes every
-        ``tick_interval_seconds`` (or sooner when the event fires). Idempotent:
-        a second ``start(...)`` call while a thread is alive raises
-        ``RuntimeError`` so service.py can't accidentally double-spawn.
-        """
-        if self._thread is not None and self._thread.is_alive():
-            raise RuntimeError("Lifecycle background thread already running")
-        self._stop_event = stop_event
-        self._thread = threading.Thread(
-            target=self._run_loop,
-            name="lifecycle-tick",
-            daemon=True,
-        )
-        self._thread.start()
+        """Start the background tick loop. Delegates to LifecycleThreadManager."""
+        self._thread_manager.start(stop_event)
 
     def join(self, timeout: float | None = None) -> None:
         """Wait for the background thread to exit (operator + smoke tests)."""
-        if self._thread is None:
-            return
-        self._thread.join(timeout)
+        self._thread_manager.join(timeout)
 
     def is_alive(self) -> bool:
-        return self._thread is not None and self._thread.is_alive()
+        return self._thread_manager.is_alive()
 
-    def _run_loop(self) -> None:
-        """Background driver — ``tick()`` every ``tick_interval_seconds``.
+    def _audit_tick_error(self, exc: Exception) -> None:
+        """Audit-append a tick error; never re-raises.
 
-        Tick exceptions are caught + logged-to-audit so a transient HotStore
-        hiccup doesn't kill the thread. The shutdown signal is honored
-        between ticks via ``Event.wait(timeout)``.
+        Wired as ``on_error`` for ``LifecycleThreadManager`` so a transient
+        HotStore hiccup is recorded but doesn't kill the daemon.
         """
-        assert self._stop_event is not None
-        # Initial tick immediately so smoke tests observe progress within
-        # the first interval (spec line 162-163: /metrics must include
-        # last_tick_ts_ns "after the first tick").
-        first = True
-        while not self._stop_event.is_set():
-            if first:
-                first = False
-            else:
-                interval = self._policy.tick_interval_seconds()
-                if self._stop_event.wait(timeout=interval):
-                    break
-            try:
-                self.tick()
-            except Exception as exc:  # noqa: BLE001 - audit + continue
-                try:
-                    self._audit.append(
-                        {
-                            "ts_ns": time.time_ns(),
-                            "action": "tick_error",
-                            "until_ts_ns": 0,
-                            "rows": 0,
-                            "bytes": 0,
-                            "reason": f"{type(exc).__name__}: {exc}",
-                        }
-                    )
-                except Exception:
-                    # If even the audit log is broken, swallow rather
-                    # than tear down the daemon.
-                    pass
+        try:
+            self._audit.append(
+                {
+                    "ts_ns": time.time_ns(),
+                    "action": "tick_error",
+                    "until_ts_ns": 0,
+                    "rows": 0,
+                    "bytes": 0,
+                    "reason": f"{type(exc).__name__}: {exc}",
+                }
+            )
+        except Exception:
+            # If even the audit log is broken, swallow rather
+            # than tear down the daemon.
+            pass
 
     # ------------------------------------------------------------------
     # HTTP-facing handlers (called by service.py W4)
