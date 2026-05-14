@@ -224,3 +224,23 @@ sanitize-test: sanitize
 sanitize-clean:
 	@rm -rf $(SANITIZE_BUILD_DIR)
 	@echo "Sanitizer build directory removed"
+
+# tools/upstream-sync (per ~/.claude/plans/...).
+SYNC_ARGS ?=
+
+.PHONY: sync-check sync-extract sync-diff sync-port-decisions sync
+
+sync-check:
+	@.venv/bin/python -m upstream_sync.cli check $(SYNC_ARGS)
+
+sync-extract:
+	@.venv/bin/python -m upstream_sync.cli extract $(SYNC_ARGS)
+
+sync-diff:
+	@.venv/bin/python -m upstream_sync.cli diff $(SYNC_ARGS)
+
+sync-port-decisions:
+	@.venv/bin/python -m upstream_sync.cli port-decisions $(SYNC_ARGS)
+
+sync:
+	@.venv/bin/python -m upstream_sync.cli sync $(SYNC_ARGS)
