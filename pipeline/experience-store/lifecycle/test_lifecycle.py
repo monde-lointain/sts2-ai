@@ -695,3 +695,21 @@ def test_tick_writes_cursor_under_lock():
 def test_cursor_property_takes_lock():
     src = inspect.getsource(Lifecycle.cursor.fget)  # type: ignore[union-attr]
     assert "with self._lock:" in src
+
+
+def test_last_tick_state_is_typed_tickresult(tmp_path):
+    """After tick(), Lifecycle._last_tick_state is a TickResult (None pre-first-tick)."""
+    hot = _FakeHotStore(hot_bytes=10 * 1024**3)
+    ret = _FakeRetention(Pressure.NORMAL)
+    lc = Lifecycle(
+        hot_store=hot,
+        retention_controller=ret,
+        queue_depth_provider=lambda: 0,
+        queue_capacity=1000,
+        data_dir=tmp_path,
+    )
+    assert lc._last_tick_state is None
+    lc.force_tick()
+    assert isinstance(lc._last_tick_state, TickResult)
+    assert lc._last_tick_state.pressure == "normal"
+    assert lc._last_tick_state.action == "noop"

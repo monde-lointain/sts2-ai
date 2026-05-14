@@ -99,13 +99,7 @@ class Lifecycle:
         }
         self._promoted_total = 0  # Phase-2+; stays 0 here.
         self._pressure_state = "normal"
-        self._last_tick_action: dict[str, Any] = {
-            "pressure": "normal",
-            "action": "noop",
-            "reason": None,
-            "rows_dropped": 0,
-            "tick_ts_ns": 0,
-        }
+        self._last_tick_state: TickResult | None = None
         self._tick_seconds_total = 0.0
 
         # Background thread bookkeeping.
@@ -157,19 +151,24 @@ class Lifecycle:
         else:
             raise ValueError(f"unknown pressure value: {pressure_value!r}")
 
+        result = TickResult(
+            pressure=pressure_value,
+            action=action,
+            reason=reason,
+            hot_bytes=hot_bytes,
+            queue_depth=queue_depth,
+            rows_dropped=rows_dropped,
+            until_ts_ns=until_ts_ns,
+            tick_ts_ns=tick_ts_ns,
+        )
+
         with self._lock:
             self._pressure_state = pressure_value
             if reason is not None:
                 self._dropped_total[reason] = (
                     self._dropped_total.get(reason, 0) + rows_dropped
                 )
-            self._last_tick_action = {
-                "pressure": pressure_value,
-                "action": action,
-                "reason": reason,
-                "rows_dropped": rows_dropped,
-                "tick_ts_ns": tick_ts_ns,
-            }
+            self._last_tick_state = result
             self._tick_seconds_total += time.monotonic() - tick_started_monotonic
             new_cursor = dict(self._cursor)
             new_cursor["last_tick_ts_ns"] = tick_ts_ns
@@ -190,16 +189,7 @@ class Lifecycle:
                 }
             )
 
-        return TickResult(
-            pressure=pressure_value,
-            action=action,
-            reason=reason,
-            hot_bytes=hot_bytes,
-            queue_depth=queue_depth,
-            rows_dropped=rows_dropped,
-            until_ts_ns=until_ts_ns,
-            tick_ts_ns=tick_ts_ns,
-        )
+        return result
 
     def force_tick(self) -> TickResult:
         """Synchronous one-tick; called by the operator HTTP endpoint + tests."""
@@ -316,13 +306,30 @@ class Lifecycle:
     def handle_get_lifecycle_status(self) -> tuple[int, dict[str, str], bytes]:
         """Spec line 60: status JSON."""
         with self._lock:
-            last_tick = dict(self._last_tick_action)
+            last = self._last_tick_state
+            if last is not None:
+                # Preserve historical last_tick_action JSON shape (subset of fields).
+                last_dict: dict[str, Any] = {
+                    "pressure": last.pressure,
+                    "action": last.action,
+                    "reason": last.reason,
+                    "rows_dropped": last.rows_dropped,
+                    "tick_ts_ns": last.tick_ts_ns,
+                }
+            else:
+                last_dict = {
+                    "pressure": "normal",
+                    "action": "noop",
+                    "reason": None,
+                    "rows_dropped": 0,
+                    "tick_ts_ns": 0,
+                }
             dropped = sum(self._dropped_total.values())
             cursor_snapshot = dict(self._cursor)
         body = {
             "policy": self._policy.as_dict(),
             "cursor": cursor_snapshot,
-            "last_tick_action": last_tick,
+            "last_tick_action": last_dict,
             "hot_bytes": int(self._hot_store.range_size_bytes()),
             "cold_bytes": 0,  # Phase-1A: cold disabled.
             "retention_drops_total": dropped,
@@ -373,7 +380,11 @@ class Lifecycle:
             dropped = dict(self._dropped_total)
             promoted = self._promoted_total
             pressure_state = self._pressure_state
-            last_tick_ts_ns = int(self._last_tick_action["tick_ts_ns"])
+            last_tick_ts_ns = (
+                self._last_tick_state.tick_ts_ns
+                if self._last_tick_state is not None
+                else 0
+            )
             tick_seconds_total = self._tick_seconds_total
         cursor_ts_ns = int(self._cursor.get("last_promoted_ts_ns", 0))
         svc = service_name
