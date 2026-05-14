@@ -1,35 +1,20 @@
 """Unit tests for ``atomic_write_json`` (Stream A.1-alpha).
 
-The module under test lives at ``pipeline/experience-store/_io.py``.
-Its filename collides with the CPython builtin ``_io`` module, so we
-load it by explicit file path via ``importlib`` to bypass normal
-import resolution.
+The module under test lives at ``pipeline/experience-store/_atomic_io.py``.
+``conftest.py`` injects this directory onto ``sys.path`` so the
+``_atomic_io`` name resolves as a top-level module.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
-import sys
 from pathlib import Path
 
 import pytest
 
-
-def _load_io_module():
-    spec = importlib.util.spec_from_file_location(
-        "experience_store_io", Path(__file__).parent / "_io.py"
-    )
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["experience_store_io"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-_io_mod = _load_io_module()
-atomic_write_json = _io_mod.atomic_write_json
+import _atomic_io
+from _atomic_io import atomic_write_json
 
 
 def test_writes_correct_json_roundtrips(tmp_path: Path) -> None:
@@ -60,7 +45,7 @@ def test_fsync_true_calls_os_fsync(tmp_path: Path, monkeypatch: pytest.MonkeyPat
         calls.append(fd)
         real_fsync(fd)
 
-    monkeypatch.setattr(_io_mod.os, "fsync", spy)
+    monkeypatch.setattr(_atomic_io.os, "fsync", spy)
 
     atomic_write_json(tmp_path / "out.json", {"x": 1}, fsync=True)
 
@@ -75,7 +60,7 @@ def test_fsync_false_does_not_call_os_fsync(
     def spy(fd: int) -> None:
         calls.append(fd)
 
-    monkeypatch.setattr(_io_mod.os, "fsync", spy)
+    monkeypatch.setattr(_atomic_io.os, "fsync", spy)
 
     atomic_write_json(tmp_path / "out.json", {"x": 1}, fsync=False)
 
