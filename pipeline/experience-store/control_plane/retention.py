@@ -25,6 +25,8 @@ import pathlib
 import threading
 import time
 
+from _atomic_io import atomic_write_json
+
 POLICY_DIR = "retention"
 POLICY_FILE = "policy.json"
 
@@ -142,11 +144,7 @@ class RetentionController:
             "queue_depth_window_seconds": self._queue_window_s,
             "queue_depth_threshold_fraction": self._queue_threshold_frac,
         }
-        tmp = self._policy_path.with_suffix(".json.tmp")
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-        tmp.replace(self._policy_path)
+        atomic_write_json(self._policy_path, payload)
 
     @property
     def policy_path(self) -> pathlib.Path:
