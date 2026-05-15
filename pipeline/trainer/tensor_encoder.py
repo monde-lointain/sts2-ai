@@ -30,7 +30,8 @@ Cross-quantum ADRs honored
            leaks through. Strict mode raises ``ValueError``; soft-fail mode
            increments :pyattr:`source_perfect_leak_count` and skips encoding
            tagged fields.
-- ADR-019  ``macro_context`` is a Phase-1 zero-stub (deferral).
+- ADR-019 (Accepted 2026-05-15)  ``macro_context`` is a Phase-1 zero-stub;
+           Phase-2 learned head per the ratified hybrid derivation.
 - ADR-021  Phase-1 ``combat_outcome_samples[]`` is a degenerate single
            sample; we extract sample[0] only.
 """
@@ -57,10 +58,10 @@ _SAMPLE_FIELD_COUNT: int = 4
 # combat_outcome_summary: survival_probability, expected_hp_delta,
 # expected_turns, timeout_probability, uncertainty
 _SUMMARY_FIELD_COUNT: int = 5
-# MacroContext has 9 fields per trajectory.proto (incl. derivation_method
-# which is a string and stays in metadata; here we project the 8 numeric
-# fields + 1 reserved placeholder = 9 floats). Phase-1: all zero.
-_MACRO_DIM: int = 9
+# MacroContext v1.1 has 11 numeric fields per trajectory.proto (ADR-019):
+# 9 v1.0 fields + sp(gold) + sp(MaxHP). `derivation_method` is a string and
+# stays in metadata. Phase-1: all zero (learned head deferred to Phase-2).
+_MACRO_DIM: int = 11
 
 # Default cap on per-batch action-space breadth (config can override).
 _DEFAULT_MAX_ACTION_SPACE: int = 100

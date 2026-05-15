@@ -175,7 +175,7 @@ def _make_dummy_batch(
         combat_summary_targets=torch.zeros((batch_size, 5), dtype=torch.float32),
         hp_frac_target=torch.zeros((batch_size,), dtype=torch.float32),
         prior_logits=torch.zeros((batch_size, action_space), dtype=torch.float32),
-        macro_context=torch.zeros((batch_size, 9), dtype=torch.float32),
+        macro_context=torch.zeros((batch_size, 11), dtype=torch.float32),
         metadata={},
     )
 

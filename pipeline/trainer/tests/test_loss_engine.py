@@ -90,7 +90,7 @@ def _make_eb(
         combat_summary_targets=combat_summary_targets,
         hp_frac_target=hp_frac_target,
         prior_logits=prior_logits,
-        macro_context=torch.zeros(b, 9),
+        macro_context=torch.zeros(b, 11),
         metadata={"content_registry_sha": "test"},
     )
 

@@ -54,7 +54,7 @@ from pipeline.trainer.metrics_emitter import MetricsEmitter
 from pipeline.trainer.model import TrainerNet
 from pipeline.trainer.optim import OptimController
 from pipeline.trainer.run_config import RunConfig, RunProvenance, seed_everything
-from pipeline.trainer.tensor_encoder import EncodedBatch, TensorEncoder
+from pipeline.trainer.tensor_encoder import _MACRO_DIM, EncodedBatch, TensorEncoder
 from pipeline.trainer.train_driver import TrainDriver
 
 
@@ -248,7 +248,7 @@ class TrainerServer(ServiceServer):
             combat_summary_targets=torch.zeros((b, 5)),
             hp_frac_target=torch.zeros((b,)),
             prior_logits=torch.zeros((b, a)),
-            macro_context=torch.zeros((b, 9)),
+            macro_context=torch.zeros((b, _MACRO_DIM)),
             metadata={
                 "content_registry_sha": self.content_registry.content_hash,
             },

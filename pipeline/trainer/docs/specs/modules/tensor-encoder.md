@@ -31,8 +31,10 @@
   fields reach the encoder. Q3 should filter at ingest, but Q10 emits
   a P0 metric counter if any leak through (audit-defense per
   `docs/specs/modules/observability.md:48`).
-- Compose `macro_context` projection: Phase-1 zero-stub; Phase-2+ real
-  shadow-price encoding per ADR-015.
+- Compose `macro_context` projection: Phase-1 zero-stub (11 floats per
+  v1.1 schema — 9 original v1.0 fields plus `sp(gold)` and `sp(MaxHP)`
+  added per ADR-019 Decision 1). Phase-2+ learned head per ratified
+  ADR-019 hybrid derivation; shadow-price encoding per ADR-015.
 - Be a pure function: same input → same output, no randomness,
   deterministic device placement (CPU here; `train_driver` moves to GPU).
 

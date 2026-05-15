@@ -187,7 +187,7 @@ def _dummy_batch_provider(registry: ContentRegistry, cfg: RunConfig):
             combat_summary_targets=torch.zeros((b, 5)),
             hp_frac_target=torch.zeros((b,)),
             prior_logits=torch.zeros((b, a)),
-            macro_context=torch.zeros((b, 9)),
+            macro_context=torch.zeros((b, 11)),
             metadata={"content_registry_sha": registry.content_hash},
         )
     return _provider

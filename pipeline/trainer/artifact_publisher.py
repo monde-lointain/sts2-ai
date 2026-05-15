@@ -73,7 +73,7 @@ from pipeline.common.atomic_io import atomic_write_json
 from pipeline.trainer.content_registry import ContentRegistry
 from pipeline.trainer.manifest import ProvenanceManifest, SCHEMA_VERSION, validate
 from pipeline.trainer.run_config import RunConfig, RunProvenance
-from pipeline.trainer.tensor_encoder import EncodedBatch
+from pipeline.trainer.tensor_encoder import _MACRO_DIM, EncodedBatch
 
 
 _LOG = logging.getLogger(__name__)
@@ -461,7 +461,7 @@ class ArtifactPublisher:
                     prior_logits=torch.zeros_like(
                         legal_action_mask, dtype=torch.float32
                     ),
-                    macro_context=torch.zeros((tokens.shape[0], 9)),
+                    macro_context=torch.zeros((tokens.shape[0], _MACRO_DIM)),
                     metadata={},
                 )
                 return self.inner(wrapped).policy_logits

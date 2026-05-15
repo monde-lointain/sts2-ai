@@ -91,7 +91,7 @@ def _make_batch(
     combat_summary_targets = torch.zeros((batch_size, 5), dtype=torch.float32)
     hp_frac_target = torch.zeros((batch_size,), dtype=torch.float32)
     prior_logits = torch.zeros((batch_size, action_space), dtype=torch.float32)
-    macro_context = torch.zeros((batch_size, 9), dtype=torch.float32)
+    macro_context = torch.zeros((batch_size, 11), dtype=torch.float32)
     return EncodedBatch(
         tokens=tokens,
         padding_mask=padding_mask,
@@ -356,7 +356,7 @@ def test_onnx_export_check_model(
                 prior_logits=torch.zeros_like(
                     legal_action_mask, dtype=torch.float32
                 ),
-                macro_context=torch.zeros((tokens.shape[0], 9)),
+                macro_context=torch.zeros((tokens.shape[0], 11)),
                 metadata={},
             )
             return self.inner(wrapped).policy_logits

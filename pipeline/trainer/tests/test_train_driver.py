@@ -416,7 +416,7 @@ def test_encoded_to_device_helper_preserves_metadata() -> None:
         combat_summary_targets=torch.zeros((1, 5), dtype=torch.float32),
         hp_frac_target=torch.zeros((1,), dtype=torch.float32),
         prior_logits=torch.zeros((1, 1), dtype=torch.float32),
-        macro_context=torch.zeros((1, 9), dtype=torch.float32),
+        macro_context=torch.zeros((1, 11), dtype=torch.float32),
         metadata={"k": "v"},
     )
     moved = _encoded_to_device(eb, torch.device("cpu"))

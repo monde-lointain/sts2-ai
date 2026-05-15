@@ -334,7 +334,7 @@ def test_macro_context_is_phase1_zero_stub(
 ) -> None:
     enc = TensorEncoder(registry, _NetworkCfg())
     batch = enc.encode_batch([_make_step(), _make_step()])
-    assert batch.macro_context.shape == (2, 9)
+    assert batch.macro_context.shape == (2, 11)
     assert torch.all(batch.macro_context == 0.0)
 
 
