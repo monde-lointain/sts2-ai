@@ -52,6 +52,7 @@ class NetworkConfig:
     n_heads: int
     ffn_dim: int
     max_seq_len: int
+    max_action_space: int = 100
 
 
 @dataclass(frozen=True)
@@ -244,6 +245,7 @@ def _build_network(block: dict, path: Path) -> NetworkConfig:
         n_heads=int(block["n_heads"]),
         ffn_dim=int(block["ffn_dim"]),
         max_seq_len=int(block["max_seq_len"]),
+        max_action_space=int(block.get("max_action_space", 100)),
     )
 
 

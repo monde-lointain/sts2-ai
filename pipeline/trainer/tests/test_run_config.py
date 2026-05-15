@@ -46,6 +46,7 @@ def _minimal_config() -> dict:
             "n_heads": 4,
             "ffn_dim": 512,
             "max_seq_len": 256,
+            "max_action_space": 100,
         },
         "optim": {
             "lr": 0.0003,
