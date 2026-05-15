@@ -9,11 +9,12 @@
   "refuse_on_dirty": false,
   "network": {
     "expected_token_count": null,
-    "d_model": 128,
-    "n_layers": 6,
-    "n_heads": 4,
-    "ffn_dim": 512,
-    "max_seq_len": 256
+    "d_model": 256,
+    "n_layers": 8,
+    "n_heads": 8,
+    "ffn_dim": 1024,
+    "max_seq_len": 256,
+    "max_action_space": 100
   },
   "optim": {
     "lr": 0.0003,
