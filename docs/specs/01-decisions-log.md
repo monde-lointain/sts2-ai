@@ -376,29 +376,51 @@ Run-level search composes these outcomes with reward generation, reward-choice h
 
 ## ADR-019 — Macro Context Derivation Policy
 
-**Status:** Deferred. Owner: Research Lead. Target decision: Phase-2 training-design kickoff.
+**Status:** Accepted (2026-05-15). Supersedes Deferred (2026-05-14).
 
-**Context.** ADR-015 specifies `macro_context` as input to `evaluate_combat` (HP shadow price, potion shadow prices, risk tolerance, pressure indicators). It does NOT specify *how* those values are computed. Shadow prices are typically Lagrangian duals output by the macro-policy itself — but the macro-policy needs them as input to score paths via combat queries. Chicken-and-egg at inference time.
+**Context.** ADR-015 specifies `macro_context` as input to `evaluate_combat` (HP shadow price, potion shadow prices, risk tolerance, pressure indicators) without specifying *how* those values are computed. The Deferred entry listed four candidate derivation policies (bootstrap / learned / heuristic / joint-proximal) without ratification, citing chicken-and-egg: macro-policy needs sp as input to score paths via combat queries, but sp are Lagrangian duals of the macro-policy itself.
 
-**Candidate derivation policies (none ratified):**
+Research-lead decision on 2026-05-15 to ratify ahead of Phase-2 boot. Grounded in terminal reward `R = 1[won] · (1 + α · HP_terminal / HP_max)` with `α ∈ [0.01, 0.10]` (terminal HP strictly tie-breaks among winning trajectories; concrete value pending empirical contact), so `V_run = E[R | s]` and `sp_r = ∂V_run/∂r`.
 
-- (a) Bootstrap from prior iteration's shadow prices (last-step values held over).
-- (b) Separate learned shadow-price head, co-trained with V_run.
-- (c) Heuristic-curve warmup for Phase-2 cold-start (empirical HP-per-floor curves from prior runs).
-- (d) Joint proximal updates with explicit damping on the macro/micro coupling.
+**Decision.**
 
-**Decision deferred** until Phase-2 training design surfaces empirical evidence on which method stabilizes. Phase-2 substrate boot (Q8/Q9/Q10) does NOT gate on this ADR — they plumb the `macro_context` interface using any candidate initially; the chosen derivation can change without rewiring the wire contract.
+1. **Pricing scope — fungibles only.** Scalar shadow prices for HP, MaxHP, Gold, and per-potion-slot. Card and relic valuation stays with the per-instance evaluators ratified in ADR-018; no scalar `sp(card)` or `sp(relic)` — identity dominates (577 card classes, 295 relic classes, 38 with stateful counters), and a scalar aggregate would average out the signal the per-instance evaluators are designed to expose. Energy-per-turn deferred; reopen on Phase-3 content demand.
 
-**Reopen trigger.** First Phase-2 training spike that exercises macro/micro coupling end-to-end and produces calibration evidence.
+2. **Derivation — hybrid (c) → (b), reserve (d), retire (a).**
+   - Phase-2 cold start: **(c) heuristic-curve warmup** from oracle rollout statistics (HP-per-floor, gold-per-floor curves).
+   - Phase-2 primary: **(b) learned sp head co-trained with V_run**, supervised by finite-difference targets from V_run (autodiff first; FD fallback if numerically unstable for the state encoding).
+   - Phase-3 reserve: **(d) joint proximal updates with damping** — reopen only if empirical evidence shows macro/micro coupling diverges under (b).
+   - **(a) bootstrap-from-prior** retired as primary; permitted only as inference-time fallback when the learned head returns unreachable.
 
-**Consequences of deferral.**
+3. **Positioning — output of V, input to decision heads.** sp head sits downstream of the shared run encoder; stop-gradient on the consumption path, gradient flow on the supervision path against V_run derivatives. sp consumed by `evaluate_combat`, shop / event / swap evaluators, and card/relic-pick valuators (auxiliary signal). sp is **not** an input to V_run — eliminates the feedback loop motivating the original chicken-and-egg framing.
 
-- *Negative:* Phase-2 training may iterate through 2–3 derivation policies before one stabilizes; experimental compute cost.
-- *Negative:* `macro_context` row-level interpretation in trajectory.proto v1 carries "this was derived via method X" provenance — schema must accommodate.
-- *Positive:* Phase-2 substrate work unblocked; the interface contract holds regardless of derivation.
-- *Positive:* avoids premature lock-in on a derivation policy that may not survive empirical contact.
+4. **Schema extension — trajectory.proto v1 → v1.1 (additive).** Adds `gold_shadow_price (float)` and `max_hp_shadow_price (float)` to `macro_context` with new tag numbers; forward-compatible. v1 rows treat missing fields as NaN-sentinel during transition. `derivation_method` allowed values tighten to: `"warmup_heuristic_curve" | "learned_autodiff" | "learned_finitediff" | "joint_proximal" | "fallback_lagged"`.
 
-**Origin.** Architecture note 2026-05-14 (surfaced as open question during cascade of ADR-014..018).
+5. **Calibration acceptance.** Q12 sideband: empirical win rate of sp-favorable resource-exchange decisions (shops, swap events) on held-out evaluation converges to baseline + ε. Failure triggers reopen to (d).
+
+**Consequences.**
+
+- *Negative:* macro_context grows by 2 scalars in v1.1; Q3 sampler and Q10 reader must handle defaults for in-flight v1 rows during transition.
+- *Negative:* Q10 trainer carries a new auxiliary loss head and FD-supervision pipeline against V_run derivatives; adds compute and a numerical-stability failure mode.
+- *Negative:* Q12 adds a calibration report covering shop / swap-event decisions; couples ADR-019 acceptance to Q12 pipeline readiness.
+- *Negative:* heuristic-curve warmup requires baseline rollout statistics; ADR-019 soft-couples to baseline-policy availability at Phase-2 boot.
+- *Negative:* `α` range `[0.01, 0.10]` is empirically ungrounded; concrete value pending Phase-2 contact (tracked as reopen trigger).
+- *Negative:* cards/relics deliberately get no scalar sp; surface users requesting "one number per resource" redirected to per-instance evaluators per ADR-018.
+- *Positive:* closes the last deferred item in the ADR-014..018 cascade; unblocks Phase-2 substrate work needing concrete `macro_context` derivation semantics.
+- *Positive:* fungibles-only scope avoids over-promising scalar valuation where identity dominates; theoretically clean.
+- *Positive:* hybrid derivation gives a deterministic cold-start and a principled primary mechanism without locking in.
+- *Positive:* output-of-V positioning eliminates the chicken-and-egg framing; V is the single source of truth, sp its summary.
+- *Positive:* sparse-reward densification — sp auxiliary loss provides per-step gradient signal correlated with the binary terminal reward, improving sample efficiency.
+- *Positive:* content-patch resilience — sp interface stable across Q4 token churn; only the encoder retrains to absorb identity changes.
+
+**Reopen triggers.**
+
+- (b) derivation fails to stabilize → escalate to (d) joint proximal.
+- `α` empirics distort policy near boss → reopen reward shape (potentially split to ADR-022).
+- Card/relic ΔV evaluators show enough regularity to make a scalar aggregate useful → add `sp(card_slot)` / `sp(relic_slot)`.
+- Phase-3 content frequently modifies energy-per-turn → add `sp(Energy)`.
+
+**Origin.** Research dialogue 2026-05-15 (research lead + Claude). Closes the Deferred entry surfaced during cascade ADR-014..018 on 2026-05-14.
 
 ---
 
