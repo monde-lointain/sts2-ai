@@ -22,7 +22,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-016 | Deployed Policy Inputs Are Player-Observable / Belief-Sampled | Accepted |
 | ADR-017 | Counterfactuals Stay Observational | Accepted |
 | ADR-018 | Reward Valuation Stays Macro-Owned | Accepted |
-| ADR-019 | Macro Context Derivation Policy | Deferred |
+| ADR-019 | Macro Context Derivation Policy | Accepted |
 | ADR-020 | Oracle-Agreement Sideband Routes through Q3 | Accepted |
 | ADR-021 | Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention | Accepted |
 | ADR-022 | Trajectory Protobuf Binding Homed at `pipeline/common/` | Accepted |
@@ -417,7 +417,7 @@ Research-lead decision on 2026-05-15 to ratify ahead of Phase-2 boot. Grounded i
 **Reopen triggers.**
 
 - (b) derivation fails to stabilize → escalate to (d) joint proximal.
-- `α` empirics distort policy near boss → reopen reward shape (potentially split to ADR-022).
+- `α` empirics distort policy near boss → reopen reward shape (potentially split to a future ADR).
 - Card/relic ΔV evaluators show enough regularity to make a scalar aggregate useful → add `sp(card_slot)` / `sp(relic_slot)`.
 - Phase-3 content frequently modifies energy-per-turn → add `sp(Energy)`.
 
