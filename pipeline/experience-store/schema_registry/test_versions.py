@@ -1,7 +1,7 @@
 """Tests for SchemaVersion value class."""
 import dataclasses
 import pytest
-from schema_registry.versions import SchemaVersion, PHASE1
+from schema_registry.versions import SchemaVersion, PHASE1, PHASE1_1
 
 
 def test_phase1_constant():
@@ -36,3 +36,25 @@ def test_rejects_negative():
 def test_rejects_non_int():
     with pytest.raises(TypeError):
         SchemaVersion(1.0, 0)  # type: ignore[arg-type]
+
+
+# --- PHASE1_1 (v1.1, ADR-019 additive bump) ---
+
+def test_phase1_1_constant():
+    assert PHASE1_1.major == 1 and PHASE1_1.minor == 1
+    assert PHASE1_1.as_tuple() == (1, 1)
+
+def test_phase1_1_as_fields_round_trip():
+    fields = PHASE1_1.as_fields()
+    assert fields == {"major": 1, "minor": 1}
+    assert SchemaVersion.from_fields(fields) == PHASE1_1
+
+def test_phase1_1_str():
+    assert str(PHASE1_1) == "1.1"
+
+def test_phase1_1_from_tuple():
+    assert SchemaVersion.from_tuple((1, 1)) == PHASE1_1
+
+def test_phase1_distinct_from_phase1_1():
+    assert PHASE1 != PHASE1_1
+    assert hash(PHASE1) != hash(PHASE1_1)

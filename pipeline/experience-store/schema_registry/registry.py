@@ -34,7 +34,7 @@ from _atomic_io import atomic_write_json
 from _metrics import PrometheusLineBuilder
 
 from .decision import Accept, Decision, Reject
-from .versions import PHASE1, SchemaVersion
+from .versions import PHASE1, PHASE1_1, SchemaVersion
 
 SCHEMA_DIR = "schema"
 REGISTRY_FILE = "registry.json"
@@ -104,8 +104,8 @@ class SchemaRegistry:
             self._migration_log_path.touch()
 
     def _init_fresh(self) -> None:
-        self._accepted: list[SchemaVersion] = [PHASE1]
-        self._current_write_target: SchemaVersion = PHASE1
+        self._accepted: list[SchemaVersion] = [PHASE1, PHASE1_1]
+        self._current_write_target: SchemaVersion = PHASE1_1
         self._drain_state: DrainState = "open"
         self._drain_target: SchemaVersion | None = None
         self._persist()

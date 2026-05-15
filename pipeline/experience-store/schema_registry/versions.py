@@ -44,3 +44,7 @@ class SchemaVersion:
 
 # Phase-1A canonical wire version.
 PHASE1 = SchemaVersion(1, 0)
+
+# Phase-1A v1.1 — additive minor bump per ADR-019 Decision 4 (gold_shadow_price,
+# max_hp_shadow_price appended to MacroContext). Current write target.
+PHASE1_1 = SchemaVersion(1, 1)

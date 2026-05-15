@@ -33,11 +33,13 @@ from schema_registry.decision import Accept, Reject
 def test_validate_known_version_read_returns_accept(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
     assert isinstance(reg.validate((1, 0), "read"), Accept)
+    assert isinstance(reg.validate((1, 1), "read"), Accept)
 
 
 def test_validate_known_version_write_returns_accept(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
     assert isinstance(reg.validate((1, 0), "write"), Accept)
+    assert isinstance(reg.validate((1, 1), "write"), Accept)
 
 
 def test_validate_unknown_minor_read_returns_reject_400(tmp_path: Path):
@@ -46,7 +48,7 @@ def test_validate_unknown_minor_read_returns_reject_400(tmp_path: Path):
     assert isinstance(decision, Reject)
     assert decision.reason == "schema_unknown"
     assert decision.http_status == 400
-    assert decision.accepted == [(1, 0)]
+    assert decision.accepted == [(1, 0), (1, 1)]
     assert decision.retry_after_sec is None
 
 
@@ -56,7 +58,7 @@ def test_validate_unknown_future_major_write_returns_reject_400(tmp_path: Path):
     assert isinstance(decision, Reject)
     assert decision.reason == "schema_unknown"
     assert decision.http_status == 400
-    assert decision.accepted == [(1, 0)]
+    assert decision.accepted == [(1, 0), (1, 1)]
 
 
 def test_validate_v0_write_returns_reject_400(tmp_path: Path):
@@ -83,12 +85,12 @@ def test_current_health_schema_returns_major(tmp_path: Path):
 
 def test_current_write_target(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
-    assert reg.current_write_target() == (1, 0)
+    assert reg.current_write_target() == (1, 1)
 
 
-def test_accepted_returns_v1_0(tmp_path: Path):
+def test_accepted_returns_v1_0_and_v1_1(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
-    assert reg.accepted() == [(1, 0)]
+    assert reg.accepted() == [(1, 0), (1, 1)]
 
 
 def test_drain_state_open(tmp_path: Path):
@@ -100,8 +102,8 @@ def test_state_snapshot_shape(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
     snap = reg.state_snapshot()
     assert snap == {
-        "accepted": [{"major": 1, "minor": 0}],
-        "current_write_target": {"major": 1, "minor": 0},
+        "accepted": [{"major": 1, "minor": 0}, {"major": 1, "minor": 1}],
+        "current_write_target": {"major": 1, "minor": 1},
         "drain_state": "open",
         "drain_target": None,
     }
@@ -116,18 +118,18 @@ def test_fresh_init_creates_files(tmp_path: Path):
     assert schema_dir.is_dir()
     assert (schema_dir / "registry.json").exists()
     assert (schema_dir / "migration_log.ndjson").exists()
-    assert (schema_dir / "1.0.active").exists()
+    assert (schema_dir / "1.1.active").exists()
     # registry.json content matches the initial shape.
     with (schema_dir / "registry.json").open() as h:
         data = json.load(h)
     assert data == {
-        "accepted": [{"major": 1, "minor": 0}],
-        "current_write_target": {"major": 1, "minor": 0},
+        "accepted": [{"major": 1, "minor": 0}, {"major": 1, "minor": 1}],
+        "current_write_target": {"major": 1, "minor": 1},
         "drain_state": "open",
         "drain_target": None,
     }
     # Sentinel is empty.
-    assert (schema_dir / "1.0.active").read_bytes() == b""
+    assert (schema_dir / "1.1.active").read_bytes() == b""
     # migration log starts empty (no transitions in Phase-1A).
     assert (schema_dir / "migration_log.ndjson").read_bytes() == b""
     # Bind reg to silence unused-var lint.
@@ -139,7 +141,7 @@ def test_reinit_preserves_existing_files(tmp_path: Path):
     del reg1
 
     registry_path = tmp_path / "schema" / "registry.json"
-    sentinel_path = tmp_path / "schema" / "1.0.active"
+    sentinel_path = tmp_path / "schema" / "1.1.active"
     registry_mtime = registry_path.stat().st_mtime_ns
     sentinel_mtime = sentinel_path.stat().st_mtime_ns
 
@@ -147,7 +149,7 @@ def test_reinit_preserves_existing_files(tmp_path: Path):
     time.sleep(0.05)
 
     reg2 = SchemaRegistry(tmp_path)
-    assert reg2.current_write_target() == (1, 0)
+    assert reg2.current_write_target() == (1, 1)
 
     assert registry_path.stat().st_mtime_ns == registry_mtime
     assert sentinel_path.stat().st_mtime_ns == sentinel_mtime
@@ -205,9 +207,9 @@ def test_metrics_lines_returns_bytes(tmp_path: Path):
 def test_metrics_lines_emits_migration_baseline(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
     text = b"\n".join(reg.metrics_lines("experience-store")).decode("utf-8")
-    # No-op (1.0) -> (1.0) baseline counter, value 0 in Phase-1A.
+    # No-op (1.1) -> (1.1) baseline counter, value 0 in Phase-1A.
     assert (
-        'sts2_q3_schema_migration_total{from="1.0",to="1.0",'
+        'sts2_q3_schema_migration_total{from="1.1",to="1.1",'
         'service="experience-store"} 0'
         in text
     )
