@@ -18,6 +18,7 @@ directive next cycles.
 | Q10-ADR-006 | ONNX Export at Every Checkpoint | Accepted |
 | Q10-ADR-007 | W&B Sidecar Inline Thread with Internal Queue | Accepted |
 | Q10-ADR-008 | Q4 Content Registry Frozen at Bootstrap | Accepted |
+| Q10-ADR-009 | Phase-1 Q5-Stub Publish to Local Directory | Accepted |
 
 ---
 
@@ -302,3 +303,51 @@ published by this run bundles the same Q4 bytes loaded from the parent.
   inside `tensor_encoder`.
 - *Positive:* the encoded-tensor cache (if Phase-2+ adds one) does not
   need to invalidate on registry changes within a run.
+
+---
+
+## Q10-ADR-009 — Phase-1 Q5-Stub Publish to Local Directory
+
+**Status:** Accepted (2026-05-14). Reopen trigger: Q5 ships `POST /artifacts`
+(currently substrate-empty per `pipeline/model-registry/service.py =
+"raise SystemExit(main())"`).
+
+**Context.** Q10 must publish checkpoints to Q5 on cadence (every N steps + M
+minutes per Q10-ADR-006). Q5's substrate is empty in Phase-1 S0; no
+`POST /artifacts` endpoint exists. Options: (a) Q10 boot blocks on Q5
+substrate boot (no S0 progress); (b) Q10 stands up a Q5 stub service
+(out-of-scope per ADR-001's quantum-ownership rule — that's Q5's substrate
+work, not Q10's); (c) Q10's `artifact_publisher` writes the full bundle to
+a local directory with atomic temp+rename, using the same manifest schema
+Q5 will validate against once it boots.
+
+**Decision.** Option (c). Phase-1 `artifact_publisher.publish(...)` writes the
+bundle (`state_dict.pt`, `model.onnx`, `content_registry.json`,
+`manifest.json`) to `data/trainer/runs/<run_id>/checkpoints/<step>/` via
+atomic temp+rename per `pipeline/common/atomic_io.atomic_write_json`. The
+`run_id` is a ULID generated once at bootstrap (per `run-config.md`). When
+Q5 boots with `POST /artifacts`, the local-write call swaps for a Q5 client
+wire call — one-method substitution, same shape as the Q10-ADR-003
+`dataset_sha` swap path.
+
+**Consequences.**
+
+- *Negative:* full bundle integrity (manifest correctness, ONNX validity,
+  atomic temp+rename) is exercised end-to-end against a local directory
+  only until Q5 boots. Mitigation: ONNX round-trip + manifest validation
+  are S0 gate items #4 and #5 — real Q10-side checks regardless of Q5
+  substrate state.
+- *Negative:* the local-directory layout is implicit Q10 wire spec for Q5 —
+  when Q5 lands, coordination on bundle layout falls to a Q5↔Q10 sync
+  event.
+- *Negative:* `parent_artifact_id` resolution in Phase 1 reads the
+  local-dir layout, not a registry lookup. When Q5 boots, two read paths
+  exist briefly during cut-over.
+- *Positive:* Q10 closes S0 independent of Q5 substrate state.
+- *Positive:* manifest schema (`pipeline/trainer/manifest.py` v1) is the
+  de facto spec Q5 validates against when their substrate boots; Q5 lead
+  writes their `POST /artifacts` validator from this artifact.
+- *Positive:* atomic-write discipline exercised from Phase 1, not
+  retrofitted at Q5-cut-over.
+
+**Origin.** Q10 boot directive 2026-05-14 §2.2.

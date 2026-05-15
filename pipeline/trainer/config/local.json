@@ -1,5 +1,41 @@
 {
   "service": "trainer",
   "port": 18110,
-  "data_dir": "data/trainer"
+  "data_dir": "data/trainer",
+  "q3_url": "http://127.0.0.1:18103",
+  "q5_url": "http://127.0.0.1:18105",
+  "parent_artifact_id": null,
+  "seed": 0,
+  "refuse_on_dirty": false,
+  "network": {
+    "expected_token_count": null,
+    "d_model": 256,
+    "n_layers": 8,
+    "n_heads": 8,
+    "ffn_dim": 1024,
+    "max_seq_len": 256,
+    "max_action_space": 100
+  },
+  "optim": {
+    "lr": 0.0003,
+    "weight_decay": 0.01,
+    "warmup_steps": 1000,
+    "total_steps": 100000,
+    "grad_clip": 1.0
+  },
+  "loss_weights": {
+    "policy": 1.0,
+    "combat_sample": 1.0,
+    "combat_summary": 1.0,
+    "hp_frac_aux": 0.05,
+    "kl_beta": 0.01
+  },
+  "checkpoint": {
+    "every_n_steps": 1000,
+    "every_m_minutes": 5
+  },
+  "wandb_enabled": false,
+  "sampling_mode": "uniform",
+  "prefetch_queue_size": 4,
+  "batch_size": 32
 }

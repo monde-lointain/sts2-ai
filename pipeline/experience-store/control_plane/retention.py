@@ -24,7 +24,8 @@ import json
 import pathlib
 import threading
 import time
-from typing import Iterable
+
+from _atomic_io import atomic_write_json
 
 POLICY_DIR = "retention"
 POLICY_FILE = "policy.json"
@@ -143,11 +144,7 @@ class RetentionController:
             "queue_depth_window_seconds": self._queue_window_s,
             "queue_depth_threshold_fraction": self._queue_threshold_frac,
         }
-        tmp = self._policy_path.with_suffix(".json.tmp")
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, sort_keys=True)
-            handle.write("\n")
-        tmp.replace(self._policy_path)
+        atomic_write_json(self._policy_path, payload)
 
     @property
     def policy_path(self) -> pathlib.Path:
@@ -216,46 +213,6 @@ class RetentionController:
             if (latest_ts - run_start_queue) >= self._queue_window_s:
                 queue_fires = True
         return hot_fires or queue_fires
-
-    def sustained_pressure(
-        self,
-        hot_bytes: int,
-        queue_depth: int,
-        now_ts: float,
-        history: Iterable[tuple[float, int, int]],
-    ) -> bool:
-        """Backward-compat shim: returns True iff classify_pressure -> SUSTAINED.
-
-        Existing callers (and pre-spec-alignment tests) pass an external
-        `history` iterable plus an explicit `now_ts`. This shim swaps the
-        instance ring buffer for the caller-supplied series, evaluates
-        the dual-window predicate, and restores the original buffer so
-        subsequent `classify_pressure(...)` calls remain consistent.
-
-        New callers should use `classify_pressure(...)` directly and let
-        the controller manage its own ring buffer via `time.monotonic()`.
-        """
-        # Build a transient sample list (oldest-first) ending in the
-        # current observation; load it into the ring buffer for the
-        # sustained-only check, then restore.
-        prior = sorted(history, key=lambda row: row[0])
-        synthetic: list[tuple[float, int, int]] = [
-            (float(ts), int(hb), int(qd)) for ts, hb, qd in prior
-        ]
-        synthetic.append((float(now_ts), int(hot_bytes), int(queue_depth)))
-
-        with self._samples_lock:
-            saved = list(self._samples)
-            self._samples.clear()
-            for sample in synthetic[-_RING_BUFFER_SIZE:]:
-                self._samples.append(sample)
-        try:
-            return self._sustained_fires(self._capacity)
-        finally:
-            with self._samples_lock:
-                self._samples.clear()
-                for sample in saved[-_RING_BUFFER_SIZE:]:
-                    self._samples.append(sample)
 
 
 # Backward-compat alias for one wave. W3 dispatches will switch to

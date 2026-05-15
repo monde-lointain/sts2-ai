@@ -22,6 +22,15 @@
   `OptimConfig`, `LossWeights`, `CheckpointConfig`, `WandbConfig`).
 - Seed Python's `random`, NumPy, and `torch` RNGs via a single
   `seed_everything(seed)` helper invoked once by `service.py.__init__`.
+- Mint a `run_id` (ULID, 26-char Crockford-base32) once at
+  `RunConfig.load(...)`. The ULID is non-deterministic on purpose so that
+  intentional re-launches with the same `(code_sha, dataset_sha, seed,
+  parent_artifact_id, content_registry_sha)` tuple do not clobber prior
+  artifact directories. Reproducibility is provenance-stamped via that
+  tuple, captured into `RunProvenance` / `artifact_publisher.manifest`;
+  `run_id` is solely a per-run identity token, never a reproducibility
+  surface. Tooling that needs to dedupe identical re-runs must hash the
+  tuple, not compare `run_id`s.
 
 Out of scope: training-step logic (`train_driver`), provenance manifest
 serialization (`artifact_publisher.manifest`), runtime config mutation
@@ -34,6 +43,8 @@ In-process, immutable after construction:
 
 - `RunConfig` — frozen dataclass; all submodule config sub-blocks reachable
   as attributes.
+- `run_id: str` — 26-char Crockford-base32 ULID, minted once on
+  `RunConfig.load(...)`. Identity-only; not a reproducibility surface.
 - `RunProvenance` — frozen dataclass; serialized into the provenance
   manifest at publish time by `artifact_publisher`.
 

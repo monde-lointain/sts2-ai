@@ -20,6 +20,9 @@ import threading
 import time
 from typing import Any, Callable
 
+from _atomic_io import atomic_write_json
+from _metrics import PrometheusLineBuilder
+
 from .audit import AuditLog
 from .policy import LifecyclePolicy
 from .thread_manager import LifecycleThreadManager
@@ -333,48 +336,31 @@ class Lifecycle:
             )
             tick_seconds_total = self._tick_seconds_total
         cursor_ts_ns = int(self._cursor.get("last_promoted_ts_ns", 0))
-        svc = service_name
 
-        lines: list[bytes] = []
+        builder = PrometheusLineBuilder(service_name)
         for reason in ("overflow", "sustained_pressure", "cold_unavailable"):
-            lines.append(
-                (
-                    f'sts2_q3_lifecycle_dropped_rows_total'
-                    f'{{reason="{reason}",service="{svc}"}} {dropped[reason]}'
-                ).encode("utf-8")
+            builder.counter(
+                "sts2_q3_lifecycle_dropped_rows_total",
+                {"reason": reason},
+                dropped[reason],
             )
-        lines.append(
-            (
-                f'sts2_q3_lifecycle_promoted_rows_total'
-                f'{{service="{svc}"}} {promoted}'
-            ).encode("utf-8")
-        )
-        lines.append(
-            (
-                f'sts2_q3_lifecycle_cursor_ts_ns{{service="{svc}"}} {cursor_ts_ns}'
-            ).encode("utf-8")
-        )
+        builder.counter("sts2_q3_lifecycle_promoted_rows_total", value=promoted)
+        builder.gauge("sts2_q3_lifecycle_cursor_ts_ns", value=cursor_ts_ns)
         for state in ("normal", "high_water", "overflow", "sustained"):
-            value = 1 if state == pressure_state else 0
-            lines.append(
-                (
-                    f'sts2_q3_lifecycle_pressure_state'
-                    f'{{state="{state}",service="{svc}"}} {value}'
-                ).encode("utf-8")
+            builder.gauge(
+                "sts2_q3_lifecycle_pressure_state",
+                {"state": state},
+                1 if state == pressure_state else 0,
             )
-        lines.append(
-            (
-                f'sts2_q3_lifecycle_last_tick_ts_ns'
-                f'{{service="{svc}"}} {last_tick_ts_ns}'
-            ).encode("utf-8")
+        builder.gauge(
+            "sts2_q3_lifecycle_last_tick_ts_ns", value=last_tick_ts_ns
         )
-        lines.append(
-            (
-                f'sts2_q3_lifecycle_tick_seconds_total'
-                f'{{service="{svc}"}} {tick_seconds_total:.6f}'
-            ).encode("utf-8")
+        builder.gauge(
+            "sts2_q3_lifecycle_tick_seconds_total",
+            value=tick_seconds_total,
+            float_format=".6f",
         )
-        return lines
+        return builder.lines()
 
     # ------------------------------------------------------------------
     # Drop semantics (spec line 71-74)
@@ -443,11 +429,7 @@ class Lifecycle:
         return fresh
 
     def _write_cursor(self, cursor: dict[str, int]) -> None:
-        tmp = self._cursor_path.with_suffix(".json.tmp")
-        with tmp.open("w", encoding="utf-8") as handle:
-            json.dump(cursor, handle, sort_keys=True)
-            handle.write("\n")
-        tmp.replace(self._cursor_path)
+        atomic_write_json(self._cursor_path, cursor, indent=None)
         with self._lock:
             self._cursor = dict(cursor)
 

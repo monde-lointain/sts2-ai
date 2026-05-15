@@ -36,6 +36,7 @@ import json
 import threading
 from typing import Any, Iterator
 
+from _metrics import PrometheusLineBuilder
 from schema_registry import Reject, SchemaRegistry
 
 from .cursor import CursorCache, CursorState
@@ -87,27 +88,22 @@ class _Metrics:
             rows_returned = dict(self._rows_returned)
             cursor_count = self._cursor_count
             schema_503 = self._schema_503
-        service = str(service_name)
-        lines: list[bytes] = []
+        builder = PrometheusLineBuilder(service_name)
         for (mode, result), n in sorted(request_total.items()):
-            lines.append(
-                f'sts2_q3_sample_request_total{{mode="{mode}",'
-                f'result="{result}",service="{service}"}} {n}'.encode("utf-8")
+            builder.counter(
+                "sts2_q3_sample_request_total",
+                {"mode": mode, "result": result},
+                n,
             )
         for (mode, tier), n in sorted(rows_returned.items()):
-            lines.append(
-                f'sts2_q3_sample_rows_returned_total{{mode="{mode}",'
-                f'tier="{tier}",service="{service}"}} {n}'.encode("utf-8")
+            builder.counter(
+                "sts2_q3_sample_rows_returned_total",
+                {"mode": mode, "tier": tier},
+                n,
             )
-        lines.append(
-            f'sts2_q3_sample_cursor_count{{service="{service}"}} '
-            f'{cursor_count}'.encode("utf-8")
-        )
-        lines.append(
-            f'sts2_q3_sample_schema_503_total{{service="{service}"}} '
-            f'{schema_503}'.encode("utf-8")
-        )
-        return lines
+        builder.gauge("sts2_q3_sample_cursor_count", {}, cursor_count)
+        builder.counter("sts2_q3_sample_schema_503_total", {}, schema_503)
+        return builder.lines()
 
 
 class Sampler:

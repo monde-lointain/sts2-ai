@@ -25,6 +25,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-019 | Macro Context Derivation Policy | Deferred |
 | ADR-020 | Oracle-Agreement Sideband Routes through Q3 | Accepted |
 | ADR-021 | Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention | Accepted |
+| ADR-022 | Trajectory Protobuf Binding Homed at `pipeline/common/` | Accepted |
 
 ---
 
@@ -463,3 +464,23 @@ Research-lead decision on 2026-05-15 to ratify ahead of Phase-2 boot. Grounded i
 - *Positive:* preserves the invariant that combat steps always carry at least one sample (good for sample-quality dashboards per `docs/specs/modules/observability.md:40`).
 
 **Origin.** Q3 boot directive cascade 2026-05-14. Q3-ADR-005 is the load-bearing version; this entry is the cross-quantum mirror.
+
+---
+
+## ADR-022 — Trajectory Protobuf Binding Homed at `pipeline/common/`
+
+**Status:** Accepted (2026-05-14). Mirrors Q10-ADR-005 at `pipeline/trainer/docs/specs/01-decisions-log.md`.
+
+**Context.** The generated `trajectory_pb2.py` originally lived at `pipeline/experience-store/proto/`. Q10 (Trainer) needs to deserialize the same trajectory protobuf wire format from `POST /sample` responses. Options identified during Q10 boot: (a) vendor the generated binding into `pipeline/trainer/proto/` (duplication every `.proto` change); (b) lift to `pipeline/common/trajectory_proto.py` and have both Q3 and Q10 import from there; (c) move to top-level `contracts/generated/python/` per Q2-ADR-001 §4 (the spec-correct long-term home, but it requires a codegen pipeline Q3 explicitly deferred at boot).
+
+**Decision.** Option (b). The generated trajectory binding lives at `pipeline/common/trajectory_proto.py`. Q3's `pipeline/experience-store/proto/__init__.py` becomes a thin re-export. Q10 (and any future quantum) imports from `pipeline.common.trajectory_proto`. The contract: any change to `contracts/schemas/trajectory/trajectory.proto` regenerates the file at one location; Q3 + Q10 consume unchanged.
+
+**Consequences.**
+
+- *Negative:* Q3 carries a no-op re-export shim for the Phase-1 lifetime — small cost, but it is API surface area to maintain.
+- *Negative:* the `pipeline/common/` package gains a binding that is semantically owned by Q3's wire format. If `pipeline/common/` later develops its own ownership rules, this entry must be re-homed.
+- *Negative:* eventual move to `contracts/generated/python/` is a future refactor (option c). Postponing it is a known tech-debt item.
+- *Positive:* zero duplication between Q3 and Q10; single source of truth for the wire format.
+- *Positive:* Q3 boot-time invariants (schema version checks in `schema_registry`) operate on the same generated module Q10 imports — no skew possible.
+
+**Origin.** Q10 boot directive cascade 2026-05-14. Q10-ADR-005 is the load-bearing version; this entry is the cross-quantum mirror.

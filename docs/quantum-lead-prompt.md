@@ -12,7 +12,7 @@ Once identified, read in this order:
 
 1. `docs/specs/modules/<quantum-slug>.md` — your responsibilities, data ownership, communication contracts.
 2. `docs/specs/00-system-overview.md` §2 + §4 — your edges to neighboring quanta.
-3. `pipeline/<quantum-slug>/docs/{plans,specs}/` — your quantum-internal plans/specs reports:
+3. `pipeline/<quantum-slug>/docs/specs/` — your quantum-internal plans/specs reports:
 4. Relevant ADRs from `docs/specs/01-decisions-log.md` (especially the ones whose Context names your quantum).
 5. `docs/scaling-strategy.md` only as needed for gating language — don't rewrite strategy; consume it.
 
