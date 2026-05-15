@@ -35,7 +35,7 @@ None persistent.
 ## Phase Expectations
 
 - **Phase 1.** Single inference server per host serving a 64–128-worker pool. ONNX Runtime + a single GPU. Combat policy only (degenerate-sample output bootstrapped from scalar HP-fraction per ADR-014 Phase-1 convention). `macro_context` input may be zero-stub until Phase-2.
-- **Phase 2.** Add run-level heads (card-pick, value head). Same artifact, multiple output heads. Combat output transitions to real multi-sample shape; `macro_context` derivation policy from ADR-019.
+- **Phase 2.** Add run-level heads (card-pick, value head). Same artifact, multiple output heads. Combat output transitions to real multi-sample shape; `macro_context` carries v1.1 fields (HP / MaxHP / gold / per-potion-slot shadow prices) derived per ADR-019 (Accepted 2026-05-15) — sp head positioned downstream of the shared run encoder with stop-gradient on the consumption path.
 - **Phase 3+.** May split into separate Q9 instances per head if heads diverge in latency / throughput characteristics. Multi-GPU per host if a single GPU saturates.
 
 ## Open Risks

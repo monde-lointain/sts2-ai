@@ -5,7 +5,7 @@
 ## Responsibilities
 
 - Run STS2 logic deterministically from a seed: combat, map traversal, shops, events, rewards, potion use, rest sites, run progression.
-- Expose a hook protocol: at every player-decision boundary, return state + legal-action mask, await an action, validate, apply. Phase-2: hook protocol input extended to carry `macro_context` (shadow prices, risk tolerance, pressure indicators) per ADR-015 — out of scope for Q1 Phase-1A; v1 hook-protocol bump at S15 (run-level message types) per Q1's existing manifest.
+- Expose a hook protocol: at every player-decision boundary, return state + legal-action mask, await an action, validate, apply. Phase-2: hook protocol input extended to carry `macro_context` (HP / MaxHP / gold / per-potion-slot shadow prices, risk tolerance, pressure indicators per ADR-015 + ADR-019 v1.1 surface) — out of scope for Q1 Phase-1A; v1 hook-protocol bump at S15 (run-level message types) per Q1's existing manifest.
 - Provide save/restore primitives: `(CombatState, RunState) ↔ binary blob`. Bit-identical round-trip is a hard requirement, enforced by CI per `scaling-strategy.md` §4.1 #4.
 - Support branchable rollouts: from any saved state, executing K alternative actions yields K independent continuations (the basis for MCTS).
 - Emit replay files: every rollout produces `(seed, action_sequence, optional state checkpoints)` sufficient to reconstruct.
