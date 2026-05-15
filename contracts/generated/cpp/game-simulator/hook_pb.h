@@ -3,7 +3,12 @@
 
 namespace sts2::generated::game_simulator {
 struct SchemaVersion {};
+struct TargetRef {};
 struct LegalAction {};
+struct PlayCardAction {};
+struct EndTurnAction {};
+struct PotionAction {};
+struct TargetChoice {};
 struct DecisionRequest {};
 struct DecisionResponse {};
 }  // namespace sts2::generated::game_simulator

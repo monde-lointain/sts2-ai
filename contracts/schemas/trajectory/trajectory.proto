@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 // sts2.schema.major: 1
-// sts2.schema.minor: 0
+// sts2.schema.minor: 1
 package sts2.q3.v1;
 
 // Major bump v0 -> v1 (2026-05-14).
@@ -17,6 +17,12 @@ package sts2.q3.v1;
 // No v0 consumers existed at the time of the bump (Q3 not yet booted,
 // Q8 / Q10 / Q11 / Q12 substrate empty). The break is free. Matches
 // Q1-ADR-012 schema-lock-before-consumer-boots pattern.
+//
+// Minor bump v1.0 -> v1.1 (2026-05-15) per ADR-019 Decision 4: additive,
+// appends gold_shadow_price (tag 10) + max_hp_shadow_price (tag 11) to
+// MacroContext. Forward-compatible; v1.0 consumers still accepted by the
+// SchemaRegistry (accept-list = [PHASE1, PHASE1_1]); current write target
+// is v1.1.
 //
 // Wire-version invariants
 // ---------------------------
@@ -43,9 +49,9 @@ package sts2.q3.v1;
 // - ADR-018: reward valuation stays macro-owned; combat exposes
 //   room-completion facts via reward_context but does NOT bake reward
 //   value into samples.
-// - ADR-019 (Deferred): macro_context derivation policy unspecified;
-//   Phase-2 substrate plumbs the field shape, derivation method may
-//   change without rewiring.
+// - ADR-019: macro_context derivation policy ratified 2026-05-15 —
+//   fungibles-only pricing (HP, MaxHP, Gold, per-potion-slot), hybrid
+//   (c)->(b) derivation, sp as output of V / input to decision heads.
 
 message SchemaVersion {
   uint32 major = 1;
@@ -90,7 +96,9 @@ message MacroContext {
   float next_shop_pressure               = 6;
   float next_rest_pressure               = 7;
   uint32 search_budget                   = 8;   // max sims/expansions the caller authorizes
-  string derivation_method               = 9;   // provenance: "bootstrap", "learned", "heuristic", ...
+  string derivation_method               = 9;   // provenance: "warmup_heuristic_curve" | "learned_autodiff" | "learned_finitediff" | "joint_proximal" | "fallback_lagged"
+  float gold_shadow_price                = 10;  // value-per-gold-unit at this decision (v1.1 per ADR-019)
+  float max_hp_shadow_price              = 11;  // value-per-MaxHP-point at this decision (v1.1 per ADR-019)
 }
 
 // Per ADR-014. One terminal-state sample drawn from the combat outcome
