@@ -11,7 +11,7 @@ matching Q3-ADR-005 (degenerate combat samples). Used by:
     serialization deterministic given the canonical proto field ordering).
 
 Shape per dispatch prompt:
-  - schema_version = (1, 0)
+  - schema_version = (1, 1)  # ADR-019 v1.1 (sp(gold)+sp(MaxHP) appended)
   - trajectory_id = "phase-1a-cultists-smoke"
   - episode_id = "smoke-episode-001"
   - seed = 0xCAFEBABE
@@ -25,8 +25,9 @@ Shape per dispatch prompt:
     search_policy=[0.4,0.3,0.2,0.1], action_taken=i%4,
     combat_outcome_summary(expected_hp_delta=-0.05, survival_probability=1.0),
     macro_context(hp_shadow_price=1.0, risk_tolerance=0.5,
-    derivation_method="phase-1a-stub"), resource_deltas(hp_delta=-0.05),
-    reward_context(room_type="monster").
+    derivation_method="phase-1a-stub", gold_shadow_price=0.0,
+    max_hp_shadow_price=0.0),  # v1.1 zero-stubs per ADR-019 Phase-1
+    resource_deltas(hp_delta=-0.05), reward_context(room_type="monster").
 """
 
 from __future__ import annotations
@@ -71,7 +72,7 @@ def build_trajectory(
 
     t = Trajectory()
     t.schema_version.major = 1
-    t.schema_version.minor = 0
+    t.schema_version.minor = 1
     t.trajectory_id = trajectory_id
     t.episode_id = episode_id
     t.seed = int(seed)
@@ -109,6 +110,9 @@ def build_trajectory(
         step.macro_context.hp_shadow_price = 1.0
         step.macro_context.risk_tolerance = 0.5
         step.macro_context.derivation_method = "phase-1a-stub"
+        # ADR-019 v1.1: zero-stub sp(gold) + sp(MaxHP) (Phase-1 derivation).
+        step.macro_context.gold_shadow_price = 0.0
+        step.macro_context.max_hp_shadow_price = 0.0
 
         step.resource_deltas.hp_delta = -0.05
 

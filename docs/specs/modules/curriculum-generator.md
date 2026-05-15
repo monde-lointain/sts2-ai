@@ -6,7 +6,7 @@
 
 - **Synthetic mid-run states.** Generate "start at floor 30 with this deck and these relics" trajectories using Q1 save/restore. Required to teach the value head before the agent's own exploration is reliable (`scaling-strategy.md` §3 Phase 2).
 - **Curriculum scheduling.** Direct workers (via Q11-controlled run configs) toward under-explored regions of `(character × ascension × deck-archetype × encounter)` space.
-- **Adversarial scenario generation (Phase 5).** Use the value head's own uncertainty + `observable_run_state + macro_context` (per ADR-015) to find weak spots — synthesize combat states the agent fails on given specific shadow-price configurations; feed into Q3 with adversarial provenance tag.
+- **Adversarial scenario generation (Phase 5).** Use the value head's own uncertainty + `observable_run_state + macro_context` (per ADR-015 + ADR-019 v1.1 surface) to find weak spots — synthesize combat states the agent fails on given specific shadow-price configurations across HP / MaxHP / gold / per-potion-slot; feed into Q3 with adversarial provenance tag.
 - **Archetype clustering.** Maintain a clustering of "successful decks" used both for diversity bonuses (training) and as labels for an auxiliary archetype-classification task (representation shaping).
 
 Out of scope: scoring states (Q12 / value head); writing to Q1's binary state directly (Q11 uses Q1's load/save API).

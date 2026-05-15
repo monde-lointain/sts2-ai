@@ -37,7 +37,7 @@ Out of scope: durable storage of training data (Q3); durable storage of eval rep
 ## Phase Expectations
 
 - **Phase 1.** Throughput dashboards (combat-steps/sec, decisions/sec); win-rate-over-time; sample-prediction loss + summary-prediction loss + HP-fraction-aux loss (per ADR-014); KL between successive policy versions. Alert on determinism-test failure and replay starvation.
-- **Phase 2.** Adds run-level dashboards (full A0 win rate, deck composition entropy, archetype distribution). Adds **`macro_context` shadow-price calibration** dashboards (predicted HP / potion shadow prices vs. realized run-value lift per resource unit, per ADR-015). Adds **sample-quality** dashboards (per-call sample count, summary uncertainty distribution).
+- **Phase 2.** Adds run-level dashboards (full A0 win rate, deck composition entropy, archetype distribution). Adds **`macro_context` shadow-price calibration** dashboards (predicted HP / MaxHP / gold / per-potion-slot shadow prices vs. realized run-value lift per resource unit, per ADR-015 + ADR-019). Adds **sp derivation-method breakdown** (warmup_heuristic_curve / learned_autodiff / learned_finitediff / joint_proximal / fallback_lagged share over time, per ADR-019). Adds **sample-quality** dashboards (per-call sample count, summary uncertainty distribution).
 - **Phase 3+.** Adds A/B comparison view; counterfactual evaluator output (observational only per ADR-017); exploit-detector live counts. Adds **observability-regime audit** dashboard (per ADR-016: count of `SOURCE_PERFECT` field appearances in deployed inputs — target zero; any non-zero is a P0 alert).
 
 ## Open Risks
