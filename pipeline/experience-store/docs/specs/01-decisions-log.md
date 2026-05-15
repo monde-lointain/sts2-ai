@@ -4,8 +4,9 @@ Q3-internal ADRs. Each entry: Title, Status, Context, Decision, Consequences
 (negatives first).
 
 Cross-quantum ADRs live at `docs/specs/01-decisions-log.md`; Q3 inherits
-ADR-001, ADR-006, ADR-014..018 there. ADRs marked ✱ below are mirrored in
-the cross-quantum log as ADR-020 / ADR-021.
+ADR-001, ADR-006, ADR-014..019 there. ADRs marked ✱ below are mirrored in
+the cross-quantum log (Q3-ADR-004 → ADR-020, Q3-ADR-005 → ADR-021,
+Q3-ADR-011 → ADR-019).
 
 | # | Title | Status |
 |---|---|---|
@@ -19,6 +20,7 @@ the cross-quantum log as ADR-020 / ADR-021.
 | Q3-ADR-008 | Sustained-Pressure: Dual Time-Windowed Condition | Accepted |
 | Q3-ADR-009 | Cross-Tier Sampling Bias toward Hot | Accepted |
 | Q3-ADR-010 | PriorityIndex Colocated in HotStore RocksDB CF | Accepted |
+| Q3-ADR-011 ✱ | Trajectory Schema v1.0 → v1.1 Additive Bump (ADR-019) | Accepted |
 
 ---
 
@@ -384,3 +386,47 @@ handle = one set of compaction threads; per-CF tuning available.
   initial priority entry) possible if Phase-2+ wants them.
 - *Positive:* Phase-3 split path well-defined: move `priority` CF to its own
   DB file, then to its own process.
+
+---
+
+## Q3-ADR-011 ✱ — Trajectory Schema v1.0 → v1.1 Additive Bump (ADR-019)
+
+**Status:** Accepted (2026-05-15). Cross-quantum mirror of ADR-019
+(`docs/specs/01-decisions-log.md:378-424`); ADR-019 is the load-bearing
+ratification authority.
+
+**Context.** ADR-019 ratified macro_context derivation policy on
+2026-05-15. Decision 4 commits to appending `gold_shadow_price (tag 10)`
+and `max_hp_shadow_price (tag 11)` to `MacroContext` in
+`contracts/schemas/trajectory/trajectory.proto`. The bump is additive
+(forward-compatible). Q3 SchemaRegistry owns the accept-list and
+current-write-target; the bump must land here for Q10 / future consumers
+to write the new fields.
+
+**Decision.** Bump trajectory.proto minor version v1.0 → v1.1. Q3
+SchemaRegistry:
+
+- `_accepted = [PHASE1, PHASE1_1]` — v1.0 readers and writers remain
+  supported during transition; no drain/flip required for additive bumps.
+- `_current_write_target = PHASE1_1` — fresh writers (Q1 / Q10) stamp
+  v1.1.
+- `derivation_method` allowed values tighten to the closed enum from
+  ADR-019 Decision 4: `"warmup_heuristic_curve" | "learned_autodiff" |
+  "learned_finitediff" | "joint_proximal" | "fallback_lagged"`.
+
+**Consequences.**
+
+- *Negative:* Q3 carries two accepted versions through Phase-2 boot;
+  sentinel files multiply (`1.0.active` + `1.1.active`); operator
+  cleanup deferred to drain/flip FSM implementation (Phase-1 close).
+- *Negative:* Q10 reader treats missing v1.0 fields as proto3 default
+  (0.0); ADR-019 §Decision-4 originally specified NaN-sentinel — defer
+  reconciliation to Phase-2 sp head boot.
+- *Positive:* v1.0 consumers still write/read without code change;
+  additive bumps are free under the proto3 minor-bump invariant
+  (`contracts/schemas/trajectory/trajectory.proto:21-28`).
+- *Positive:* schema is now in sync with ADR-019 ratified content; no
+  stale "Deferred" anchor.
+
+**Origin.** Cross-quantum ADR-019 ratification 2026-05-15. Q3-ADR-011
+records the Q3-side schema-registry policy bump.
