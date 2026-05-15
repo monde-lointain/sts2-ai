@@ -1,68 +1,19 @@
-"""Shared atomic JSON write helper for experience-store submodules.
+"""Re-export shim — canonical location is pipeline/common/atomic_io.py.
 
-Centralizes the tempfile + fsync + os.replace pattern previously
-hand-rolled in lifecycle/policy.py, lifecycle/lifecycle.py,
-control_plane/retention.py and schema_registry/registry.py. The
-SchemaRegistry version is the canonical template; this module mirrors
-it and exposes a single public helper.
-
-Callers MUST ensure ``path.parent`` already exists; this helper does
-not mkdir.
+Ensures the project root is on `sys.path` so `pipeline.common.atomic_io`
+resolves under test environments that only inject `pipeline/experience-store/`
+(via `conftest.py`). `os` is re-exported so tests that monkey-patch
+`_atomic_io.os.fsync` keep working (they patch the shared `os` module
+object).
 """
+import os  # noqa: F401  # re-exported for monkey-patching by tests
+import sys as _sys
+from pathlib import Path as _Path
 
-from __future__ import annotations
+_PROJECT_ROOT = str(_Path(__file__).resolve().parents[2])
+if _PROJECT_ROOT not in _sys.path:
+    _sys.path.insert(0, _PROJECT_ROOT)
 
-import json
-import os
-import pathlib
-import tempfile
+from pipeline.common.atomic_io import atomic_write_json  # noqa: E402,F401
 
-
-def atomic_write_json(
-    path: pathlib.Path,
-    payload: dict,
-    *,
-    indent: int | None = 2,
-    sort_keys: bool = True,
-    fsync: bool = True,
-    ensure_ascii: bool = False,
-) -> None:
-    """Atomically write ``payload`` as JSON to ``path``.
-
-    Uses a same-directory ``NamedTemporaryFile`` so the final
-    ``os.replace`` is atomic on POSIX. Optionally fsyncs the file
-    contents before rename. On any ``BaseException`` (including
-    encode failures), the temp file is best-effort unlinked before
-    re-raising.
-
-    ``path.parent`` is assumed to exist; the caller is responsible
-    for mkdir.
-    """
-    tmp = tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding="utf-8",
-        dir=path.parent,
-        prefix=f".{path.stem}.",
-        suffix=".tmp",
-        delete=False,
-    )
-    try:
-        json.dump(
-            payload,
-            tmp,
-            indent=indent,
-            sort_keys=sort_keys,
-            ensure_ascii=ensure_ascii,
-        )
-        tmp.write("\n")
-        if fsync:
-            tmp.flush()
-            os.fsync(tmp.fileno())
-        tmp.close()
-        os.replace(tmp.name, path)
-    except BaseException:
-        try:
-            os.unlink(tmp.name)
-        except FileNotFoundError:
-            pass
-        raise
+__all__ = ["atomic_write_json"]
