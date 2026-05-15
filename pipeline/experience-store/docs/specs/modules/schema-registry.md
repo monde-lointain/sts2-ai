@@ -28,8 +28,8 @@ decisions (delegated to other submodules).
 - **`schema/registry.json`** — current state.
   ```json
   {
-    "accepted": [{"major": 1, "minor": 0}],
-    "current_write_target": {"major": 1, "minor": 0},
+    "accepted": [{"major": 1, "minor": 0}, {"major": 1, "minor": 1}],
+    "current_write_target": {"major": 1, "minor": 1},
     "drain_state": "open",
     "drain_target": null
   }

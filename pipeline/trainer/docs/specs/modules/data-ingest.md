@@ -65,7 +65,7 @@ from `pipeline.common.trajectory_proto` per Q10-ADR-005).
       "batch_size": int,
       "filters": {
         "decision_type": ["COMBAT"]?,
-        "schema_version": {"major": 1, "minor": 0}?
+        "schema_version": {"major": 1, "minor": 1}?
       },
       "cursor_id": str?
     }

@@ -194,7 +194,7 @@ def test_unknown_schema_returns_400(api: IngestAPI) -> None:
     payload = _decode_body(resp_body)
     assert payload["error"] == "schema_unknown"
     # Diagnostic feedback: known-accepted versions returned to writer.
-    assert payload["accepted"] == [{"major": 1, "minor": 0}]
+    assert payload["accepted"] == [{"major": 1, "minor": 0}, {"major": 1, "minor": 1}]
 
 
 def test_future_major_schema_returns_400(api: IngestAPI) -> None:

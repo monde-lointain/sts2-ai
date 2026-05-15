@@ -119,9 +119,9 @@ def test_schema_endpoint_returns_state(running_service):
     base_url, _, _ = running_service
     with urllib.request.urlopen(f"{base_url}/schema") as resp:
         body = json.loads(resp.read().decode("utf-8"))
-    assert body["current_write_target"] == {"major": 1, "minor": 0}
+    assert body["current_write_target"] == {"major": 1, "minor": 1}
     assert body["drain_state"] == "open"
-    assert body["accepted"] == [{"major": 1, "minor": 0}]
+    assert body["accepted"] == [{"major": 1, "minor": 0}, {"major": 1, "minor": 1}]
 
 
 def test_ingest_status_returns_zero_at_boot(running_service):
