@@ -1,7 +1,7 @@
 """Phase-1A CULTISTS_NORMAL golden trajectory test (S0.E).
 
 Reads the committed golden binary at `tests/data/cultists_smoke_episode.bin`,
-asserts D1 shape (schema 1.0, 8 combat steps, degenerate samples per
+asserts D1 shape (schema 1.1, 8 combat steps, degenerate samples per
 Q3-ADR-005), boots the Q3 service, POSTs the bytes to /trajectories, then
 samples them back via /sample and verifies the returned step frames carry
 the expected reward / action_taken / terminal / decision_type fields.
@@ -151,7 +151,7 @@ def test_golden_binary_committed_and_well_shaped():
 
     traj = Trajectory()
     traj.ParseFromString(blob)
-    assert (traj.schema_version.major, traj.schema_version.minor) == (1, 0)
+    assert (traj.schema_version.major, traj.schema_version.minor) == (1, 1)
     assert len(traj.steps) == EXPECTED_STEPS
     assert traj.trajectory_id == "phase-1a-cultists-smoke"
     assert traj.episode_id == "smoke-episode-001"
