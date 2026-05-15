@@ -84,9 +84,10 @@ enum ObservabilityRegime {
 
 // Macro context per ADR-015. Shadow prices and pressure indicators
 // supplied by the run-level meta-policy at decision time. Derivation
-// policy is deferred (ADR-019); Phase-2 substrate may populate via
-// bootstrap-from-prior, learned shadow-price head, heuristic curves,
-// or proximal updates.
+// policy ratified by ADR-019 (2026-05-15): hybrid heuristic-curve
+// warmup -> learned sp head co-trained with V_run (FD or autodiff
+// supervision); (a) bootstrap-from-prior retired as primary, (d) joint
+// proximal reserved. Fungibles only: HP, MaxHP, gold, per-potion-slot.
 message MacroContext {
   float hp_shadow_price                  = 1;   // value-per-HP at this decision
   repeated float potion_shadow_prices    = 2;   // per-potion-slot, indexed by slot
