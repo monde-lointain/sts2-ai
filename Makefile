@@ -1,4 +1,4 @@
-.PHONY: help build test ci-slow run clean distclean reconfig q1-ci q3-ci q10-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
+.PHONY: help build test q2-ci run clean distclean reconfig q1-ci q3-ci q10-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
 .PHONY: format format-patch
 .PHONY: cppcheck cppcheck-xml scan-build tidy
 .PHONY: complexity complexity-full complexity-xml
@@ -7,7 +7,7 @@
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
 
 BUILD_DIR := build
-CI_SLOW_BUILD_DIR := build-ci-slow
+Q2_CI_BUILD_DIR := build-q2-ci
 SANITIZE_BUILD_DIR := build-sanitize
 
 JOBS ?= $(nproc)
@@ -43,7 +43,7 @@ help:
 	@echo "  help              Show this help message (default)"
 	@echo "  build             Build the project"
 	@echo "  test              Build and run unit tests"
-	@echo "  ci-slow           Run slow regression tests (DISABLED gtest; ~6 min/test). Q2 wave gate."
+	@echo "  q2-ci             Q2 wave gate: disabled-prefixed slow regression tests (~18 min, Release in isolated build dir)"
 	@echo "  run               Run executable (use FILE=path to specify input)"
 	@echo "  clean             Clean build artifacts"
 	@echo "  distclean         Remove build directory"
@@ -95,27 +95,32 @@ test: $(BUILD_DIR)/Makefile
 	@cd $(BUILD_DIR) && ctest --output-on-failure
 
 # Slow regression tests. DISABLED-by-default in default ctest so `make test`
-# stays fast; ~6 min per test. Required at wave gate per project-lead direction
-# 2026-05-12 — Q2 lead runs this before sending any S{N+1} status. Folds:
+# stays fast; ~18 min total (~3 min simulator + ~15 min oracle). Required at
+# wave gate per project-lead direction 2026-05-12 — Q2 lead runs this before
+# sending any S{N+1} status. Folds:
 #   - Q1 prototype:  Search.DISABLED_StarterCombatSolves_LogsDiagnostics
 #   - Q2 adapter:    AdapterRoundtrip.DISABLED_Fixture1_*
-# As Q2 pin set grows (S2+), each new DISABLED_* test joins the second filter.
+# As Q2 pin set grows (S2+), append to Q2_CI_ORACLE_FILTER (or override at
+# invocation) — no Makefile edit needed.
 #
 # Lead Ask #2 (2026-05-12): wave gate is self-contained. Uses a dedicated
-# build dir ($(CI_SLOW_BUILD_DIR)) configured Release; never inherits the
+# build dir ($(Q2_CI_BUILD_DIR)) configured Release; never inherits the
 # caller's $(BUILD_DIR) cache. Prior recursive-make approach was a no-op
 # when the developer's build/ was Debug — recursive make passed BUILD_TYPE
 # but cmake's existing cache won the configure step. Dedicated dir avoids
 # the trap and leaves the dev's build/ untouched. One-time configure cost.
-ci-slow:
-	@cmake -B $(CI_SLOW_BUILD_DIR) -S . -DCMAKE_BUILD_TYPE=Release
-	@cmake --build $(CI_SLOW_BUILD_DIR) -j$(JOBS)
-	@$(CI_SLOW_BUILD_DIR)/Release/sts2_simulator_tests \
+Q2_CI_SIMULATOR_FILTER ?= Search.DISABLED_StarterCombatSolves*
+Q2_CI_ORACLE_FILTER    ?= *DISABLED_*
+
+q2-ci:
+	@cmake -B $(Q2_CI_BUILD_DIR) -S . -DCMAKE_BUILD_TYPE=Release
+	@cmake --build $(Q2_CI_BUILD_DIR) -j$(JOBS)
+	@$(Q2_CI_BUILD_DIR)/Release/sts2_simulator_tests \
 		--gtest_also_run_disabled_tests \
-		--gtest_filter='Search.DISABLED_StarterCombatSolves*'
-	@$(CI_SLOW_BUILD_DIR)/Release/sts2_oracle_tests \
+		--gtest_filter='$(Q2_CI_SIMULATOR_FILTER)'
+	@$(Q2_CI_BUILD_DIR)/Release/sts2_oracle_tests \
 		--gtest_also_run_disabled_tests \
-		--gtest_filter='*DISABLED_*'
+		--gtest_filter='$(Q2_CI_ORACLE_FILTER)'
 
 run: $(BUILD_DIR)/Makefile
 	@cmake --build $(BUILD_DIR) -j$(JOBS)
@@ -125,7 +130,7 @@ clean:
 	@if [ -d $(BUILD_DIR) ]; then cmake --build $(BUILD_DIR) --target clean; fi
 
 distclean:
-	@rm -rf $(BUILD_DIR) $(CI_SLOW_BUILD_DIR) build-on
+	@rm -rf $(BUILD_DIR) $(Q2_CI_BUILD_DIR) build-on
 
 reconfig:
 	@rm -rf $(BUILD_DIR)

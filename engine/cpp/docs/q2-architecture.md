@@ -208,7 +208,7 @@ same toolchain:
 - Both paths drift identically → regression in expectimax / transition /
   state / scoring (i.e., `algorithm_sha` change per Q2-ADR-005).
 
-Both pins fire from the `make ci-slow` Release wave gate. Q2 surfaces
+Both pins fire from the `make q2-ci` Release wave gate. Q2 surfaces
 diagnostic-class divergence as a top-line concern in its next status to
 the project lead — divergence is never silent.
 
@@ -259,8 +259,8 @@ existed with `CMAKE_BUILD_TYPE=Debug` — the child make passed
 `BUILD_TYPE=Release` in its env, but cmake's *existing cache* won the
 configure step. Wave gate then built Debug binaries and tried to invoke
 `$(BUILD_DIR)/Release/sts2_*_tests`, which either did not exist or were
-stale. S3-T10 fixed via dedicated `$(CI_SLOW_BUILD_DIR) := build-ci-slow`
-+ direct `cmake -B build-ci-slow -S . -DCMAKE_BUILD_TYPE=Release`
+stale. S3-T10 fixed via dedicated `$(Q2_CI_BUILD_DIR) := build-q2-ci`
++ direct `cmake -B build-q2-ci -S . -DCMAKE_BUILD_TYPE=Release`
 invocation. Self-contained; one-time configure cost per fresh checkout.
 
 **Rule for future Makefile build-flavor targets** (sanitize-, ci-,
