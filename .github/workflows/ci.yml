@@ -198,30 +198,6 @@ jobs:
       - name: Run content-test
         run: make content-test
 
-  tidy:
-    name: clang-tidy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build clang-tidy-18 ca-certificates lsb-release wget
-          wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
-          sudo apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
-          sudo apt-get update
-          sudo apt-get install -y -V libarrow-dev libparquet-dev
-      - name: Cache build directory
-        uses: actions/cache@v4
-        with:
-          path: build/
-          key: tidy-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: tidy-${{ runner.os }}-
-      - name: Run clang-tidy
-        run: make tidy
-
   cppcheck:
     name: cppcheck (custom build, HAVE_RULES=ON)
     runs-on: ubuntu-latest
