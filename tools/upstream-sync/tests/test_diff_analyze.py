@@ -276,9 +276,7 @@ def test_bucket_match_order_multiplayer_takes_precedence():
 
 def test_character_tag_strikesilent_silent():
     """Edge case 4: filename includes character name."""
-    result = character_tag_for_path(
-        "src/Core/Models/Cards/StrikeSilent.cs", {"Silent", "Defect"}
-    )
+    result = character_tag_for_path("src/Core/Models/Cards/StrikeSilent.cs", {"Silent", "Defect"})
     assert result == "Silent"
 
 
@@ -293,9 +291,7 @@ def test_character_tag_character_dir():
 
 def test_character_tag_no_match():
     """Edge case 5: no character in path → None."""
-    assert character_tag_for_path(
-        "src/Core/Combat/CombatManager.cs", {"Silent", "Defect"}
-    ) is None
+    assert character_tag_for_path("src/Core/Combat/CombatManager.cs", {"Silent", "Defect"}) is None
 
 
 def test_character_tag_case_insensitive():
@@ -385,10 +381,7 @@ def test_rng_defer_cards_with_rng_NOT_flagged(tmp_path):
 
 def test_rng_defer_missing_file(tmp_path):
     """Edge case 8: encounter file deleted (missing) → False (no crash)."""
-    assert (
-        is_encounter_rng_defer(tmp_path, "src/Core/Models/Encounters/Gone.cs")
-        is False
-    )
+    assert is_encounter_rng_defer(tmp_path, "src/Core/Models/Encounters/Gone.cs") is False
 
 
 def test_rng_defer_orbs_NOT_flagged(tmp_path):
@@ -410,9 +403,7 @@ def _build_upstream_tree(tmp_path: Path) -> Path:
     for c in ("Silent", "Defect", "Ironclad"):
         d = chars / c
         d.mkdir(parents=True)
-        (d / f"{c}.cs").write_text(
-            f"namespace Foo;\npublic class {c} : CharacterModel {{ }}\n"
-        )
+        (d / f"{c}.cs").write_text(f"namespace Foo;\npublic class {c} : CharacterModel {{ }}\n")
     # Also create the file that NewEncounter.cs renames to (so RNG check works)
     enc_dir = tmp_path / "src" / "Core" / "Models" / "Encounters"
     enc_dir.mkdir(parents=True)
@@ -424,8 +415,10 @@ def _build_upstream_tree(tmp_path: Path) -> Path:
 
 def _fake_subprocess_runner(stdout: str):
     """Return a callable mimicking subprocess.run that yields `stdout`."""
+
     def runner(*args, **kwargs):
         return SimpleNamespace(stdout=stdout, returncode=0, stderr="")
+
     return runner
 
 
@@ -435,7 +428,9 @@ def test_analyze_diff_integration(tmp_path):
     fixture_text = (FIXTURES / "diff_name_status.sample.txt").read_text()
 
     report = analyze_diff(
-        "v1.0.0", "v1.1.0", tree,
+        "v1.0.0",
+        "v1.1.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(fixture_text),
     )
 
@@ -475,13 +470,9 @@ def test_analyze_diff_integration(tmp_path):
         e.path == "src/Core/Multiplayer/MultiplayerHost.cs"
         for e in report.buckets.get(BUCKET_MULTIPLAYER, [])
     )
+    assert any(e.path == "src/Core/Random/Rng.cs" for e in report.buckets.get(BUCKET_RANDOM, []))
     assert any(
-        e.path == "src/Core/Random/Rng.cs"
-        for e in report.buckets.get(BUCKET_RANDOM, [])
-    )
-    assert any(
-        e.path == "src/Core/Models/ModelDb.cs"
-        for e in report.buckets.get(BUCKET_MODEL_BASES, [])
+        e.path == "src/Core/Models/ModelDb.cs" for e in report.buckets.get(BUCKET_MODEL_BASES, [])
     )
     assert any(
         e.path == "scenes/combat/combat.tscn"
@@ -491,10 +482,7 @@ def test_analyze_diff_integration(tmp_path):
         e.path == "scenes/main_menu/main_menu.tscn"
         for e in report.buckets.get(BUCKET_SCENES_UI, [])
     )
-    assert any(
-        e.path == "sts2.csproj"
-        for e in report.buckets.get(BUCKET_ROOT_CONFIG, [])
-    )
+    assert any(e.path == "sts2.csproj" for e in report.buckets.get(BUCKET_ROOT_CONFIG, []))
 
 
 def test_analyze_diff_renames(tmp_path):
@@ -503,7 +491,9 @@ def test_analyze_diff_renames(tmp_path):
     fixture_text = (FIXTURES / "diff_name_status.sample.txt").read_text()
 
     report = analyze_diff(
-        "v1.0.0", "v1.1.0", tree,
+        "v1.0.0",
+        "v1.1.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(fixture_text),
     )
 
@@ -527,7 +517,9 @@ def test_analyze_diff_unmatched_paths(tmp_path):
     tree = _build_upstream_tree(tmp_path)
     fixture_text = (FIXTURES / "diff_name_status.sample.txt").read_text()
     report = analyze_diff(
-        "v1.0.0", "v1.1.0", tree,
+        "v1.0.0",
+        "v1.1.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(fixture_text),
     )
     assert "unrelated/something/new.txt" in report.unmatched_paths
@@ -538,7 +530,9 @@ def test_analyze_diff_character_tags_seen(tmp_path):
     tree = _build_upstream_tree(tmp_path)
     fixture_text = (FIXTURES / "diff_name_status.sample.txt").read_text()
     report = analyze_diff(
-        "v1.0.0", "v1.1.0", tree,
+        "v1.0.0",
+        "v1.1.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(fixture_text),
     )
     # StrikeSilent → Silent, StrikeIronclad → Ironclad
@@ -554,7 +548,9 @@ def test_analyze_diff_encounter_rng_defers_consistent(tmp_path):
     tree = _build_upstream_tree(tmp_path)
     fixture_text = (FIXTURES / "diff_name_status.sample.txt").read_text()
     report = analyze_diff(
-        "v1.0.0", "v1.1.0", tree,
+        "v1.0.0",
+        "v1.1.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(fixture_text),
     )
     flagged_paths = {e.path for e in report.encounter_rng_defers}
@@ -568,7 +564,9 @@ def test_analyze_diff_empty_input(tmp_path):
     """Edge case 13: empty diff → empty buckets, no errors."""
     tree = _build_upstream_tree(tmp_path)
     report = analyze_diff(
-        "v1.0.0", "v1.0.0", tree,
+        "v1.0.0",
+        "v1.0.0",
+        tree,
         _subprocess_run=_fake_subprocess_runner(""),
     )
     # All entry-bearing collections are empty
@@ -592,7 +590,10 @@ def test_analyze_diff_buckets_ordered_by_path(tmp_path):
         "M\tsrc/Core/Models/Cards/MidCard.cs\n"
     )
     report = analyze_diff(
-        "v1", "v2", tree, _subprocess_run=_fake_subprocess_runner(fake),
+        "v1",
+        "v2",
+        tree,
+        _subprocess_run=_fake_subprocess_runner(fake),
     )
     cards = report.buckets.get(BUCKET_CARDS, [])
     paths = [e.path for e in cards]
@@ -603,7 +604,9 @@ def test_analyze_diff_line_delta_none_in_v1(tmp_path):
     """Spec: line_delta left None in v1 (no --stat call)."""
     tree = _build_upstream_tree(tmp_path)
     report = analyze_diff(
-        "v1", "v2", tree,
+        "v1",
+        "v2",
+        tree,
         _subprocess_run=_fake_subprocess_runner("M\tsrc/Core/Combat/X.cs\n"),
     )
     e = report.buckets[BUCKET_COMBAT_ENGINE][0]
@@ -621,7 +624,10 @@ def test_analyze_diff_uses_discover_characters(tmp_path):
     )
     fake = "M\tsrc/Core/Models/Cards/StrikeWatcher.cs\n"
     report = analyze_diff(
-        "v1", "v2", tmp_path, _subprocess_run=_fake_subprocess_runner(fake),
+        "v1",
+        "v2",
+        tmp_path,
+        _subprocess_run=_fake_subprocess_runner(fake),
     )
     assert report.discovered_characters == {"Watcher"}
     cards = report.buckets[BUCKET_CARDS]
@@ -633,8 +639,12 @@ def test_analyze_diff_uses_discover_characters(tmp_path):
 
 def test_diff_entry_frozen():
     e = DiffEntry(
-        status="M", path="x.cs", rename_from=None, rename_score=None,
-        character_tag=None, line_delta=None,
+        status="M",
+        path="x.cs",
+        rename_from=None,
+        rename_score=None,
+        character_tag=None,
+        line_delta=None,
     )
     with pytest.raises(Exception):
         e.path = "other.cs"  # type: ignore[misc]
@@ -642,9 +652,14 @@ def test_diff_entry_frozen():
 
 def test_diff_report_frozen():
     r = DiffReport(
-        from_tag="a", to_tag="b", buckets={}, renames=[],
-        character_tags_seen=set(), encounter_rng_defers=[],
-        unmatched_paths=[], discovered_characters=set(),
+        from_tag="a",
+        to_tag="b",
+        buckets={},
+        renames=[],
+        character_tags_seen=set(),
+        encounter_rng_defers=[],
+        unmatched_paths=[],
+        discovered_characters=set(),
     )
     with pytest.raises(Exception):
         r.from_tag = "z"  # type: ignore[misc]
@@ -689,7 +704,10 @@ def test_analyze_diff_calls_subprocess_with_correct_args(tmp_path):
         return SimpleNamespace(stdout="", returncode=0, stderr="")
 
     analyze_diff(
-        "v1.0", "v2.0", tree, _subprocess_run=capture_runner,
+        "v1.0",
+        "v2.0",
+        tree,
+        _subprocess_run=capture_runner,
     )
 
     # Should pass the tags + flags + cwd=tree
@@ -708,7 +726,9 @@ def test_analyze_diff_priority_character_parameter(tmp_path):
     tree = _build_upstream_tree(tmp_path)
     # Should not raise with an explicit priority_character
     report = analyze_diff(
-        "v1", "v2", tree,
+        "v1",
+        "v2",
+        tree,
         priority_character="Defect",
         _subprocess_run=_fake_subprocess_runner(""),
     )

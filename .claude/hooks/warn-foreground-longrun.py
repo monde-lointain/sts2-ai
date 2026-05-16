@@ -6,6 +6,7 @@ flag from the hook payload.
 Targets: q2-ci, phase0-gate, sanitize, sanitize-test (>10 min each).
 Memory rule [[feedback-long-running-bash]] mandates run_in_background.
 """
+
 import json
 import re
 import sys

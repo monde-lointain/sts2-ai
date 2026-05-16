@@ -105,15 +105,13 @@ class IngestAPI:
         self._provenance_log = provenance_log
         self._queue_capacity = int(queue_capacity)
         self._max_body_bytes = int(max_body_bytes)
-        self._queue: queue.Queue[tuple[bytes, int]] = queue.Queue(
-            maxsize=self._queue_capacity
-        )
+        self._queue: queue.Queue[tuple[bytes, int]] = queue.Queue(maxsize=self._queue_capacity)
 
         # Counters. Guarded by `_counter_lock`; never the queue lock —
         # the two locks are independent.
         self._counter_lock = threading.Lock()
         self._accepted_total = 0
-        self._rejected_total: dict[str, int] = {r: 0 for r in _REJECTION_REASONS}
+        self._rejected_total: dict[str, int] = dict.fromkeys(_REJECTION_REASONS, 0)
         self._bytes_total = 0
 
     # ---------------- HTTP handlers (called by service.py) ----------------
@@ -199,9 +197,7 @@ class IngestAPI:
                 )
                 continue
 
-            status, _headers, frame_resp = self._ingest_one(
-                trajectory, len(frame_bytes)
-            )
+            status, _headers, frame_resp = self._ingest_one(trajectory, len(frame_bytes))
             entry: dict[str, Any] = {"status": status}
             try:
                 entry.update(json.loads(frame_resp.decode("utf-8")))
@@ -413,9 +409,7 @@ class IngestAPI:
             },
         )
 
-    def _map_schema_reject(
-        self, reject: Reject
-    ) -> tuple[int, dict[str, str], bytes]:
+    def _map_schema_reject(self, reject: Reject) -> tuple[int, dict[str, str], bytes]:
         """Map a SchemaRegistry.Reject to the HTTP response shape."""
         if reject.reason == "schema_unknown":
             self._reject("schema_unknown")
@@ -424,8 +418,7 @@ class IngestAPI:
                 {
                     "error": "schema_unknown",
                     "accepted": [
-                        {"major": maj, "minor": minr}
-                        for (maj, minr) in (reject.accepted or [])
+                        {"major": maj, "minor": minr} for (maj, minr) in (reject.accepted or [])
                     ],
                 },
             )
@@ -460,12 +453,8 @@ class IngestAPI:
             self._rejected_total[reason] += 1
 
     @staticmethod
-    def _json(
-        status: int, payload: dict[str, Any]
-    ) -> tuple[int, dict[str, str], bytes]:
-        body = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode(
-            "utf-8"
-        )
+    def _json(status: int, payload: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
+        body = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
             "Content-Length": str(len(body)),

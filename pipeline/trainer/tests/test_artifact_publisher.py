@@ -13,6 +13,7 @@ Tests per ``pipeline/trainer/docs/specs/modules/artifact-publisher.md``
 7. Round-trip: publish then load_parent.
 8. ONNX round-trip: state_dict → ONNX → ORT load → forward → compare logits.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -39,10 +40,7 @@ from pipeline.trainer.run_config import NetworkConfig, RunConfig, RunProvenance
 from pipeline.trainer.tensor_encoder import EncodedBatch
 
 _REGISTRY_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "contracts"
-    / "registry"
-    / "phase1-silent.json"
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
 )
 
 
@@ -98,9 +96,7 @@ def isolated_repo(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(repo)
 
     def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(
-            ["git", *args], cwd=repo, capture_output=True, text=True, check=True
-        )
+        return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
 
     git("init", "-q")
     git("config", "user.email", "test@example.com")
@@ -148,9 +144,7 @@ def small_network_config() -> NetworkConfig:
 
 
 @pytest.fixture
-def trainer_net(
-    registry: ContentRegistry, small_network_config: NetworkConfig
-) -> TrainerNet:
+def trainer_net(registry: ContentRegistry, small_network_config: NetworkConfig) -> TrainerNet:
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
     net.eval()
@@ -158,14 +152,13 @@ def trainer_net(
 
 
 def _make_dummy_batch(
-    *, batch_size: int = 2, seq_len: int = 12, action_space: int = 5,
-    vocab_size: int = 1
+    *, batch_size: int = 2, seq_len: int = 12, action_space: int = 5, vocab_size: int = 1
 ) -> EncodedBatch:
     torch.manual_seed(0)
     tokens = torch.randint(0, max(1, vocab_size), (batch_size, seq_len), dtype=torch.long)
     padding_mask = torch.zeros((batch_size, seq_len), dtype=torch.bool)
     legal_action_mask = torch.zeros((batch_size, action_space), dtype=torch.bool)
-    legal_action_mask[:, :max(1, action_space // 2)] = True
+    legal_action_mask[:, : max(1, action_space // 2)] = True
     return EncodedBatch(
         tokens=tokens,
         padding_mask=padding_mask,
@@ -219,7 +212,10 @@ def test_publisher_writes_v1_manifest(
     tmp_path: Path,
 ) -> None:
     pub = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         model=trainer_net,
         dummy_provider=lambda: _make_dummy_batch(vocab_size=len(registry)),
     )
@@ -275,7 +271,10 @@ def test_published_onnx_passes_check_model(
     import onnx
 
     pub = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         model=trainer_net,
         dummy_provider=lambda: _make_dummy_batch(vocab_size=len(registry)),
     )
@@ -322,7 +321,7 @@ def test_dataset_sha_order_independent() -> None:
 
 def test_dataset_sha_empty_is_stable() -> None:
     """Empty list is well-defined (not a special-cased None / sentinel)."""
-    h = compute_dataset_sha(tuple())
+    h = compute_dataset_sha(())
     assert isinstance(h, str)
     assert len(h) == 64
 
@@ -332,7 +331,7 @@ def test_dataset_sha_empty_is_stable() -> None:
 # ---------------------------------------------------------------------------
 def test_dataset_sha_differs_on_added_id() -> None:
     base = ("traj-a", "traj-b", "traj-c")
-    grew = base + ("traj-d",)
+    grew = (*base, "traj-d")
     assert compute_dataset_sha(base) != compute_dataset_sha(grew)
 
 
@@ -361,7 +360,10 @@ def test_atomic_weights_write_no_partial_file_observed(
     ``weights.pt``. ``os.replace`` is atomic on POSIX.
     """
     pub = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         # Skip ONNX to keep timing snappy; atomicity is a per-file invariant.
         model=None,
         dummy_provider=None,
@@ -418,12 +420,17 @@ def test_drop_on_full_queue_increments_counter(
     tmp_path: Path,
 ) -> None:
     pub = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         # No model; ONNX skipped — irrelevant for the queue invariant.
     )
     # Do NOT start the publisher; the queue stays full as we put two requests.
     req = PublishRequest(
-        step=1, model_state_dict_bytes=b"", optim_state_dict_bytes=b"",
+        step=1,
+        model_state_dict_bytes=b"",
+        optim_state_dict_bytes=b"",
         loss_total=0.0,
     )
     pub.request_publish(req)  # queued
@@ -446,7 +453,10 @@ def test_publish_then_load_parent_round_trip(
 ) -> None:
     # First publisher: publish step=42.
     pub_a = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         model=trainer_net,
         dummy_provider=lambda: _make_dummy_batch(vocab_size=len(registry)),
     )
@@ -479,7 +489,10 @@ def test_publish_then_load_parent_round_trip(
         run_id=run_config.run_id + "X",  # arbitrary distinct run_id
     )
     pub_b = _build_publisher(
-        run_config, child_prov, registry, tmp_path,
+        run_config,
+        child_prov,
+        registry,
+        tmp_path,
         model=trainer_net,
         dummy_provider=lambda: _make_dummy_batch(vocab_size=len(registry)),
     )
@@ -544,7 +557,10 @@ def test_onnx_round_trip_logits_match(
 
     dummy = _make_dummy_batch(vocab_size=len(registry))
     pub = _build_publisher(
-        run_config, run_provenance, registry, tmp_path,
+        run_config,
+        run_provenance,
+        registry,
+        tmp_path,
         model=trainer_net,
         dummy_provider=lambda: dummy,
     )
@@ -566,9 +582,7 @@ def test_onnx_round_trip_logits_match(
         pub.join(timeout=5)
 
     onnx_path = ref.local_path / "model.onnx"
-    sess = onnxruntime.InferenceSession(
-        str(onnx_path), providers=["CPUExecutionProvider"]
-    )
+    sess = onnxruntime.InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
     ort_inputs = {
         "tokens": dummy.tokens.numpy(),
         "padding_mask": dummy.padding_mask.numpy(),

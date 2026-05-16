@@ -11,12 +11,11 @@ import threading
 import time
 
 import pytest
-
 from control_plane.retention import Pressure
+
 from lifecycle.audit import AUDIT_FILE
 from lifecycle.lifecycle import Lifecycle, TickResult
 from lifecycle.policy import POLICY_FILE
-
 
 # ---------------------------------------------------------------------------
 # Test doubles
@@ -59,9 +58,7 @@ class _FakeRetention:
         self.pressure = pressure
         self.calls: list[tuple[int, int, int]] = []
 
-    def classify_pressure(
-        self, hot_bytes: int, queue_depth: int, queue_capacity: int
-    ) -> Pressure:
+    def classify_pressure(self, hot_bytes: int, queue_depth: int, queue_capacity: int) -> Pressure:
         self.calls.append((int(hot_bytes), int(queue_depth), int(queue_capacity)))
         return self.pressure
 
@@ -194,9 +191,7 @@ def test_tick_overflow_drops_oldest_range(tmp_path):
     assert hot.delete_calls, "delete_range must be called"
     assert result.rows_dropped > 0
     audit = lc.audit.read_all()
-    assert any(
-        r.get("action") == "drop" and r.get("reason") == "overflow" for r in audit
-    )
+    assert any(r.get("action") == "drop" and r.get("reason") == "overflow" for r in audit)
 
 
 def test_tick_sustained_emits_alert_and_drops(tmp_path):
@@ -225,19 +220,12 @@ def test_tick_sustained_emits_alert_and_drops(tmp_path):
     assert hot.delete_calls
     assert result.rows_dropped > 0
     audit = lc.audit.read_all()
-    assert any(
-        r.get("action") == "drop" and r.get("reason") == "sustained_pressure"
-        for r in audit
-    )
+    assert any(r.get("action") == "drop" and r.get("reason") == "sustained_pressure" for r in audit)
     # Metric: sustained == 1, others 0.
     lines = [b.decode("utf-8") for b in lc.metrics_lines("experience-store")]
-    sustained_line = next(
-        l for l in lines if 'state="sustained"' in l and "pressure_state" in l
-    )
+    sustained_line = next(l for l in lines if 'state="sustained"' in l and "pressure_state" in l)
     assert sustained_line.endswith(" 1")
-    normal_line = next(
-        l for l in lines if 'state="normal"' in l and "pressure_state" in l
-    )
+    normal_line = next(l for l in lines if 'state="normal"' in l and "pressure_state" in l)
     assert normal_line.endswith(" 0")
 
 
@@ -296,9 +284,7 @@ def test_set_policy_persists_and_affects_subsequent_tick(tmp_path):
         "max_age_seconds": None,
     }
     lc.set_policy(new)
-    persisted = json.loads(
-        (tmp_path / "lifecycle" / POLICY_FILE).read_text(encoding="utf-8")
-    )
+    persisted = json.loads((tmp_path / "lifecycle" / POLICY_FILE).read_text(encoding="utf-8"))
     assert persisted["hot_high_water_bytes"] == 1 * 1024**3
     assert persisted["hot_overflow_bytes"] == 2 * 1024**3
     # Tick uses the new policy (visible via metrics_lines path, since tick
@@ -440,27 +426,24 @@ def test_metrics_lines_emit_expected_shape(tmp_path):
 
     # Counters for all three reasons present.
     assert any(
-        'sts2_q3_lifecycle_dropped_rows_total' in l and 'reason="overflow"' in l
+        "sts2_q3_lifecycle_dropped_rows_total" in l and 'reason="overflow"' in l for l in lines
+    )
+    assert any(
+        "sts2_q3_lifecycle_dropped_rows_total" in l and 'reason="sustained_pressure"' in l
         for l in lines
     )
     assert any(
-        'sts2_q3_lifecycle_dropped_rows_total' in l
-        and 'reason="sustained_pressure"' in l
-        for l in lines
-    )
-    assert any(
-        'sts2_q3_lifecycle_dropped_rows_total' in l
-        and 'reason="cold_unavailable"' in l
+        "sts2_q3_lifecycle_dropped_rows_total" in l and 'reason="cold_unavailable"' in l
         for l in lines
     )
     # promoted counter present.
-    assert any('sts2_q3_lifecycle_promoted_rows_total' in l for l in lines)
+    assert any("sts2_q3_lifecycle_promoted_rows_total" in l for l in lines)
     # cursor gauge.
-    assert any('sts2_q3_lifecycle_cursor_ts_ns' in l for l in lines)
+    assert any("sts2_q3_lifecycle_cursor_ts_ns" in l for l in lines)
     # last_tick_ts_ns gauge.
-    assert any('sts2_q3_lifecycle_last_tick_ts_ns' in l for l in lines)
+    assert any("sts2_q3_lifecycle_last_tick_ts_ns" in l for l in lines)
     # tick_seconds_total counter.
-    assert any('sts2_q3_lifecycle_tick_seconds_total' in l for l in lines)
+    assert any("sts2_q3_lifecycle_tick_seconds_total" in l for l in lines)
 
 
 def test_metrics_exactly_one_pressure_state_is_one(tmp_path):
@@ -524,9 +507,7 @@ def test_tick_overflow_advances_last_promoted_ts(tmp_path):
     lc.tick()
     assert lc.cursor["last_promoted_ts_ns"] > 0
     # Persisted to disk.
-    persisted = json.loads(
-        (tmp_path / "lifecycle" / "cursor.json").read_text(encoding="utf-8")
-    )
+    persisted = json.loads((tmp_path / "lifecycle" / "cursor.json").read_text(encoding="utf-8"))
     assert persisted["last_promoted_ts_ns"] == lc.cursor["last_promoted_ts_ns"]
 
 
@@ -674,7 +655,7 @@ def test_constructor_rejects_zero_capacity(tmp_path):
 
 
 import inspect
-from lifecycle.lifecycle import Lifecycle
+
 
 def test_handle_get_lifecycle_status_reads_cursor_under_lock():
     src = inspect.getsource(Lifecycle.handle_get_lifecycle_status)
@@ -685,12 +666,14 @@ def test_handle_get_lifecycle_status_reads_cursor_under_lock():
         "_cursor must be read AFTER `with self._lock:` opens"
     )
 
+
 def test_tick_writes_cursor_under_lock():
     src = inspect.getsource(Lifecycle.tick)
     cursor_read_idx = src.find("new_cursor = dict(self._cursor)")
     assert cursor_read_idx > 0
     block_starts = [i for i in range(cursor_read_idx) if src.startswith("with self._lock:", i)]
     assert block_starts, "no `with self._lock:` precedes the cursor read in tick()"
+
 
 def test_cursor_property_takes_lock():
     src = inspect.getsource(Lifecycle.cursor.fget)  # type: ignore[union-attr]

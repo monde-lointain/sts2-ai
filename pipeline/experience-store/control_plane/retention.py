@@ -82,9 +82,7 @@ class RetentionController:
             self._overflow = int(persisted["hot_overflow_bytes"])
             self._capacity = int(persisted["ingest_queue_capacity"])
             self._hot_window_s = float(
-                persisted.get(
-                    "hot_bytes_window_seconds", DEFAULT_HOT_BYTES_WINDOW_SECONDS
-                )
+                persisted.get("hot_bytes_window_seconds", DEFAULT_HOT_BYTES_WINDOW_SECONDS)
             )
             self._queue_window_s = float(
                 persisted.get(
@@ -99,19 +97,11 @@ class RetentionController:
                 )
             )
         else:
-            self._high_water = int(
-                config.get("hot_high_water_bytes", DEFAULT_HOT_HIGH_WATER_BYTES)
-            )
-            self._overflow = int(
-                config.get("hot_overflow_bytes", DEFAULT_HOT_OVERFLOW_BYTES)
-            )
-            self._capacity = int(
-                config.get("ingest_queue_capacity", DEFAULT_INGEST_QUEUE_CAPACITY)
-            )
+            self._high_water = int(config.get("hot_high_water_bytes", DEFAULT_HOT_HIGH_WATER_BYTES))
+            self._overflow = int(config.get("hot_overflow_bytes", DEFAULT_HOT_OVERFLOW_BYTES))
+            self._capacity = int(config.get("ingest_queue_capacity", DEFAULT_INGEST_QUEUE_CAPACITY))
             self._hot_window_s = float(
-                config.get(
-                    "hot_bytes_window_seconds", DEFAULT_HOT_BYTES_WINDOW_SECONDS
-                )
+                config.get("hot_bytes_window_seconds", DEFAULT_HOT_BYTES_WINDOW_SECONDS)
             )
             self._queue_window_s = float(
                 config.get(
@@ -168,9 +158,7 @@ class RetentionController:
     def queue_depth_threshold_fraction(self) -> float:
         return self._queue_threshold_frac
 
-    def classify_pressure(
-        self, hot_bytes: int, queue_depth: int, queue_capacity: int
-    ) -> Pressure:
+    def classify_pressure(self, hot_bytes: int, queue_depth: int, queue_capacity: int) -> Pressure:
         now = time.monotonic()
         with self._samples_lock:
             self._samples.append((now, int(hot_bytes), int(queue_depth)))

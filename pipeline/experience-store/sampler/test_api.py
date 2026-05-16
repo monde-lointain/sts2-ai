@@ -23,20 +23,16 @@ import json
 from pathlib import Path
 
 import pytest
-
 from hot_store import HotStore
 from proto import (
-    CombatOutcomeSample,
-    CombatOutcomeSummary,
     DecisionType,
-    SchemaVersion,
     Trajectory,
     TrajectoryStep,
 )
-from sampler import Sampler
-from sampler.framing import decode_varint
 from schema_registry import SchemaRegistry
 
+from sampler import Sampler
+from sampler.framing import decode_varint
 
 # ---------- helpers ----------
 
@@ -70,7 +66,7 @@ def _make_trajectory(
         step.search_policy.extend([0.5, 0.3, 0.2])
         step.action_taken = 2
         step.reward = 0.0
-        step.terminal = (i == n_steps - 1)
+        step.terminal = i == n_steps - 1
         step.decision_type = decision_types[i % len(decision_types)]
     return traj
 
@@ -87,9 +83,7 @@ def _seed(
     ids: list[bytes] = []
     for i in range(n_trajectories):
         mv = (
-            model_version_pattern[i % len(model_version_pattern)]
-            if model_version_pattern
-            else "v1"
+            model_version_pattern[i % len(model_version_pattern)] if model_version_pattern else "v1"
         )
         sv = schema_version or (1, 0)
         dts = decision_types_per_traj[i] if decision_types_per_traj else None
@@ -157,7 +151,7 @@ def sampler(store, registry):
 def test_uniform_batch_le_total(sampler, store) -> None:
     _seed(store, n_trajectories=10, steps_per_traj=5)
     body = json.dumps({"mode": "uniform", "batch_size": 20}).encode()
-    status, headers, response = sampler.handle_post_sample(body)
+    status, _headers, response = sampler.handle_post_sample(body)
     assert status == 200
     steps, trailer = _decode_stream(response)
     assert len(steps) == 20
@@ -167,7 +161,7 @@ def test_uniform_batch_le_total(sampler, store) -> None:
 def test_uniform_total_lt_batch_returns_all_with_exhausted(sampler, store) -> None:
     _seed(store, n_trajectories=10, steps_per_traj=5)
     body = json.dumps({"mode": "uniform", "batch_size": 200}).encode()
-    status, headers, response = sampler.handle_post_sample(body)
+    status, _headers, response = sampler.handle_post_sample(body)
     assert status == 200
     steps, trailer = _decode_stream(response)
     assert len(steps) == 50
@@ -226,7 +220,7 @@ def test_filter_by_decision_type(sampler, store) -> None:
             "filters": {"decision_type": ["COMBAT"]},
         }
     ).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    _status, _h, response = sampler.handle_post_sample(body)
     steps, trailer = _decode_stream(response)
     assert len(steps) == 6  # 2 combat steps * 3 trajectories
     for step in steps:
@@ -245,7 +239,7 @@ def test_filter_by_decision_type_canonical_name(sampler, store) -> None:
             "filters": {"decision_type": ["DECISION_TYPE_COMBAT"]},
         }
     ).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    _status, _h, response = sampler.handle_post_sample(body)
     steps, _ = _decode_stream(response)
     assert len(steps) == 2
 
@@ -259,7 +253,7 @@ def test_filter_by_schema_version(sampler, store) -> None:
             "filters": {"schema_version": {"major": 1, "minor": 0}},
         }
     ).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    _status, _h, response = sampler.handle_post_sample(body)
     steps, trailer = _decode_stream(response)
     assert len(steps) == 15
     assert trailer == {"status": "exhausted"}
@@ -275,7 +269,7 @@ def test_filter_schema_unknown_returns_400(sampler, store) -> None:
             "filters": {"schema_version": {"major": 99, "minor": 99}},
         }
     ).encode()
-    status, headers, response = sampler.handle_post_sample(body)
+    status, _headers, response = sampler.handle_post_sample(body)
     assert status == 400
     payload = json.loads(response.decode("utf-8"))
     assert payload["error"] == "malformed"
@@ -304,8 +298,8 @@ def test_filter_after_ts_ns_skips_old(sampler, store) -> None:
     body = json.dumps(
         {"mode": "uniform", "batch_size": 100, "filters": {"after_ts_ns": skip_ts}}
     ).encode()
-    status, _h, response = sampler.handle_post_sample(body)
-    steps, trailer = _decode_stream(response)
+    _status, _h, response = sampler.handle_post_sample(body)
+    steps, _trailer = _decode_stream(response)
     # 3 remaining trajectories * 2 steps = 6
     assert len(steps) == 6
 
@@ -325,10 +319,8 @@ def test_cursor_resume_no_overlap(sampler, store) -> None:
     assert len(first_steps) == 10
 
     # Resume with cursor.
-    body2 = json.dumps(
-        {"mode": "uniform", "batch_size": 10, "cursor_id": cursor_id}
-    ).encode()
-    status, headers2, response2 = sampler.handle_post_sample(body2)
+    body2 = json.dumps({"mode": "uniform", "batch_size": 10, "cursor_id": cursor_id}).encode()
+    status, _headers2, response2 = sampler.handle_post_sample(body2)
     assert status == 200
     second_steps, _ = _decode_stream(response2)
     assert len(second_steps) == 10
@@ -347,9 +339,7 @@ def test_cursor_resume_exhausts(sampler, store) -> None:
         payload = {"mode": "uniform", "batch_size": 8}
         if cursor_id:
             payload["cursor_id"] = cursor_id
-        status, headers, response = sampler.handle_post_sample(
-            json.dumps(payload).encode()
-        )
+        status, headers, response = sampler.handle_post_sample(json.dumps(payload).encode())
         assert status == 200
         steps, trailer = _decode_stream(response)
         all_steps.extend(steps)
@@ -375,9 +365,7 @@ def test_cursor_resume_mid_trajectory_no_overlap(sampler, store) -> None:
     seen = list(all_first)
     while True:
         payload = {"mode": "uniform", "batch_size": 3, "cursor_id": cursor_id}
-        status, headers, response = sampler.handle_post_sample(
-            json.dumps(payload).encode()
-        )
+        status, headers, response = sampler.handle_post_sample(json.dumps(payload).encode())
         assert status == 200
         page_steps, trailer = _decode_stream(response)
         seen.extend(s.rich_state for s in page_steps)
@@ -500,13 +488,13 @@ def test_malformed_non_json_returns_400(sampler) -> None:
 
 def test_malformed_missing_mode_returns_400(sampler) -> None:
     body = json.dumps({"batch_size": 4}).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    status, _h, _response = sampler.handle_post_sample(body)
     assert status == 400
 
 
 def test_malformed_negative_batch_size_returns_400(sampler) -> None:
     body = json.dumps({"mode": "uniform", "batch_size": -1}).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    status, _h, _response = sampler.handle_post_sample(body)
     assert status == 400
 
 
@@ -520,7 +508,7 @@ def test_unsupported_mode_prioritized_returns_400(sampler) -> None:
 
 def test_unsupported_mode_stratified_returns_400(sampler) -> None:
     body = json.dumps({"mode": "stratified", "batch_size": 4}).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    status, _h, _response = sampler.handle_post_sample(body)
     assert status == 400
 
 
@@ -528,7 +516,7 @@ def test_malformed_filter_type_returns_400(sampler) -> None:
     body = json.dumps(
         {"mode": "uniform", "batch_size": 4, "filters": {"model_version": "v1"}}
     ).encode()
-    status, _h, response = sampler.handle_post_sample(body)
+    status, _h, _response = sampler.handle_post_sample(body)
     assert status == 400
 
 
@@ -551,9 +539,7 @@ def test_metrics_503_emits_zero_in_phase1a(sampler) -> None:
     """schema_503 counter is emitted but stays at 0 in Phase-1A."""
     lines = sampler.metrics_lines("experience-store")
     text = b"\n".join(lines).decode("utf-8")
-    assert (
-        'sts2_q3_sample_schema_503_total{service="experience-store"} 0' in text
-    )
+    assert 'sts2_q3_sample_schema_503_total{service="experience-store"} 0' in text
 
 
 def test_metrics_cursor_count_reflects_lru(sampler, store) -> None:
@@ -573,7 +559,10 @@ def test_metrics_rows_returned_counter(sampler, store) -> None:
     lines = sampler.metrics_lines("experience-store")
     text = b"\n".join(lines).decode("utf-8")
     # exactly 12 steps were returned
-    assert 'sts2_q3_sample_rows_returned_total{mode="uniform",tier="hot",service="experience-store"} 12' in text
+    assert (
+        'sts2_q3_sample_rows_returned_total{mode="uniform",tier="hot",service="experience-store"} 12'
+        in text
+    )
 
 
 # ---------- end-to-end framing wire format ----------
@@ -610,7 +599,7 @@ def test_e2e_phase1_d1_trajectories_round_trip(sampler, store) -> None:
     body = json.dumps({"mode": "uniform", "batch_size": 20}).encode()
     status, _h, response = sampler.handle_post_sample(body)
     assert status == 200
-    steps, trailer = _decode_stream(response)
+    steps, _trailer = _decode_stream(response)
     assert len(steps) == 20
     for step in steps:
         assert step.decision_type == DecisionType.DECISION_TYPE_COMBAT

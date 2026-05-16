@@ -16,15 +16,16 @@ daemon so the module imports without the dependency installed.
 # record_step accepts any object exposing `grad_norm_pre_clip`,
 # `grad_norm_post_clip`, `lr`.
 """
+
 from __future__ import annotations
 
+import contextlib
 import queue
 import threading
 import time
 from typing import Any
 
 from pipeline.common.prometheus import PrometheusLineBuilder
-
 
 # ----- fixed counter / gauge name registries (spec §Fixed counter/gauge set) -----
 
@@ -119,14 +120,14 @@ class MetricsEmitter:
         # Counter storage. Two flavors:
         #   no-label:  _counters[name] -> int
         #   labelled:  _counters_labelled[(name, label_value)] -> int
-        self._counters: dict[str, int] = {n: 0 for n in _COUNTER_NAMES_NO_LABEL}
+        self._counters: dict[str, int] = dict.fromkeys(_COUNTER_NAMES_NO_LABEL, 0)
         self._counters_labelled: dict[tuple[str, str], int] = {}
         for name, (_label_key, values) in _COUNTER_NAMES_LABELLED.items():
             for v in values:
                 self._counters_labelled[(name, v)] = 0
 
         # Gauge storage. Same shape.
-        self._gauges: dict[str, float] = {n: 0.0 for n in _GAUGE_NAMES_NO_LABEL}
+        self._gauges: dict[str, float] = dict.fromkeys(_GAUGE_NAMES_NO_LABEL, 0.0)
         self._gauges_labelled: dict[tuple[str, str], float] = {}
         for name, (_label_key, values) in _GAUGE_NAMES_LABELLED.items():
             for v in values:
@@ -162,22 +163,17 @@ class MetricsEmitter:
             if name in self._counters:
                 if labels:
                     # No-label counter cannot accept labels.
-                    raise KeyError(
-                        f"counter {name!r} does not accept labels"
-                    )
+                    raise KeyError(f"counter {name!r} does not accept labels")
                 self._counters[name] += int(n)
                 return
             if name in _COUNTER_NAMES_LABELLED:
                 label_key, _values = _COUNTER_NAMES_LABELLED[name]
                 if not labels or label_key not in labels:
-                    raise KeyError(
-                        f"counter {name!r} requires label {label_key!r}"
-                    )
+                    raise KeyError(f"counter {name!r} requires label {label_key!r}")
                 key = (name, labels[label_key])
                 if key not in self._counters_labelled:
                     raise KeyError(
-                        f"counter {name!r} label {label_key}={labels[label_key]!r}"
-                        " not registered"
+                        f"counter {name!r} label {label_key}={labels[label_key]!r} not registered"
                     )
                 self._counters_labelled[key] += int(n)
                 return
@@ -197,22 +193,17 @@ class MetricsEmitter:
         with self._lock:
             if name in self._gauges:
                 if labels:
-                    raise KeyError(
-                        f"gauge {name!r} does not accept labels"
-                    )
+                    raise KeyError(f"gauge {name!r} does not accept labels")
                 self._gauges[name] = float(val)
                 return
             if name in _GAUGE_NAMES_LABELLED:
                 label_key, _values = _GAUGE_NAMES_LABELLED[name]
                 if not labels or label_key not in labels:
-                    raise KeyError(
-                        f"gauge {name!r} requires label {label_key!r}"
-                    )
+                    raise KeyError(f"gauge {name!r} requires label {label_key!r}")
                 key = (name, labels[label_key])
                 if key not in self._gauges_labelled:
                     raise KeyError(
-                        f"gauge {name!r} label {label_key}={labels[label_key]!r}"
-                        " not registered"
+                        f"gauge {name!r} label {label_key}={labels[label_key]!r} not registered"
                     )
                 self._gauges_labelled[key] = float(val)
                 return
@@ -251,7 +242,10 @@ class MetricsEmitter:
                 labels={"head": head},
             )
 
-        payload: dict[str, Any] = {"step": int(step), **{k: float(v) for k, v in loss_components.items()}}
+        payload: dict[str, Any] = {
+            "step": int(step),
+            **{k: float(v) for k, v in loss_components.items()},
+        }
 
         if step_stats is not None:
             grad_post = getattr(step_stats, "grad_norm_post_clip", None)
@@ -369,10 +363,8 @@ class MetricsEmitter:
             self._wandb_queue.put_nowait(payload)
         except queue.Full:
             # Drop oldest.
-            try:
+            with contextlib.suppress(queue.Empty):
                 self._wandb_queue.get_nowait()
-            except queue.Empty:
-                pass
             # Count the drop. inc() takes the lock; safe under contention.
             self.inc("sts2_q10_wandb_dropped_total")
             try:

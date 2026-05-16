@@ -42,9 +42,7 @@ def _find_monorepo_root(start: Path) -> Path:
     for candidate in [current, *current.parents]:
         if (candidate / ".git").exists():
             return candidate
-    raise RuntimeError(
-        f"Could not locate monorepo root (no .git/ found above {start})"
-    )
+    raise RuntimeError(f"Could not locate monorepo root (no .git/ found above {start})")
 
 
 def resolve_config(args: Any | None = None) -> Config:

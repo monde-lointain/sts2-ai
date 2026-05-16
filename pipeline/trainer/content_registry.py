@@ -18,13 +18,13 @@ Constraints:
 
 See ``pipeline/trainer/docs/specs/modules/tensor-encoder.md`` and Q10-ADR-008.
 """
+
 from __future__ import annotations
 
 import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 
 # ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ class Token:
     kind: str
     content_hash: str
     since_version: str
-    deprecated_in: Optional[str]
+    deprecated_in: str | None
     references: tuple[str, ...]
 
 
@@ -65,7 +65,7 @@ class ManifestInfo:
     version: str
     schema_version_major: int
     schema_version_minor: int
-    parent_version: Optional[str]
+    parent_version: str | None
 
 
 # ---------------------------------------------------------------------------
@@ -94,8 +94,8 @@ class ContentRegistry:
         cls,
         path: Path,
         *,
-        expected_token_count: Optional[int] = None,
-    ) -> "ContentRegistry":
+        expected_token_count: int | None = None,
+    ) -> ContentRegistry:
         """Read JSON at ``path``, validate, return frozen ContentRegistry.
 
         ``content_hash`` is computed from the raw file bytes (no
@@ -197,9 +197,7 @@ def _build_tokens(rows: list[dict], path: Path) -> tuple[Token, ...]:
                 content_hash=str(row.get("content_hash", "")),
                 since_version=str(row.get("since_version", "")),
                 deprecated_in=(
-                    None
-                    if row.get("deprecated_in") is None
-                    else str(row["deprecated_in"])
+                    None if row.get("deprecated_in") is None else str(row["deprecated_in"])
                 ),
                 references=tuple(str(r) for r in row.get("references", [])),
             )
@@ -209,7 +207,7 @@ def _build_tokens(rows: list[dict], path: Path) -> tuple[Token, ...]:
 
 def _build_card_dsl(rows: list[dict]) -> tuple[CardDslEntry, ...]:
     if not isinstance(rows, list):
-        return tuple()
+        return ()
     out: list[CardDslEntry] = []
     for row in rows:
         if not isinstance(row, dict):
@@ -240,8 +238,8 @@ def _infer_kind(token: str) -> str:
 
 
 __all__ = [
-    "ContentRegistry",
-    "Token",
     "CardDslEntry",
+    "ContentRegistry",
     "ManifestInfo",
+    "Token",
 ]

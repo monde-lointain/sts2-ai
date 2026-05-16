@@ -20,6 +20,7 @@ responsible for passing strings that don't contain `"` or backslashes. A
 test asserts the literal passthrough behavior for a service name containing
 a quote.
 """
+
 from __future__ import annotations
 
 
@@ -75,4 +76,4 @@ class PrometheusLineBuilder:
             for key, val in labels.items():
                 parts.append(f'{key}="{val}"')
         parts.append(f'service="{self._service}"')
-        return f'{name}{{{",".join(parts)}}} {rendered_value}'.encode("utf-8")
+        return f"{name}{{{','.join(parts)}}} {rendered_value}".encode()

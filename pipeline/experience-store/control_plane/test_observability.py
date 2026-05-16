@@ -8,7 +8,6 @@ import pytest
 
 from control_plane.observability import MetricsEmitter
 
-
 SERVICE = "experience-store"
 
 
@@ -78,6 +77,7 @@ def test_uptime_seconds_increases_monotonically():
     text_a = emitter.format_metrics().decode("utf-8")
     time.sleep(0.05)
     text_b = emitter.format_metrics().decode("utf-8")
+
     # Locate the uptime value in each scrape and assert strictly greater.
     def uptime_value(text: str) -> float:
         for line in text.splitlines():

@@ -8,6 +8,7 @@ parent artifact, run_id) before any mutable training state starts.
 Constraints: no third-party deps; ULID is implemented inline. See
 ``pipeline/trainer/docs/specs/modules/run-config.md``.
 """
+
 from __future__ import annotations
 
 import os
@@ -17,10 +18,8 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from pipeline.common.service_host import load_config
-
 
 # ---------------------------------------------------------------------------
 # ULID (inline; no external dep). 26-char Crockford-base32, 48-bit ms
@@ -46,7 +45,7 @@ def _new_ulid() -> str:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class NetworkConfig:
-    expected_token_count: Optional[int]
+    expected_token_count: int | None
     d_model: int
     n_layers: int
     n_heads: int
@@ -93,7 +92,7 @@ class RunConfig:
     # Q10-specific top-level
     q3_url: str
     q5_url: str
-    parent_artifact_id: Optional[str]
+    parent_artifact_id: str | None
     seed: int
     refuse_on_dirty: bool
     sampling_mode: str
@@ -109,7 +108,7 @@ class RunConfig:
     run_id: str
 
     @classmethod
-    def load(cls, path: Path) -> "RunConfig":
+    def load(cls, path: Path) -> RunConfig:
         """Read + validate JSON, return frozen instance. Mints ``run_id`` once."""
         raw = load_config(path)  # asserts service/port/data_dir
         _require(
@@ -166,20 +165,16 @@ class RunProvenance:
     start_ts_ns: int
     host: str
     seed: int
-    parent_artifact_id: Optional[str]
+    parent_artifact_id: str | None
     run_id: str
 
     @classmethod
-    def capture(
-        cls, config: RunConfig, parent_artifact_id: Optional[str]
-    ) -> "RunProvenance":
+    def capture(cls, config: RunConfig, parent_artifact_id: str | None) -> RunProvenance:
         code_sha = _git(["rev-parse", "HEAD"])
         porcelain = _git(["status", "--porcelain"])
         run_dirty = bool(porcelain.strip())
         if run_dirty and config.refuse_on_dirty:
-            raise RuntimeError(
-                "refuse_on_dirty=True: working tree is dirty (git status non-empty)"
-            )
+            raise RuntimeError("refuse_on_dirty=True: working tree is dirty (git status non-empty)")
         return cls(
             code_sha=code_sha,
             run_dirty=run_dirty,
@@ -202,11 +197,13 @@ def seed_everything(seed: int) -> None:
     random.seed(seed)
     try:
         import numpy as np  # type: ignore
+
         np.random.seed(seed)
     except ImportError:
         pass
     try:
         import torch  # type: ignore
+
         torch.manual_seed(seed)
         if torch.cuda.is_available():
             torch.cuda.manual_seed_all(seed)
@@ -289,9 +286,7 @@ def _build_ckpt(block: dict, path: Path) -> CheckpointConfig:
 
 def _git(args: list[str]) -> str:
     """Run a git subprocess; raise if non-zero."""
-    res = subprocess.run(
-        ["git", *args], capture_output=True, text=True, check=False
-    )
+    res = subprocess.run(["git", *args], capture_output=True, text=True, check=False)
     if res.returncode != 0:
         raise RuntimeError(
             f"git {' '.join(args)} failed (rc={res.returncode}): {res.stderr.strip()}"
@@ -300,12 +295,12 @@ def _git(args: list[str]) -> str:
 
 
 __all__ = [
-    "RunConfig",
-    "RunProvenance",
+    "CheckpointConfig",
+    "LossWeights",
     "NetworkConfig",
     "OptimConfig",
-    "LossWeights",
-    "CheckpointConfig",
+    "RunConfig",
+    "RunProvenance",
     "WandbConfig",
     "seed_everything",
 ]

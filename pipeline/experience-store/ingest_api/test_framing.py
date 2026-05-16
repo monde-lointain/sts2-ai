@@ -14,7 +14,6 @@ from ingest_api.framing import (
     parse_frames,
 )
 
-
 # ---------------------------- varint roundtrip ----------------------------
 
 

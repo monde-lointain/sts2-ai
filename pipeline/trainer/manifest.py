@@ -29,12 +29,13 @@ field                       type            notes
 See ``pipeline/trainer/docs/specs/modules/artifact-publisher.md`` and
 Q10-ADR-006 / Q10-ADR-009 for the rationale.
 """
+
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from types import MappingProxyType
-from typing import Any, Mapping
-
+from typing import Any
 
 # Required schema-v1 fields. Order matches the JSON layout written to disk
 # (``sort_keys=True`` in ``atomic_write_json`` re-sorts alphabetically; this
@@ -105,7 +106,7 @@ class ProvenanceManifest:
         return d
 
     @classmethod
-    def from_dict(cls, payload: Mapping[str, Any]) -> "ProvenanceManifest":
+    def from_dict(cls, payload: Mapping[str, Any]) -> ProvenanceManifest:
         """Reverse of :meth:`to_dict` with schema validation."""
         validate(payload)
         return cls(
@@ -118,7 +119,8 @@ class ProvenanceManifest:
             seed=int(payload["seed"]),
             hyperparameters=MappingProxyType(dict(payload["hyperparameters"])),
             parent_artifact_id=(
-                None if payload["parent_artifact_id"] is None
+                None
+                if payload["parent_artifact_id"] is None
                 else str(payload["parent_artifact_id"])
             ),
             content_registry_sha=str(payload["content_registry_sha"]),
@@ -144,15 +146,11 @@ def validate(payload: Mapping[str, Any]) -> None:
     - ``phase == 1`` (Q10-ADR-009 lock).
     """
     if not isinstance(payload, Mapping):
-        raise ValueError(
-            f"manifest payload must be a Mapping; got {type(payload).__name__}"
-        )
+        raise ValueError(f"manifest payload must be a Mapping; got {type(payload).__name__}")
 
     missing = [name for name, _ in _V1_REQUIRED_FIELDS if name not in payload]
     if missing:
-        raise ValueError(
-            f"manifest missing required field(s): {', '.join(missing)}"
-        )
+        raise ValueError(f"manifest missing required field(s): {', '.join(missing)}")
 
     for name, expected in _V1_REQUIRED_FIELDS:
         value = payload[name]
@@ -160,30 +158,26 @@ def validate(payload: Mapping[str, Any]) -> None:
         if name == "parent_artifact_id":
             if value is not None and not isinstance(value, str):
                 raise ValueError(
-                    f"manifest field {name!r}: expected str or None, "
-                    f"got {type(value).__name__}"
+                    f"manifest field {name!r}: expected str or None, got {type(value).__name__}"
                 )
             continue
         # ``bool`` is a subclass of ``int`` in Python; reject the int-expected
         # field receiving a bool, but allow the bool-expected field.
         if expected is int and isinstance(value, bool):
-            raise ValueError(
-                f"manifest field {name!r}: expected int, got bool"
-            )
+            raise ValueError(f"manifest field {name!r}: expected int, got bool")
         if not isinstance(value, expected):  # type: ignore[arg-type]
             type_name = (
-                expected.__name__ if isinstance(expected, type)
+                expected.__name__
+                if isinstance(expected, type)
                 else " | ".join(t.__name__ for t in expected)
             )
             raise ValueError(
-                f"manifest field {name!r}: expected {type_name}, "
-                f"got {type(value).__name__}"
+                f"manifest field {name!r}: expected {type_name}, got {type(value).__name__}"
             )
 
     if int(payload["schema_version"]) != SCHEMA_VERSION:
         raise ValueError(
-            f"manifest schema_version: expected {SCHEMA_VERSION}, "
-            f"got {payload['schema_version']}"
+            f"manifest schema_version: expected {SCHEMA_VERSION}, got {payload['schema_version']}"
         )
     if int(payload["onnx_opset_version"]) != 17:
         raise ValueError(
@@ -191,13 +185,11 @@ def validate(payload: Mapping[str, Any]) -> None:
             f"Q10-ADR-006; got {payload['onnx_opset_version']}"
         )
     if int(payload["phase"]) != 1:
-        raise ValueError(
-            f"manifest phase: Phase-1 locked to 1; got {payload['phase']}"
-        )
+        raise ValueError(f"manifest phase: Phase-1 locked to 1; got {payload['phase']}")
 
 
 __all__ = [
-    "ProvenanceManifest",
     "SCHEMA_VERSION",
+    "ProvenanceManifest",
     "validate",
 ]

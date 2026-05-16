@@ -6,13 +6,13 @@ frame emission can be exercised without a real RocksDB instance.
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 from proto import DecisionType, Trajectory
+
 from sampler.cursor import CursorState
 from sampler.engine import SamplingEngine
 from sampler.framing import decode_varint
-
 
 # ---------- helpers ----------
 
@@ -44,7 +44,7 @@ def _make_traj(
         step.rich_state = f"state-{trajectory_id}-{i}".encode()
         step.action_taken = 2
         step.reward = 0.0
-        step.terminal = (i == n_steps - 1)
+        step.terminal = i == n_steps - 1
         step.decision_type = decision_types[i % len(decision_types)]
     return traj.SerializeToString()
 
@@ -55,9 +55,7 @@ class _StubHotStore:
     def __init__(self, rows: list[tuple[int, bytes, bytes]]) -> None:
         self._rows = rows
 
-    def scan(
-        self, after_ts_ns: int, limit: int
-    ) -> Iterator[tuple[int, bytes, bytes]]:
+    def scan(self, after_ts_ns: int, limit: int) -> Iterator[tuple[int, bytes, bytes]]:
         yielded = 0
         for ts, tid, blob in self._rows:
             if ts <= after_ts_ns:
@@ -123,11 +121,9 @@ def test_engine_filters_by_model_version():
         (30, b"c", _make_traj("t-c", model_version="v1", n_steps=1)),
     ]
     eng = SamplingEngine(hot_store=_StubHotStore(rows), schema_registry=None)
-    state = CursorState(
-        mode="uniform", filters={"model_version": ["v1"]}
-    )
+    state = CursorState(mode="uniform", filters={"model_version": ["v1"]})
 
-    frames_iter, trailer, new_state = eng.sample(
+    frames_iter, trailer, _new_state = eng.sample(
         state, batch_max=10, filters={"model_version": ["v1"]}
     )
     frames = list(frames_iter)

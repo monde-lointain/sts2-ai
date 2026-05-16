@@ -4,12 +4,10 @@ import pathlib
 import sys
 import unittest
 
-
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "content"))
 
 import validate_registry
-
 
 REGISTRY_PATH = ROOT / "contracts" / "registry" / "phase1-silent.json"
 SCHEMA_PATH = ROOT / "contracts" / "registry" / "schema.json"
@@ -38,7 +36,11 @@ class RegistryInvariantsTest(unittest.TestCase):
         registry = load_registry()
         token = registry["tokens"][0]
         registry["deprecation_log"].append(
-            {"token_id": token["token_id"], "deprecated_in_version": "phase1-silent.9", "reason": "test"}
+            {
+                "token_id": token["token_id"],
+                "deprecated_in_version": "phase1-silent.9",
+                "reason": "test",
+            }
         )
         errors = validate_registry.validate(registry)
         self.assertTrue(any("reused deprecated token_id" in error for error in errors), errors)
@@ -57,12 +59,24 @@ class RegistryInvariantsTest(unittest.TestCase):
             {"token_id": 9000, "deprecated_in_version": "phase1-silent.2", "reason": "later"},
             {"token_id": 9001, "deprecated_in_version": "phase1-silent.1", "reason": "earlier"},
         ]
-        registry["tokens"].extend([copy.deepcopy(registry["tokens"][0]), copy.deepcopy(registry["tokens"][0])])
+        registry["tokens"].extend(
+            [copy.deepcopy(registry["tokens"][0]), copy.deepcopy(registry["tokens"][0])]
+        )
         registry["tokens"][-2].update(
-            {"token_id": 9000, "token": "card:DeprecatedA", "name": "DeprecatedA", "deprecated_in": "phase1-silent.2"}
+            {
+                "token_id": 9000,
+                "token": "card:DeprecatedA",
+                "name": "DeprecatedA",
+                "deprecated_in": "phase1-silent.2",
+            }
         )
         registry["tokens"][-1].update(
-            {"token_id": 9001, "token": "card:DeprecatedB", "name": "DeprecatedB", "deprecated_in": "phase1-silent.1"}
+            {
+                "token_id": 9001,
+                "token": "card:DeprecatedB",
+                "name": "DeprecatedB",
+                "deprecated_in": "phase1-silent.1",
+            }
         )
         errors = validate_registry.validate(registry)
         self.assertTrue(any("deprecation_log not monotonic" in error for error in errors), errors)

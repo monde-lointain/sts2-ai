@@ -11,13 +11,12 @@ import pytest
 
 from upstream_sync import patch_notes
 from upstream_sync.patch_notes import (
-    PatchNote,
-    ParsedNote,
     STEAM_NEWS_API,
+    ParsedNote,
+    PatchNote,
     fetch_patch_notes,
     parse_bbcode,
 )
-
 
 FIXTURE_PATH = Path(__file__).parent / "fixtures" / "patch_notes.sample.json"
 
@@ -47,7 +46,7 @@ def _make_urlopen(payload: bytes):
     """Build a one-shot _urlopen mock that always returns payload."""
     calls: list[str] = []
 
-    def _urlopen(url, timeout=None):  # noqa: ARG001
+    def _urlopen(url, timeout=None):
         calls.append(str(url))
         return _MockResponse(payload)
 
@@ -69,9 +68,7 @@ def test_steam_news_api_url_template():
 
 
 def test_patch_note_is_frozen_dataclass():
-    note = PatchNote(
-        gid="g", title="t", date=1, contents="c", url="u", version_hint=None
-    )
+    note = PatchNote(gid="g", title="t", date=1, contents="c", url="u", version_hint=None)
     with pytest.raises(Exception):
         note.title = "other"  # type: ignore[misc]
 
@@ -195,14 +192,18 @@ def test_cache_key_is_count(tmp_path):
 
 def _http_error(code: int) -> urllib.error.HTTPError:
     return urllib.error.HTTPError(
-        url="x", code=code, msg="err", hdrs=None, fp=BytesIO(b"")  # type: ignore[arg-type]
+        url="x",
+        code=code,
+        msg="err",
+        hdrs=None,
+        fp=BytesIO(b""),  # type: ignore[arg-type]
     )
 
 
 def test_retry_recovers_after_429(monkeypatch):
     """429 then 200 → succeeds after retry; verifies backoff is invoked."""
     sleeps: list[float] = []
-    monkeypatch.setattr(patch_notes.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(patch_notes.time, "sleep", sleeps.append)
 
     payload = _fixture_bytes()
     state = {"attempts": 0}
@@ -370,14 +371,7 @@ def test_parse_bbcode_empty_content():
 
 
 def test_parse_bbcode_multiple_items_in_one_list():
-    body = (
-        "[h2]Section[/h2]\n"
-        "[list]\n"
-        "[*]First item\n"
-        "[*]Second item\n"
-        "[*]Third item\n"
-        "[/list]"
-    )
+    body = "[h2]Section[/h2]\n[list]\n[*]First item\n[*]Second item\n[*]Third item\n[/list]"
     parsed = parse_bbcode(body)
     assert len(parsed.items) == 3
     assert all(s == "Section" for s, _ in parsed.items)

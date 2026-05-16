@@ -44,7 +44,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from proto import DecisionType, ObservabilityRegime, Trajectory  # noqa: E402
+from proto import DecisionType, ObservabilityRegime, Trajectory
 
 DEFAULT_SEED = 0xCAFEBABE
 DEFAULT_TRAJECTORY_ID = "phase-1a-cultists-smoke"
@@ -85,10 +85,8 @@ def build_trajectory(
     for i in range(n_steps):
         step = t.steps.add()
         step.decision_type = DecisionType.DECISION_TYPE_COMBAT
-        step.observability_regime = (
-            ObservabilityRegime.OBSERVABILITY_REGIME_POLICY_VISIBLE
-        )
-        step.terminal = (i == n_steps - 1)
+        step.observability_regime = ObservabilityRegime.OBSERVABILITY_REGIME_POLICY_VISIBLE
+        step.terminal = i == n_steps - 1
         step.reward = 1.0 if step.terminal else 0.0
         step.action_taken = i % 4
 
@@ -141,9 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Emit a D1-shaped synthetic Trajectory binary (CULTISTS_NORMAL)."
     )
-    parser.add_argument(
-        "--steps", type=int, default=DEFAULT_STEPS, help="step count (default: 8)"
-    )
+    parser.add_argument("--steps", type=int, default=DEFAULT_STEPS, help="step count (default: 8)")
     parser.add_argument(
         "--seed",
         type=_parse_seed,
@@ -155,12 +151,8 @@ def main(argv: list[str] | None = None) -> int:
         type=str,
         default=DEFAULT_TRAJECTORY_ID,
     )
-    parser.add_argument(
-        "--episode-id", type=str, default=DEFAULT_EPISODE_ID
-    )
-    parser.add_argument(
-        "--output", type=Path, required=True, help="output binary path"
-    )
+    parser.add_argument("--episode-id", type=str, default=DEFAULT_EPISODE_ID)
+    parser.add_argument("--output", type=Path, required=True, help="output binary path")
     args = parser.parse_args(argv)
 
     trajectory = build_trajectory(

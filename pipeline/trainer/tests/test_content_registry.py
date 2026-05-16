@@ -1,4 +1,5 @@
 """Tests for ``pipeline.trainer.content_registry`` (S0.B.γ)."""
+
 from __future__ import annotations
 
 import hashlib
@@ -9,8 +10,9 @@ import pytest
 
 from pipeline.trainer.content_registry import ContentRegistry
 
-
-_REGISTRY_PATH = Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
+_REGISTRY_PATH = (
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
+)
 
 
 # ---------------------------------------------------------------------------

@@ -128,9 +128,7 @@ def _http_get(
         if attempt < _RETRY_ATTEMPTS - 1:
             time.sleep(_RETRY_BACKOFF_SECONDS[attempt])
 
-    raise RuntimeError(
-        f"upstream-sync: exhausted {_RETRY_ATTEMPTS} attempts: {last_exc!r}"
-    )
+    raise RuntimeError(f"upstream-sync: exhausted {_RETRY_ATTEMPTS} attempts: {last_exc!r}")
 
 
 def fetch_patch_notes(
@@ -244,8 +242,7 @@ def parse_bbcode(content: str) -> ParsedNote:
         #    patch notes like ``[h2]CONTENT & BALANCE:[/h2]``) are stripped
         #    so section names round-trip cleanly into downstream correlation.
         section_spans: list[tuple[int, str]] = [
-            (m.start(), m.group(1).strip().rstrip(":").strip())
-            for m in _H2_RE.finditer(content)
+            (m.start(), m.group(1).strip().rstrip(":").strip()) for m in _H2_RE.finditer(content)
         ]
         sections = [name for _, name in section_spans]
 

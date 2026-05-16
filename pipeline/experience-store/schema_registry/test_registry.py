@@ -26,7 +26,6 @@ import pytest
 from schema_registry import SchemaRegistry
 from schema_registry.decision import Accept, Reject
 
-
 # ---------------------------- Phase-1 rule set ----------------------------
 
 
@@ -185,17 +184,9 @@ def test_metrics_lines_includes_state_gauges(tmp_path: Path):
     reg = SchemaRegistry(tmp_path)
     lines = reg.metrics_lines("experience-store")
     text = b"\n".join(lines).decode("utf-8")
-    assert (
-        'sts2_q3_schema_state{state="open",service="experience-store"} 1' in text
-    )
-    assert (
-        'sts2_q3_schema_state{state="draining",service="experience-store"} 0'
-        in text
-    )
-    assert (
-        'sts2_q3_schema_state{state="locked",service="experience-store"} 0'
-        in text
-    )
+    assert 'sts2_q3_schema_state{state="open",service="experience-store"} 1' in text
+    assert 'sts2_q3_schema_state{state="draining",service="experience-store"} 0' in text
+    assert 'sts2_q3_schema_state{state="locked",service="experience-store"} 0' in text
 
 
 def test_metrics_lines_returns_bytes(tmp_path: Path):
@@ -209,9 +200,7 @@ def test_metrics_lines_emits_migration_baseline(tmp_path: Path):
     text = b"\n".join(reg.metrics_lines("experience-store")).decode("utf-8")
     # No-op (1.1) -> (1.1) baseline counter, value 0 in Phase-1A.
     assert (
-        'sts2_q3_schema_migration_total{from="1.1",to="1.1",'
-        'service="experience-store"} 0'
-        in text
+        'sts2_q3_schema_migration_total{from="1.1",to="1.1",service="experience-store"} 0' in text
     )
 
 
@@ -228,18 +217,15 @@ def test_metrics_lines_validate_counter_after_calls(tmp_path: Path):
     text = b"\n".join(reg.metrics_lines("experience-store")).decode("utf-8")
     assert (
         'sts2_q3_schema_validate_total{op="write",result="accept",'
-        'service="experience-store"} 5'
-        in text
+        'service="experience-store"} 5' in text
     )
     assert (
         'sts2_q3_schema_validate_total{op="read",result="accept",'
-        'service="experience-store"} 3'
-        in text
+        'service="experience-store"} 3' in text
     )
     assert (
         'sts2_q3_schema_validate_total{op="write",result="schema_unknown",'
-        'service="experience-store"} 2'
-        in text
+        'service="experience-store"} 2' in text
     )
 
 
@@ -296,8 +282,7 @@ def test_thread_safety_no_lost_counter_updates(tmp_path: Path):
     expected = n_threads * per_thread
     assert (
         f'sts2_q3_schema_validate_total{{op="write",result="accept",'
-        f'service="experience-store"}} {expected}'
-        in text
+        f'service="experience-store"}} {expected}' in text
     )
 
 

@@ -183,9 +183,7 @@ class SchemaRegistry:
                     retry_after_sec=5,
                 )
 
-            self._validate_counts[(op, "accept")] = (
-                self._validate_counts.get((op, "accept"), 0) + 1
-            )
+            self._validate_counts[(op, "accept")] = self._validate_counts.get((op, "accept"), 0) + 1
             return Accept()
 
     def current_health_schema(self) -> int:
@@ -214,9 +212,7 @@ class SchemaRegistry:
                 "current_write_target": self._current_write_target.as_fields(),
                 "drain_state": self._drain_state,
                 "drain_target": (
-                    self._drain_target.as_fields()
-                    if self._drain_target is not None
-                    else None
+                    self._drain_target.as_fields() if self._drain_target is not None else None
                 ),
             }
 

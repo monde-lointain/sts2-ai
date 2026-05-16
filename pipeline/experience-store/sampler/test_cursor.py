@@ -46,9 +46,7 @@ def test_get_missing_returns_none() -> None:
 def test_update_advances_state() -> None:
     cache = CursorCache()
     cid = cache.create(_state())
-    advanced = CursorState(
-        mode="uniform", filters={}, position_ts_ns=999, served_count=512
-    )
+    advanced = CursorState(mode="uniform", filters={}, position_ts_ns=999, served_count=512)
     cache.update(cid, advanced)
     got = cache.get(cid)
     assert got is not None

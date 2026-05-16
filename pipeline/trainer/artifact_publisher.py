@@ -52,29 +52,29 @@ caller enforces wall-clock budget.
 See ``pipeline/trainer/docs/specs/modules/artifact-publisher.md`` and
 Q10-ADR-009 (Phase-1 local-directory publish).
 """
+
 from __future__ import annotations
 
+import contextlib
 import hashlib
-import io
 import logging
 import os
 import pathlib
 import queue
-import socket
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 
 from pipeline.common.atomic_io import atomic_write_json
 from pipeline.trainer.content_registry import ContentRegistry
-from pipeline.trainer.manifest import ProvenanceManifest, SCHEMA_VERSION, validate
+from pipeline.trainer.manifest import SCHEMA_VERSION, ProvenanceManifest
 from pipeline.trainer.run_config import RunConfig, RunProvenance
 from pipeline.trainer.tensor_encoder import _MACRO_DIM, EncodedBatch
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -168,10 +168,10 @@ class ArtifactPublisher:
         run_provenance: RunProvenance,
         content_registry: ContentRegistry,
         *,
-        model_for_onnx: Optional[torch.nn.Module] = None,
-        dummy_batch_provider: Optional[Callable[[], EncodedBatch]] = None,
-        consumed_ids_provider: Optional[Callable[[], tuple[str, ...]]] = None,
-        data_dir: Optional[pathlib.Path] = None,
+        model_for_onnx: torch.nn.Module | None = None,
+        dummy_batch_provider: Callable[[], EncodedBatch] | None = None,
+        consumed_ids_provider: Callable[[], tuple[str, ...]] | None = None,
+        data_dir: pathlib.Path | None = None,
     ) -> None:
         self._config = config
         self._provenance = run_provenance
@@ -191,11 +191,11 @@ class ArtifactPublisher:
 
         # Last-published gauge — read by train_driver / metrics_emitter.
         self._last_published_lock = threading.Lock()
-        self._last_published: Optional[ArtifactRef] = None
+        self._last_published: ArtifactRef | None = None
 
         # Daemon thread + stop event (set in start()).
-        self._thread: Optional[threading.Thread] = None
-        self._stop_event: Optional[threading.Event] = None
+        self._thread: threading.Thread | None = None
+        self._stop_event: threading.Event | None = None
 
     # ------------------------------------------------------------------
     # Public surface
@@ -215,7 +215,7 @@ class ArtifactPublisher:
         """Counter of failed publishes (raised in the publisher thread)."""
         return self._publish_err_count
 
-    def last_published(self) -> Optional[ArtifactRef]:
+    def last_published(self) -> ArtifactRef | None:
         """Thread-safe getter for the most recently published artifact."""
         with self._last_published_lock:
             return self._last_published
@@ -284,6 +284,7 @@ class ArtifactPublisher:
             for manifest_path in runs_root.glob("*/checkpoints/*/manifest.json"):
                 try:
                     import json
+
                     payload = json.loads(manifest_path.read_bytes())
                 except (OSError, ValueError):
                     continue
@@ -308,9 +309,7 @@ class ArtifactPublisher:
         assert self._stop_event is not None
         while not self._stop_event.is_set():
             try:
-                req = self._publish_queue.get(
-                    timeout=self._QUEUE_GET_TIMEOUT_SEC
-                )
+                req = self._publish_queue.get(timeout=self._QUEUE_GET_TIMEOUT_SEC)
             except queue.Empty:
                 continue
             self._do_publish_safely(req)
@@ -327,7 +326,7 @@ class ArtifactPublisher:
         """Wrap :meth:`_do_publish` with error capture + metrics update."""
         try:
             ref = self._do_publish(req)
-        except BaseException as exc:  # noqa: BLE001 — never let the thread die
+        except BaseException as exc:
             self._publish_err_count += 1
             _LOG.exception(
                 "artifact_publisher: publish failed at step=%d: %r",
@@ -343,27 +342,19 @@ class ArtifactPublisher:
         """Stage + commit one bundle. Returns the fresh :class:`ArtifactRef`."""
         artifact_id = uuid.uuid4().hex
         run_id = self._provenance.run_id
-        bundle_dir = (
-            self._data_dir / "runs" / run_id / "checkpoints" / str(req.step)
-        )
+        bundle_dir = self._data_dir / "runs" / run_id / "checkpoints" / str(req.step)
         bundle_dir.mkdir(parents=True, exist_ok=True)
 
         # 1) weights.pt
         _atomic_write_bytes(bundle_dir / "weights.pt", req.model_state_dict_bytes)
         # 2) optimizer.pt
-        _atomic_write_bytes(
-            bundle_dir / "optimizer.pt", req.optim_state_dict_bytes
-        )
+        _atomic_write_bytes(bundle_dir / "optimizer.pt", req.optim_state_dict_bytes)
         # 3) model.onnx — best-effort; skip if no model/dummy provider.
-        if (
-            self._model_for_onnx is not None
-            and self._dummy_batch_provider is not None
-        ):
+        if self._model_for_onnx is not None and self._dummy_batch_provider is not None:
             self._export_onnx(bundle_dir / "model.onnx")
         else:
             _LOG.info(
-                "artifact_publisher: skipping ONNX export "
-                "(model=%s dummy_provider=%s)",
+                "artifact_publisher: skipping ONNX export (model=%s dummy_provider=%s)",
                 self._model_for_onnx is not None,
                 self._dummy_batch_provider is not None,
             )
@@ -385,14 +376,10 @@ class ArtifactPublisher:
             local_path=bundle_dir,
         )
 
-    def _build_manifest(
-        self, req: PublishRequest, artifact_id: str
-    ) -> ProvenanceManifest:
+    def _build_manifest(self, req: PublishRequest, artifact_id: str) -> ProvenanceManifest:
         """Snapshot the per-publish manifest record."""
         consumed_ids: tuple[str, ...] = (
-            self._consumed_ids_provider()
-            if self._consumed_ids_provider is not None
-            else tuple()
+            self._consumed_ids_provider() if self._consumed_ids_provider is not None else ()
         )
         return ProvenanceManifest(
             schema_version=SCHEMA_VERSION,
@@ -402,9 +389,7 @@ class ArtifactPublisher:
             dataset_sha=compute_dataset_sha(consumed_ids),
             dataset_size=len(consumed_ids),
             seed=int(self._provenance.seed),
-            hyperparameters=_hyperparameters_from_config(
-                self._config, loss_total=req.loss_total
-            ),
+            hyperparameters=_hyperparameters_from_config(self._config, loss_total=req.loss_total),
             parent_artifact_id=self._provenance.parent_artifact_id,
             content_registry_sha=self._content_registry.content_hash,
             onnx_opset_version=_ONNX_OPSET_VERSION,
@@ -429,6 +414,7 @@ class ArtifactPublisher:
         :meth:`_do_publish_safely` increments :attr:`publish_err_count`.
         """
         import shutil
+
         import onnx  # local import: keeps module import path cheap
 
         model = self._model_for_onnx
@@ -452,15 +438,11 @@ class ArtifactPublisher:
                     tokens=tokens,
                     padding_mask=padding_mask,
                     legal_action_mask=legal_action_mask,
-                    policy_target=torch.zeros_like(
-                        legal_action_mask, dtype=torch.float32
-                    ),
+                    policy_target=torch.zeros_like(legal_action_mask, dtype=torch.float32),
                     combat_sample_targets=torch.zeros((tokens.shape[0], 4)),
                     combat_summary_targets=torch.zeros((tokens.shape[0], 5)),
                     hp_frac_target=torch.zeros((tokens.shape[0],)),
-                    prior_logits=torch.zeros_like(
-                        legal_action_mask, dtype=torch.float32
-                    ),
+                    prior_logits=torch.zeros_like(legal_action_mask, dtype=torch.float32),
                     macro_context=torch.zeros((tokens.shape[0], _MACRO_DIM)),
                     metadata={},
                 )
@@ -506,10 +488,8 @@ class ArtifactPublisher:
         finally:
             # Best-effort wipe of the staging dir (empty after a successful
             # move; populated only on failure).
-            try:
+            with contextlib.suppress(OSError):
                 shutil.rmtree(staging_dir, ignore_errors=True)
-            except OSError:
-                pass
 
 
 # ---------------------------------------------------------------------------
@@ -541,16 +521,12 @@ def _atomic_write_bytes(path: pathlib.Path, data: bytes) -> None:
             os.fsync(fh.fileno())
         os.replace(tmp, path)
     except BaseException:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             tmp.unlink()
-        except FileNotFoundError:
-            pass
         raise
 
 
-def _hyperparameters_from_config(
-    config: RunConfig, *, loss_total: float
-) -> dict[str, Any]:
+def _hyperparameters_from_config(config: RunConfig, *, loss_total: float) -> dict[str, Any]:
     """Project :class:`RunConfig` into a JSON-serializable hyperparameter dict.
 
     Includes the network / optim / loss / checkpoint / sampling blocks
@@ -570,7 +546,8 @@ def _hyperparameters_from_config(
             "max_seq_len": int(config.network.max_seq_len),
             "max_action_space": int(config.network.max_action_space),
             "expected_token_count": (
-                None if config.network.expected_token_count is None
+                None
+                if config.network.expected_token_count is None
                 else int(config.network.expected_token_count)
             ),
         },

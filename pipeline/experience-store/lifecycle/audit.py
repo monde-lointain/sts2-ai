@@ -87,7 +87,7 @@ class AuditLog:
     # shapes Lifecycle persists; keeps wire format centralized here.
     # ------------------------------------------------------------------
 
-    def append_tick(self, result: "TickResult", bytes_freed: int) -> None:
+    def append_tick(self, result: TickResult, bytes_freed: int) -> None:
         """Audit one drop tick. Caller passes the TickResult and bytes-freed target."""
         self.append(
             {
@@ -113,9 +113,7 @@ class AuditLog:
             }
         )
 
-    def append_policy_update(
-        self, before: dict[str, Any], after: dict[str, Any]
-    ) -> None:
+    def append_policy_update(self, before: dict[str, Any], after: dict[str, Any]) -> None:
         """Audit an operator policy POST so drift is traceable."""
         self.append(
             {

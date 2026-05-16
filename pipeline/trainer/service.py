@@ -17,7 +17,10 @@ Fail-soft posture (per Q10-ADR-004 only at run-time, not boot):
   - ``parent_artifact_id`` set but artifact missing on disk: boot from
     scratch with a warn log.
 """
+
 from __future__ import annotations
+
+import os.path as _osp
 
 # Pre-import sys.path repair: when launched directly as
 # ``python pipeline/trainer/service.py`` (as smoke_services.py does),
@@ -30,7 +33,6 @@ from __future__ import annotations
 # We use only ``sys`` and ``os.path`` (manual string ops) here — those
 # do not transitively import ``types`` on the cold-import path.
 import sys as _sys
-import os.path as _osp
 
 _THIS_DIR = _osp.dirname(_osp.abspath(__file__))
 _REPO_ROOT = _osp.dirname(_osp.dirname(_THIS_DIR))
@@ -57,12 +59,9 @@ from pipeline.trainer.run_config import RunConfig, RunProvenance, seed_everythin
 from pipeline.trainer.tensor_encoder import _MACRO_DIM, EncodedBatch, TensorEncoder
 from pipeline.trainer.train_driver import TrainDriver
 
-
 # Phase-1: registry path is fixed at `contracts/registry/phase1-silent.json`
 # relative to the repo root (Q10-ADR-008 — frozen at bootstrap).
-_REGISTRY_RELATIVE: pathlib.Path = pathlib.Path(
-    "contracts/registry/phase1-silent.json"
-)
+_REGISTRY_RELATIVE: pathlib.Path = pathlib.Path("contracts/registry/phase1-silent.json")
 
 
 def _resolve_repo_root() -> pathlib.Path:
@@ -91,9 +90,7 @@ class TrainerHandler(Handler):
         path = self.path
 
         if path == "/health":
-            self._json(
-                {"service": srv.config["service"], "status": "ok", "schema": 0}
-            )
+            self._json({"service": srv.config["service"], "status": "ok", "schema": 0})
             return
 
         if path == "/metrics":
@@ -241,9 +238,7 @@ class TrainerServer(ServiceServer):
             tokens=torch.zeros((b, t), dtype=torch.long),
             padding_mask=torch.zeros((b, t), dtype=torch.bool),
             legal_action_mask=torch.ones((b, a), dtype=torch.bool),
-            policy_target=torch.nn.functional.softmax(
-                torch.randn((b, a)), dim=-1
-            ),
+            policy_target=torch.nn.functional.softmax(torch.randn((b, a)), dim=-1),
             combat_sample_targets=torch.zeros((b, 4)),
             combat_summary_targets=torch.zeros((b, 5)),
             hp_frac_target=torch.zeros((b,)),

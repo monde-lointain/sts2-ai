@@ -10,6 +10,7 @@ Covers the spec's Phase-1 mandatory tests (metrics-emitter.md §Unit):
 
 Plus several record_step / labelled-metric / fixed-name tests.
 """
+
 from __future__ import annotations
 
 import threading
@@ -19,8 +20,8 @@ import pytest
 
 from pipeline.trainer.metrics_emitter import MetricsEmitter
 
-
 # ----------------------------------------------------- helpers / fixtures
+
 
 def _make(wandb_enabled: bool = False) -> MetricsEmitter:
     return MetricsEmitter(
@@ -31,6 +32,7 @@ def _make(wandb_enabled: bool = False) -> MetricsEmitter:
 
 
 # ----------------------------------------------------------- inc / set / KeyError
+
 
 def test_inc_unknown_name_raises_keyerror() -> None:
     m = _make()
@@ -79,6 +81,7 @@ def test_inc_no_label_counter_with_labels_raises() -> None:
 
 # --------------------------------------------------------- thread safety
 
+
 def test_thread_safe_increment_under_contention() -> None:
     """100 threads x 1000 increments → exactly 100_000."""
     m = _make()
@@ -97,14 +100,13 @@ def test_thread_safe_increment_under_contention() -> None:
 
     body = m.format_metrics().decode("utf-8")
     expected = threads_n * per_thread
-    expected_line = (
-        f'sts2_q10_steps_total{{service="trainer"}} {expected}'
-    )
+    expected_line = f'sts2_q10_steps_total{{service="trainer"}} {expected}'
     assert expected_line in body, body
     m.shutdown()
 
 
 # ---------------------------------------------------------- format_metrics
+
 
 def test_format_metrics_contains_service_up_and_uptime() -> None:
     m = _make()
@@ -114,7 +116,7 @@ def test_format_metrics_contains_service_up_and_uptime() -> None:
     assert 'sts2_service_uptime_seconds{service="trainer"}' in body
     # Validate the uptime field parses as float.
     for line in body.splitlines():
-        if line.startswith('sts2_service_uptime_seconds'):
+        if line.startswith("sts2_service_uptime_seconds"):
             value = line.split("} ")[-1]
             assert float(value) >= 0.0
             break
@@ -135,10 +137,7 @@ def test_format_metrics_emits_all_registered_counters_at_zero() -> None:
         assert f'{name}{{service="trainer"}} 0' in body, name
     # Labelled counter: all three result values emitted.
     for result in ("ok", "schema_drain", "error"):
-        line = (
-            f'sts2_q10_sample_request_total{{result="{result}",'
-            f'service="trainer"}} 0'
-        )
+        line = f'sts2_q10_sample_request_total{{result="{result}",service="trainer"}} 0'
         assert line in body, line
     m.shutdown()
 
@@ -154,10 +153,7 @@ def test_format_metrics_emits_loss_component_for_all_heads_at_zero() -> None:
         "kl_vs_prior",
     ):
         # float gauge rendered with .6f
-        line = (
-            f'sts2_q10_loss_component{{head="{head}",service="trainer"}}'
-            f' 0.000000'
-        )
+        line = f'sts2_q10_loss_component{{head="{head}",service="trainer"}} 0.000000'
         assert line in body, line
     m.shutdown()
 
@@ -179,6 +175,7 @@ def test_format_metrics_body_ends_with_newline() -> None:
 
 # ------------------------------------------------------------- record_step
 
+
 class _FakeStepStats:
     def __init__(self, grad_pre: float, grad_post: float, lr: float) -> None:
         self.grad_norm_pre_clip = grad_pre
@@ -195,15 +192,8 @@ def test_record_step_increments_steps_and_sets_loss_total() -> None:
     body = m.format_metrics().decode("utf-8")
     assert 'sts2_q10_steps_total{service="trainer"} 1' in body
     assert 'sts2_q10_loss_total{service="trainer"} 3.000000' in body
-    assert (
-        'sts2_q10_loss_component{head="policy",service="trainer"} 1.000000'
-        in body
-    )
-    assert (
-        'sts2_q10_loss_component{head="combat_sample",service="trainer"}'
-        ' 2.000000'
-        in body
-    )
+    assert 'sts2_q10_loss_component{head="policy",service="trainer"} 1.000000' in body
+    assert 'sts2_q10_loss_component{head="combat_sample",service="trainer"} 2.000000' in body
     m.shutdown()
 
 
@@ -228,6 +218,7 @@ def test_record_step_unknown_head_raises_keyerror() -> None:
 
 
 # ---------------------------------------------------------- W&B disabled
+
 
 def test_wandb_disabled_spawns_no_daemon_thread() -> None:
     """With wandb_enabled=False, no daemon thread should be added."""
@@ -263,6 +254,7 @@ def test_wandb_enabled_spawns_one_daemon_thread() -> None:
 
 # -------------------------------------------------- W&B drop-oldest policy
 
+
 def test_wandb_drop_oldest_increments_dropped_counter() -> None:
     """Fill the W&B queue to capacity, then push one more; expect:
     - the dropped counter increments by 1
@@ -291,14 +283,12 @@ def test_wandb_drop_oldest_increments_dropped_counter() -> None:
     # Now exercise the overflow path.
     m._enqueue_wandb({"i": capacity})
     body = m.format_metrics().decode("utf-8")
-    assert (
-        'sts2_q10_wandb_dropped_total{service="trainer"} 1'
-        in body
-    ), body
+    assert 'sts2_q10_wandb_dropped_total{service="trainer"} 1' in body, body
     assert m._wandb_queue.qsize() == capacity
 
 
 # -------------------------------------------------------- shutdown bounded
+
 
 def test_shutdown_returns_within_timeout_when_queue_is_full() -> None:
     """Even with 1024 entries queued, shutdown(timeout=2) must return."""
@@ -320,10 +310,7 @@ def test_shutdown_returns_within_timeout_when_queue_is_full() -> None:
     elapsed = time.monotonic() - t0
     assert elapsed < 3.0, f"shutdown blocked {elapsed:.2f}s"
     # Drain thread should be gone.
-    assert (
-        m._wandb_thread is None
-        or not m._wandb_thread.is_alive()
-    )
+    assert m._wandb_thread is None or not m._wandb_thread.is_alive()
 
 
 def test_shutdown_noop_when_wandb_disabled() -> None:

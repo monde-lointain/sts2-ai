@@ -22,6 +22,7 @@ Coverage (per directive §S0.G goal B):
      - manifest.json validates via ProvenanceManifest.from_dict
      - manifest fields populated per Q10-ADR-006/009.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -39,7 +40,7 @@ from pipeline.trainer.artifact_publisher import ArtifactPublisher
 from pipeline.trainer.content_registry import ContentRegistry
 from pipeline.trainer.data_ingest import Batch, DataIngest
 from pipeline.trainer.loss_engine import LossEngine
-from pipeline.trainer.manifest import ProvenanceManifest, SCHEMA_VERSION
+from pipeline.trainer.manifest import SCHEMA_VERSION, ProvenanceManifest
 from pipeline.trainer.metrics_emitter import MetricsEmitter
 from pipeline.trainer.model import TrainerNet
 from pipeline.trainer.optim import OptimController
@@ -56,12 +57,8 @@ from pipeline.trainer.run_config import (
 from pipeline.trainer.tensor_encoder import EncodedBatch, TensorEncoder
 from pipeline.trainer.train_driver import TrainDriver
 
-
 _REGISTRY_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "contracts"
-    / "registry"
-    / "phase1-silent.json"
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
 )
 
 _HAS_ONNX = importlib.util.find_spec("onnx") is not None
@@ -163,7 +160,7 @@ def _make_batch() -> Batch:
     return Batch(
         steps=tuple(_make_step(i) for i in range(2)),
         cursor_token="cursor-0",
-        trajectory_ids=tuple(),
+        trajectory_ids=(),
     )
 
 
@@ -172,6 +169,7 @@ def _dummy_batch_provider(registry: ContentRegistry, cfg: RunConfig):
 
     Mirrors ``service.TrainerServer._dummy_batch_provider`` shape.
     """
+
     def _provider() -> EncodedBatch:
         b = 1
         t = max(1, int(cfg.network.max_seq_len) // 4)
@@ -180,9 +178,7 @@ def _dummy_batch_provider(registry: ContentRegistry, cfg: RunConfig):
             tokens=torch.zeros((b, t), dtype=torch.long),
             padding_mask=torch.zeros((b, t), dtype=torch.bool),
             legal_action_mask=torch.ones((b, a), dtype=torch.bool),
-            policy_target=torch.nn.functional.softmax(
-                torch.zeros((b, a)), dim=-1
-            ),
+            policy_target=torch.nn.functional.softmax(torch.zeros((b, a)), dim=-1),
             combat_sample_targets=torch.zeros((b, 4)),
             combat_summary_targets=torch.zeros((b, 5)),
             hp_frac_target=torch.zeros((b,)),
@@ -190,6 +186,7 @@ def _dummy_batch_provider(registry: ContentRegistry, cfg: RunConfig):
             macro_context=torch.zeros((b, 11)),
             metadata={"content_registry_sha": registry.content_hash},
         )
+
     return _provider
 
 
@@ -353,7 +350,8 @@ def test_e2e_one_step_publish(tmp_path: Path, registry: ContentRegistry) -> None
     # dataset_sha matches sha256 of the empty trajectory-id list (Phase-1
     # stub — see data_ingest module docstring).
     from pipeline.trainer.artifact_publisher import compute_dataset_sha
-    assert payload["dataset_sha"] == compute_dataset_sha(tuple())
+
+    assert payload["dataset_sha"] == compute_dataset_sha(())
     assert payload["dataset_size"] == 0
     # hyperparameters includes the runtime loss_total (publisher recorded).
     assert "hyperparameters" in payload

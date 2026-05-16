@@ -61,19 +61,19 @@ from upstream_sync.diff_analyze import (
     DiffEntry,
     DiffReport,
 )
-from upstream_sync.entity_extract import BASE_TO_KIND, EntityKind, extract_entities
+from upstream_sync.entity_extract import EntityKind, extract_entities
 
 __all__ = [
-    "DecisionKind",
     "IGNORE_BUCKETS",
     "PRIORITY_BUCKETS",
+    "DecisionKind",
     "PortRow",
     "Q4Advisory",
     "RenderInputs",
     "assign_decision",
+    "bucket_titles",
     "build_port_rows",
     "build_q4_advisory",
-    "bucket_titles",
     "render",
     "write_doc",
 ]
@@ -200,7 +200,7 @@ class PortRow:
     """One row in the per-bucket decision table."""
 
     path: str
-    status: str          # M/A/D/R{score}
+    status: str  # M/A/D/R{score}
     line_delta: int | None  # None for v1
     character_tag: str | None
     decision: DecisionKind
@@ -213,7 +213,7 @@ class PortRow:
 class Q4Advisory:
     """Recommended Q4 token registry updates (advisory)."""
 
-    added: list[tuple[str, str]]    # (entity_id, kind)
+    added: list[tuple[str, str]]  # (entity_id, kind)
     removed: list[tuple[str, str]]  # (entity_id, kind)
 
 
@@ -237,17 +237,17 @@ class RenderInputs:
 
 # Buckets in the IGNORE-by-policy set (BUCKET_SCENES_UI handled separately
 # below to keep its rationale distinct, per spec table).
-_FLAT_IGNORE_BUCKETS: frozenset[str] = frozenset({
-    BUCKET_MULTIPLAYER,
-    BUCKET_MODDING,
-    BUCKET_UI,
-    BUCKET_ART_AUDIO,
-})
+_FLAT_IGNORE_BUCKETS: frozenset[str] = frozenset(
+    {
+        BUCKET_MULTIPLAYER,
+        BUCKET_MODDING,
+        BUCKET_UI,
+        BUCKET_ART_AUDIO,
+    }
+)
 
 
-def assign_decision(
-    entry: DiffEntry, bucket: str
-) -> tuple[DecisionKind, str | None, str]:
+def assign_decision(entry: DiffEntry, bucket: str) -> tuple[DecisionKind, str | None, str]:
     """Heuristic per-row decision assignment.
 
     Rules apply in priority order; the first match wins. Caller is
@@ -354,22 +354,17 @@ def build_port_rows(
             if entry.path in rng_defer_paths:
                 decision: DecisionKind = "DEFER"
                 trig: str | None = "pending B.1-ε encounter-RNG plumbing"
-                rationale = (
-                    "Encounter uses Rng.NextItem/NextBool/NextInt; "
-                    "defer until B.1-ε"
-                )
+                rationale = "Encounter uses Rng.NextItem/NextBool/NextInt; defer until B.1-ε"
+            # Non-priority-character override: if a row has an explicit
+            # tag that's not the priority character, surface only.
+            elif entry.character_tag is not None and not _is_priority_char(
+                entry.character_tag, priority_character
+            ):
+                decision = "SURFACE-NO-ACTION"
+                trig = None
+                rationale = f"Future-character file: {entry.character_tag}"
             else:
-                # Non-priority-character override: if a row has an explicit
-                # tag that's not the priority character, surface only.
-                if (
-                    entry.character_tag is not None
-                    and not _is_priority_char(entry.character_tag, priority_character)
-                ):
-                    decision = "SURFACE-NO-ACTION"
-                    trig = None
-                    rationale = f"Future-character file: {entry.character_tag}"
-                else:
-                    decision, trig, rationale = assign_decision(entry, bucket)
+                decision, trig, rationale = assign_decision(entry, bucket)
 
             matches = correlation_map.matches.get(entry.path, [])
             top = matches[0] if matches else None
@@ -542,9 +537,7 @@ def render(inputs: RenderInputs) -> str:
         inputs.priority_character,
     )
 
-    non_priority_rows = _gather_non_priority_rows(
-        rows_by_bucket, inputs.priority_character
-    )
+    non_priority_rows = _gather_non_priority_rows(rows_by_bucket, inputs.priority_character)
     encounter_rng_rows = _gather_encounter_rng_rows(rows_by_bucket)
 
     # Downstream-regen flags.
@@ -578,9 +571,7 @@ _SPECS_REL = Path("engine") / "headless" / "docs" / "specs"
 _DOC_PREFIX_RE = re.compile(r"^(\d{2,})-")
 
 
-def write_doc(
-    rendered_markdown: str, monorepo_root: Path, version_range: str
-) -> Path:
+def write_doc(rendered_markdown: str, monorepo_root: Path, version_range: str) -> Path:
     """Write rendered doc to engine/headless/docs/specs/0N-<version-range>-port-decisions.md.
 
     Idempotent: if a doc for the same ``version_range`` already exists, the
@@ -608,8 +599,7 @@ def write_doc(
                 num = int(m.group(1))
             except ValueError:
                 continue
-            if num > max_prefix:
-                max_prefix = num
+            max_prefix = max(max_prefix, num)
     next_prefix = max_prefix + 1
     name = f"{next_prefix:02d}-{version_range}-port-decisions.md"
     target = specs_dir / name

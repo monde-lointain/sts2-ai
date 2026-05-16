@@ -8,8 +8,8 @@ protocol assumes clean worktree state.
 
 Skipped for `git merge --abort` (cleanup is always OK).
 """
+
 import json
-import os
 import re
 import subprocess
 import sys
@@ -42,7 +42,7 @@ except Exception:
 
 dirty = []
 current = {}
-for line in wt_list.stdout.splitlines() + [""]:
+for line in [*wt_list.stdout.splitlines(), ""]:
     if not line:
         if current.get("worktree") and "/.claude/worktrees/" in current["worktree"]:
             status = run(["git", "-C", current["worktree"], "status", "--porcelain"])
@@ -50,7 +50,7 @@ for line in wt_list.stdout.splitlines() + [""]:
                 dirty.append(current["worktree"])
         current = {}
     elif line.startswith("worktree "):
-        current["worktree"] = line[len("worktree "):]
+        current["worktree"] = line[len("worktree ") :]
 
 if dirty:
     sys.stderr.write(
@@ -60,8 +60,7 @@ if dirty:
     for w in dirty:
         sys.stderr.write(f"  - {w}\n")
     sys.stderr.write(
-        "Commit or stash worktree changes before merging into main.\n"
-        f"Command: {command}\n"
+        f"Commit or stash worktree changes before merging into main.\nCommand: {command}\n"
     )
     sys.exit(2)
 

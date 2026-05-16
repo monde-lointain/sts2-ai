@@ -25,9 +25,10 @@ from __future__ import annotations
 import fnmatch
 import logging
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -112,8 +113,7 @@ def extract_to_staging(
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"GDRE extraction failed (exit {result.returncode}): "
-            f"{getattr(result, 'stderr', '')!r}"
+            f"GDRE extraction failed (exit {result.returncode}): {getattr(result, 'stderr', '')!r}"
         )
 
     sanity_path = staging_dir / _SANITY_KEY_FILE
@@ -235,6 +235,5 @@ def rsync_with_delete(
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"rsync failed (exit {result.returncode}): "
-            f"{getattr(result, 'stderr', '')!r}"
+            f"rsync failed (exit {result.returncode}): {getattr(result, 'stderr', '')!r}"
         )

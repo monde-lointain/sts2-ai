@@ -10,9 +10,7 @@ iterables), ``frame_trailer`` (terminator JSON frame), and
 
 from __future__ import annotations
 
-from typing import Iterable, Iterator
-
-from proto import DecisionType, TrajectoryStep
+from collections.abc import Iterable, Iterator
 
 from _framing import (
     FramingError,
@@ -20,6 +18,7 @@ from _framing import (
     encode_varint,
     frame_payload,
 )
+from proto import DecisionType, TrajectoryStep
 
 __all__ = [
     "FramingError",
@@ -51,10 +50,8 @@ def frame_trailer(status: str) -> bytes:
     The trailer's payload is canonical JSON: `{"status":"<status>"}`.
     """
     if status not in ("ok", "exhausted"):
-        raise ValueError(
-            f"trailer status must be 'ok' or 'exhausted'; got {status!r}"
-        )
-    json_bytes = f'{{"status":"{status}"}}'.encode("utf-8")
+        raise ValueError(f"trailer status must be 'ok' or 'exhausted'; got {status!r}")
+    json_bytes = f'{{"status":"{status}"}}'.encode()
     return frame_payload(json_bytes)
 
 
@@ -80,6 +77,4 @@ def is_degenerate_combat_sample(step: TrajectoryStep) -> bool:
     # Mirror condition per spec lines 132-137: sample.hp_delta ==
     # summary.expected_hp_delta. Float equality is appropriate here —
     # Phase-1 populates both fields from the same scalar value.
-    if sample.hp_delta != step.combat_outcome_summary.expected_hp_delta:
-        return False
-    return True
+    return sample.hp_delta == step.combat_outcome_summary.expected_hp_delta

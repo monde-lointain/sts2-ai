@@ -10,6 +10,7 @@ not mkdir.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import pathlib
@@ -36,7 +37,7 @@ def atomic_write_json(
     ``path.parent`` is assumed to exist; the caller is responsible
     for mkdir.
     """
-    tmp = tempfile.NamedTemporaryFile(
+    tmp = tempfile.NamedTemporaryFile(  # noqa: SIM115 — manual close for atomic rename
         mode="w",
         encoding="utf-8",
         dir=path.parent,
@@ -59,8 +60,6 @@ def atomic_write_json(
         tmp.close()
         os.replace(tmp.name, path)
     except BaseException:
-        try:
+        with contextlib.suppress(FileNotFoundError):
             os.unlink(tmp.name)
-        except FileNotFoundError:
-            pass
         raise

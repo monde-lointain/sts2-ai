@@ -8,7 +8,7 @@ import random
 import pytest
 
 from hot_store import HotStore
-from hot_store.keys import TRAJ_ID_LEN, decode_traj_key, encode_traj_key
+from hot_store.keys import TRAJ_ID_LEN
 
 
 def _payload(rng: random.Random, lo_b: int = 1024, hi_b: int = 10240) -> bytes:
@@ -41,7 +41,7 @@ def _seed_n(store: HotStore, n: int, payload_seed: int = 0xC0FFEE) -> list[tuple
 
 
 def test_append_100_count_and_size(store: HotStore) -> None:
-    rows = _seed_n(store, 100)
+    _seed_n(store, 100)
     assert store.count() == 100
     assert store.size_bytes() > 0
     # crude lower bound: 100 payloads * 1024 bytes minimum
@@ -74,7 +74,7 @@ def test_sample_uniform_is_deterministic_same_state(store: HotStore) -> None:
 
 def test_sample_uniform_state_change_invalidates_determinism(store: HotStore) -> None:
     rows = _seed_n(store, 100)
-    s1 = store.sample_uniform(20, seed=42)
+    store.sample_uniform(20, seed=42)
     # mutate store (101st append)
     new_blob = b"\xff" * 5000
     store.append_new(new_blob)
@@ -230,7 +230,7 @@ def test_read_missing_returns_none(store: HotStore) -> None:
 
 
 def test_delete_range_atomic_across_cfs(store: HotStore) -> None:
-    rows = _seed_n(store, 30)
+    _seed_n(store, 30)
     # find the ts of the 10th row to use as cutoff
     out = list(store.scan(after_ts_ns=0, limit=15))
     cutoff_ts = out[10][0]

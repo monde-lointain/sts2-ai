@@ -10,20 +10,20 @@ from __future__ import annotations
 
 from _framing import (
     FramingError,
+    decode_varint,
     encode_frame,
     encode_frames,
     encode_varint,
-    decode_varint,
     iter_frames,
     parse_frames,
 )
 
 __all__ = [
     "FramingError",
+    "decode_varint",
     "encode_frame",
     "encode_frames",
     "encode_varint",
-    "decode_varint",
     "iter_frames",
     "parse_frames",
 ]

@@ -50,9 +50,9 @@ def test_tabs_vs_spaces_between_key_and_value(tmp_path):
     acf.write_text(
         '"AppState"\n'
         "{\n"
-        '    "buildid" "111"\n'                # spaces only
-        '\t"installdir"\t\t"Foo"\n'            # tabs only
-        '"LastUpdated" \t  "1700000000"\n'     # mixed
+        '    "buildid" "111"\n'  # spaces only
+        '\t"installdir"\t\t"Foo"\n'  # tabs only
+        '"LastUpdated" \t  "1700000000"\n'  # mixed
         "}\n"
     )
     meta = parse_appmanifest(acf)
@@ -72,7 +72,7 @@ def test_nested_objects_skipped(tmp_path):
         '\t"LastUpdated"\t\t"100"\n'
         '\t"InstalledDepots"\n'
         "\t{\n"
-        '\t\t"buildid"\t\t"WRONG"\n'      # must NOT be picked up
+        '\t\t"buildid"\t\t"WRONG"\n'  # must NOT be picked up
         '\t\t"installdir"\t\t"WRONG"\n'
         "\t}\n"
         "}\n"
@@ -114,51 +114,28 @@ def test_missing_file_raises_filenotfounderror(tmp_path):
 
 def test_missing_buildid_raises_valueerror(tmp_path):
     acf = tmp_path / "m.acf"
-    acf.write_text(
-        '"AppState"\n'
-        "{\n"
-        '\t"installdir"\t\t"X"\n'
-        '\t"LastUpdated"\t\t"1"\n'
-        "}\n"
-    )
+    acf.write_text('"AppState"\n{\n\t"installdir"\t\t"X"\n\t"LastUpdated"\t\t"1"\n}\n')
     with pytest.raises(ValueError, match="buildid"):
         parse_appmanifest(acf)
 
 
 def test_missing_installdir_raises_valueerror(tmp_path):
     acf = tmp_path / "m.acf"
-    acf.write_text(
-        '"AppState"\n'
-        "{\n"
-        '\t"buildid"\t\t"1"\n'
-        '\t"LastUpdated"\t\t"1"\n'
-        "}\n"
-    )
+    acf.write_text('"AppState"\n{\n\t"buildid"\t\t"1"\n\t"LastUpdated"\t\t"1"\n}\n')
     with pytest.raises(ValueError, match="installdir"):
         parse_appmanifest(acf)
 
 
 def test_missing_lastupdated_raises_valueerror(tmp_path):
     acf = tmp_path / "m.acf"
-    acf.write_text(
-        '"AppState"\n'
-        "{\n"
-        '\t"buildid"\t\t"1"\n'
-        '\t"installdir"\t\t"X"\n'
-        "}\n"
-    )
+    acf.write_text('"AppState"\n{\n\t"buildid"\t\t"1"\n\t"installdir"\t\t"X"\n}\n')
     with pytest.raises(ValueError, match="LastUpdated"):
         parse_appmanifest(acf)
 
 
 def test_no_appstate_block_raises_valueerror(tmp_path):
     acf = tmp_path / "m.acf"
-    acf.write_text(
-        '"SomethingElse"\n'
-        "{\n"
-        '\t"buildid"\t\t"1"\n'
-        "}\n"
-    )
+    acf.write_text('"SomethingElse"\n{\n\t"buildid"\t\t"1"\n}\n')
     with pytest.raises(ValueError, match="AppState"):
         parse_appmanifest(acf)
 
@@ -175,14 +152,7 @@ def test_appstate_header_with_blank_lines_before_brace(tmp_path):
     """Blank lines between AppState header and '{' must be tolerated."""
     acf = tmp_path / "m.acf"
     acf.write_text(
-        '"AppState"\n'
-        "\n"
-        "\n"
-        "{\n"
-        '\t"buildid"\t\t"9"\n'
-        '\t"installdir"\t\t"Q"\n'
-        '\t"LastUpdated"\t\t"3"\n'
-        "}\n"
+        '"AppState"\n\n\n{\n\t"buildid"\t\t"9"\n\t"installdir"\t\t"Q"\n\t"LastUpdated"\t\t"3"\n}\n'
     )
     meta = parse_appmanifest(acf)
     assert meta.buildid == "9"
@@ -210,8 +180,7 @@ def test_public_surface_only():
     declared_here = {
         name
         for name in public
-        if getattr(getattr(steam_meta, name), "__module__", None)
-        == "upstream_sync.steam_meta"
+        if getattr(getattr(steam_meta, name), "__module__", None) == "upstream_sync.steam_meta"
     }
     assert declared_here == {"SteamMeta", "parse_appmanifest"}
 

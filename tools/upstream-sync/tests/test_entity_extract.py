@@ -47,21 +47,14 @@ def test_extract_missing_file(tmp_path):
 def test_extract_skips_line_comment(tmp_path):
     """Edge case 4: class decl inside // comment → [] (skipped)."""
     f = tmp_path / "lc.cs"
-    f.write_text(
-        "namespace Foo;\n"
-        "// public class FakeCard : CardModel { }\n"
-    )
+    f.write_text("namespace Foo;\n// public class FakeCard : CardModel { }\n")
     assert extract_entities(f) == []
 
 
 def test_extract_skips_block_comment(tmp_path):
     """Edge case 5: class decl inside /* */ block → [] (skipped)."""
     f = tmp_path / "bc.cs"
-    f.write_text(
-        "namespace Foo;\n"
-        "/* public class FakeRelic : RelicModel { }\n"
-        "   another line */\n"
-    )
+    f.write_text("namespace Foo;\n/* public class FakeRelic : RelicModel { }\n   another line */\n")
     assert extract_entities(f) == []
 
 
@@ -69,9 +62,7 @@ def test_extract_two_matches(tmp_path):
     """Edge case 6: two matching classes → two Entities."""
     f = tmp_path / "two.cs"
     f.write_text(
-        "namespace Foo;\n"
-        "public class A : CardModel { }\n"
-        "public sealed class B : RelicModel { }\n"
+        "namespace Foo;\npublic class A : CardModel { }\npublic sealed class B : RelicModel { }\n"
     )
     ents = extract_entities(f)
     assert len(ents) == 2
@@ -85,21 +76,14 @@ def test_extract_two_matches(tmp_path):
 def test_extract_ignores_non_matching_base(tmp_path):
     """Edge case 7: non-matching base classes not in BASE_TO_KIND → ignored."""
     f = tmp_path / "nm.cs"
-    f.write_text(
-        "namespace Foo;\n"
-        "public class Foo : SomeBase { }\n"
-        "public class Bar : Object { }\n"
-    )
+    f.write_text("namespace Foo;\npublic class Foo : SomeBase { }\npublic class Bar : Object { }\n")
     assert extract_entities(f) == []
 
 
 def test_extract_skips_string_literal(tmp_path):
     """Spec mandates string-literal skipping."""
     f = tmp_path / "str.cs"
-    f.write_text(
-        "namespace Foo;\n"
-        'string source = "public class Ghost : CardModel { }";\n'
-    )
+    f.write_text('namespace Foo;\nstring source = "public class Ghost : CardModel { }";\n')
     assert extract_entities(f) == []
 
 
@@ -148,9 +132,7 @@ def test_discover_only_class_matches(tmp_path):
     # Class file elsewhere under src/ — no Characters/* subdir
     other = tmp_path / "src" / "Core" / "Other"
     other.mkdir(parents=True)
-    (other / "Sneak.cs").write_text(
-        "namespace Foo;\npublic class Sneak : CharacterModel { }\n"
-    )
+    (other / "Sneak.cs").write_text("namespace Foo;\npublic class Sneak : CharacterModel { }\n")
     assert discover_characters(tmp_path) == {"Sneak"}
 
 
@@ -200,9 +182,7 @@ def test_drift_added_and_removed_sorted():
         {"Silent", "Doormaker", "Bilge"},
         {"Silent", "Watcher", "Ascended"},
     )
-    assert msg == (
-        "Character roster changed: added Ascended, Watcher; removed Bilge, Doormaker"
-    )
+    assert msg == ("Character roster changed: added Ascended, Watcher; removed Bilge, Doormaker")
 
 
 def test_drift_empty_to_populated():

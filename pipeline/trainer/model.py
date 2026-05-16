@@ -45,10 +45,10 @@ for :data:`sts2_q10_model_prior_age_steps`); incremented elsewhere by
 This module owns no I/O. Determinism follows from seeded weight
 initialization upstream (``run_config.seed_everything``).
 """
+
 from __future__ import annotations
 
 import copy
-from typing import Optional
 
 import torch
 from torch import nn
@@ -57,7 +57,6 @@ from pipeline.trainer.content_registry import ContentRegistry
 from pipeline.trainer.run_config import NetworkConfig
 from pipeline.trainer.tensor_encoder import EncodedBatch
 from pipeline.trainer.types import ModelOutput
-
 
 # ---------------------------------------------------------------------------
 # Head dimensions (Phase-1 fixed per ADR-014 / ADR-021; mirrors tensor_encoder)
@@ -104,9 +103,7 @@ class TrainerNet(nn.Module):
             dim_feedforward=int(network_config.ffn_dim),
             batch_first=True,
         )
-        self.encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=int(network_config.n_layers)
-        )
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=int(network_config.n_layers))
 
         # Heads --------------------------------------------------------------
         self.heads: nn.ModuleDict = nn.ModuleDict()
@@ -119,7 +116,7 @@ class TrainerNet(nn.Module):
         # Wrap the prior network in a list to keep it out of the parent's
         # ``_modules`` registry; otherwise its parameters would be tracked
         # for grad and would pollute :meth:`state_dict` for artifact-publish.
-        self._prior_net_holder: list["TrainerNet"] = []
+        self._prior_net_holder: list[TrainerNet] = []
         self._prior_age_steps: int = 0
 
     # ------------------------------------------------------------------
@@ -147,9 +144,7 @@ class TrainerNet(nn.Module):
         Built-in head names are reserved; re-registering them raises.
         """
         if name in _BUILTIN_HEADS:
-            raise ValueError(
-                f"register_head: cannot override built-in head {name!r}"
-            )
+            raise ValueError(f"register_head: cannot override built-in head {name!r}")
         if name in self.heads:
             raise ValueError(f"register_head: duplicate head name {name!r}")
         self.heads[name] = module
@@ -179,9 +174,7 @@ class TrainerNet(nn.Module):
         # is the safety net.
         return h[:, 0, :]
 
-    def _run_heads(
-        self, pooled: torch.Tensor, encoded_batch: EncodedBatch
-    ) -> ModelOutput:
+    def _run_heads(self, pooled: torch.Tensor, encoded_batch: EncodedBatch) -> ModelOutput:
         """Apply every registered head; pack built-ins + ``extra``."""
         policy_full = self.heads["policy"](pooled)  # (B, max_action_space)
         action_space = int(encoded_batch.legal_action_mask.shape[-1])
@@ -209,7 +202,7 @@ class TrainerNet(nn.Module):
     # Prior-policy snapshot (KL term support)
     # ------------------------------------------------------------------
     @property
-    def _prior_net(self) -> Optional["TrainerNet"]:
+    def _prior_net(self) -> TrainerNet | None:
         return self._prior_net_holder[0] if self._prior_net_holder else None
 
     def snapshot_prior(self) -> None:

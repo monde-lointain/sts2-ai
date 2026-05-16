@@ -68,18 +68,16 @@ BASE_TO_KIND: dict[str, EntityKind] = {
 }
 
 _CLASS_RE = re.compile(
-    r"\bclass\s+(\w+)\s*:\s*("
-    + "|".join(re.escape(b) for b in BASE_TO_KIND)
-    + r")\b"
+    r"\bclass\s+(\w+)\s*:\s*(" + "|".join(re.escape(b) for b in BASE_TO_KIND) + r")\b"
 )
 
 # Strip block comments, line comments, and double-quoted strings so the
 # class-decl regex doesn't false-match inside them. Order matters: strings
 # can contain "//", and block comments can contain quote chars.
 _STRIP_RE = re.compile(
-    r"/\*.*?\*/"          # block comment (non-greedy, DOTALL)
-    r'|//[^\n]*'          # line comment to end-of-line
-    r'|"(?:\\.|[^"\\])*"', # double-quoted string (handles \" escapes)
+    r"/\*.*?\*/"  # block comment (non-greedy, DOTALL)
+    r"|//[^\n]*"  # line comment to end-of-line
+    r'|"(?:\\.|[^"\\])*"',  # double-quoted string (handles \" escapes)
     re.DOTALL,
 )
 
@@ -99,6 +97,7 @@ def _strip_noise(source: str) -> str:
     Preserves byte offsets so regex line/col reporting (if ever added)
     remains stable; structurally equivalent to deletion for our use.
     """
+
     def _blank(match: re.Match[str]) -> str:
         text = match.group(0)
         # Preserve newlines so line counts stay stable; everything else
@@ -128,9 +127,7 @@ def extract_entities(file_path: Path) -> list[Entity]:
     for match in _CLASS_RE.finditer(cleaned):
         class_name = match.group(1)
         base = match.group(2)
-        results.append(
-            Entity(id=class_name, kind=BASE_TO_KIND[base], file_path=file_path)
-        )
+        results.append(Entity(id=class_name, kind=BASE_TO_KIND[base], file_path=file_path))
     return results
 
 

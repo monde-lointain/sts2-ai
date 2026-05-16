@@ -8,9 +8,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
-from upstream_sync import port_decisions
 from upstream_sync.correlate import CorrelationMap, Match
 from upstream_sync.diff_analyze import (
     BUCKET_ART_AUDIO,
@@ -31,7 +28,6 @@ from upstream_sync.diff_analyze import (
     DiffReport,
 )
 from upstream_sync.port_decisions import (
-    PortRow,
     Q4Advisory,
     RenderInputs,
     assign_decision,
@@ -40,7 +36,6 @@ from upstream_sync.port_decisions import (
     render,
     write_doc,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Builders                                                                    #
@@ -333,8 +328,7 @@ def _write_card(tree: Path, rel_path: str, class_name: str) -> None:
     target = tree / rel_path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        "namespace Foo;\n"
-        f"public class {class_name} : CardModel {{ }}\n",
+        f"namespace Foo;\npublic class {class_name} : CardModel {{ }}\n",
         encoding="utf-8",
     )
 
@@ -343,8 +337,7 @@ def _write_monster(tree: Path, rel_path: str, class_name: str) -> None:
     target = tree / rel_path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        "namespace Foo;\n"
-        f"public class {class_name} : MonsterModel {{ }}\n",
+        f"namespace Foo;\npublic class {class_name} : MonsterModel {{ }}\n",
         encoding="utf-8",
     )
 
@@ -433,9 +426,7 @@ def _smoke_inputs() -> RenderInputs:
     ]
     report = _report(
         {
-            BUCKET_CARDS: sorted(
-                entries_cards + entries_ironclad, key=lambda e: e.path
-            ),
+            BUCKET_CARDS: sorted(entries_cards + entries_ironclad, key=lambda e: e.path),
             BUCKET_MONSTERS: entries_monsters,
             BUCKET_ORBS: entries_orbs,
             BUCKET_UI: entries_ui,

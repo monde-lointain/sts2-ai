@@ -44,8 +44,8 @@ class MetricsEmitter:
         self._service = str(service_name)
         self._started_at = float(started_at_monotonic)
         self._lock = threading.Lock()
-        self._counters: dict[str, int] = {name: 0 for name in _COUNTERS}
-        self._gauges: dict[str, float] = {name: 0.0 for name in _GAUGES}
+        self._counters: dict[str, int] = dict.fromkeys(_COUNTERS, 0)
+        self._gauges: dict[str, float] = dict.fromkeys(_GAUGES, 0.0)
 
     def inc(self, name: str, n: int = 1) -> None:
         """Increment a counter by `n` (default 1). Unknown name raises KeyError."""
@@ -72,19 +72,12 @@ class MetricsEmitter:
             f'sts2_service_uptime_seconds{{service="{self._service}"}} {uptime:.3f}',
         ]
         for name in _COUNTERS:
-            lines.append(
-                f'{name}{{service="{self._service}"}} {counters[name]}'
-            )
+            lines.append(f'{name}{{service="{self._service}"}} {counters[name]}')
         for name in _GAUGES:
             value = gauges[name]
             # Render integer-valued gauges without trailing decimals to
             # keep the bytes test stable; otherwise three-decimal float.
-            if float(value).is_integer():
-                rendered = str(int(value))
-            else:
-                rendered = f"{value:.3f}"
-            lines.append(
-                f'{name}{{service="{self._service}"}} {rendered}'
-            )
+            rendered = str(int(value)) if float(value).is_integer() else f"{value:.3f}"
+            lines.append(f'{name}{{service="{self._service}"}} {rendered}')
         body = "\n".join(lines) + "\n"
         return body.encode("utf-8")

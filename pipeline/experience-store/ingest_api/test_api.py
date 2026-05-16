@@ -7,20 +7,18 @@ block, plus the spec's "Testing Strategy" §Unit items.
 from __future__ import annotations
 
 import json
-import queue
 import threading
 from pathlib import Path
 from typing import Any
 
 import pytest
-
 from control_plane.provenance import ProvenanceLog
 from hot_store import HotStore
-from ingest_api import IngestAPI
-from ingest_api.framing import encode_frames
 from proto import DecisionType, ObservabilityRegime, Trajectory
 from schema_registry import SchemaRegistry
 
+from ingest_api import IngestAPI
+from ingest_api.framing import encode_frames
 
 # --------------------------------- helpers ---------------------------------
 
@@ -82,9 +80,7 @@ def api(deps):
 
 def test_post_trajectory_happy_path_returns_202(api: IngestAPI) -> None:
     body = _make_trajectory().SerializeToString()
-    status, headers, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, headers, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 202
     payload = _decode_body(resp_body)
     assert "trajectory_id" in payload
@@ -96,9 +92,7 @@ def test_post_trajectory_happy_path_returns_202(api: IngestAPI) -> None:
 def test_post_trajectory_writes_to_hot_store(deps, api: IngestAPI) -> None:
     hot, _reg, _prov = deps
     body = _make_trajectory().SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 202
     payload = _decode_body(resp_body)
     tid_hex = payload["trajectory_id"]
@@ -110,10 +104,10 @@ def test_post_trajectory_writes_to_hot_store(deps, api: IngestAPI) -> None:
 
 def test_post_trajectory_writes_provenance(deps, api: IngestAPI) -> None:
     _hot, _reg, prov = deps
-    body = _make_trajectory(model_version="mv", sampling_mode="sm", generator="g").SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    body = _make_trajectory(
+        model_version="mv", sampling_mode="sm", generator="g"
+    ).SerializeToString()
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 202
     tid_hex = _decode_body(resp_body)["trajectory_id"]
     row = prov.lookup(tid_hex)
@@ -129,22 +123,16 @@ def test_post_trajectory_increments_accepted_counter(api: IngestAPI) -> None:
     body = _make_trajectory().SerializeToString()
     assert api.metrics_lines("svc")  # baseline emit OK
     for _ in range(3):
-        status, _h, _b = api.handle_post_trajectories(
-            body, "application/x-protobuf"
-        )
+        status, _h, _b = api.handle_post_trajectories(body, "application/x-protobuf")
         assert status == 202
     lines = api.metrics_lines("svc")
-    accepted_line = next(
-        l for l in lines if l.startswith(b"sts2_q3_ingest_accepted_total")
-    )
+    accepted_line = next(l for l in lines if l.startswith(b"sts2_q3_ingest_accepted_total"))
     assert accepted_line.endswith(b"} 3")
 
 
 def test_post_trajectory_accepts_content_type_with_charset(api: IngestAPI) -> None:
     body = _make_trajectory().SerializeToString()
-    status, _h, _b = api.handle_post_trajectories(
-        body, "application/x-protobuf; charset=binary"
-    )
+    status, _h, _b = api.handle_post_trajectories(body, "application/x-protobuf; charset=binary")
     assert status == 202
 
 
@@ -173,9 +161,7 @@ def test_body_over_max_returns_413(deps) -> None:
     hot, reg, prov = deps
     api = IngestAPI(hot, reg, prov, max_body_bytes=128)
     body = b"\x00" * 200
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 413
     payload = _decode_body(resp_body)
     assert payload["error"] == "too_large"
@@ -187,9 +173,7 @@ def test_body_over_max_returns_413(deps) -> None:
 
 def test_unknown_schema_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(schema_major=0, schema_minor=1).SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     payload = _decode_body(resp_body)
     assert payload["error"] == "schema_unknown"
@@ -199,9 +183,7 @@ def test_unknown_schema_returns_400(api: IngestAPI) -> None:
 
 def test_future_major_schema_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(schema_major=2, schema_minor=0).SerializeToString()
-    status, _h, _b = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, _b = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
 
 
@@ -210,9 +192,7 @@ def test_future_major_schema_returns_400(api: IngestAPI) -> None:
 
 def test_garbage_body_returns_400_malformed(api: IngestAPI) -> None:
     # Wire tag 0x0a expects a length-delimited field; 0xff is invalid varint.
-    status, _h, resp_body = api.handle_post_trajectories(
-        b"\x0a\xff\xff", "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(b"\x0a\xff\xff", "application/x-protobuf")
     assert status == 400
     payload = _decode_body(resp_body)
     assert payload["error"] == "malformed"
@@ -224,9 +204,7 @@ def test_garbage_body_returns_400_malformed(api: IngestAPI) -> None:
 
 def test_missing_model_version_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(model_version="").SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     payload = _decode_body(resp_body)
     assert payload["error"] == "malformed"
@@ -235,18 +213,14 @@ def test_missing_model_version_returns_400(api: IngestAPI) -> None:
 
 def test_missing_sampling_mode_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(sampling_mode="").SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     assert "sampling_mode" in _decode_body(resp_body)["detail"]
 
 
 def test_missing_generator_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(generator="").SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     assert "generator" in _decode_body(resp_body)["detail"]
 
@@ -255,9 +229,7 @@ def test_decision_type_unspecified_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(
         decision_type=DecisionType.DECISION_TYPE_UNSPECIFIED,
     ).SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     assert "decision_type" in _decode_body(resp_body)["detail"]
 
@@ -266,18 +238,14 @@ def test_observability_regime_unspecified_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(
         observability_regime=ObservabilityRegime.OBSERVABILITY_REGIME_UNSPECIFIED,
     ).SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     assert "observability_regime" in _decode_body(resp_body)["detail"]
 
 
 def test_combat_step_empty_samples_returns_400(api: IngestAPI) -> None:
     body = _make_trajectory(sample_count=0).SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 400
     detail = _decode_body(resp_body)["detail"]
     assert "combat_outcome_samples" in detail
@@ -289,9 +257,7 @@ def test_non_combat_step_does_not_require_samples(api: IngestAPI) -> None:
         decision_type=DecisionType.DECISION_TYPE_CARD_PICK,
         sample_count=0,
     ).SerializeToString()
-    status, _h, _b = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, _b = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 202
 
 
@@ -307,9 +273,7 @@ def test_queue_full_returns_503(deps) -> None:
     api._queue.put_nowait(("seed", 0))  # type: ignore[arg-type]
 
     body = _make_trajectory().SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 503
     payload = _decode_body(resp_body)
     assert payload["error"] == "queue_full"
@@ -324,9 +288,7 @@ def test_queue_full_increments_rejected_counter(deps) -> None:
     body = _make_trajectory().SerializeToString()
     api.handle_post_trajectories(body, "application/x-protobuf")
     lines = api.metrics_lines("svc")
-    found = any(
-        b'sts2_q3_ingest_rejected_total{reason="queue_full"' in l for l in lines
-    )
+    found = any(b'sts2_q3_ingest_rejected_total{reason="queue_full"' in l for l in lines)
     assert found
 
 
@@ -368,9 +330,7 @@ def test_get_ingest_status_reflects_writes(api: IngestAPI) -> None:
 def test_batch_endpoint_three_valid_frames(api: IngestAPI) -> None:
     payloads = [_make_trajectory().SerializeToString() for _ in range(3)]
     body = encode_frames(payloads)
-    status, _h, resp_body = api.handle_post_trajectories_batch(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories_batch(body, "application/x-protobuf")
     assert status == 207
     payload = _decode_body(resp_body)
     frames = payload["frames"]
@@ -387,9 +347,7 @@ def test_batch_endpoint_mixed_valid_and_invalid(api: IngestAPI) -> None:
     bad_unknown_schema = _make_trajectory(schema_major=0, schema_minor=1).SerializeToString()
     body = encode_frames([good, bad_traj, good, bad_unknown_schema])
 
-    status, _h, resp_body = api.handle_post_trajectories_batch(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories_batch(body, "application/x-protobuf")
     assert status == 207
     frames = _decode_body(resp_body)["frames"]
     assert [f["status"] for f in frames] == [202, 400, 202, 400]
@@ -400,9 +358,7 @@ def test_batch_endpoint_mixed_valid_and_invalid(api: IngestAPI) -> None:
 def test_batch_endpoint_framing_error_returns_400(api: IngestAPI) -> None:
     # Declares varint length 99 but only ~3 bytes follow.
     body = b"\x63" + b"abc"
-    status, _h, resp_body = api.handle_post_trajectories_batch(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories_batch(body, "application/x-protobuf")
     assert status == 400
     payload = _decode_body(resp_body)
     assert payload["error"] == "malformed"
@@ -422,9 +378,7 @@ def test_batch_endpoint_oversized_body_returns_413(deps) -> None:
     # Pad body to overflow.
     if len(body) <= 64:
         body = body + b"\x00" * (65 - len(body))
-    status, _h, _b = api.handle_post_trajectories_batch(
-        body, "application/x-protobuf"
-    )
+    status, _h, _b = api.handle_post_trajectories_batch(body, "application/x-protobuf")
     assert status == 413
 
 
@@ -436,9 +390,7 @@ def test_end_to_end_100_posts_all_land_in_hot_store(deps, api: IngestAPI) -> Non
     ids: list[str] = []
     for _ in range(100):
         body = _make_trajectory().SerializeToString()
-        status, _h, resp_body = api.handle_post_trajectories(
-            body, "application/x-protobuf"
-        )
+        status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
         assert status == 202
         ids.append(_decode_body(resp_body)["trajectory_id"])
 
@@ -463,9 +415,7 @@ def test_end_to_end_100_posts_all_land_in_hot_store(deps, api: IngestAPI) -> Non
 def test_consumer_drains_queue(deps, api: IngestAPI) -> None:
     body = _make_trajectory().SerializeToString()
     for _ in range(10):
-        status, _h, _b = api.handle_post_trajectories(
-            body, "application/x-protobuf"
-        )
+        status, _h, _b = api.handle_post_trajectories(body, "application/x-protobuf")
         assert status == 202
     assert api.queue_depth() == 10
 
@@ -549,9 +499,7 @@ def test_provenance_append_failure_returns_500(deps, monkeypatch) -> None:
 
     monkeypatch.setattr(prov, "append", boom)
     body = _make_trajectory().SerializeToString()
-    status, _h, resp_body = api.handle_post_trajectories(
-        body, "application/x-protobuf"
-    )
+    status, _h, resp_body = api.handle_post_trajectories(body, "application/x-protobuf")
     assert status == 500
     payload = _decode_body(resp_body)
     assert payload["error"] == "provenance_unavailable"

@@ -54,9 +54,9 @@ from upstream_sync.patch_notes import PatchNote, parse_bbcode
 
 __all__ = [
     "CHARACTER_SECTION_HEADERS",
+    "SECTION_BUCKET_HINTS",
     "CorrelationMap",
     "Match",
-    "SECTION_BUCKET_HINTS",
     "character_scope_filter",
     "correlate",
     "extract_file_stem",
@@ -79,13 +79,13 @@ __all__ = [
 SECTION_BUCKET_HINTS: dict[str, list[str]] = {
     "content & balance": ["cards", "relics", "powers", "potions"],
     "enemies": ["monsters", "encounters"],
-    "bug fixes": [],          # too broad — leave empty; per-item content drives match
-    "ancients": [],           # DEFER per mechanics_notes_backlog; no PORT hint
-    "multiplayer": [],        # IGNORE per Q1-ADR-009; no hint
+    "bug fixes": [],  # too broad — leave empty; per-item content drives match
+    "ancients": [],  # DEFER per mechanics_notes_backlog; no PORT hint
+    "multiplayer": [],  # IGNORE per Q1-ADR-009; no hint
     "potions & relics": ["potions", "relics"],
-    "art": [],                # mostly IGNORE
-    "writing": [],            # mostly IGNORE
-    "audio": [],              # mostly IGNORE
+    "art": [],  # mostly IGNORE
+    "writing": [],  # mostly IGNORE
+    "audio": [],  # mostly IGNORE
     "user interface & experience": [],  # mostly IGNORE
 }
 
@@ -117,13 +117,13 @@ class Match:
     decider should consider, never a ground-truth claim.
     """
 
-    diff_path: str        # the diff entry's path
-    note_gid: str         # the patch-note's gid
-    note_title: str       # for context
-    section: str          # the [h2] section (normalized); "" if outside any
-    entity: str           # the [b]...[/b] entity name as it appears in patch notes
-    score: float          # 0.0 - 1.0 confidence (1.0 = exact stem match)
-    excerpt: str          # ~excerpt_chars of surrounding patch-note content, BBCode stripped
+    diff_path: str  # the diff entry's path
+    note_gid: str  # the patch-note's gid
+    note_title: str  # for context
+    section: str  # the [h2] section (normalized); "" if outside any
+    entity: str  # the [b]...[/b] entity name as it appears in patch notes
+    score: float  # 0.0 - 1.0 confidence (1.0 = exact stem match)
+    excerpt: str  # ~excerpt_chars of surrounding patch-note content, BBCode stripped
 
 
 @dataclass(frozen=True)
@@ -136,7 +136,7 @@ class CorrelationMap:
     """
 
     matches: dict[str, list[Match]]  # diff_path -> top-N matches sorted by score desc
-    unmatched_notes: list[str]       # patch-note gids that produced zero matches anywhere
+    unmatched_notes: list[str]  # patch-note gids that produced zero matches anywhere
 
 
 # ---------------------------------------------------------------------------
@@ -314,11 +314,7 @@ def _iter_diff_entries(
             if bucket_name.lower() in hints_lower
             for entry in entries
         ]
-    return [
-        entry
-        for entries in diff_report.buckets.values()
-        for entry in entries
-    ]
+    return [entry for entries in diff_report.buckets.values() for entry in entries]
 
 
 def correlate(
@@ -397,7 +393,7 @@ def correlate(
         seed |= {normalize_section_header(c) for c in discovered_characters}
     # Map normalized name -> canonical for character_scope_filter comparison.
     canonical_by_norm: dict[str, str] = {}
-    for canonical in (discovered_characters or set()):
+    for canonical in discovered_characters or set():
         canonical_by_norm[normalize_section_header(canonical)] = canonical
     # Seed-only entries: canonical form is title-cased version.
     for norm in seed:

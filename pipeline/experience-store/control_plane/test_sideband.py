@@ -8,7 +8,7 @@ from control_plane.sideband import SIDEBAND_DIR, SIDEBAND_FILE, SidebandRouter
 
 
 def test_record_creates_dir_and_file(tmp_path):
-    router = SidebandRouter(tmp_path)
+    SidebandRouter(tmp_path)
     target = tmp_path / SIDEBAND_DIR / SIDEBAND_FILE
     assert target.exists()
     assert target.parent.is_dir()

@@ -23,7 +23,7 @@ imports. Domain-specific helpers (e.g. `is_degenerate_combat_sample`,
 
 from __future__ import annotations
 
-from typing import Iterator
+from collections.abc import Iterator
 
 # protobuf-canonical uint64 varint cap: 10 bytes. Length prefixes whose
 # varint exceeds this are rejected as malformed, bounding decoder work
@@ -73,13 +73,10 @@ def decode_varint(buf: bytes, offset: int = 0) -> tuple[int, int]:
     n = len(buf)
     while True:
         if offset + consumed >= n:
-            raise FramingError(
-                f"truncated varint at offset {offset}: end-of-buffer reached"
-            )
+            raise FramingError(f"truncated varint at offset {offset}: end-of-buffer reached")
         if consumed >= _VARINT_MAX_BYTES:
             raise FramingError(
-                f"varint at offset {offset} exceeds "
-                f"{_VARINT_MAX_BYTES}-byte protobuf cap"
+                f"varint at offset {offset} exceeds {_VARINT_MAX_BYTES}-byte protobuf cap"
             )
         b = buf[offset + consumed]
         consumed += 1

@@ -26,8 +26,8 @@ _Q3_ROOT = Path(__file__).resolve().parents[1]
 if str(_Q3_ROOT) not in sys.path:
     sys.path.insert(0, str(_Q3_ROOT))
 
-from proto import DecisionType, ObservabilityRegime, Trajectory, TrajectoryStep  # noqa: E402
-from sampler.framing import decode_varint  # noqa: E402
+from proto import DecisionType, ObservabilityRegime, Trajectory, TrajectoryStep
+from sampler.framing import decode_varint
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SERVICE_PY = REPO_ROOT / "pipeline" / "experience-store" / "service.py"
@@ -63,7 +63,7 @@ def _parse_sample_response(body: bytes) -> tuple[list[bytes], str]:
     while offset < len(body):
         frame_len, consumed = decode_varint(body, offset)
         offset += consumed
-        payload = body[offset:offset + frame_len]
+        payload = body[offset : offset + frame_len]
         offset += frame_len
         try:
             maybe = json.loads(payload.decode("utf-8"))
@@ -112,9 +112,7 @@ def running_service(tmp_path):
     while time.monotonic() < deadline:
         if proc.poll() is not None:
             stderr = proc.stderr.read().decode("utf-8", errors="replace") if proc.stderr else ""
-            raise AssertionError(
-                f"service exited rc={proc.returncode}; stderr:\n{stderr}"
-            )
+            raise AssertionError(f"service exited rc={proc.returncode}; stderr:\n{stderr}")
         try:
             with urllib.request.urlopen(f"{base_url}/health", timeout=1) as resp:
                 if resp.status == 200:
@@ -160,13 +158,8 @@ def test_golden_binary_committed_and_well_shaped():
     assert traj.generator == "q3-synthetic-writer"
 
     for i, step in enumerate(traj.steps):
-        assert step.decision_type == DecisionType.DECISION_TYPE_COMBAT, (
-            f"step[{i}] non-combat"
-        )
-        assert (
-            step.observability_regime
-            == ObservabilityRegime.OBSERVABILITY_REGIME_POLICY_VISIBLE
-        )
+        assert step.decision_type == DecisionType.DECISION_TYPE_COMBAT, f"step[{i}] non-combat"
+        assert step.observability_regime == ObservabilityRegime.OBSERVABILITY_REGIME_POLICY_VISIBLE
         # Degenerate sample per Q3-ADR-005.
         assert len(step.combat_outcome_samples) == 1
         sample = step.combat_outcome_samples[0]
@@ -174,7 +167,7 @@ def test_golden_binary_committed_and_well_shaped():
         assert sample.survived is True
         assert sample.hp_delta == pytest.approx(-0.05)
         # Reward/terminal schedule.
-        is_terminal = (i == EXPECTED_STEPS - 1)
+        is_terminal = i == EXPECTED_STEPS - 1
         assert step.terminal is is_terminal
         assert step.reward == pytest.approx(1.0 if is_terminal else 0.0)
         assert step.action_taken == i % 4
@@ -190,17 +183,11 @@ def test_golden_round_trip_through_service(running_service):
     golden = Trajectory()
     golden.ParseFromString(blob)
 
-    status, resp = _post(
-        f"{base_url}/trajectories", blob, "application/x-protobuf"
-    )
+    status, resp = _post(f"{base_url}/trajectories", blob, "application/x-protobuf")
     assert status == 202, f"/trajectories rejected: status={status} body={resp!r}"
 
-    sample_req = json.dumps(
-        {"mode": "uniform", "batch_size": 100, "filters": {}}
-    ).encode("utf-8")
-    status, body = _post(
-        f"{base_url}/sample", sample_req, "application/json"
-    )
+    sample_req = json.dumps({"mode": "uniform", "batch_size": 100, "filters": {}}).encode("utf-8")
+    status, body = _post(f"{base_url}/sample", sample_req, "application/json")
     assert status == 200, f"/sample returned {status}: {body!r}"
 
     step_payloads, trailer = _parse_sample_response(body)
@@ -219,17 +206,13 @@ def test_golden_round_trip_through_service(running_service):
     # populated. Uniform mode preserves trajectory order, so the first
     # `EXPECTED_STEPS` returned must equal the golden's steps in order.
     for i, (golden_step, observed) in enumerate(
-        zip(golden.steps, returned[:EXPECTED_STEPS])
+        zip(golden.steps, returned[:EXPECTED_STEPS], strict=False)
     ):
-        assert observed.decision_type == golden_step.decision_type, (
-            f"step[{i}].decision_type drift"
-        )
+        assert observed.decision_type == golden_step.decision_type, f"step[{i}].decision_type drift"
         assert observed.terminal == golden_step.terminal, f"step[{i}].terminal drift"
         assert observed.reward == pytest.approx(golden_step.reward), (
             f"step[{i}].reward drift: got {observed.reward}"
         )
-        assert observed.action_taken == golden_step.action_taken, (
-            f"step[{i}].action_taken drift"
-        )
+        assert observed.action_taken == golden_step.action_taken, f"step[{i}].action_taken drift"
         assert len(observed.combat_outcome_samples) == 1
         assert observed.combat_outcome_samples[0].probability_weight == 1.0

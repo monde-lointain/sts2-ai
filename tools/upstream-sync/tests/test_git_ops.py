@@ -15,7 +15,6 @@ import pytest
 
 from upstream_sync import git_ops
 
-
 # --------------------------------------------------------------------------- #
 # Helpers                                                                     #
 # --------------------------------------------------------------------------- #
@@ -140,9 +139,7 @@ class TestBootstrap:
         monkeypatch.setattr(git_ops.subprocess, "run", flaky_run)
 
         with pytest.raises(RuntimeError) as excinfo:
-            git_ops.bootstrap(
-                tree=tree, version="v0.1", buildid="1", gdre_version="0"
-            )
+            git_ops.bootstrap(tree=tree, version="v0.1", buildid="1", gdre_version="0")
         # The error message should reference git.
         assert "git" in str(excinfo.value).lower()
 
@@ -157,9 +154,7 @@ class TestGetHeadSha:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        bootstrap_sha = git_ops.bootstrap(
-            tree=tree, version="v0.1", buildid="1", gdre_version="0"
-        )
+        bootstrap_sha = git_ops.bootstrap(tree=tree, version="v0.1", buildid="1", gdre_version="0")
 
         head = git_ops.get_head_sha(tree)
         assert head == bootstrap_sha
@@ -182,9 +177,7 @@ class TestListTags:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        git_ops.bootstrap(
-            tree=tree, version="v0.103.2", buildid="1", gdre_version="0"
-        )
+        git_ops.bootstrap(tree=tree, version="v0.103.2", buildid="1", gdre_version="0")
 
         assert git_ops.list_tags(tree) == ["v0.103.2"]
 
@@ -206,9 +199,7 @@ class TestAssertClean:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        git_ops.bootstrap(
-            tree=tree, version="v0.1", buildid="1", gdre_version="0"
-        )
+        git_ops.bootstrap(tree=tree, version="v0.1", buildid="1", gdre_version="0")
         # No exception.
         git_ops.assert_clean(tree)
 
@@ -216,9 +207,7 @@ class TestAssertClean:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        git_ops.bootstrap(
-            tree=tree, version="v0.1", buildid="1", gdre_version="0"
-        )
+        git_ops.bootstrap(tree=tree, version="v0.1", buildid="1", gdre_version="0")
 
         # Dirty: modify a tracked file.
         (tree / "src" / "Card.cs").write_text("public class Card { /* dirty */ }\n")
@@ -231,9 +220,7 @@ class TestAssertClean:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        git_ops.bootstrap(
-            tree=tree, version="v0.1", buildid="1", gdre_version="0"
-        )
+        git_ops.bootstrap(tree=tree, version="v0.1", buildid="1", gdre_version="0")
 
         # Untracked allowlisted file (so it's not ignored).
         (tree / "src" / "Newcomer.cs").write_text("public class Newcomer {}\n")
@@ -253,9 +240,7 @@ class TestCommitAndTag:
         tree = tmp_path / "upstream"
         tree.mkdir()
         _seed_upstream_tree(tree)
-        git_ops.bootstrap(
-            tree=tree, version=version, buildid="1000", gdre_version="2.5.0"
-        )
+        git_ops.bootstrap(tree=tree, version=version, buildid="1000", gdre_version="2.5.0")
         return tree
 
     def test_normal_path_stages_commits_tags(self, tmp_path):

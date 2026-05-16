@@ -7,6 +7,7 @@ Covers items 1-5 of the run-config.md Testing Strategy:
 4. seed_everything reproducibility (random/numpy/torch).
 5. Frozen dataclass refuses mutation.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -90,9 +91,7 @@ def isolated_repo(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(repo)
 
     def git(*args: str) -> subprocess.CompletedProcess:
-        return subprocess.run(
-            ["git", *args], cwd=repo, capture_output=True, text=True, check=True
-        )
+        return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, check=True)
 
     git("init", "-q")
     git("config", "user.email", "test@example.com")
@@ -130,9 +129,7 @@ def test_missing_nested_key_raises(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 # 2. Clean tree captures code_sha
 # ---------------------------------------------------------------------------
-def test_clean_tree_captures_code_sha(
-    isolated_repo: Path, config_path: Path
-) -> None:
+def test_clean_tree_captures_code_sha(isolated_repo: Path, config_path: Path) -> None:
     cfg = RunConfig.load(config_path)
     prov = RunProvenance.capture(cfg, parent_artifact_id=None)
     expected = subprocess.run(
@@ -151,9 +148,7 @@ def test_clean_tree_captures_code_sha(
 # ---------------------------------------------------------------------------
 # 3. Dirty tree behavior is configurable
 # ---------------------------------------------------------------------------
-def test_dirty_tree_refuse_raises(
-    isolated_repo: Path, tmp_path: Path
-) -> None:
+def test_dirty_tree_refuse_raises(isolated_repo: Path, tmp_path: Path) -> None:
     # Make tree dirty
     (isolated_repo / "scratch.txt").write_text("dirty\n")
 
@@ -166,9 +161,7 @@ def test_dirty_tree_refuse_raises(
         RunProvenance.capture(cfg, parent_artifact_id=None)
 
 
-def test_dirty_tree_warn_proceeds(
-    isolated_repo: Path, tmp_path: Path
-) -> None:
+def test_dirty_tree_warn_proceeds(isolated_repo: Path, tmp_path: Path) -> None:
     (isolated_repo / "scratch.txt").write_text("dirty\n")
 
     raw = _minimal_config()
@@ -189,9 +182,11 @@ def test_seed_everything_reproducible() -> None:
     py_a = [random.random() for _ in range(100)]
 
     import numpy as np
+
     np_a = np.random.randn(100).tolist()
 
     import torch
+
     torch_a = torch.randn(100).tolist()
 
     seed_everything(1234)
@@ -220,9 +215,7 @@ def test_run_config_frozen(config_path: Path) -> None:
         cfg.network.d_model = 999  # type: ignore[misc]
 
 
-def test_run_provenance_frozen(
-    isolated_repo: Path, config_path: Path
-) -> None:
+def test_run_provenance_frozen(isolated_repo: Path, config_path: Path) -> None:
     cfg = RunConfig.load(config_path)
     prov = RunProvenance.capture(cfg, parent_artifact_id=None)
     with pytest.raises(dataclasses.FrozenInstanceError):

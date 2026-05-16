@@ -36,6 +36,7 @@ trajectory-id stream (Phase-2 swap is one method).
 No third-party deps: ``urllib.request``, ``json``, ``queue``, ``threading``,
 ``time``.
 """
+
 from __future__ import annotations
 
 import json
@@ -45,7 +46,6 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Optional
 
 from pipeline.common.framing import FramingError, iter_frames
 from pipeline.common.trajectory_proto import TrajectoryStep
@@ -66,7 +66,7 @@ class Batch:
     """
 
     steps: tuple[TrajectoryStep, ...]
-    cursor_token: Optional[str]
+    cursor_token: str | None
     trajectory_ids: tuple[str, ...]
 
 
@@ -115,19 +115,17 @@ class DataIngest:
         self._q3_url = config.q3_url.rstrip("/")
         self._batch_size = int(config.batch_size)
         self._sampling_mode = config.sampling_mode
-        self._queue: queue.Queue[Batch] = queue.Queue(
-            maxsize=int(config.prefetch_queue_size)
-        )
+        self._queue: queue.Queue[Batch] = queue.Queue(maxsize=int(config.prefetch_queue_size))
         # Trajectory-ID accumulator (Phase-1: always empty — see docstring).
         self._consumed_ids: list[str] = []
         self._consumed_ids_lock = threading.Lock()
         # Prefetcher thread + stop event.
-        self._thread: Optional[threading.Thread] = None
-        self._stop_event: Optional[threading.Event] = None
+        self._thread: threading.Thread | None = None
+        self._stop_event: threading.Event | None = None
         # Cursor for resumable sampling. None on first request.
-        self._last_cursor: Optional[str] = None
+        self._last_cursor: str | None = None
         # Captured prefetcher fatal exception (surfaced to consumer).
-        self._fatal: Optional[BaseException] = None
+        self._fatal: BaseException | None = None
         # Sentinel marking terminal exhaustion (Q3 returned "exhausted").
         self._exhausted = threading.Event()
 
@@ -142,13 +140,9 @@ class DataIngest:
         to S1+ per ADR-020). ``uniform`` is the Phase-1 mode.
         """
         if self._sampling_mode == "prioritized":
-            raise NotImplementedError(
-                "sampling_mode='prioritized' deferred to S1+; see ADR-020"
-            )
+            raise NotImplementedError("sampling_mode='prioritized' deferred to S1+; see ADR-020")
         if self._sampling_mode != "uniform":  # defense in depth (ctor already rejects)
-            raise ValueError(
-                f"sampling_mode {self._sampling_mode!r} not supported"
-            )
+            raise ValueError(f"sampling_mode {self._sampling_mode!r} not supported")
         if self._thread is not None:
             raise RuntimeError("DataIngest.start() called twice")
         self._stop_event = stop_event
@@ -159,7 +153,7 @@ class DataIngest:
         )
         self._thread.start()
 
-    def get_batch(self, timeout: float = 30.0) -> Optional[Batch]:
+    def get_batch(self, timeout: float = 30.0) -> Batch | None:
         """Pop one prefetched batch.
 
         Blocks up to ``timeout`` seconds. Returns ``None`` on stop_event,
@@ -223,9 +217,7 @@ class DataIngest:
                 # by short-poll loops so SIGTERM can interrupt back-pressure.
                 while not self._stop_event.is_set():
                     try:
-                        self._queue.put(
-                            batch, block=True, timeout=self._STOP_POLL_INTERVAL_SEC
-                        )
+                        self._queue.put(batch, block=True, timeout=self._STOP_POLL_INTERVAL_SEC)
                         break
                     except queue.Full:
                         continue
@@ -234,11 +226,11 @@ class DataIngest:
                     self._exhausted.set()
                     return
                 self._last_cursor = batch.cursor_token
-        except BaseException as exc:  # noqa: BLE001 — propagate to consumer
+        except BaseException as exc:
             self._fatal = exc
             return
 
-    def _fetch_one_batch_with_retry(self) -> Optional[Batch]:
+    def _fetch_one_batch_with_retry(self) -> Batch | None:
         """Issue one POST /sample, honoring 503-schema_drain retry.
 
         Returns ``None`` only on stop_event during sleep. Raises
@@ -296,24 +288,20 @@ class DataIngest:
                 f"failing fast per Q10-ADR-004 ({http_err.reason})"
             ) from http_err
         except urllib.error.URLError as url_err:
-            raise Q3UnavailableError(
-                f"Q3 /sample transport error: {url_err.reason}"
-            ) from url_err
+            raise Q3UnavailableError(f"Q3 /sample transport error: {url_err.reason}") from url_err
         except (TimeoutError, OSError) as transport_err:
             raise Q3UnavailableError(
                 f"Q3 /sample transport error: {transport_err}"
             ) from transport_err
         if status != 200:
-            raise Q3UnavailableError(
-                f"Q3 /sample returned unexpected status {status}"
-            )
+            raise Q3UnavailableError(f"Q3 /sample returned unexpected status {status}")
         return self._decode_response(resp_body, trailer_header, cursor_header)
 
     def _decode_response(
         self,
         body: bytes,
-        trailer_header: Optional[str],
-        cursor_header: Optional[str],
+        trailer_header: str | None,
+        cursor_header: str | None,
     ) -> Batch:
         """Decode a length-delimited protobuf stream into a :class:`Batch`.
 
@@ -326,9 +314,7 @@ class DataIngest:
         try:
             frames = list(iter_frames(body))
         except FramingError as exc:
-            raise Q3UnavailableError(
-                f"Q3 /sample framing error: {exc}"
-            ) from exc
+            raise Q3UnavailableError(f"Q3 /sample framing error: {exc}") from exc
 
         # Detect + strip the JSON trailer frame from the end of the stream.
         # Two strategies, applied in order:
@@ -351,16 +337,14 @@ class DataIngest:
             try:
                 step.ParseFromString(frame)
             except Exception as exc:
-                raise Q3UnavailableError(
-                    f"Q3 /sample TrajectoryStep parse error: {exc}"
-                ) from exc
+                raise Q3UnavailableError(f"Q3 /sample TrajectoryStep parse error: {exc}") from exc
             steps.append(step)
 
         # Phase-1: trajectory_ids stays empty (see module docstring).
         # The accumulator must remain consistent across batches; we do
         # not extend it under the Phase-1 stub.
 
-        cursor_token: Optional[str]
+        cursor_token: str | None
         if derived_trailer == "exhausted":
             cursor_token = None
         else:
@@ -376,12 +360,10 @@ class DataIngest:
         return Batch(
             steps=tuple(steps),
             cursor_token=cursor_token,
-            trajectory_ids=tuple(),
+            trajectory_ids=(),
         )
 
-    def _parse_schema_drain(
-        self, http_err: urllib.error.HTTPError
-    ) -> "_SchemaDrain503":
+    def _parse_schema_drain(self, http_err: urllib.error.HTTPError) -> _SchemaDrain503:
         """Parse the 503 body as ``{"reason","retry_after_sec"}``.
 
         Tolerant of missing fields: defaults ``retry_after_sec=5`` per
@@ -410,7 +392,7 @@ class _SchemaDrain503(Exception):
     retry_after_sec: int
 
 
-def _try_parse_trailer(frame: bytes) -> Optional[str]:
+def _try_parse_trailer(frame: bytes) -> str | None:
     """Return the trailer status if ``frame`` is a JSON trailer, else None."""
     try:
         decoded = json.loads(frame.decode("utf-8"))

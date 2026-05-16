@@ -13,7 +13,8 @@ The engine never reaches back into the Sampler.
 
 from __future__ import annotations
 
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from proto import DecisionType, Trajectory
 from schema_registry.versions import SchemaVersion
@@ -43,10 +44,10 @@ def _enum_value(spec: Any) -> int | None:
     if isinstance(spec, int):
         return int(spec)
     if isinstance(spec, str):
-        if spec in DecisionType.keys():
+        if spec in DecisionType:
             return int(DecisionType.Value(spec))
         prefixed = f"DECISION_TYPE_{spec}"
-        if prefixed in DecisionType.keys():
+        if prefixed in DecisionType:
             return int(DecisionType.Value(prefixed))
     return None
 
@@ -97,17 +98,13 @@ class SamplingEngine:
         """
         if filters is None:
             filters = state.filters
-        decision_type_filter = self._build_decision_type_filter(
-            filters.get("decision_type")
-        )
+        decision_type_filter = self._build_decision_type_filter(filters.get("decision_type"))
         model_version_filter = self._build_str_set(filters.get("model_version"))
         generator_filter = self._build_str_set(filters.get("generator"))
         sampling_mode_filter = self._build_str_set(filters.get("sampling_mode"))
         schema_filter = filters.get("schema_version")
         filter_version: SchemaVersion | None = (
-            SchemaVersion(
-                int(schema_filter["major"]), int(schema_filter["minor"])
-            )
+            SchemaVersion(int(schema_filter["major"]), int(schema_filter["minor"]))
             if schema_filter is not None
             else None
         )
@@ -128,9 +125,7 @@ class SamplingEngine:
         scan_yielded = 0
 
         try:
-            scan_iter = self._hot.scan(
-                after_ts_ns=state.position_ts_ns, limit=scan_limit
-            )
+            scan_iter = self._hot.scan(after_ts_ns=state.position_ts_ns, limit=scan_limit)
         except TypeError:
             # HotStore.scan(after_ts_ns, limit) — positional fallback.
             scan_iter = self._hot.scan(state.position_ts_ns, scan_limit)
@@ -154,9 +149,7 @@ class SamplingEngine:
                 last_fully_drained_ts = ts_ns
                 pending_offset = 0
                 continue
-            if generator_filter is not None and (
-                traj.generator not in generator_filter
-            ):
+            if generator_filter is not None and (traj.generator not in generator_filter):
                 last_fully_drained_ts = ts_ns
                 pending_offset = 0
                 continue

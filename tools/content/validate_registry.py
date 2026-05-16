@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 
-
 VERSION_RE = re.compile(r"^phase1-silent\.(\d+)$")
 
 
@@ -34,7 +33,10 @@ def validate(registry: dict) -> list[str]:
             if reference not in token_names:
                 errors.append(f"missing token reference {reference}")
 
-    seen_versions = [_version_index(entry["deprecated_in_version"]) for entry in registry.get("deprecation_log", [])]
+    seen_versions = [
+        _version_index(entry["deprecated_in_version"])
+        for entry in registry.get("deprecation_log", [])
+    ]
     if seen_versions != sorted(seen_versions):
         errors.append("deprecation_log not monotonic")
 
@@ -45,7 +47,9 @@ def validate(registry: dict) -> list[str]:
 def validate_card_dsl(registry: dict) -> list[str]:
     errors: list[str] = []
     tokens = {token["token"] for token in registry.get("tokens", [])}
-    card_tokens = {token["token"] for token in registry.get("tokens", []) if token["kind"] == "card"}
+    card_tokens = {
+        token["token"] for token in registry.get("tokens", []) if token["kind"] == "card"
+    }
     dsl_tokens = set()
     for record in registry.get("card_dsl", []):
         token = record.get("token")

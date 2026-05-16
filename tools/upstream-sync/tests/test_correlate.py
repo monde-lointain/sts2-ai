@@ -11,14 +11,15 @@ import pytest
 from upstream_sync import correlate
 from upstream_sync.correlate import (
     CHARACTER_SECTION_HEADERS,
-    CorrelationMap,
-    Match,
     SECTION_BUCKET_HINTS,
+    CorrelationMap,
     character_scope_filter,
-    correlate as do_correlate,
     extract_file_stem,
     normalize_section_header,
     score_entity_match,
+)
+from upstream_sync.correlate import (
+    correlate as do_correlate,
 )
 from upstream_sync.diff_analyze import (
     BUCKET_CARDS,
@@ -28,7 +29,6 @@ from upstream_sync.diff_analyze import (
     DiffReport,
 )
 from upstream_sync.patch_notes import PatchNote
-
 
 # ---------- Builders ----------
 
@@ -210,9 +210,11 @@ def test_character_scope_mismatch_filtered():
 
 def test_correlate_exact_match_scores_one():
     """Edge case 1: exact stem match flows through."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     notes = [_note("g1", "Buffed [b]Aeonglass[/b]: rare relic damage 2->3.")]
 
     result = do_correlate(diff, notes)
@@ -231,9 +233,11 @@ def test_correlate_exact_match_scores_one():
 
 def test_correlate_starts_with_scores_zero_seven():
     """Edge case 2: starts-with."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/StrikeSilent.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/StrikeSilent.cs")],
+        }
+    )
     # No section header so empty bucket-hints; entity matched against all
     # buckets but only one path exists.
     notes = [_note("g1", "[b]Strike[/b]: redesigned baseline.")]
@@ -245,9 +249,11 @@ def test_correlate_starts_with_scores_zero_seven():
 
 def test_correlate_camelcase_word_match():
     """Edge case 3: camelCase word match."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/FlashStrike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/FlashStrike.cs")],
+        }
+    )
     notes = [_note("g1", "Buffed [b]Strike[/b].")]
 
     result = do_correlate(diff, notes)
@@ -256,9 +262,11 @@ def test_correlate_camelcase_word_match():
 
 def test_correlate_zero_score_not_emitted():
     """Edge case 4: no match → no Match emitted."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Defend.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Defend.cs")],
+        }
+    )
     notes = [_note("g1", "Buffed [b]Strike[/b].")]
 
     result = do_correlate(diff, notes)
@@ -269,10 +277,12 @@ def test_correlate_zero_score_not_emitted():
 
 def test_correlate_section_bucket_filter_content_and_balance():
     """Edge case 5: '[h2]Content & Balance[/h2]' → cards/relics/powers/potions only."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
-        BUCKET_MONSTERS: [_entry("src/Core/Models/Monsters/Strike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
+            BUCKET_MONSTERS: [_entry("src/Core/Models/Monsters/Strike.cs")],
+        }
+    )
     contents = "[h2]Content & Balance:[/h2]\n[b]Strike[/b] is buffed."
     notes = [_note("g1", contents)]
 
@@ -284,10 +294,12 @@ def test_correlate_section_bucket_filter_content_and_balance():
 
 def test_correlate_empty_section_bucket_hints_no_filter():
     """Edge case 6: '[h2]Bug Fixes[/h2]' empty hints → match anywhere."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Aeonglass.cs")],
-        BUCKET_MONSTERS: [_entry("src/Core/Models/Monsters/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Aeonglass.cs")],
+            BUCKET_MONSTERS: [_entry("src/Core/Models/Monsters/Aeonglass.cs")],
+        }
+    )
     contents = "[h2]Bug Fixes:[/h2]\n[b]Aeonglass[/b] crash fixed."
     notes = [_note("g1", contents)]
 
@@ -299,12 +311,14 @@ def test_correlate_empty_section_bucket_hints_no_filter():
 
 def test_correlate_character_section_scoping_silent_wins():
     """Edge case 7: Silent: section scopes to character_tag='Silent'."""
-    diff = _report({
-        BUCKET_CARDS: [
-            _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
-            _entry("src/Core/Models/Cards/StrikeIronclad.cs", character_tag="Ironclad"),
-        ],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [
+                _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
+                _entry("src/Core/Models/Cards/StrikeIronclad.cs", character_tag="Ironclad"),
+            ],
+        }
+    )
     contents = "[h2]Silent:[/h2]\nBuffed [b]Strike[/b]."
     notes = [_note("g1", contents)]
 
@@ -316,27 +330,29 @@ def test_correlate_character_section_scoping_silent_wins():
 
 def test_correlate_discovered_characters_auto_route():
     """Edge case 8: passing discovered_characters={'Necrobinder'} works."""
-    diff = _report({
-        BUCKET_CARDS: [
-            _entry("src/Core/Models/Cards/StrikeNecrobinder.cs", character_tag="Necrobinder"),
-            _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
-        ],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [
+                _entry("src/Core/Models/Cards/StrikeNecrobinder.cs", character_tag="Necrobinder"),
+                _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
+            ],
+        }
+    )
     contents = "[h2]Necrobinder:[/h2]\nBuffed [b]Strike[/b]."
     notes = [_note("g1", contents)]
 
-    result = do_correlate(
-        diff, notes, discovered_characters={"Necrobinder"}
-    )
+    result = do_correlate(diff, notes, discovered_characters={"Necrobinder"})
     assert "src/Core/Models/Cards/StrikeNecrobinder.cs" in result.matches
     assert "src/Core/Models/Cards/StrikeSilent.cs" not in result.matches
 
 
 def test_correlate_tie_break_by_date_newer_first():
     """Edge case 9: two notes with same entity → newer date wins higher score."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     notes = [
         _note("old", "[b]Aeonglass[/b] old", date=1_000_000_000),
         _note("new", "[b]Aeonglass[/b] new", date=2_000_000_000),
@@ -352,9 +368,11 @@ def test_correlate_tie_break_by_date_newer_first():
 
 
 def test_correlate_tie_break_by_gid_when_dates_equal():
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     notes = [
         _note("b", "[b]Aeonglass[/b] b", date=1_000_000_000),
         _note("a", "[b]Aeonglass[/b] a", date=1_000_000_000),
@@ -368,14 +386,13 @@ def test_correlate_tie_break_by_gid_when_dates_equal():
 
 def test_correlate_top_n_bounded():
     """Edge case 10: 5 notes mention same entity → only top 3 emitted (default)."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     # 5 notes, each mentioning Aeonglass exactly once. All score 1.0.
-    notes = [
-        _note(f"g{i}", "[b]Aeonglass[/b].", date=1_000_000_000 + i)
-        for i in range(5)
-    ]
+    notes = [_note(f"g{i}", "[b]Aeonglass[/b].", date=1_000_000_000 + i) for i in range(5)]
 
     result = do_correlate(diff, notes)
     matches = result.matches["src/Core/Models/Relics/Aeonglass.cs"]
@@ -385,13 +402,12 @@ def test_correlate_top_n_bounded():
 
 
 def test_correlate_top_n_custom():
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
-    notes = [
-        _note(f"g{i}", "[b]Aeonglass[/b].", date=1_000_000_000 + i)
-        for i in range(5)
-    ]
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
+    notes = [_note(f"g{i}", "[b]Aeonglass[/b].", date=1_000_000_000 + i) for i in range(5)]
     result = do_correlate(diff, notes, top_n_per_path=2)
     matches = result.matches["src/Core/Models/Relics/Aeonglass.cs"]
     assert len(matches) == 2
@@ -399,9 +415,11 @@ def test_correlate_top_n_custom():
 
 def test_correlate_unmatched_note():
     """Edge case 11: note whose entities don't match any diff path."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Defend.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Defend.cs")],
+        }
+    )
     notes = [
         _note("nomatch", "[b]Aeonglass[/b] doesn't appear in diff."),
     ]
@@ -413,9 +431,11 @@ def test_correlate_unmatched_note():
 
 def test_correlate_excerpt_strips_bbcode():
     """Edge case 12: excerpt contains the surrounding text with BBCode stripped."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
+        }
+    )
     contents = "...Buffed [b]Strike[/b]: damage 6->7..."
     notes = [_note("g1", contents)]
 
@@ -429,9 +449,11 @@ def test_correlate_excerpt_strips_bbcode():
 
 def test_correlate_excerpt_respects_excerpt_chars():
     """Excerpt length is bounded by excerpt_chars."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     contents = "x" * 200 + " [b]Aeonglass[/b] " + "y" * 200
     notes = [_note("g1", contents)]
 
@@ -444,9 +466,11 @@ def test_correlate_excerpt_respects_excerpt_chars():
 
 def test_correlate_empty_patch_notes():
     """Edge case 13: empty patch_notes → empty matches, empty unmatched."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
+        }
+    )
     result = do_correlate(diff, [])
     assert result.matches == {}
     assert result.unmatched_notes == []
@@ -466,9 +490,11 @@ def test_correlate_empty_diff_report():
 
 def test_correlate_note_with_no_entities_not_unmatched():
     """A note with no [b]Entity[/b] is not 'unmatched' — it had nothing to match."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")],
+        }
+    )
     notes = [_note("g1", "Just a description, no bold entities.")]
 
     result = do_correlate(diff, notes)
@@ -478,9 +504,11 @@ def test_correlate_note_with_no_entities_not_unmatched():
 
 def test_correlate_per_path_sorted_by_score_desc():
     """Within a path, matches are sorted by score (desc)."""
-    diff = _report({
-        BUCKET_CARDS: [_entry("src/Core/Models/Cards/FlashStrike.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [_entry("src/Core/Models/Cards/FlashStrike.cs")],
+        }
+    )
     # g_high scores 1.0 (exact "FlashStrike"); g_low scores 0.5 (Strike).
     notes = [
         _note("low", "[b]Strike[/b].", date=2_000_000_000),
@@ -497,9 +525,11 @@ def test_correlate_per_path_sorted_by_score_desc():
 
 def test_correlate_section_recorded_lowercased_no_colon():
     """The Match.section is the normalized form."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     contents = "[h2]POTIONS & RELICS:[/h2]\n[b]Aeonglass[/b]."
     notes = [_note("g1", contents)]
 
@@ -510,9 +540,11 @@ def test_correlate_section_recorded_lowercased_no_colon():
 
 def test_correlate_no_section_uses_empty_string():
     """Entity outside any [h2] uses section ''."""
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     notes = [_note("g1", "Standalone [b]Aeonglass[/b] mention.")]
 
     result = do_correlate(diff, notes)
@@ -531,7 +563,10 @@ def test_section_hints_keys_are_normalized():
 
 def test_section_hints_known_values():
     assert SECTION_BUCKET_HINTS["content & balance"] == [
-        "cards", "relics", "powers", "potions",
+        "cards",
+        "relics",
+        "powers",
+        "potions",
     ]
     assert SECTION_BUCKET_HINTS["bug fixes"] == []
     assert SECTION_BUCKET_HINTS["multiplayer"] == []
@@ -553,12 +588,14 @@ def test_character_section_headers_normalized():
 
 def test_correlate_discovered_unions_with_seed():
     """discovered_characters union with CHARACTER_SECTION_HEADERS — Silent still works."""
-    diff = _report({
-        BUCKET_CARDS: [
-            _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
-            _entry("src/Core/Models/Cards/StrikeIronclad.cs", character_tag="Ironclad"),
-        ],
-    })
+    diff = _report(
+        {
+            BUCKET_CARDS: [
+                _entry("src/Core/Models/Cards/StrikeSilent.cs", character_tag="Silent"),
+                _entry("src/Core/Models/Cards/StrikeIronclad.cs", character_tag="Ironclad"),
+            ],
+        }
+    )
     contents = "[h2]Silent:[/h2]\n[b]Strike[/b]."
     notes = [_note("g1", contents)]
 
@@ -572,9 +609,11 @@ def test_correlate_discovered_unions_with_seed():
 
 
 def test_match_is_frozen():
-    diff = _report({
-        BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
-    })
+    diff = _report(
+        {
+            BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")],
+        }
+    )
     notes = [_note("g1", "[b]Aeonglass[/b].")]
     result = do_correlate(diff, notes)
     match = result.matches["src/Core/Models/Relics/Aeonglass.cs"][0]

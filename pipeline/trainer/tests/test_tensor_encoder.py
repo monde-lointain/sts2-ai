@@ -3,6 +3,7 @@
 Covers the 6 unit tests called out in
 ``pipeline/trainer/docs/specs/modules/tensor-encoder.md`` §Testing Strategy.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,12 +21,12 @@ from pipeline.common.trajectory_proto import (
 )
 from pipeline.trainer.content_registry import ContentRegistry
 from pipeline.trainer.tensor_encoder import (
-    EncodedBatch,
     TensorEncoder,
 )
 
-
-_REGISTRY_PATH = Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
+_REGISTRY_PATH = (
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -186,9 +187,7 @@ def test_legal_action_mask_with_mixed_batch(registry: ContentRegistry) -> None:
     assert int(batch.legal_action_mask[1, 2:].sum().item()) == 0
     assert float(batch.policy_target[1, 2:].sum().item()) == 0.0
     # row 1 policy sums to 1 over legal
-    assert pytest.approx(
-        batch.policy_target[1, :2].sum().item(), abs=1e-6
-    ) == 1.0
+    assert pytest.approx(batch.policy_target[1, :2].sum().item(), abs=1e-6) == 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -248,9 +247,7 @@ def test_source_perfect_leak_raises_in_strict_mode(
 def test_source_perfect_soft_fail_increments_counter(
     registry: ContentRegistry,
 ) -> None:
-    enc = TensorEncoder(
-        registry, _NetworkCfg(), strict_source_perfect=False
-    )
+    enc = TensorEncoder(registry, _NetworkCfg(), strict_source_perfect=False)
     assert enc.source_perfect_leak_count == 0
     leaky = _make_step(observability_regime=OBSERVABILITY_REGIME_SOURCE_PERFECT)
     ok = _make_step(observability_regime=OBSERVABILITY_REGIME_POLICY_VISIBLE)
@@ -341,9 +338,7 @@ def test_macro_context_is_phase1_zero_stub(
 def test_prior_logits_minus_inf_on_illegal(registry: ContentRegistry) -> None:
     enc = TensorEncoder(registry, _NetworkCfg())
     step_small = _make_step(legal_action_ids=[0, 1], search_policy=[0.6, 0.4])
-    step_big = _make_step(
-        legal_action_ids=[0, 1, 2, 3], search_policy=[0.25, 0.25, 0.25, 0.25]
-    )
+    step_big = _make_step(legal_action_ids=[0, 1, 2, 3], search_policy=[0.25, 0.25, 0.25, 0.25])
     batch = enc.encode_batch([step_small, step_big])
     # A = 4; row 0's tail positions 2,3 are illegal → -inf
     assert batch.prior_logits[0, 2].item() == float("-inf")

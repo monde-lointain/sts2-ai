@@ -21,6 +21,7 @@ Routing (per modules/* specs):
   POST /lifecycle/force_tick— operator-triggered tick
   POST /sideband/oracle-agreement — Q2 oracle-agreement landing
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,17 +39,17 @@ from pathlib import Path
 # modules. Mirrors conftest.py used by the test suite.
 sys.path.insert(0, str(Path(__file__).parent))
 
-from control_plane import (  # noqa: E402
+from control_plane import (
     MetricsEmitter,
     ProvenanceLog,
     RetentionController,
     SidebandRouter,
 )
-from hot_store import HotStore  # noqa: E402
-from ingest_api.api import IngestAPI  # noqa: E402
-from lifecycle.lifecycle import Lifecycle  # noqa: E402
-from sampler.api import Sampler  # noqa: E402
-from schema_registry import SchemaRegistry  # noqa: E402
+from hot_store import HotStore
+from ingest_api.api import IngestAPI
+from lifecycle.lifecycle import Lifecycle
+from sampler.api import Sampler
+from schema_registry import SchemaRegistry
 
 
 def load_config(path: Path) -> dict:
@@ -100,7 +101,7 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
         body = json.dumps(payload).encode("utf-8")
         self._send(status, {"Content-Type": "application/json"}, body)
 
-    def do_GET(self) -> None:  # noqa: N802 — http.server interface
+    def do_GET(self) -> None:
         srv: QuantumService = self.server  # type: ignore[assignment]
         path = self.path
 
@@ -118,9 +119,7 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
 
         if path == "/metrics":
             body = srv.build_metrics_payload()
-            self._send(
-                200, {"Content-Type": "text/plain; version=0.0.4"}, body
-            )
+            self._send(200, {"Content-Type": "text/plain; version=0.0.4"}, body)
             return
 
         if path == "/ingest/status":
@@ -135,9 +134,7 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
 
         match_cursor = CURSOR_PATH_RE.match(path)
         if match_cursor:
-            status, headers, body = srv.sampler.handle_get_sample_cursor(
-                match_cursor.group(1)
-            )
+            status, headers, body = srv.sampler.handle_get_sample_cursor(match_cursor.group(1))
             self._send(status, headers, body)
             return
 
@@ -156,9 +153,7 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
                 {
                     "hot_bytes": srv.hot_store.range_size_bytes(),
                     "queue_depth": srv.ingest_api.queue_depth(),
-                    "queue_capacity": srv.config.get(
-                        "ingest_queue_capacity", 4096
-                    ),
+                    "queue_capacity": srv.config.get("ingest_queue_capacity", 4096),
                 },
             )
             return
@@ -180,22 +175,20 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
 
         self._send_json(404, {"error": "not_found", "path": path})
 
-    def do_POST(self) -> None:  # noqa: N802 — http.server interface
+    def do_POST(self) -> None:
         srv: QuantumService = self.server  # type: ignore[assignment]
         path = self.path
         body = self._read_body()
         content_type = self.headers.get("Content-Type", "")
 
         if path == "/trajectories":
-            status, headers, body_out = (
-                srv.ingest_api.handle_post_trajectories(body, content_type)
-            )
+            status, headers, body_out = srv.ingest_api.handle_post_trajectories(body, content_type)
             self._send(status, headers, body_out)
             return
 
         if path == "/trajectories:batch":
-            status, headers, body_out = (
-                srv.ingest_api.handle_post_trajectories_batch(body, content_type)
+            status, headers, body_out = srv.ingest_api.handle_post_trajectories_batch(
+                body, content_type
             )
             self._send(status, headers, body_out)
             return
@@ -206,16 +199,12 @@ class QuantumRequestHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/lifecycle/policy":
-            status, headers, body_out = (
-                srv.lifecycle.handle_post_lifecycle_policy(body)
-            )
+            status, headers, body_out = srv.lifecycle.handle_post_lifecycle_policy(body)
             self._send(status, headers, body_out)
             return
 
         if path == "/lifecycle/force_tick":
-            status, headers, body_out = (
-                srv.lifecycle.handle_post_lifecycle_force_tick()
-            )
+            status, headers, body_out = srv.lifecycle.handle_post_lifecycle_force_tick()
             self._send(status, headers, body_out)
             return
 
@@ -263,9 +252,7 @@ class QuantumService(ThreadingHTTPServer):
         self.provenance_log = ProvenanceLog(data_dir)
         self.retention_controller = RetentionController(config, data_dir)
         self.sideband_router = SidebandRouter(data_dir)
-        self.metrics_emitter = MetricsEmitter(
-            config["service"], self.started_at
-        )
+        self.metrics_emitter = MetricsEmitter(config["service"], self.started_at)
 
         # W3 front doors.
         self.ingest_api = IngestAPI(
@@ -278,12 +265,8 @@ class QuantumService(ThreadingHTTPServer):
         self.sampler = Sampler(
             self.hot_store,
             self.schema_registry,
-            cursor_cache_capacity=int(
-                config.get("cursor_cache_capacity", 1024)
-            ),
-            cursor_idle_timeout_seconds=int(
-                config.get("cursor_idle_timeout_seconds", 300)
-            ),
+            cursor_cache_capacity=int(config.get("cursor_cache_capacity", 1024)),
+            cursor_idle_timeout_seconds=int(config.get("cursor_idle_timeout_seconds", 300)),
         )
         self.lifecycle = Lifecycle(
             self.hot_store,
@@ -331,7 +314,7 @@ class QuantumService(ThreadingHTTPServer):
         for emitter in emitters:
             try:
                 extra_lines.extend(emitter.metrics_lines(self.config["service"]))
-            except Exception:  # noqa: BLE001 — metrics must never crash /metrics
+            except Exception:
                 continue
         if not extra_lines:
             return base

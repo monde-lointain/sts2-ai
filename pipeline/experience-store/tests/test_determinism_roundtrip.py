@@ -33,9 +33,10 @@ _Q3_ROOT = Path(__file__).resolve().parents[1]
 if str(_Q3_ROOT) not in sys.path:
     sys.path.insert(0, str(_Q3_ROOT))
 
-from proto import Trajectory  # noqa: E402
-from sampler.framing import decode_varint  # noqa: E402
-from tests.synthetic_writer import build_trajectory  # noqa: E402
+from proto import Trajectory
+from sampler.framing import decode_varint
+
+from tests.synthetic_writer import build_trajectory
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SERVICE_PY = REPO_ROOT / "pipeline" / "experience-store" / "service.py"
@@ -74,10 +75,8 @@ def _parse_sample_response(body: bytes) -> tuple[list[bytes], str]:
         frame_len, consumed = decode_varint(body, offset)
         offset += consumed
         if offset + frame_len > len(body):
-            raise AssertionError(
-                f"truncated frame: need {frame_len} bytes at offset {offset}"
-            )
-        payload = body[offset:offset + frame_len]
+            raise AssertionError(f"truncated frame: need {frame_len} bytes at offset {offset}")
+        payload = body[offset : offset + frame_len]
         offset += frame_len
         # Trailer frame's payload is JSON; if it parses with a 'status' key,
         # treat it as the terminator.
@@ -163,7 +162,7 @@ def _seeded_trajectory(i: int, base_seed: int = 0xC0FFEE) -> Trajectory:
     derived_seed = (base_seed + i) & 0xFFFFFFFFFFFFFFFF
     # Stable trajectory_id from hash so re-running this test produces the same
     # id string and we can correlate by it across runs.
-    digest = hashlib.sha256(f"r2-roundtrip-{i:04d}".encode("utf-8")).hexdigest()[:32]
+    digest = hashlib.sha256(f"r2-roundtrip-{i:04d}".encode()).hexdigest()[:32]
     return build_trajectory(
         n_steps=STEPS_PER_TRAJECTORY,
         seed=derived_seed,
@@ -202,31 +201,24 @@ def test_r2_determinism_round_trip(running_service):
     last_ts = 0
     for i, traj in enumerate(originals):
         body = traj.SerializeToString()
-        status, _h, resp = _post(
-            f"{base_url}/trajectories", body, "application/x-protobuf"
-        )
+        status, _h, resp = _post(f"{base_url}/trajectories", body, "application/x-protobuf")
         assert status == 202, f"trajectory[{i}] rejected: {resp!r}"
         payload = json.loads(resp.decode("utf-8"))
         ts = int(payload["ingest_ts_ns"])
-        assert ts > last_ts, (
-            f"ingest_ts_ns must be strictly monotonic; got {ts} after {last_ts}"
-        )
+        assert ts > last_ts, f"ingest_ts_ns must be strictly monotonic; got {ts} after {last_ts}"
         last_ts = ts
 
     # 3. Sample-back call #1.
-    sample_req = json.dumps(
-        {"mode": "uniform", "batch_size": SAMPLE_BATCH, "filters": {}}
-    ).encode("utf-8")
-    status, _h, sample_body_1 = _post(
-        f"{base_url}/sample", sample_req, "application/json"
+    sample_req = json.dumps({"mode": "uniform", "batch_size": SAMPLE_BATCH, "filters": {}}).encode(
+        "utf-8"
     )
+    status, _h, sample_body_1 = _post(f"{base_url}/sample", sample_req, "application/json")
     assert status == 200, f"/sample returned {status}: {sample_body_1!r}"
 
     step_payloads_1, trailer_1 = _parse_sample_response(sample_body_1)
     assert trailer_1 in ("ok", "exhausted"), f"unexpected trailer: {trailer_1!r}"
     assert len(step_payloads_1) == N_TRAJECTORIES * STEPS_PER_TRAJECTORY, (
-        f"expected {N_TRAJECTORIES * STEPS_PER_TRAJECTORY} step frames; "
-        f"got {len(step_payloads_1)}"
+        f"expected {N_TRAJECTORIES * STEPS_PER_TRAJECTORY} step frames; got {len(step_payloads_1)}"
     )
 
     # 4. Every returned step's bytes must match some original step bytes.
@@ -239,9 +231,7 @@ def test_r2_determinism_round_trip(running_service):
     # 5. Determinism: same hot_store + same /sample body → same response.
     #    Reuse the same path with a fresh request (no cursor_id provided,
     #    so the cursor is re-seeded from position 0).
-    status, _h, sample_body_2 = _post(
-        f"{base_url}/sample", sample_req, "application/json"
-    )
+    status, _h, sample_body_2 = _post(f"{base_url}/sample", sample_req, "application/json")
     assert status == 200
     step_payloads_2, trailer_2 = _parse_sample_response(sample_body_2)
     assert trailer_1 == trailer_2, "trailer divergence between identical requests"

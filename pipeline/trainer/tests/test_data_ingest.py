@@ -5,13 +5,13 @@ sampling-mode validation tests (7-8). All Q3 interaction is mocked via
 ``unittest.mock.patch`` on ``urllib.request.urlopen``; ``time.sleep`` is
 patched to a stub so 503-retry delays don't slow the suite.
 """
+
 from __future__ import annotations
 
 import io
 import json
 import threading
 import time
-from typing import Optional
 from unittest import mock
 
 import pytest
@@ -89,16 +89,12 @@ def _trajectory_step(action_id: int = 0) -> TrajectoryStep:
     return step
 
 
-def _frame_response(
-    steps: list[TrajectoryStep], trailer_status: str = "ok"
-) -> bytes:
+def _frame_response(steps: list[TrajectoryStep], trailer_status: str = "ok") -> bytes:
     """Build a length-delimited protobuf body + JSON trailer frame."""
     parts: list[bytes] = []
     for step in steps:
         parts.append(step.SerializeToString())
-    parts.append(
-        json.dumps({"status": trailer_status}, separators=(",", ":")).encode("utf-8")
-    )
+    parts.append(json.dumps({"status": trailer_status}, separators=(",", ":")).encode("utf-8"))
     return encode_frames(parts)
 
 
@@ -109,13 +105,13 @@ class _FakeResponse:
         self,
         body: bytes,
         status: int = 200,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ) -> None:
         self._body = body
         self._status = status
         self.headers = headers or {}
 
-    def __enter__(self) -> "_FakeResponse":
+    def __enter__(self) -> _FakeResponse:
         return self
 
     def __exit__(self, *exc_info: object) -> None:
@@ -132,9 +128,9 @@ def _http_error_503(retry_after_sec: int = 1) -> Exception:
     """Build an HTTPError instance with a JSON 503 schema_drain body."""
     import urllib.error
 
-    body = json.dumps(
-        {"reason": "schema_drain", "retry_after_sec": retry_after_sec}
-    ).encode("utf-8")
+    body = json.dumps({"reason": "schema_drain", "retry_after_sec": retry_after_sec}).encode(
+        "utf-8"
+    )
     return urllib.error.HTTPError(
         url="http://localhost/sample",
         code=503,
@@ -157,7 +153,7 @@ def test_varint_framing_decode_roundtrip() -> None:
     payload = encode_frames([s.SerializeToString() for s in steps])
     decoded_frames = list(iter_frames(payload))
     assert len(decoded_frames) == len(steps)
-    for original, raw in zip(steps, decoded_frames):
+    for original, raw in zip(steps, decoded_frames, strict=False):
         round_trip = TrajectoryStep()
         round_trip.ParseFromString(raw)
         assert round_trip.action_taken == original.action_taken
@@ -206,12 +202,15 @@ def test_503_schema_drain_retries_then_succeeds() -> None:
         sleep_calls.append(seconds)
 
     stop_event = threading.Event()
-    with mock.patch(
-        "pipeline.trainer.data_ingest.urllib.request.urlopen",
-        side_effect=[err503, good],
-    ), mock.patch(
-        "pipeline.trainer.data_ingest.time.sleep",
-        side_effect=fake_sleep,
+    with (
+        mock.patch(
+            "pipeline.trainer.data_ingest.urllib.request.urlopen",
+            side_effect=[err503, good],
+        ),
+        mock.patch(
+            "pipeline.trainer.data_ingest.time.sleep",
+            side_effect=fake_sleep,
+        ),
     ):
         di.start(stop_event)
         batch = di.get_batch(timeout=2.0)
@@ -234,12 +233,15 @@ def test_two_consecutive_503s_raise_unavailable() -> None:
     err503_b = _http_error_503(retry_after_sec=1)
 
     stop_event = threading.Event()
-    with mock.patch(
-        "pipeline.trainer.data_ingest.urllib.request.urlopen",
-        side_effect=[err503_a, err503_b],
-    ), mock.patch(
-        "pipeline.trainer.data_ingest.time.sleep",
-        return_value=None,
+    with (
+        mock.patch(
+            "pipeline.trainer.data_ingest.urllib.request.urlopen",
+            side_effect=[err503_a, err503_b],
+        ),
+        mock.patch(
+            "pipeline.trainer.data_ingest.time.sleep",
+            return_value=None,
+        ),
     ):
         di.start(stop_event)
         with pytest.raises(Q3UnavailableError):
@@ -298,9 +300,7 @@ def test_prefetch_queue_backpressures_producer() -> None:
         # a 2nd batch and is blocked on put. So calls_while_full
         # should be <= 2 (typically 2). Critically, it must NOT grow
         # unboundedly while no consumer drains.
-        assert calls_while_full <= 2, (
-            f"prefetcher did not back-pressure: {calls_while_full} calls"
-        )
+        assert calls_while_full <= 2, f"prefetcher did not back-pressure: {calls_while_full} calls"
         # Drain one item; prefetcher should resume and make another call.
         batch = di.get_batch(timeout=2.0)
         assert batch is not None
@@ -313,8 +313,7 @@ def test_prefetch_queue_backpressures_producer() -> None:
         with call_lock:
             final_calls = urlopen_calls
         assert final_calls > calls_while_full, (
-            f"prefetcher did not resume after drain: "
-            f"{final_calls} <= {calls_while_full}"
+            f"prefetcher did not resume after drain: {final_calls} <= {calls_while_full}"
         )
         stop_event.set()
         di.join(timeout=2.0)
@@ -353,7 +352,7 @@ def test_trajectory_id_accumulator_snapshot_is_copy() -> None:
     assert isinstance(snap_b, tuple)
     assert snap_a == snap_b
     # Phase-1 stub: accumulator is empty.
-    assert snap_a == tuple()
+    assert snap_a == ()
     # Confirm Batch.trajectory_ids is also a frozen tuple.
     assert isinstance(b1.trajectory_ids, tuple)
 

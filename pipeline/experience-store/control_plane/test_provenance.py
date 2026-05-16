@@ -47,9 +47,7 @@ def test_append_serializes_schema_version_as_flat_fields(tmp_path):
         ingest_ts_ns=42,
         schema_version=(1, 0),
     )
-    row = json.loads(
-        (tmp_path / PROVENANCE_FILE).read_text(encoding="utf-8").splitlines()[0]
-    )
+    row = json.loads((tmp_path / PROVENANCE_FILE).read_text(encoding="utf-8").splitlines()[0])
     assert row["schema_major"] == 1
     assert row["schema_minor"] == 0
     # No nested object form.
@@ -66,9 +64,7 @@ def test_append_schema_version_propagates_minor(tmp_path):
         ingest_ts_ns=42,
         schema_version=(2, 5),
     )
-    row = json.loads(
-        (tmp_path / PROVENANCE_FILE).read_text(encoding="utf-8").splitlines()[0]
-    )
+    row = json.loads((tmp_path / PROVENANCE_FILE).read_text(encoding="utf-8").splitlines()[0])
     assert row["schema_major"] == 2
     assert row["schema_minor"] == 5
 

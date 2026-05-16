@@ -19,7 +19,6 @@ from control_plane.retention import (
     RetentionPolicy,
 )
 
-
 # ---------------------------------------------------------------------------
 # Threshold defaults / persistence
 # ---------------------------------------------------------------------------
@@ -39,10 +38,7 @@ def test_default_windows_match_q3_adr_008(tmp_path):
     policy = RetentionController({}, tmp_path)
     assert policy.hot_bytes_window_seconds() == DEFAULT_HOT_BYTES_WINDOW_SECONDS
     assert policy.queue_depth_window_seconds() == DEFAULT_QUEUE_DEPTH_WINDOW_SECONDS
-    assert (
-        policy.queue_depth_threshold_fraction()
-        == DEFAULT_QUEUE_DEPTH_THRESHOLD_FRACTION
-    )
+    assert policy.queue_depth_threshold_fraction() == DEFAULT_QUEUE_DEPTH_THRESHOLD_FRACTION
 
 
 def test_config_override_persisted(tmp_path):
@@ -58,9 +54,7 @@ def test_config_override_persisted(tmp_path):
     assert policy.overflow_bytes() == 20 * 1024**3
     assert policy.ingest_queue_capacity() == 5000
 
-    persisted = json.loads(
-        (tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8")
-    )
+    persisted = json.loads((tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8"))
     assert persisted["hot_high_water_bytes"] == 10 * 1024**3
     assert persisted["hot_overflow_bytes"] == 20 * 1024**3
     assert persisted["ingest_queue_capacity"] == 5000
@@ -78,9 +72,7 @@ def test_policy_json_written_on_first_init(tmp_path):
 def test_policy_json_includes_three_new_window_fields(tmp_path):
     """Spec lines 50-56: policy.json carries the ADR-008 window config."""
     RetentionController({}, tmp_path)
-    persisted = json.loads(
-        (tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8")
-    )
+    persisted = json.loads((tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8"))
     assert persisted["hot_bytes_window_seconds"] == 60
     assert persisted["queue_depth_window_seconds"] == 30
     assert persisted["queue_depth_threshold_fraction"] == 0.8
@@ -99,9 +91,7 @@ def test_window_config_override_persisted(tmp_path):
     assert policy.queue_depth_window_seconds() == 45.0
     assert policy.queue_depth_threshold_fraction() == 0.7
 
-    persisted = json.loads(
-        (tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8")
-    )
+    persisted = json.loads((tmp_path / POLICY_DIR / POLICY_FILE).read_text(encoding="utf-8"))
     assert persisted["hot_bytes_window_seconds"] == 120.0
     assert persisted["queue_depth_window_seconds"] == 45.0
     assert persisted["queue_depth_threshold_fraction"] == 0.7
@@ -314,23 +304,28 @@ def test_classify_pressure_easing_returns_normal(tmp_path):
 
 import threading
 
+
 def test_classify_pressure_threadsafe_under_concurrent_load(tmp_path):
     """8 threads x 2k iters of classify+windowed-read; deque must remain
     structurally valid (1..64 3-tuples) and no exceptions."""
     rc = RetentionController({}, tmp_path)
     barrier = threading.Barrier(8)
     errors: list[Exception] = []
+
     def hammer():
         barrier.wait()
         try:
             for _ in range(2000):
                 rc.classify_pressure(rc.high_water_bytes() + 1, 0, 1000)
                 rc._sustained_fires(1000)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             errors.append(exc)
+
     ts = [threading.Thread(target=hammer) for _ in range(8)]
-    for t in ts: t.start()
-    for t in ts: t.join()
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
     assert errors == []
     assert 1 <= len(rc._samples) <= 64
     for entry in rc._samples:

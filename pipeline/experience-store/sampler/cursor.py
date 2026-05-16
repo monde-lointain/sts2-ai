@@ -18,8 +18,9 @@ import threading
 import time
 import uuid
 from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass
@@ -89,9 +90,7 @@ class CursorCache:
         if capacity < 1:
             raise ValueError(f"capacity must be >= 1; got {capacity}")
         if idle_timeout_seconds < 1:
-            raise ValueError(
-                f"idle_timeout_seconds must be >= 1; got {idle_timeout_seconds}"
-            )
+            raise ValueError(f"idle_timeout_seconds must be >= 1; got {idle_timeout_seconds}")
         self._capacity = capacity
         self._idle_ns = int(idle_timeout_seconds) * 1_000_000_000
         self._now_ns = now_ns

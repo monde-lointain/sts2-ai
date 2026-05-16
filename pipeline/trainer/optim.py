@@ -9,6 +9,7 @@ via :meth:`OptimController.pcgrad_wrap` (Phase-1 default: off — no-op).
 Owns no I/O. ``state_dict`` / ``load_state_dict`` shuttle optimizer +
 scheduler state through ``artifact_publisher`` for atomic checkpointing.
 """
+
 from __future__ import annotations
 
 import math
@@ -59,9 +60,7 @@ class StepStats:
 # ---------------------------------------------------------------------------
 # Cosine-with-warmup factor
 # ---------------------------------------------------------------------------
-def _cosine_warmup_factor(
-    step: int, warmup_steps: int, total_steps: int
-) -> float:
+def _cosine_warmup_factor(step: int, warmup_steps: int, total_steps: int) -> float:
     """Return the LR multiplier in [0, 1] for the LambdaLR schedule.
 
     - ``step ≤ warmup_steps``: linear ``step / warmup_steps`` (the
@@ -191,9 +190,7 @@ class OptimController:
         self.scheduler.load_state_dict(sd["scheduler"])
 
     # -------- phase-2 freeze-unfreeze hook ------------------------------
-    def register_param_group(
-        self, group_name: str, params: list[torch.nn.Parameter]
-    ) -> None:
+    def register_param_group(self, group_name: str, params: list[torch.nn.Parameter]) -> None:
         """Phase-2+ helper: associate ``group_name`` with ``params``.
 
         Phase-1 callers do not need this (a single implicit group covers

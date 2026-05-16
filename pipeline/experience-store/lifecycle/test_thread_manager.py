@@ -50,7 +50,7 @@ def test_thread_manager_on_error_invoked():
     mgr = LifecycleThreadManager(
         tick_fn=boom,
         interval_fn=lambda: 0.01,
-        on_error=lambda exc: seen.append(exc),
+        on_error=seen.append,
     )
     stop = threading.Event()
     mgr.start(stop)

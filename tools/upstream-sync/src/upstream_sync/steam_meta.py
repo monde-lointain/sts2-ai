@@ -42,9 +42,7 @@ def parse_appmanifest(path: Path) -> SteamMeta:
 
     missing = [k for k in ("buildid", "installdir", "LastUpdated") if k not in scalars]
     if missing:
-        raise ValueError(
-            f"appmanifest {path}: missing required key(s): {', '.join(missing)}"
-        )
+        raise ValueError(f"appmanifest {path}: missing required key(s): {', '.join(missing)}")
 
     last_raw = scalars["LastUpdated"]
     try:

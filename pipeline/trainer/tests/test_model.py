@@ -4,12 +4,12 @@ Covers the six unit tests called out in
 ``pipeline/trainer/docs/specs/modules/model.md`` §Testing Strategy plus an
 ONNX-export integration check.
 """
+
 from __future__ import annotations
 
 import importlib.util
 import io
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -21,12 +21,8 @@ from pipeline.trainer.model import TrainerNet
 from pipeline.trainer.run_config import NetworkConfig
 from pipeline.trainer.tensor_encoder import EncodedBatch
 
-
 _REGISTRY_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "contracts"
-    / "registry"
-    / "phase1-silent.json"
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
 )
 
 
@@ -85,7 +81,7 @@ def _make_batch(
     tokens = torch.randint(0, vocab_size, (batch_size, seq_len), dtype=torch.long)
     padding_mask = torch.zeros((batch_size, seq_len), dtype=torch.bool)
     legal_action_mask = torch.zeros((batch_size, action_space), dtype=torch.bool)
-    legal_action_mask[:, :max(1, action_space // 2)] = True
+    legal_action_mask[:, : max(1, action_space // 2)] = True
     policy_target = torch.zeros((batch_size, action_space), dtype=torch.float32)
     combat_sample_targets = torch.zeros((batch_size, 4), dtype=torch.float32)
     combat_summary_targets = torch.zeros((batch_size, 5), dtype=torch.float32)
@@ -125,9 +121,7 @@ def test_forward_shape_contract(
 ) -> None:
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
-    batch = _make_batch(
-        batch_size=4, seq_len=20, action_space=10, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=4, seq_len=20, action_space=10, vocab_size=len(registry))
     out = net(batch)
     assert out.policy_logits.shape == (4, 10)
     assert out.sample_preds.shape == (4, 4)
@@ -143,9 +137,7 @@ def test_forward_action_space_slicing(
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
     for a in (1, 3, 8, small_network_config.max_action_space):
-        batch = _make_batch(
-            batch_size=2, seq_len=8, action_space=a, vocab_size=len(registry)
-        )
+        batch = _make_batch(batch_size=2, seq_len=8, action_space=a, vocab_size=len(registry))
         out = net(batch)
         assert out.policy_logits.shape == (2, a)
 
@@ -156,9 +148,7 @@ def test_forward_action_space_slicing(
 def test_deterministic_forward(
     registry: ContentRegistry, small_network_config: NetworkConfig
 ) -> None:
-    batch = _make_batch(
-        batch_size=4, seq_len=20, action_space=10, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=4, seq_len=20, action_space=10, vocab_size=len(registry))
 
     torch.manual_seed(42)
     net_a = TrainerNet(small_network_config, registry)
@@ -189,9 +179,7 @@ def test_head_registry_isolates_additions(
     # ``eval()`` so dropout-free determinism makes "unchanged" a sharp
     # claim. The head-registry contract is structural, not a dropout test.
     net.eval()
-    batch = _make_batch(
-        batch_size=2, seq_len=12, action_space=5, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=2, seq_len=12, action_space=5, vocab_size=len(registry))
     with torch.no_grad():
         out_before = net(batch)
 
@@ -236,9 +224,7 @@ def test_compute_prior_logits_no_grad(
 ) -> None:
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
-    batch = _make_batch(
-        batch_size=3, seq_len=10, action_space=6, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=3, seq_len=10, action_space=6, vocab_size=len(registry))
     net.snapshot_prior()
     logits = net.compute_prior_logits(batch)
     assert logits.requires_grad is False
@@ -267,9 +253,7 @@ def test_prior_logits_match_current_after_snapshot(
     """Right after snapshot, prior logits must equal live logits bit-for-bit."""
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
-    batch = _make_batch(
-        batch_size=2, seq_len=8, action_space=4, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=2, seq_len=8, action_space=4, vocab_size=len(registry))
     net.eval()
     net.snapshot_prior()
     with torch.no_grad():
@@ -287,9 +271,7 @@ def test_state_dict_round_trip(
     torch.manual_seed(0)
     net_orig = TrainerNet(small_network_config, registry)
     net_orig.eval()
-    batch = _make_batch(
-        batch_size=2, seq_len=10, action_space=6, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=2, seq_len=10, action_space=6, vocab_size=len(registry))
     with torch.no_grad():
         out_orig = net_orig(batch)
 
@@ -326,9 +308,7 @@ def test_onnx_export_check_model(
     torch.manual_seed(0)
     net = TrainerNet(small_network_config, registry)
     net.eval()
-    batch = _make_batch(
-        batch_size=2, seq_len=10, action_space=6, vocab_size=len(registry)
-    )
+    batch = _make_batch(batch_size=2, seq_len=10, action_space=6, vocab_size=len(registry))
 
     # ``torch.onnx.export`` works on plain tensor inputs. Build a wrapper
     # that takes ``tokens``+``padding_mask``+``legal_action_mask`` and
@@ -353,9 +333,7 @@ def test_onnx_export_check_model(
                 combat_sample_targets=torch.zeros((tokens.shape[0], 4)),
                 combat_summary_targets=torch.zeros((tokens.shape[0], 5)),
                 hp_frac_target=torch.zeros((tokens.shape[0],)),
-                prior_logits=torch.zeros_like(
-                    legal_action_mask, dtype=torch.float32
-                ),
+                prior_logits=torch.zeros_like(legal_action_mask, dtype=torch.float32),
                 macro_context=torch.zeros((tokens.shape[0], 11)),
                 metadata={},
             )

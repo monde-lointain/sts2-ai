@@ -6,6 +6,7 @@ line-length = 100
 target-version = "py312"
 extend-exclude = [
     "contracts/generated",
+    "pipeline/common/trajectory_proto.py",  # protoc-generated; do not lint
     ".venv",
     "build",
     "build-*",
@@ -37,22 +38,92 @@ select = [
     "RUF",  # ruff-specific
 ]
 ignore = [
-    "PLR0913",  # too-many-arguments — sim/training APIs legitimately have many params
-    "PLR0915",  # too-many-statements — game loops are long
+    # Design metrics — sim/training APIs legitimately exceed default thresholds.
+    "PLR0911",  # too-many-return-statements
+    "PLR0912",  # too-many-branches
+    "PLR0913",  # too-many-arguments
+    "PLR0915",  # too-many-statements
     "PLR2004",  # magic-value — pervasive in math/sim code
-    "S101",    # assert-used — pytest needs it; per-file scope below covers tests
-    "RET504",  # unnecessary-assignment-before-return — readability often wins
+    # Patterns we accept codebase-wide.
+    "S101",     # assert-used — pytest needs it; covered per-file below too
+    "RET504",   # unnecessary-assignment-before-return — readability often wins
+    "PLC0415",  # import-outside-top-level — lazy/conditional imports intentional
+    "RUF002",   # ambiguous unicode in docstrings — narrative text is fine
+    "RUF003",   # ambiguous unicode in comments
+    "SIM102",   # nested-if vs elif — readability case-by-case
+    "SIM105",   # suppressible-exception — `contextlib.suppress` not always clearer
+    "SIM108",   # if-else-block-instead-of-if-exp — readability case-by-case
+    "ARG002",   # unused-method-argument — interface-conforming impls legitimate
+    "ARG005",   # unused-lambda-argument — same
+    "PLW2901",  # redefined-loop-name — intentional in some patterns
+    "RUF001",   # ambiguous unicode in strings — narrative text legitimate
+    "SIM117",   # nested-with — readability case-by-case
+    # Pathlib migration is "nice to have"; codebase uses os.path consistently.
+    # Migrate in a dedicated sweep, not this baseline.
+    "PTH100", "PTH103", "PTH105", "PTH108", "PTH109", "PTH110",
+    "PTH117", "PTH118", "PTH119", "PTH120", "PTH123",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests legitimately use asserts, magic numbers, unused fixture args.
-"**/test_*.py" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
-"**/*_test.py" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
-"**/tests/**" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
-# Claude hooks: standalone scripts, not modules.
-".claude/hooks/*.py" = ["E501"]
-# Pre-commit hooks: same.
-".pre-commit-hooks/*.py" = ["E501"]
+# Tests legitimately use asserts, magic numbers, unused fixture args, etc.
+# Marker-uppercase test names (test_xxx_NOT_yyy, test_xxx_NEVER_yyy) are
+# intentional readability convention.
+_test_ignores = []  # documented in adjacent lists below
+"**/test_*.py" = [
+    "S101", "S105", "S106", "S108", "S110", "S112", "S310", "S311", "S603", "S607",
+    "PLR2004", "PLR0911", "PLR0912", "PLR0915",
+    "ARG001", "ARG002", "ARG005",
+    "BLE001", "B017",
+    "N802", "N818",
+    "E402", "E501", "E741",
+    "DTZ005", "DTZ006", "DTZ007",
+    "SIM115", "PLC0206", "PLW1510",
+]
+"**/*_test.py" = [
+    "S101", "S105", "S106", "S108", "S110", "S112", "S310", "S311", "S603", "S607",
+    "PLR2004", "PLR0911", "PLR0912", "PLR0915",
+    "ARG001", "ARG002", "ARG005",
+    "BLE001", "B017",
+    "N802", "N818",
+    "E402", "E501", "E741",
+    "DTZ005", "DTZ006", "DTZ007",
+    "SIM115", "PLC0206", "PLW1510",
+]
+"**/tests/**" = [
+    "S101", "S105", "S106", "S108", "S110", "S112", "S310", "S311", "S603", "S607",
+    "PLR2004", "PLR0911", "PLR0912", "PLR0915",
+    "ARG001", "ARG002", "ARG005",
+    "BLE001", "B017",
+    "N802", "N818",
+    "E402", "E501", "E741",
+    "DTZ005", "DTZ006", "DTZ007",
+    "SIM115", "PLC0206", "PLW1510",
+]
+# Claude hooks: standalone scripts invoking git/python/process tools.
+# subprocess + partial paths intentional; broad-except wraps signal handling.
+".claude/hooks/*.py" = ["E501", "S603", "S607", "BLE001", "PLC0415", "PLW1510"]
+# Pre-commit hooks: same usage pattern as Claude hooks.
+".pre-commit-hooks/*.py" = ["E501", "S603", "S607", "BLE001", "PLC0415", "PLW1510"]
+# Trainer: torch conventions; subprocess for git-rev; URL open for data ingest.
+# BLE001 in metrics emission (don't fail training on metrics); N818 for
+# numeric-suffix exception names (_SchemaDrain503 is the HTTP-status pattern).
+"pipeline/trainer/**" = ["N812", "S603", "S607", "S310", "S110", "BLE001", "N818", "B904"]
+# Sim/RNG code: random.* is for game state, not security.
+# try/except/pass in cleanup paths and metrics emission is intentional.
+# BLE001 wraps service-loop resilience (catch-all defensive boundary).
+"pipeline/experience-store/**" = ["S311", "S110", "S112", "BLE001"]
+"pipeline/inference-server/**" = ["S311"]
+"pipeline/rollout-workers/**" = ["S311"]
+# upstream-sync: subprocess git ops; "status_token" is a string-literal marker
+# (not a credential); jinja2 templates render code, not HTML; /tmp lockfile.
+"tools/upstream-sync/**" = ["S311", "S603", "S607", "S105", "S108", "S701"]
+# AST analyzer: invokes external tools via subprocess; doc strings have long
+# narrative lines + unicode (em-dashes, curly quotes).
+"tools/ast-analyzer/**" = ["S603", "S607", "BLE001", "E501", "E741", "RUF001"]
+# Service entry points use sys.path manipulation before module imports.
+"**/__init__.py" = ["E402"]
+"**/service.py" = ["E402"]
+"**/cli.py" = ["E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pipeline", "tools", "upstream_sync"]

@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import pytest
-
 from proto import (
     CombatOutcomeSample,
     CombatOutcomeSummary,
     DecisionType,
-    Trajectory,
     TrajectoryStep,
 )
+
 from sampler.framing import (
     decode_varint,
     encode_varint,
@@ -19,7 +18,6 @@ from sampler.framing import (
     frame_trailer,
     is_degenerate_combat_sample,
 )
-
 
 # ---------- varint ----------
 

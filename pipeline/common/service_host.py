@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import argparse
 import json
-from pathlib import Path
 import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 
 def load_config(path: Path) -> dict:

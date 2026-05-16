@@ -7,6 +7,7 @@ Heavy mocking is intentional: ``TrainDriver`` is the orchestrator; the
 real submodules have their own unit tests. Here we verify the loop's
 control flow — cadences, NaN guard, shutdown semantics, prior snapshot.
 """
+
 from __future__ import annotations
 
 import threading
@@ -21,7 +22,6 @@ import torch
 from pipeline.trainer.artifact_publisher import PublishRequest
 from pipeline.trainer.run_config import CheckpointConfig, RunConfig
 from pipeline.trainer.train_driver import TrainDriver, _encoded_to_device
-
 
 _CFG_PATH = Path(__file__).resolve().parents[1] / "config" / "local.json"
 
@@ -212,7 +212,8 @@ def _run_driver_for(
 def test_cadence_by_step_fires_once_at_threshold() -> None:
     """N=10, M=huge → exactly one publish after 10 steps."""
     driver, mocks, stop = _make_driver(
-        every_n_steps=10, every_m_minutes=60 * 24  # very large
+        every_n_steps=10,
+        every_m_minutes=60 * 24,  # very large
     )
     _run_driver_for(driver, stop, n_steps=10)
 
@@ -279,8 +280,7 @@ def test_cadence_by_time_fires_once(monkeypatch: pytest.MonkeyPatch) -> None:
 
     publish_calls = mocks["publisher"].request_publish.call_args_list
     assert len(publish_calls) >= 1, (
-        "expected ≥1 publish after time-cadence trip; got none. "
-        "OR semantics for cadence is broken."
+        "expected ≥1 publish after time-cadence trip; got none. OR semantics for cadence is broken."
     )
     # Verify the time-cadence fired EARLIER than the step cadence
     # (step cadence is N=10_000, so step-cadence would never fire here).
@@ -313,9 +313,7 @@ def test_nan_loss_triggers_shutdown() -> None:
     assert stop.is_set(), "stop_event must be set when NaN detected"
     mocks["metrics"].inc.assert_any_call("sts2_q10_nan_loss_total")
     # Optim.step should NOT have been called (NaN guard runs before it).
-    assert mocks["optim"].step.call_count == 0, (
-        "optim.step should not run after NaN detection"
-    )
+    assert mocks["optim"].step.call_count == 0, "optim.step should not run after NaN detection"
     # Exception propagated from the daemon thread.
     exc = captured.get("exc")
     assert isinstance(exc, RuntimeError)
@@ -343,8 +341,7 @@ def test_sigterm_mid_step_completes_the_step() -> None:
 
     # The 1st optim.step ran to completion (we count its call).
     assert mocks["optim"].step.call_count == 1, (
-        f"step should complete before exit; saw "
-        f"{mocks['optim'].step.call_count} optim.step calls"
+        f"step should complete before exit; saw {mocks['optim'].step.call_count} optim.step calls"
     )
     # Driver's step counter advanced to 1 (the bump after optim.step).
     assert driver.current_step() == 1
@@ -378,9 +375,7 @@ def test_prior_snapshot_cadence_fires_once_per_period() -> None:
 
     # Two snapshots: at step 50 and step 100.
     snap_count = mocks["model"].snapshot_prior.call_count
-    assert snap_count == 2, (
-        f"expected 2 snapshots at steps 50 and 100; got {snap_count}"
-    )
+    assert snap_count == 2, f"expected 2 snapshots at steps 50 and 100; got {snap_count}"
 
 
 # ---------------------------------------------------------------------------
@@ -388,7 +383,7 @@ def test_prior_snapshot_cadence_fires_once_per_period() -> None:
 # ---------------------------------------------------------------------------
 def test_current_step_is_atomic() -> None:
     """current_step returns 0 pre-start and reflects increments thereafter."""
-    driver, mocks, stop = _make_driver()
+    driver, _mocks, stop = _make_driver()
     assert driver.current_step() == 0
     _run_driver_for(driver, stop, n_steps=3, timeout_seconds=3.0)
     assert driver.current_step() >= 3
@@ -396,7 +391,7 @@ def test_current_step_is_atomic() -> None:
 
 def test_apply_schedule_event_is_phase1_noop() -> None:
     """Phase-1: apply_schedule_event records but does not touch optim."""
-    driver, mocks, stop = _make_driver()
+    driver, mocks, _stop = _make_driver()
     driver.apply_schedule_event("freeze_combat")
     # No optim toggle should have happened.
     mocks["optim"].set_requires_grad.assert_not_called()

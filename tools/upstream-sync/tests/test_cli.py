@@ -8,10 +8,7 @@ corrupted state).
 from __future__ import annotations
 
 import errno
-import io
 import json
-import sys
-from argparse import Namespace
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock
@@ -20,24 +17,25 @@ import pytest
 
 from upstream_sync import cli
 
-
 # --------------------------------------------------------------------------- #
 # Helpers                                                                     #
 # --------------------------------------------------------------------------- #
 
 
-def _write_appmanifest(steam_home: Path, buildid: str, installdir: str = "Slay the Spire 2") -> Path:
+def _write_appmanifest(
+    steam_home: Path, buildid: str, installdir: str = "Slay the Spire 2"
+) -> Path:
     """Create a minimal valid appmanifest_2868840.acf."""
     apps = steam_home / "steamapps"
     apps.mkdir(parents=True, exist_ok=True)
     target = apps / "appmanifest_2868840.acf"
     target.write_text(
         '"AppState"\n'
-        '{\n'
+        "{\n"
         f'\t"buildid"\t\t"{buildid}"\n'
         f'\t"installdir"\t\t"{installdir}"\n'
         f'\t"LastUpdated"\t\t"1715000000"\n'
-        '}\n',
+        "}\n",
         encoding="utf-8",
     )
     return target
@@ -198,8 +196,12 @@ class TestExtractSubcommand:
         bootstrap_mock = MagicMock(return_value="abc1234")
         monkeypatch.setattr(cli, "bootstrap", bootstrap_mock)
         # Should NOT be called on first run.
-        monkeypatch.setattr(cli, "assert_clean", MagicMock(side_effect=AssertionError("must not be called")))
-        monkeypatch.setattr(cli, "extract_to_staging", MagicMock(side_effect=AssertionError("must not be called")))
+        monkeypatch.setattr(
+            cli, "assert_clean", MagicMock(side_effect=AssertionError("must not be called"))
+        )
+        monkeypatch.setattr(
+            cli, "extract_to_staging", MagicMock(side_effect=AssertionError("must not be called"))
+        )
         _patch_flock_ok(monkeypatch)
 
         rc = cli.main(
@@ -243,7 +245,9 @@ class TestExtractSubcommand:
         monkeypatch.setattr(cli, "_resolve_monorepo", lambda *_a, **_kw: monorepo)
         assert_clean_mock = MagicMock()
         extract_mock = MagicMock(
-            return_value=MagicMock(staging_dir=tmp_path / "staging", file_count=10, unmatched_paths=[])
+            return_value=MagicMock(
+                staging_dir=tmp_path / "staging", file_count=10, unmatched_paths=[]
+            )
         )
         rsync_mock = MagicMock()
         commit_mock = MagicMock(return_value="def5678")
@@ -251,7 +255,9 @@ class TestExtractSubcommand:
         monkeypatch.setattr(cli, "extract_to_staging", extract_mock)
         monkeypatch.setattr(cli, "rsync_with_delete", rsync_mock)
         monkeypatch.setattr(cli, "commit_and_tag", commit_mock)
-        monkeypatch.setattr(cli, "bootstrap", MagicMock(side_effect=AssertionError("must not be called")))
+        monkeypatch.setattr(
+            cli, "bootstrap", MagicMock(side_effect=AssertionError("must not be called"))
+        )
         _patch_flock_ok(monkeypatch)
 
         rc = cli.main(
@@ -293,7 +299,9 @@ class TestDiffSubcommand:
         (upstream_tree / ".git").mkdir()
 
         monkeypatch.setattr(cli, "_resolve_monorepo", lambda *_a, **_kw: monorepo)
-        monkeypatch.setattr(cli, "list_tags", lambda *_a, **_kw: ["v0.100.0", "v0.103.2", "v0.105.1"])
+        monkeypatch.setattr(
+            cli, "list_tags", lambda *_a, **_kw: ["v0.100.0", "v0.103.2", "v0.105.1"]
+        )
 
         captured_args: dict[str, str] = {}
 
@@ -312,9 +320,7 @@ class TestDiffSubcommand:
         out = capsys.readouterr().out
         assert "cards" in out
 
-    def test_explicit_from_to_used(
-        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_explicit_from_to_used(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         monorepo = _make_monorepo(tmp_path)
         upstream_tree = tmp_path / "upstream"
         upstream_tree.mkdir()
@@ -331,9 +337,7 @@ class TestDiffSubcommand:
         monkeypatch.setattr(cli, "analyze_diff", fake_analyze)
         _patch_flock_ok(monkeypatch)
 
-        rc = cli.main(
-            ["diff", "--from", "v1", "--to", "v3", "--upstream-tree", str(upstream_tree)]
-        )
+        rc = cli.main(["diff", "--from", "v1", "--to", "v3", "--upstream-tree", str(upstream_tree)])
         assert rc == 0
         assert captured["from_tag"] == "v1"
         assert captured["to_tag"] == "v3"
@@ -355,19 +359,23 @@ class TestPortDecisionsSubcommand:
         monkeypatch.setattr(cli, "_resolve_monorepo", lambda *_a, **_kw: monorepo)
         monkeypatch.setattr(cli, "list_tags", lambda *_a, **_kw: ["v0.103.2", "v0.105.1"])
         monkeypatch.setattr(
-            cli, "analyze_diff", lambda *_a, **_kw: MagicMock(buckets={}, discovered_characters=set())
+            cli,
+            "analyze_diff",
+            lambda *_a, **_kw: MagicMock(buckets={}, discovered_characters=set()),
         )
         monkeypatch.setattr(cli, "fetch_patch_notes", lambda *_a, **_kw: [])
-        monkeypatch.setattr(cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[]))
-        monkeypatch.setattr(cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[]))
+        monkeypatch.setattr(
+            cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[])
+        )
+        monkeypatch.setattr(
+            cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[])
+        )
         monkeypatch.setattr(cli, "render", lambda *_a, **_kw: "# rendered doc")
         target = monorepo / "engine/headless/docs/specs/01-vA-to-vB-port-decisions.md"
         monkeypatch.setattr(cli, "write_doc", lambda *_a, **_kw: target)
         _patch_flock_ok(monkeypatch)
 
-        rc = cli.main(
-            ["port-decisions", "--upstream-tree", str(upstream_tree)]
-        )
+        rc = cli.main(["port-decisions", "--upstream-tree", str(upstream_tree)])
         assert rc == 0
         out = capsys.readouterr().out
         assert str(target) in out
@@ -412,8 +420,12 @@ class TestSyncSubcommand:
             lambda *_a, **_kw: MagicMock(buckets={}, discovered_characters=set()),
         )
         monkeypatch.setattr(cli, "fetch_patch_notes", lambda *_a, **_kw: [])
-        monkeypatch.setattr(cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[]))
-        monkeypatch.setattr(cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[]))
+        monkeypatch.setattr(
+            cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[])
+        )
+        monkeypatch.setattr(
+            cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[])
+        )
         monkeypatch.setattr(cli, "render", lambda *_a, **_kw: "# doc")
         out_path = monorepo / "engine/headless/docs/specs/01-v0.103.2-to-v0.105.1-port-decisions.md"
         monkeypatch.setattr(cli, "write_doc", lambda *_a, **_kw: out_path)
@@ -448,7 +460,9 @@ class TestSyncSubcommand:
 
         monkeypatch.setattr(cli, "_resolve_monorepo", lambda *_a, **_kw: monorepo)
         # GDRE-using helpers MUST NOT be called.
-        monkeypatch.setattr(cli, "extract_to_staging", MagicMock(side_effect=AssertionError("nope")))
+        monkeypatch.setattr(
+            cli, "extract_to_staging", MagicMock(side_effect=AssertionError("nope"))
+        )
         monkeypatch.setattr(cli, "rsync_with_delete", MagicMock(side_effect=AssertionError("nope")))
         monkeypatch.setattr(cli, "list_tags", lambda *_a, **_kw: ["v0.103.2", "v0.105.1"])
         monkeypatch.setattr(cli, "bootstrap", MagicMock(return_value="aaa"))
@@ -458,8 +472,12 @@ class TestSyncSubcommand:
             lambda *_a, **_kw: MagicMock(buckets={}, discovered_characters=set()),
         )
         monkeypatch.setattr(cli, "fetch_patch_notes", lambda *_a, **_kw: [])
-        monkeypatch.setattr(cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[]))
-        monkeypatch.setattr(cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[]))
+        monkeypatch.setattr(
+            cli, "correlate", lambda *_a, **_kw: MagicMock(matches={}, unmatched_notes=[])
+        )
+        monkeypatch.setattr(
+            cli, "build_q4_advisory", lambda *_a, **_kw: MagicMock(added=[], removed=[])
+        )
         monkeypatch.setattr(cli, "render", lambda *_a, **_kw: "# doc")
         out_path = monorepo / "engine/headless/docs/specs/01-v0-to-v0-port-decisions.md"
         monkeypatch.setattr(cli, "write_doc", lambda *_a, **_kw: out_path)

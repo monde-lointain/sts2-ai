@@ -34,20 +34,20 @@ Shutdown semantics:
 - We DO NOT call ``metrics.shutdown()`` here — that is ``service.py``'s
   responsibility on full SIGTERM.
 """
+
 from __future__ import annotations
 
 import io
 import logging
 import threading
 import time
-from typing import Any, Optional
+from typing import Any
 
 import torch
 
 from pipeline.trainer.artifact_publisher import PublishRequest
 from pipeline.trainer.run_config import RunConfig, RunProvenance
 from pipeline.trainer.tensor_encoder import EncodedBatch
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ class TrainDriver:
         optim: Any,
         publisher: Any,
         metrics: Any,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ) -> None:
         self._config = config
         self._run_provenance = run_provenance
@@ -163,8 +163,8 @@ class TrainDriver:
         self._schedule_events: list[str] = []
 
         # Thread + stop event handles (set in start()).
-        self._thread: Optional[threading.Thread] = None
-        self._stop_event: Optional[threading.Event] = None
+        self._thread: threading.Thread | None = None
+        self._stop_event: threading.Event | None = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -214,7 +214,7 @@ class TrainDriver:
         while not stop_event.is_set():
             try:
                 ran = self._one_step(stop_event)
-            except BaseException:  # noqa: BLE001 — log + propagate via stop_event
+            except BaseException:
                 _LOG.exception("train_driver: fatal error in step")
                 stop_event.set()
                 raise
@@ -342,17 +342,19 @@ class TrainDriver:
         try:
             model_sd_bytes = _serialize_model_state_dict(self._model)
             optim_sd_bytes = _serialize_optim_state_dict(self._optim)
-        except BaseException:  # noqa: BLE001
+        except BaseException:
             _LOG.exception(
-                "train_driver: state_dict serialization failed at step=%d; "
-                "skipping publish",
+                "train_driver: state_dict serialization failed at step=%d; skipping publish",
                 step,
             )
             return
         try:
-            loss_scalar = float(loss_total.detach().item()) \
-                if isinstance(loss_total, torch.Tensor) else float(loss_total)
-        except BaseException:  # noqa: BLE001
+            loss_scalar = (
+                float(loss_total.detach().item())
+                if isinstance(loss_total, torch.Tensor)
+                else float(loss_total)
+            )
+        except BaseException:
             loss_scalar = float("nan")
         req = PublishRequest(
             step=int(step),
@@ -369,10 +371,9 @@ class TrainDriver:
         if step >= self._next_prior_snapshot_at_step:
             try:
                 self._model.snapshot_prior()
-            except BaseException:  # noqa: BLE001 — log + continue
+            except BaseException:
                 _LOG.exception(
-                    "train_driver: model.snapshot_prior() failed at step=%d; "
-                    "continuing",
+                    "train_driver: model.snapshot_prior() failed at step=%d; continuing",
                     step,
                 )
             self._next_prior_snapshot_at_step = step + self.kl_prior_refresh_steps
@@ -395,10 +396,9 @@ class TrainDriver:
         try:
             model_sd_bytes = _serialize_model_state_dict(self._model)
             optim_sd_bytes = _serialize_optim_state_dict(self._optim)
-        except BaseException:  # noqa: BLE001
+        except BaseException:
             _LOG.warning(
-                "train_driver: final-publish serialization failed at "
-                "step=%d; skipping",
+                "train_driver: final-publish serialization failed at step=%d; skipping",
                 step_now,
             )
             return
@@ -410,7 +410,7 @@ class TrainDriver:
         )
         try:
             self._publisher.request_publish(req)
-        except BaseException:  # noqa: BLE001
+        except BaseException:
             _LOG.warning("train_driver: final-publish post failed; ignoring")
 
 
@@ -436,7 +436,7 @@ def _is_nan_or_inf(t: Any) -> bool:
         f = float(t)
     except (TypeError, ValueError):
         return False
-    return f != f or f in (float("inf"), float("-inf"))
+    return f != f or f in (float("inf"), float("-inf"))  # noqa: PLR0124 — NaN check
 
 
 def _serialize_model_state_dict(model: Any) -> bytes:

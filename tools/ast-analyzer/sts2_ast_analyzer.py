@@ -18,7 +18,6 @@ import sys
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 import clang.cindex as ci
 
@@ -41,22 +40,29 @@ def _detect_resource_dir() -> Path | None:
         try:
             out = subprocess.check_output(
                 [clang_bin, "-print-resource-dir"],
-                stderr=subprocess.DEVNULL, text=True,
+                stderr=subprocess.DEVNULL,
+                text=True,
             ).strip()
             cand = Path(out) / "include"
             if (cand / "stddef.h").is_file():
                 return cand
         except (subprocess.CalledProcessError, OSError):
             pass
-    for base in ("/usr/lib/llvm-18", "/usr/lib/llvm-17", "/usr/lib/llvm-16",
-                 "/usr/lib/llvm-15", "/usr/lib/llvm-14"):
+    for base in (
+        "/usr/lib/llvm-18",
+        "/usr/lib/llvm-17",
+        "/usr/lib/llvm-16",
+        "/usr/lib/llvm-15",
+        "/usr/lib/llvm-14",
+    ):
         for p in Path(base).glob("lib/clang/*/include/stddef.h"):
             return p.parent
     return None
 
 
 CXX_ARGS = [
-    "-x", "c++",
+    "-x",
+    "c++",
     "-std=c++20",
     f"-I{INCLUDE_DIR}",
     f"-I{SRC_DIR}",
@@ -83,15 +89,15 @@ LOOP_KINDS = {
 }
 DECISION_BRANCHES = {
     # kind                          (cyclomatic+, branches+)
-    ci.CursorKind.IF_STMT:          (1, 2),
-    ci.CursorKind.WHILE_STMT:       (1, 2),
-    ci.CursorKind.FOR_STMT:         (1, 2),
-    ci.CursorKind.CXX_FOR_RANGE_STMT:(1, 2),
-    ci.CursorKind.DO_STMT:          (1, 2),
+    ci.CursorKind.IF_STMT: (1, 2),
+    ci.CursorKind.WHILE_STMT: (1, 2),
+    ci.CursorKind.FOR_STMT: (1, 2),
+    ci.CursorKind.CXX_FOR_RANGE_STMT: (1, 2),
+    ci.CursorKind.DO_STMT: (1, 2),
     ci.CursorKind.CONDITIONAL_OPERATOR: (1, 2),  # a ? b : c
-    ci.CursorKind.CASE_STMT:        (1, 1),
-    ci.CursorKind.DEFAULT_STMT:     (0, 1),
-    ci.CursorKind.CXX_CATCH_STMT:   (1, 1),
+    ci.CursorKind.CASE_STMT: (1, 1),
+    ci.CursorKind.DEFAULT_STMT: (0, 1),
+    ci.CursorKind.CXX_CATCH_STMT: (1, 1),
 }
 
 
@@ -141,16 +147,17 @@ def is_short_circuit_binop(c: ci.Cursor) -> str | None:
         s = t.spelling
         if s in ("&&", "||"):
             tloc = t.extent.start
-            if (tloc.line, tloc.column) >= (lhs_end.line, lhs_end.column) and \
-               (tloc.line, tloc.column) <= (rhs_start.line, rhs_start.column):
+            if (tloc.line, tloc.column) >= (lhs_end.line, lhs_end.column) and (
+                tloc.line,
+                tloc.column,
+            ) <= (rhs_start.line, rhs_start.column):
                 return s
     return None
 
 
 def assignment_op(c: ci.Cursor) -> str | None:
     """If c is `=` / `+=` / `-=` / `*=` / `/=` / `%=` etc., return op text."""
-    if c.kind != ci.CursorKind.BINARY_OPERATOR and \
-       c.kind != ci.CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
+    if c.kind not in (ci.CursorKind.BINARY_OPERATOR, ci.CursorKind.COMPOUND_ASSIGNMENT_OPERATOR):
         return None
     children = list(c.get_children())
     if len(children) != 2:
@@ -161,8 +168,10 @@ def assignment_op(c: ci.Cursor) -> str | None:
         s = t.spelling
         if s in ("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>="):
             tloc = t.extent.start
-            if (tloc.line, tloc.column) >= (lhs_end.line, lhs_end.column) and \
-               (tloc.line, tloc.column) <= (rhs_start.line, rhs_start.column):
+            if (tloc.line, tloc.column) >= (lhs_end.line, lhs_end.column) and (
+                tloc.line,
+                tloc.column,
+            ) <= (rhs_start.line, rhs_start.column):
                 return s
     return None
 
@@ -179,32 +188,32 @@ def unary_inc_dec(c: ci.Cursor) -> str | None:
 @dataclass
 class DefUse:
     name: str
-    decl_kind: str           # parameter | local | member | unknown
-    decl_line: int           # 0 if unknown (e.g. parameter on method)
+    decl_kind: str  # parameter | local | member | unknown
+    decl_line: int  # 0 if unknown (e.g. parameter on method)
     defs: list[dict] = field(default_factory=list)  # [{line, kind: init/assign/compound/increment}]
     uses: list[int] = field(default_factory=list)
 
 
 @dataclass
 class FuncInfo:
-    qualified: str           # "Combat::play_card", "powers::find#1", etc.
+    qualified: str  # "Combat::play_card", "powers::find#1", etc.
     display_name: str
     spelling: str
     file: str
     line: int
     end_line: int
-    parent_kind: str         # class | struct | namespace | global
+    parent_kind: str  # class | struct | namespace | global
     parent_name: str
     is_method: bool
     is_static: bool
     is_const: bool
     is_template: bool
-    is_overload: int         # 0 = unique, otherwise 1-based overload index
+    is_overload: int  # 0 = unique, otherwise 1-based overload index
     return_type: str
-    parameters: list[dict]   # [{name, type}]
+    parameters: list[dict]  # [{name, type}]
     decisions: list[dict] = field(default_factory=list)
     cyclomatic_complexity: int = 1
-    branch_count: int = 0    # number of independent branches to cover
+    branch_count: int = 0  # number of independent branches to cover
     statements: int = 0
     def_use: dict[str, dict] = field(default_factory=dict)
 
@@ -212,11 +221,11 @@ class FuncInfo:
 @dataclass
 class TypeInfo:
     name: str
-    kind: str                # class | struct
+    kind: str  # class | struct
     file: str
     line: int
-    fields: list[dict]       # [{name, type, default?}]
-    methods: list[str]       # qualified names referencing FuncInfo
+    fields: list[dict]  # [{name, type, default?}]
+    methods: list[str]  # qualified names referencing FuncInfo
     has_virtual: bool
     is_polymorphic: bool
 
@@ -225,11 +234,12 @@ class TypeInfo:
 class NamespaceInfo:
     name: str
     files: list[str]
-    free_functions: list[str]   # qualified names
+    free_functions: list[str]  # qualified names
 
 
 # -----------------------------------------------------------------------------
 # Pass 1: enumerate types and free functions
+
 
 class WorldModel:
     def __init__(self):
@@ -252,15 +262,23 @@ class WorldModel:
         spelling = c.spelling or c.displayname
         name = f"{parent_qual}::{spelling}" if parent_qual else spelling
         ti = TypeInfo(
-            name=name, kind=kind, file=rel, line=loc.line,
-            fields=[], methods=[], has_virtual=False, is_polymorphic=False,
+            name=name,
+            kind=kind,
+            file=rel,
+            line=loc.line,
+            fields=[],
+            methods=[],
+            has_virtual=False,
+            is_polymorphic=False,
         )
         for ch in c.get_children():
             if ch.kind == ci.CursorKind.FIELD_DECL:
                 ti.fields.append({"name": ch.spelling, "type": ch.type.spelling})
-            elif ch.kind in (ci.CursorKind.CXX_METHOD,
-                             ci.CursorKind.CONSTRUCTOR,
-                             ci.CursorKind.DESTRUCTOR):
+            elif ch.kind in (
+                ci.CursorKind.CXX_METHOD,
+                ci.CursorKind.CONSTRUCTOR,
+                ci.CursorKind.DESTRUCTOR,
+            ):
                 if ch.is_virtual_method() or ch.is_pure_virtual_method():
                     ti.has_virtual = True
                     ti.is_polymorphic = True
@@ -286,9 +304,8 @@ def parent_qualifier(c: ci.Cursor) -> tuple[str, str]:
         chain.append(p.spelling or "")
         if p.kind in (ci.CursorKind.CLASS_DECL, ci.CursorKind.STRUCT_DECL):
             kind = "class" if p.kind == ci.CursorKind.CLASS_DECL else "struct"
-        elif p.kind == ci.CursorKind.NAMESPACE:
-            if kind == "global":
-                kind = "namespace"
+        elif p.kind == ci.CursorKind.NAMESPACE and kind == "global":
+            kind = "namespace"
         p = p.semantic_parent
     chain.reverse()
     return kind, "::".join(s for s in chain if s)
@@ -310,9 +327,11 @@ def build_function(c: ci.Cursor, world: WorldModel) -> FuncInfo | None:
 
     rel = str(Path(c.location.file.name).relative_to(REPO_ROOT)).replace("\\", "/")
     parent_kind, parent_name = parent_qualifier(c)
-    is_method = c.kind in (ci.CursorKind.CXX_METHOD,
-                           ci.CursorKind.CONSTRUCTOR,
-                           ci.CursorKind.DESTRUCTOR)
+    is_method = c.kind in (
+        ci.CursorKind.CXX_METHOD,
+        ci.CursorKind.CONSTRUCTOR,
+        ci.CursorKind.DESTRUCTOR,
+    )
     # A FUNCTION_TEMPLATE whose parent is a class/struct is a member-function
     # template (e.g. Rng::shuffle). Treat it as a method for grouping.
     if c.kind == ci.CursorKind.FUNCTION_TEMPLATE and parent_kind in ("class", "struct"):
@@ -329,8 +348,7 @@ def build_function(c: ci.Cursor, world: WorldModel) -> FuncInfo | None:
         return None
     world._seen_funcs.add(key)
 
-    params = [{"name": a.spelling, "type": a.type.spelling}
-              for a in c.get_arguments()]
+    params = [{"name": a.spelling, "type": a.type.spelling} for a in c.get_arguments()]
     fn = FuncInfo(
         qualified=qual + (f"#{ovr}" if ovr > 1 else ""),
         display_name=c.displayname,
@@ -353,6 +371,7 @@ def build_function(c: ci.Cursor, world: WorldModel) -> FuncInfo | None:
 
 # -----------------------------------------------------------------------------
 # Pass 2: walk function body for decisions and def-use
+
 
 class BodyAnalyzer:
     def __init__(self, fn: FuncInfo):
@@ -397,9 +416,14 @@ class BodyAnalyzer:
                 d = self.get_or_create(child)
                 d.defs.append({"line": child.location.line, "kind": "parameter"})
 
-        body = next((ch for ch in c.get_children()
-                     if ch.kind == ci.CursorKind.COMPOUND_STMT
-                     or ch.kind == ci.CursorKind.CXX_TRY_STMT), None)
+        body = next(
+            (
+                ch
+                for ch in c.get_children()
+                if ch.kind in (ci.CursorKind.COMPOUND_STMT, ci.CursorKind.CXX_TRY_STMT)
+            ),
+            None,
+        )
         if body is None:
             return
         self._walk(body)
@@ -414,13 +438,20 @@ class BodyAnalyzer:
             kind = c.kind
 
             # ---- Statement counting (rough)
-            if kind in (ci.CursorKind.DECL_STMT,
-                        ci.CursorKind.RETURN_STMT,
-                        ci.CursorKind.IF_STMT, ci.CursorKind.SWITCH_STMT,
-                        ci.CursorKind.WHILE_STMT, ci.CursorKind.FOR_STMT,
-                        ci.CursorKind.CXX_FOR_RANGE_STMT, ci.CursorKind.DO_STMT,
-                        ci.CursorKind.BREAK_STMT, ci.CursorKind.CONTINUE_STMT,
-                        ci.CursorKind.CXX_TRY_STMT, ci.CursorKind.CXX_THROW_EXPR):
+            if kind in (
+                ci.CursorKind.DECL_STMT,
+                ci.CursorKind.RETURN_STMT,
+                ci.CursorKind.IF_STMT,
+                ci.CursorKind.SWITCH_STMT,
+                ci.CursorKind.WHILE_STMT,
+                ci.CursorKind.FOR_STMT,
+                ci.CursorKind.CXX_FOR_RANGE_STMT,
+                ci.CursorKind.DO_STMT,
+                ci.CursorKind.BREAK_STMT,
+                ci.CursorKind.CONTINUE_STMT,
+                ci.CursorKind.CXX_TRY_STMT,
+                ci.CursorKind.CXX_THROW_EXPR,
+            ):
                 self.fn.statements += 1
 
             # ---- Decisions
@@ -445,32 +476,42 @@ class BodyAnalyzer:
                     cond_text = "case " + short_text(children[0])
                 elif kind == ci.CursorKind.DEFAULT_STMT:
                     cond_text = "default"
-                self.fn.decisions.append({
-                    "kind": kind.name.lower().replace("_stmt", "").replace("_operator", ""),
-                    "line": c.location.line,
-                    "expr": cond_text,
-                })
+                self.fn.decisions.append(
+                    {
+                        "kind": kind.name.lower().replace("_stmt", "").replace("_operator", ""),
+                        "line": c.location.line,
+                        "expr": cond_text,
+                    }
+                )
                 self.fn.cyclomatic_complexity += cc
                 self.fn.branch_count += br
 
             # short-circuit && / ||
             sc = is_short_circuit_binop(c)
             if sc:
-                self.fn.decisions.append({
-                    "kind": "short_circuit",
-                    "line": c.location.line,
-                    "expr": sc,
-                })
+                self.fn.decisions.append(
+                    {
+                        "kind": "short_circuit",
+                        "line": c.location.line,
+                        "expr": sc,
+                    }
+                )
                 self.fn.cyclomatic_complexity += 1
                 self.fn.branch_count += 2
 
             # ---- Def-use
             if kind == ci.CursorKind.VAR_DECL:
                 # local def. Has init?
-                inits = [ch for ch in c.get_children()
-                         if ch.kind not in (ci.CursorKind.TYPE_REF,
-                                            ci.CursorKind.NAMESPACE_REF,
-                                            ci.CursorKind.TEMPLATE_REF)]
+                inits = [
+                    ch
+                    for ch in c.get_children()
+                    if ch.kind
+                    not in (
+                        ci.CursorKind.TYPE_REF,
+                        ci.CursorKind.NAMESPACE_REF,
+                        ci.CursorKind.TEMPLATE_REF,
+                    )
+                ]
                 kind_label = "init" if inits else "decl"
                 self.add_def(c, c.location.line, kind_label)
             elif kind == ci.CursorKind.BINARY_OPERATOR:
@@ -480,18 +521,19 @@ class BodyAnalyzer:
                     lhs = children[0] if children else None
                     target = lhs.referenced if lhs is not None else None
                     if target is not None:
-                        self.add_def(target, c.location.line, "assign",
-                                     name=lhs.spelling if lhs else "")
+                        self.add_def(
+                            target, c.location.line, "assign", name=lhs.spelling if lhs else ""
+                        )
             elif kind == ci.CursorKind.COMPOUND_ASSIGNMENT_OPERATOR:
                 children = list(c.get_children())
                 lhs = children[0] if children else None
                 target = lhs.referenced if lhs is not None else None
                 if target is not None:
                     # compound implies use+def
-                    self.add_use(target, c.location.line,
-                                 name=lhs.spelling if lhs else "")
-                    self.add_def(target, c.location.line, "compound",
-                                 name=lhs.spelling if lhs else "")
+                    self.add_use(target, c.location.line, name=lhs.spelling if lhs else "")
+                    self.add_def(
+                        target, c.location.line, "compound", name=lhs.spelling if lhs else ""
+                    )
             elif kind == ci.CursorKind.UNARY_OPERATOR:
                 op = unary_inc_dec(c)
                 if op:
@@ -499,10 +541,15 @@ class BodyAnalyzer:
                     operand = children[0] if children else None
                     target = operand.referenced if operand is not None else None
                     if target is not None:
-                        self.add_use(target, c.location.line,
-                                     name=operand.spelling if operand else "")
-                        self.add_def(target, c.location.line, "increment",
-                                     name=operand.spelling if operand else "")
+                        self.add_use(
+                            target, c.location.line, name=operand.spelling if operand else ""
+                        )
+                        self.add_def(
+                            target,
+                            c.location.line,
+                            "increment",
+                            name=operand.spelling if operand else "",
+                        )
             elif kind == ci.CursorKind.DECL_REF_EXPR:
                 target = c.referenced
                 if target is not None and target.kind in (
@@ -547,8 +594,9 @@ TU_SOURCES = [
 
 
 def parse_tu(index: ci.Index, path: Path) -> ci.TranslationUnit:
-    tu = index.parse(str(path), args=CXX_ARGS,
-                     options=ci.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD)
+    tu = index.parse(
+        str(path), args=CXX_ARGS, options=ci.TranslationUnit.PARSE_DETAILED_PROCESSING_RECORD
+    )
     return tu
 
 
@@ -569,9 +617,9 @@ def collect_decls(c: ci.Cursor, world: WorldModel):
             world.types[fn.parent_name].methods.append(fn.qualified)
         # Attach to namespace if free fn under one
         if not fn.is_method and fn.parent_kind == "namespace" and fn.parent_name:
-            ns = world.namespaces.setdefault(fn.parent_name,
-                                              NamespaceInfo(name=fn.parent_name,
-                                                            files=[], free_functions=[]))
+            ns = world.namespaces.setdefault(
+                fn.parent_name, NamespaceInfo(name=fn.parent_name, files=[], free_functions=[])
+            )
             if fn.file not in ns.files:
                 ns.files.append(fn.file)
             ns.free_functions.append(fn.qualified)
@@ -581,8 +629,9 @@ def collect_decls(c: ci.Cursor, world: WorldModel):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=None,
-                    help="Path to write JSON output (default: stdout)")
+    ap.add_argument(
+        "--out", type=Path, default=None, help="Path to write JSON output (default: stdout)"
+    )
     args = ap.parse_args(argv)
 
     index = ci.Index.create()
@@ -608,9 +657,11 @@ def main(argv: list[str] | None = None) -> int:
     text = json.dumps(payload, indent=2, sort_keys=False)
     if args.out:
         args.out.write_text(text, encoding="utf-8")
-        print(f"Wrote {args.out} ({len(text)} bytes, "
-              f"{len(world.types)} types, {len(world.funcs)} funcs).",
-              file=sys.stderr)
+        print(
+            f"Wrote {args.out} ({len(text)} bytes, "
+            f"{len(world.types)} types, {len(world.funcs)} funcs).",
+            file=sys.stderr,
+        )
     else:
         print(text)
     return 0

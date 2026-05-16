@@ -15,9 +15,9 @@ references the edited proto and is dated >= the edit timestamp. Cheap
 heuristic: any ADR section added since the edit that mentions the proto
 filename counts as resolved (the human must do the actual matching).
 """
+
 import json
 import os
-import re
 import subprocess
 import sys
 
@@ -25,17 +25,13 @@ PUSHED_REFS = sys.stdin.read().strip().splitlines()
 
 
 def main():
-    main_push = any(
-        line.split()[2] == "refs/heads/main"
-        for line in PUSHED_REFS if line.strip()
-    )
+    main_push = any(line.split()[2] == "refs/heads/main" for line in PUSHED_REFS if line.strip())
     if not main_push:
         sys.exit(0)
 
     try:
         common = subprocess.run(
-            ["git", "rev-parse", "--git-common-dir"],
-            capture_output=True, text=True, check=True
+            ["git", "rev-parse", "--git-common-dir"], capture_output=True, text=True, check=True
         ).stdout.strip()
         root = os.path.dirname(os.path.abspath(common))
     except Exception:
@@ -74,9 +70,7 @@ def main():
             "proto edits without a matching ADR.\n\n"
         )
         for e in unresolved:
-            sys.stderr.write(
-                f"  - {e['file']} (edited {e['edited_at']})\n"
-            )
+            sys.stderr.write(f"  - {e['file']} (edited {e['edited_at']})\n")
         sys.stderr.write(
             "\nCreate an ADR referencing the proto in docs/specs/01-decisions-log.md "
             "(see [[creating-an-adr]] and [[bumping-a-schema-version]]), then retry.\n"

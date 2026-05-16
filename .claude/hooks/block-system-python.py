@@ -8,6 +8,7 @@ imports. Allow `python -c "..."` for inline diagnostics.
 Reads Claude Code hook JSON from stdin. Exit 2 to block (stderr → model),
 0 to allow. Non-Bash tools pass through.
 """
+
 import json
 import re
 import sys

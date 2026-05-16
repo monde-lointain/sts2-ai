@@ -11,9 +11,8 @@ import json
 import os
 from pathlib import Path
 
-import pytest
-
 import _atomic_io
+import pytest
 from _atomic_io import atomic_write_json
 
 

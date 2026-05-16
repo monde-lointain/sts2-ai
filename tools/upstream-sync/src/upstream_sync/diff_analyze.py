@@ -61,9 +61,10 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from upstream_sync.entity_extract import discover_characters
 
@@ -148,9 +149,7 @@ class DiffReport:
 # Predicate is a callable taking the path string and returning bool.
 
 _MODEL_BASES_RE = re.compile(r"^src/Core/Models/[A-Za-z]+Model\.cs$")
-_ROOT_CONFIG_RE = re.compile(
-    r"^[^/]+\.(csproj|sln|godot|json)$|^[^/]+\.lock\.json$"
-)
+_ROOT_CONFIG_RE = re.compile(r"^[^/]+\.(csproj|sln|godot|json)$|^[^/]+\.lock\.json$")
 
 _SCENES_GAMEPLAY_PREFIXES = (
     "scenes/combat/",
@@ -164,9 +163,7 @@ _SCENES_GAMEPLAY_PREFIXES = (
 
 
 def _is_model_bases(path: str) -> bool:
-    return path == "src/Core/Models/ModelDb.cs" or bool(
-        _MODEL_BASES_RE.match(path)
-    )
+    return path == "src/Core/Models/ModelDb.cs" or bool(_MODEL_BASES_RE.match(path))
 
 
 def _is_scenes_gameplay(path: str) -> bool:
@@ -182,28 +179,19 @@ _BUCKET_RULES: list[tuple[Callable[[str], bool], str]] = [
     (lambda p: p.startswith("src/Core/Multiplayer/"), BUCKET_MULTIPLAYER),
     (lambda p: p.startswith("src/Core/Modding/"), BUCKET_MODDING),
     (
-        lambda p: (
-            p.startswith("src/Core/UI/")
-            or p.startswith("src/Core/Localization/")
-            or p.startswith("src/Core/Helpers/Localization/")
+        lambda p: p.startswith(
+            ("src/Core/UI/", "src/Core/Localization/", "src/Core/Helpers/Localization/")
         ),
         BUCKET_UI,
     ),
     (
-        lambda p: (
-            p.startswith("src/Core/Audio/")
-            or p.startswith("src/Core/VFX/")
-            or p.startswith("src/Core/Animations/")
-        ),
+        lambda p: p.startswith(("src/Core/Audio/", "src/Core/VFX/", "src/Core/Animations/")),
         BUCKET_ART_AUDIO,
     ),
     (lambda p: p.startswith("src/Core/Random/"), BUCKET_RANDOM),
     (
-        lambda p: (
-            p.startswith("src/Core/Combat/")
-            or p.startswith("src/Core/Hooks/")
-            or p.startswith("src/Core/GameActions/")
-            or p.startswith("src/Core/Commands/")
+        lambda p: p.startswith(
+            ("src/Core/Combat/", "src/Core/Hooks/", "src/Core/GameActions/", "src/Core/Commands/")
         ),
         BUCKET_COMBAT_ENGINE,
     ),
@@ -358,7 +346,7 @@ def analyze_diff(
     to_tag: str,
     upstream_tree: Path,
     *,
-    priority_character: str = "Silent",
+    priority_character: str = "Silent",  # noqa: ARG001 — public API arg, kept for CLI compat
     _subprocess_run: Callable[..., Any] | None = None,
 ) -> DiffReport:
     """Run ``git diff --name-status -M <from_tag> <to_tag>`` in

@@ -10,7 +10,7 @@ without the loop tearing down.
 from __future__ import annotations
 
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 
 class LifecycleThreadManager:
@@ -66,7 +66,7 @@ class LifecycleThreadManager:
                     break
             try:
                 self._tick_fn()
-            except Exception as exc:  # noqa: BLE001 - audit + continue
+            except Exception as exc:
                 if self._on_error is not None:
                     try:
                         self._on_error(exc)

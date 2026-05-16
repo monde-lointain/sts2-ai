@@ -9,13 +9,13 @@ engine takes a duck-typed model). The mock returns a configurable
 fixed tensor; tests that need ``prior == current`` substitute the
 current logits.
 """
+
 from __future__ import annotations
 
 import math
 from dataclasses import replace
 from pathlib import Path
 
-import pytest
 import torch
 import torch.nn.functional as F
 
@@ -47,9 +47,7 @@ class _MockModel:
         if self._prior is not None:
             return self._prior
         # Default mirror: uniform prior matching the legal-action shape.
-        return torch.zeros_like(
-            encoded_batch.legal_action_mask, dtype=torch.float32
-        )
+        return torch.zeros_like(encoded_batch.legal_action_mask, dtype=torch.float32)
 
 
 def _load_cfg() -> RunConfig:
@@ -157,9 +155,7 @@ def test_policy_ce_ignores_illegal_actions() -> None:
 
     grad_col_3 = policy_logits.grad[:, 3]
     # masked_fill -> -inf -> softmax exact 0 -> grad exact 0 (no NaN).
-    assert torch.all(grad_col_3 == 0.0), (
-        f"expected zero grad on illegal column, got {grad_col_3}"
-    )
+    assert torch.all(grad_col_3 == 0.0), f"expected zero grad on illegal column, got {grad_col_3}"
     # And the legal columns should have non-trivial gradient signal.
     assert policy_logits.grad[:, 0].abs().sum() > 0
 
@@ -187,15 +183,9 @@ def test_hand_computed_reference_total() -> None:
 
     b, a = 2, 3
     legal_mask = torch.ones(b, a, dtype=torch.bool)
-    policy_logits = torch.tensor(
-        [[0.0, 0.0, 0.0], [1.0, 0.0, -1.0]], requires_grad=True
-    )
-    policy_target = torch.tensor(
-        [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.float32
-    )
-    sample_preds = torch.tensor(
-        [[0.0, 0.0, 0.0, 0.0], [0.5, 0.0, 0.0, 0.0]], requires_grad=True
-    )
+    policy_logits = torch.tensor([[0.0, 0.0, 0.0], [1.0, 0.0, -1.0]], requires_grad=True)
+    policy_target = torch.tensor([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=torch.float32)
+    sample_preds = torch.tensor([[0.0, 0.0, 0.0, 0.0], [0.5, 0.0, 0.0, 0.0]], requires_grad=True)
     combat_sample_targets = torch.zeros(b, 4)
     summary_preds = torch.zeros(b, 5, requires_grad=True)
     combat_summary_targets = torch.zeros(b, 5)
@@ -228,14 +218,13 @@ def test_hand_computed_reference_total() -> None:
     # Policy CE row 0: -log(softmax([0,0,0])[0]) = -log(1/3) = log 3.
     # Policy CE row 1: softmax([1,0,-1])[1] = e^0 / (e^1+e^0+e^-1)
     #                                       = 1 / (e + 1 + 1/e).
-    e = math.e
     z1 = math.exp(1.0) + 1.0 + math.exp(-1.0)
     p1_target = 1.0 / z1
     policy_loss = (math.log(3.0) + (-math.log(p1_target))) / 2.0
 
     # combat_sample: MSE over (2,4). One nonzero element 0.5 in pos
     # (1,0). MSE = mean of squared errors over all 8 elements.
-    sample_loss = (0.5 ** 2) / 8.0
+    sample_loss = (0.5**2) / 8.0
 
     # combat_summary: preds=0, targets=0 → BCE-with-logits(0,0)
     # = -log(sigmoid(0)) * 0 + log(1+e^0) = log 2. MSE pieces = 0.
@@ -263,11 +252,7 @@ def test_hand_computed_reference_total() -> None:
     kl_loss = (0.0 + kl_row1) / 2.0
 
     expected_total = (
-        1.0 * policy_loss
-        + 1.0 * sample_loss
-        + 1.0 * summary_loss
-        + 0.05 * hp_loss
-        + 0.01 * kl_loss
+        1.0 * policy_loss + 1.0 * sample_loss + 1.0 * summary_loss + 0.05 * hp_loss + 0.01 * kl_loss
     )
 
     assert math.isclose(
@@ -311,9 +296,9 @@ def test_kl_zero_when_prior_equals_current() -> None:
     mo = _make_mo(b=b, a=a, policy_logits=policy_logits)
     result = engine.compute(mo, eb)
     # KL is the only contributor (other weights = 0).
-    assert math.isclose(
-        float(result.components["kl_vs_prior"]), 0.0, abs_tol=1e-6
-    ), f"expected KL ≈ 0, got {result.components['kl_vs_prior']}"
+    assert math.isclose(float(result.components["kl_vs_prior"]), 0.0, abs_tol=1e-6), (
+        f"expected KL ≈ 0, got {result.components['kl_vs_prior']}"
+    )
     assert math.isclose(float(result.total.detach().item()), 0.0, abs_tol=1e-6)
 
 
@@ -338,12 +323,8 @@ def test_combat_sample_degenerate_well_formed() -> None:
     engine = LossEngine(cfg, model)
 
     b, a = 2, 3
-    sample_preds = torch.tensor(
-        [[1.0, 0.5, 2.0, 0.0], [-1.0, 0.0, 1.0, 1.0]], requires_grad=True
-    )
-    combat_sample_targets = torch.tensor(
-        [[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 2.0, 1.0]]
-    )
+    sample_preds = torch.tensor([[1.0, 0.5, 2.0, 0.0], [-1.0, 0.0, 1.0, 1.0]], requires_grad=True)
+    combat_sample_targets = torch.tensor([[0.0, 1.0, 1.0, 0.0], [0.0, 0.0, 2.0, 1.0]])
     eb = _make_eb(b=b, a=a, combat_sample_targets=combat_sample_targets)
     mo = _make_mo(b=b, a=a, sample_preds=sample_preds)
     result = engine.compute(mo, eb)
@@ -354,9 +335,7 @@ def test_combat_sample_degenerate_well_formed() -> None:
     assert torch.isfinite(sample_preds.grad).all()
     # Hand MSE: ((1-0)^2+(0.5-1)^2+(2-1)^2+(0-0)^2 + (-1-0)^2+(0-0)^2+(1-2)^2+(1-1)^2)/8
     expected = (1.0 + 0.25 + 1.0 + 0.0 + 1.0 + 0.0 + 1.0 + 0.0) / 8.0
-    assert math.isclose(
-        float(result.components["combat_sample"]), expected, rel_tol=1e-6
-    )
+    assert math.isclose(float(result.components["combat_sample"]), expected, rel_tol=1e-6)
 
 
 # ---------------------------------------------------------------------------

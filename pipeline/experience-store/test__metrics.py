@@ -9,6 +9,7 @@ Covers:
 6. Multiple calls accumulate in emission order.
 7. Service name with `"` passes through literally (no escaping; documented).
 """
+
 from __future__ import annotations
 
 from _metrics import PrometheusLineBuilder

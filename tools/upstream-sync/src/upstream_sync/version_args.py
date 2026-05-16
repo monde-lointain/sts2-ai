@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 _EXPLICIT_VERSION_RE = re.compile(r"^v\d+\.\d+\.\d+(?:\.\d+)?$")
 _BUILDID_RE = re.compile(r"^\d+$")
@@ -17,7 +17,7 @@ _BUILDID_RE = re.compile(r"^\d+$")
 
 @dataclass(frozen=True)
 class VersionSpec:
-    raw: str           # e.g. "v0.105.1" or "build-22823976-2026-05-14"
+    raw: str  # e.g. "v0.105.1" or "build-22823976-2026-05-14"
     is_synthetic: bool  # True if --version-from-buildid was used
 
 
@@ -34,13 +34,9 @@ def parse_version_spec(
     exists for test injection.
     """
     if version is not None and version_from_buildid:
-        raise ValueError(
-            "--version and --version-from-buildid are mutually exclusive"
-        )
+        raise ValueError("--version and --version-from-buildid are mutually exclusive")
     if version is None and not version_from_buildid:
-        raise ValueError(
-            "--version required; use --version-from-buildid <buildid> for synthetic"
-        )
+        raise ValueError("--version required; use --version-from-buildid <buildid> for synthetic")
 
     if version is not None:
         if not _EXPLICIT_VERSION_RE.match(version):
@@ -56,6 +52,6 @@ def parse_version_spec(
     if not _BUILDID_RE.match(buildid):
         raise ValueError(f"invalid buildid {buildid!r}: must be digits only")
 
-    when = today if today is not None else datetime.now(timezone.utc)
+    when = today if today is not None else datetime.now(UTC)
     raw = f"build-{buildid}-{when.strftime('%Y-%m-%d')}"
     return VersionSpec(raw=raw, is_synthetic=True)

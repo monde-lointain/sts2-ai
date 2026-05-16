@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from _framing import (
     FramingError,
     decode_varint,
@@ -49,9 +48,7 @@ def test_encode_varint_overflow_raises() -> None:
 # -- roundtrip --------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "v", [0, 1, 127, 128, 16384, 2**32 - 1, _UINT64_MAX]
-)
+@pytest.mark.parametrize("v", [0, 1, 127, 128, 16384, 2**32 - 1, _UINT64_MAX])
 def test_encode_decode_roundtrip(v: int) -> None:
     encoded = encode_varint(v)
     value, consumed = decode_varint(encoded)

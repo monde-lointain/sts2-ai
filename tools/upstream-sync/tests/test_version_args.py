@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from upstream_sync import version_args
 from upstream_sync.version_args import VersionSpec, parse_version_spec
-
 
 # ---- Happy paths -------------------------------------------------------------
 
@@ -19,7 +18,7 @@ def test_explicit_version_returns_non_synthetic_spec():
 
 
 def test_synthetic_version_from_buildid_with_injected_today():
-    today = datetime(2026, 5, 14, tzinfo=timezone.utc)
+    today = datetime(2026, 5, 14, tzinfo=UTC)
     spec = parse_version_spec(None, True, "22823976", today=today)
     assert spec == VersionSpec(raw="build-22823976-2026-05-14", is_synthetic=True)
 
@@ -35,7 +34,7 @@ def test_today_defaults_to_wall_clock_when_omitted():
     assert spec.is_synthetic is True
     assert spec.raw.startswith("build-1-")
     # YYYY-MM-DD suffix: 10 chars after "build-1-"
-    suffix = spec.raw[len("build-1-"):]
+    suffix = spec.raw[len("build-1-") :]
     assert len(suffix) == 10
     datetime.strptime(suffix, "%Y-%m-%d")  # raises if not valid date
 
@@ -84,7 +83,7 @@ def test_public_surface():
     assert hasattr(version_args, "VersionSpec")
     assert hasattr(version_args, "parse_version_spec")
     # VersionSpec is a frozen dataclass with exactly these fields.
-    fields = {f for f in VersionSpec.__dataclass_fields__}
+    fields = set(VersionSpec.__dataclass_fields__)
     assert fields == {"raw", "is_synthetic"}
 
 

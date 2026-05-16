@@ -3,11 +3,10 @@
 Covers the 5 unit tests + 1 integration test called out in
 ``pipeline/trainer/docs/specs/modules/optim.md`` §Testing Strategy.
 """
+
 from __future__ import annotations
 
 import copy
-import math
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -65,9 +64,7 @@ def test_lr_schedule_peaks_then_decays() -> None:
     warmup = 100
     total = 1000
     net = _tiny_net()
-    cfg = _make_optim_cfg(
-        lr=base_lr, warmup_steps=warmup, total_steps=total, grad_clip=1e9
-    )
+    cfg = _make_optim_cfg(lr=base_lr, warmup_steps=warmup, total_steps=total, grad_clip=1e9)
     opt = OptimController(net, cfg)
 
     lrs: list[float] = []
@@ -152,9 +149,7 @@ def test_state_dict_round_trip_preserves_step() -> None:
 
     # Drive 10 steps on net_a with deterministic inputs.
     torch.manual_seed(7)
-    inputs_targets = [
-        (torch.randn(4, 3), torch.randn(4, 2)) for _ in range(11)
-    ]
+    inputs_targets = [(torch.randn(4, 3), torch.randn(4, 2)) for _ in range(11)]
     for x, y in inputs_targets[:10]:
         loss = ((net_a(x) - y) ** 2).mean()
         opt_a.step(loss)
@@ -220,9 +215,9 @@ def test_set_requires_grad_freezes_named_group() -> None:
     loss.backward()
     for p in head.parameters():
         # frozen → no grad accumulated
-        assert p.grad is None or torch.equal(
-            p.grad, torch.zeros_like(p)
-        ), "frozen policy_head accumulated a non-zero grad"
+        assert p.grad is None or torch.equal(p.grad, torch.zeros_like(p)), (
+            "frozen policy_head accumulated a non-zero grad"
+        )
     # Trunk should still receive grad.
     for p in trunk.parameters():
         assert p.grad is not None and p.grad.abs().sum() > 0
@@ -282,9 +277,7 @@ def test_toy_convergence_quadratic() -> None:
             self.p = p
 
     net = _Wrap(param)
-    cfg = _make_optim_cfg(
-        lr=3e-1, warmup_steps=10, total_steps=200, grad_clip=1e9
-    )
+    cfg = _make_optim_cfg(lr=3e-1, warmup_steps=10, total_steps=200, grad_clip=1e9)
     opt = OptimController(net, cfg)
 
     initial_loss = float(((param - target) ** 2).sum().item())

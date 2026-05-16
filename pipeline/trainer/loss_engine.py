@@ -23,10 +23,11 @@ the engine; ``compute`` then populates per-head ``‖∇‖₂`` for the
 parameter set tied to each head's loss output (here we report the
 gradient norm of each head loss w.r.t. its required-grad input tensors).
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 import torch
 import torch.nn.functional as F
@@ -112,17 +113,13 @@ class LossEngine:
         self._register_phase1_heads()
 
     # -------- registry ---------------------------------------------------
-    def register_head(
-        self, name: str, fn: HeadFn, weight: float
-    ) -> None:
+    def register_head(self, name: str, fn: HeadFn, weight: float) -> None:
         """Add or replace a head's loss function and weight."""
         self._fns[name] = fn
         self.weights[name] = float(weight)
 
     # -------- compute ---------------------------------------------------
-    def compute(
-        self, model_output: ModelOutput, encoded_batch: EncodedBatch
-    ) -> LossResult:
+    def compute(self, model_output: ModelOutput, encoded_batch: EncodedBatch) -> LossResult:
         """Run every registered head, weight-sum into a backward-able scalar."""
         components: dict[str, float] = {}
         weights_snapshot: dict[str, float] = dict(self.weights)
@@ -145,9 +142,7 @@ class LossEngine:
 
         gradient_diagnostics: dict[str, float] = {}
         if self.enable_pcgrad_diag:
-            gradient_diagnostics = self._compute_head_grad_norms(
-                per_head_loss, model_output
-            )
+            gradient_diagnostics = self._compute_head_grad_norms(per_head_loss, model_output)
 
         return LossResult(
             total=total,
@@ -161,17 +156,13 @@ class LossEngine:
         lw = self._config.loss_weights
         self.register_head("policy", _policy_ce_loss, lw.policy)
         self.register_head("combat_sample", _combat_sample_loss, lw.combat_sample)
-        self.register_head(
-            "combat_summary", _combat_summary_loss, lw.combat_summary
-        )
+        self.register_head("combat_summary", _combat_summary_loss, lw.combat_summary)
         self.register_head("hp_frac_aux", _hp_frac_aux_loss, lw.hp_frac_aux)
         # KL closure captures the live model so we don't re-look it up
         # per call.
         model = self._model
 
-        def kl_head(
-            mo: ModelOutput, eb: EncodedBatch
-        ) -> torch.Tensor:
+        def kl_head(mo: ModelOutput, eb: EncodedBatch) -> torch.Tensor:
             return _kl_vs_prior_loss(mo, eb, model)
 
         self.register_head("kl_vs_prior", kl_head, lw.kl_beta)
@@ -200,7 +191,7 @@ class LossEngine:
             if isinstance(t, torch.Tensor) and t.requires_grad
         ]
         if not grad_inputs:
-            return {name: 0.0 for name in per_head_loss}
+            return dict.fromkeys(per_head_loss, 0.0)
 
         out: dict[str, float] = {}
         for name, loss in per_head_loss.items():
@@ -222,9 +213,7 @@ class LossEngine:
 # ---------------------------------------------------------------------------
 # Phase-1 head loss functions
 # ---------------------------------------------------------------------------
-def _policy_ce_loss(
-    model_output: ModelOutput, encoded_batch: EncodedBatch
-) -> torch.Tensor:
+def _policy_ce_loss(model_output: ModelOutput, encoded_batch: EncodedBatch) -> torch.Tensor:
     """Masked cross-entropy of ``policy_logits`` against ``policy_target``.
 
     Sets illegal-action logits to ``-inf`` so they receive zero
@@ -252,18 +241,12 @@ def _policy_ce_loss(
     return per_sample.mean()
 
 
-def _combat_sample_loss(
-    model_output: ModelOutput, encoded_batch: EncodedBatch
-) -> torch.Tensor:
+def _combat_sample_loss(model_output: ModelOutput, encoded_batch: EncodedBatch) -> torch.Tensor:
     """Phase-1 degenerate-single MSE per ADR-021."""
-    return F.mse_loss(
-        model_output.sample_preds, encoded_batch.combat_sample_targets
-    )
+    return F.mse_loss(model_output.sample_preds, encoded_batch.combat_sample_targets)
 
 
-def _combat_summary_loss(
-    model_output: ModelOutput, encoded_batch: EncodedBatch
-) -> torch.Tensor:
+def _combat_summary_loss(model_output: ModelOutput, encoded_batch: EncodedBatch) -> torch.Tensor:
     """5-component summary loss.
 
     Field order matches tensor_encoder._SUMMARY_FIELD_COUNT layout:
@@ -286,9 +269,7 @@ def _combat_summary_loss(
     return survival + hp_delta + turns + timeout + uncertainty
 
 
-def _hp_frac_aux_loss(
-    model_output: ModelOutput, encoded_batch: EncodedBatch
-) -> torch.Tensor:
+def _hp_frac_aux_loss(model_output: ModelOutput, encoded_batch: EncodedBatch) -> torch.Tensor:
     """Scalar MSE between predicted hp-frac and bootstrap target."""
     return F.mse_loss(model_output.hp_frac_aux, encoded_batch.hp_frac_target)
 

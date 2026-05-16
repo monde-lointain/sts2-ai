@@ -16,7 +16,7 @@ typed-dataclass call boundaries (Q3-ADR-001).
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)

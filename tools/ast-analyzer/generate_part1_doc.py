@@ -10,13 +10,13 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 JSON_IN = REPO_ROOT / "tools" / "ast-analyzer" / "analysis.json"
 DOC_OUT = REPO_ROOT / "docs" / "test-plan" / "01-ast-analysis.md"
 
 # ---- Helpers ---------------------------------------------------------------
+
 
 def fmt_decision(d: dict) -> str:
     expr = d.get("expr", "")
@@ -32,15 +32,15 @@ def fmt_decision(d: dict) -> str:
 
 def fmt_def_kind(k: str) -> str:
     return {
-        "parameter":  "param",
-        "init":       "init",
-        "assign":     "=",
-        "compound":   "+= etc.",
-        "increment":  "++/--",
-        "decl":       "decl",
-        "local":      "local",
-        "member":     "member",
-        "unknown":    "?",
+        "parameter": "param",
+        "init": "init",
+        "assign": "=",
+        "compound": "+= etc.",
+        "increment": "++/--",
+        "decl": "decl",
+        "local": "local",
+        "member": "member",
+        "unknown": "?",
     }.get(k, k)
 
 
@@ -49,6 +49,7 @@ def file_link(path: str, line: int) -> str:
 
 
 # ---- Sections --------------------------------------------------------------
+
 
 def render_header() -> list[str]:
     return [
@@ -111,8 +112,12 @@ def render_header() -> list[str]:
 
 def render_summary(types: dict, namespaces: dict, funcs: dict) -> list[str]:
     by_file = defaultdict(int)
-    cc_buckets = {"trivial (CC=1)": 0, "simple (CC=2-3)": 0,
-                  "moderate (CC=4-6)": 0, "complex (CC≥7)": 0}
+    cc_buckets = {
+        "trivial (CC=1)": 0,
+        "simple (CC=2-3)": 0,
+        "moderate (CC=4-6)": 0,
+        "complex (CC≥7)": 0,
+    }
     total_cc = 0
     total_branches = 0
     for fn in funcs.values():
@@ -132,8 +137,8 @@ def render_summary(types: dict, namespaces: dict, funcs: dict) -> list[str]:
     lines = [
         "## Inventory at a glance",
         "",
-        f"- **Classes** (have member functions): {sum(1 for t in types.values() if t['kind']=='class')}",
-        f"- **Structs** (data aggregates): {sum(1 for t in types.values() if t['kind']=='struct')}",
+        f"- **Classes** (have member functions): {sum(1 for t in types.values() if t['kind'] == 'class')}",
+        f"- **Structs** (data aggregates): {sum(1 for t in types.values() if t['kind'] == 'struct')}",
         f"- **Namespaces hosting free functions**: {len(namespaces)}",
         f"- **Function definitions**: {len(funcs)}",
         f"- **Sum of cyclomatic complexity**: {total_cc}",
@@ -191,15 +196,18 @@ def render_types(types: dict, funcs: dict) -> list[str]:
                 if fn.get("is_template"):
                     qualifiers.append("template")
                 qstr = " " + " ".join(f"_{q}_" for q in qualifiers) if qualifiers else ""
-                out.append(f"| `{disp}`{qstr} | "
-                           f"{file_link(fn['file'], fn['line'])} | "
-                           f"{fn['cyclomatic_complexity']} | "
-                           f"{fn['branch_count']} | "
-                           f"{len(fn['decisions'])} |")
+                out.append(
+                    f"| `{disp}`{qstr} | "
+                    f"{file_link(fn['file'], fn['line'])} | "
+                    f"{fn['cyclomatic_complexity']} | "
+                    f"{fn['branch_count']} | "
+                    f"{len(fn['decisions'])} |"
+                )
             out.append("")
         if t.get("is_polymorphic"):
-            out.append("> ⚠ Polymorphic (has virtual functions). Tests must "
-                      "exercise dynamic dispatch.")
+            out.append(
+                "> ⚠ Polymorphic (has virtual functions). Tests must exercise dynamic dispatch."
+            )
             out.append("")
 
     out.append("### Structs (data aggregates)")
@@ -212,9 +220,11 @@ def render_types(types: dict, funcs: dict) -> list[str]:
                 out.append(f"- `{f['type']} {f['name']};`")
             out.append("")
         else:
-            out.append("_(no public fields enumerated by the analyzer — likely "
-                       "an enum-tagged record or one whose members are "
-                       "in-class initialised below visibility default)_")
+            out.append(
+                "_(no public fields enumerated by the analyzer — likely "
+                "an enum-tagged record or one whose members are "
+                "in-class initialised below visibility default)_"
+            )
             out.append("")
     return out
 
@@ -223,8 +233,7 @@ def render_namespaces(namespaces: dict, funcs: dict) -> list[str]:
     out = ["## Namespaces (free-function modules)", ""]
     for nsname in sorted(namespaces.keys()):
         ns = namespaces[nsname]
-        out.append(f"### `namespace {nsname}` — files: "
-                   + ", ".join(f"`{f}`" for f in ns["files"]))
+        out.append(f"### `namespace {nsname}` — files: " + ", ".join(f"`{f}`" for f in ns["files"]))
         out.append("")
         out.append("| Function | Loc | CC | Branches | Decisions |")
         out.append("|---|---|---:|---:|---:|")
@@ -233,11 +242,13 @@ def render_namespaces(namespaces: dict, funcs: dict) -> list[str]:
             if not fn:
                 continue
             disp = fn["display_name"] or fn["spelling"]
-            out.append(f"| `{disp}` | "
-                       f"{file_link(fn['file'], fn['line'])} | "
-                       f"{fn['cyclomatic_complexity']} | "
-                       f"{fn['branch_count']} | "
-                       f"{len(fn['decisions'])} |")
+            out.append(
+                f"| `{disp}` | "
+                f"{file_link(fn['file'], fn['line'])} | "
+                f"{fn['cyclomatic_complexity']} | "
+                f"{fn['branch_count']} | "
+                f"{len(fn['decisions'])} |"
+            )
         out.append("")
     return out
 
@@ -246,7 +257,7 @@ def render_unattached_funcs(funcs: dict) -> list[str]:
     """Free functions in anonymous namespaces or main()."""
     out = ["## Translation-unit-local helpers and `main`", ""]
     rows = []
-    for q, fn in funcs.items():
+    for _q, fn in funcs.items():
         if fn["is_method"]:
             continue
         if fn["parent_kind"] == "namespace" and fn["parent_name"]:
@@ -255,17 +266,21 @@ def render_unattached_funcs(funcs: dict) -> list[str]:
     rows.sort(key=lambda f: (f["file"], f["line"]))
     if not rows:
         return out
-    out.append("These are TU-local (`namespace { }` or `static`) and "
-               "`main()`. They are testable only via end-to-end execution or "
-               "by extracting/exposing them.")
+    out.append(
+        "These are TU-local (`namespace { }` or `static`) and "
+        "`main()`. They are testable only via end-to-end execution or "
+        "by extracting/exposing them."
+    )
     out.append("")
     out.append("| Function | Loc | CC | Branches |")
     out.append("|---|---|---:|---:|")
     for fn in rows:
-        out.append(f"| `{fn['display_name']}` | "
-                   f"{file_link(fn['file'], fn['line'])} | "
-                   f"{fn['cyclomatic_complexity']} | "
-                   f"{fn['branch_count']} |")
+        out.append(
+            f"| `{fn['display_name']}` | "
+            f"{file_link(fn['file'], fn['line'])} | "
+            f"{fn['cyclomatic_complexity']} | "
+            f"{fn['branch_count']} |"
+        )
     out.append("")
     return out
 
@@ -273,8 +288,10 @@ def render_unattached_funcs(funcs: dict) -> list[str]:
 def render_function_detail(funcs: dict) -> list[str]:
     """Per-function CFG and def-use detail. Sorted by file then line."""
     out = ["## Per-function control flow and def-use", ""]
-    out.append("Functions with **CC = 1** and no parameters are listed in the "
-               "tables above without expansion here.")
+    out.append(
+        "Functions with **CC = 1** and no parameters are listed in the "
+        "tables above without expansion here."
+    )
     out.append("")
 
     rows = sorted(funcs.values(), key=lambda f: (f["file"], f["line"]))
@@ -283,21 +300,21 @@ def render_function_detail(funcs: dict) -> list[str]:
             continue
 
         title = fn["qualified"]
-        if fn["display_name"]:
-            sig = fn["display_name"]
-        else:
-            sig = fn["spelling"]
+        sig = fn["display_name"] if fn["display_name"] else fn["spelling"]
         out.append(f"### `{title}`")
         out.append("")
-        out.append(f"- **Signature:** `{fn['return_type']} {sig}` "
-                   + ("`const`" if fn.get("is_const") else "")
-                   + ("`static`" if fn.get("is_static") else "")
-                   + ("`template`" if fn.get("is_template") else ""))
-        out.append(f"- **Location:** {file_link(fn['file'], fn['line'])}–"
-                   f"`{fn['end_line']}`")
-        out.append(f"- **Cyclomatic complexity:** {fn['cyclomatic_complexity']}  "
-                   f"**Branches to cover:** {fn['branch_count']}  "
-                   f"**Statements (proxy):** {fn['statements']}")
+        out.append(
+            f"- **Signature:** `{fn['return_type']} {sig}` "
+            + ("`const`" if fn.get("is_const") else "")
+            + ("`static`" if fn.get("is_static") else "")
+            + ("`template`" if fn.get("is_template") else "")
+        )
+        out.append(f"- **Location:** {file_link(fn['file'], fn['line'])}–`{fn['end_line']}`")
+        out.append(
+            f"- **Cyclomatic complexity:** {fn['cyclomatic_complexity']}  "
+            f"**Branches to cover:** {fn['branch_count']}  "
+            f"**Statements (proxy):** {fn['statements']}"
+        )
         out.append("")
 
         # Decisions
@@ -307,8 +324,7 @@ def render_function_detail(funcs: dict) -> list[str]:
             out.append("| # | Kind | Line | Condition |")
             out.append("|---:|---|---:|---|")
             for i, d in enumerate(fn["decisions"], 1):
-                out.append(f"| {i} | `{d['kind']}` | {d['line']} | "
-                           f"{fmt_decision(d)} |")
+                out.append(f"| {i} | `{d['kind']}` | {d['line']} | {fmt_decision(d)} |")
             out.append("")
 
         # Def-use
@@ -320,12 +336,13 @@ def render_function_detail(funcs: dict) -> list[str]:
             for name, du in sorted(fn["def_use"].items()):
                 if name.startswith("<") or name == "":
                     continue
-                defs = ", ".join(f"L{d['line']}({fmt_def_kind(d['kind'])})"
-                                 for d in du["defs"])
+                defs = ", ".join(f"L{d['line']}({fmt_def_kind(d['kind'])})" for d in du["defs"])
                 uses = ", ".join(f"L{l}" for l in du["uses"])
-                out.append(f"| `{name}` | {du['decl_kind']} | "
-                           f"{du['decl_line'] or '—'} | {defs or '—'} | "
-                           f"{uses or '—'} |")
+                out.append(
+                    f"| `{name}` | {du['decl_kind']} | "
+                    f"{du['decl_line'] or '—'} | {defs or '—'} | "
+                    f"{uses or '—'} |"
+                )
             out.append("")
     return out
 
@@ -334,25 +351,29 @@ def render_hot_spots(funcs: dict) -> list[str]:
     """Functions where SDET attention concentrates: high CC, many branches,
     many def-use sites. These are the prime targets for structured-basis and
     data-flow tests in Part 2."""
-    rows = sorted(funcs.values(),
-                  key=lambda f: (-f["cyclomatic_complexity"],
-                                 -f["branch_count"],
-                                 -len(f.get("def_use", {}))))
+    rows = sorted(
+        funcs.values(),
+        key=lambda f: (-f["cyclomatic_complexity"], -f["branch_count"], -len(f.get("def_use", {}))),
+    )
     out = ["## Hot spots for SDET attention", ""]
-    out.append("Ranked by cyclomatic complexity. The top entries are where "
-               "structured-basis testing must concentrate independent paths "
-               "and where def-use coverage drives the most all-uses pairs.")
+    out.append(
+        "Ranked by cyclomatic complexity. The top entries are where "
+        "structured-basis testing must concentrate independent paths "
+        "and where def-use coverage drives the most all-uses pairs."
+    )
     out.append("")
     out.append("| # | Function | Loc | CC | Branches | Stmts | Def-use vars |")
     out.append("|---:|---|---|---:|---:|---:|---:|")
     for i, fn in enumerate(rows[:15], 1):
         defuse_n = sum(1 for k in fn.get("def_use", {}) if not k.startswith("<") and k)
-        out.append(f"| {i} | `{fn['qualified']}` | "
-                   f"{file_link(fn['file'], fn['line'])} | "
-                   f"{fn['cyclomatic_complexity']} | "
-                   f"{fn['branch_count']} | "
-                   f"{fn['statements']} | "
-                   f"{defuse_n} |")
+        out.append(
+            f"| {i} | `{fn['qualified']}` | "
+            f"{file_link(fn['file'], fn['line'])} | "
+            f"{fn['cyclomatic_complexity']} | "
+            f"{fn['branch_count']} | "
+            f"{fn['statements']} | "
+            f"{defuse_n} |"
+        )
     out.append("")
     return out
 
@@ -361,7 +382,8 @@ def render_coverage_targets(funcs: dict) -> list[str]:
     """Per-module CC/branch/statement breakdown so coverage targets land per
     module rather than only globally."""
     by_module: dict[str, dict] = defaultdict(
-        lambda: {"funcs": 0, "cc": 0, "branches": 0, "stmts": 0})
+        lambda: {"funcs": 0, "cc": 0, "branches": 0, "stmts": 0}
+    )
     for fn in funcs.values():
         path = fn["file"]
         # module = first path segment after src/ or include/sts2/
@@ -378,27 +400,32 @@ def render_coverage_targets(funcs: dict) -> list[str]:
         m["branches"] += fn["branch_count"]
         m["stmts"] += fn["statements"]
     out = ["## Coverage-target derivation per module", ""]
-    out.append("100% branch coverage means **every branch in the right column "
-               "must be exercised** by at least one test in Part 2. The "
-               "≥70% statement floor means **at most 30% of `Stmts` may go "
-               "uncovered** in any module — the analyzer's statement count is "
-               "a proxy (DECL/RETURN/IF/SWITCH/loop/break/continue/try/throw) "
-               "and is conservative compared to gcov line counts, so the floor "
-               "remains binding.")
+    out.append(
+        "100% branch coverage means **every branch in the right column "
+        "must be exercised** by at least one test in Part 2. The "
+        "≥70% statement floor means **at most 30% of `Stmts` may go "
+        "uncovered** in any module — the analyzer's statement count is "
+        "a proxy (DECL/RETURN/IF/SWITCH/loop/break/continue/try/throw) "
+        "and is conservative compared to gcov line counts, so the floor "
+        "remains binding."
+    )
     out.append("")
     out.append("| Module | Funcs | CC sum | Branches to cover | Stmt proxy | Stmt budget @70% |")
     out.append("|---|---:|---:|---:|---:|---:|")
     total = {"funcs": 0, "cc": 0, "branches": 0, "stmts": 0}
     for mod in sorted(by_module):
         m = by_module[mod]
-        budget = max(0, int(round(m["stmts"] * 0.70)))
-        out.append(f"| `{mod}` | {m['funcs']} | {m['cc']} | "
-                   f"{m['branches']} | {m['stmts']} | {budget} |")
+        budget = max(0, round(m["stmts"] * 0.70))
+        out.append(
+            f"| `{mod}` | {m['funcs']} | {m['cc']} | {m['branches']} | {m['stmts']} | {budget} |"
+        )
         for k in total:
             total[k] += m[k]
-    budget = max(0, int(round(total["stmts"] * 0.70)))
-    out.append(f"| **total** | **{total['funcs']}** | **{total['cc']}** | "
-               f"**{total['branches']}** | **{total['stmts']}** | **{budget}** |")
+    budget = max(0, round(total["stmts"] * 0.70))
+    out.append(
+        f"| **total** | **{total['funcs']}** | **{total['cc']}** | "
+        f"**{total['branches']}** | **{total['stmts']}** | **{budget}** |"
+    )
     out.append("")
     return out
 

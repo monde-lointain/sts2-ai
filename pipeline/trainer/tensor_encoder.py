@@ -35,12 +35,13 @@ Cross-quantum ADRs honored
 - ADR-021  Phase-1 ``combat_outcome_samples[]`` is a degenerate single
            sample; we extract sample[0] only.
 """
+
 from __future__ import annotations
 
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, Protocol
+from typing import Protocol
 
 import torch
 
@@ -48,7 +49,6 @@ from pipeline.common.trajectory_proto import (
     OBSERVABILITY_REGIME_SOURCE_PERFECT,
 )
 from pipeline.trainer.content_registry import ContentRegistry
-
 
 # ---------------------------------------------------------------------------
 # Field counts (Phase-1 fixed dimensions per ADR-014 / ADR-021)
@@ -146,10 +146,8 @@ class TensorEncoder:
         strict_source_perfect: bool = True,
     ) -> None:
         self._registry = content_registry
-        self._max_seq_len = int(getattr(config, "max_seq_len"))
-        self._max_action_space = int(
-            getattr(config, "max_action_space", _DEFAULT_MAX_ACTION_SPACE)
-        )
+        self._max_seq_len = int(config.max_seq_len)
+        self._max_action_space = int(getattr(config, "max_action_space", _DEFAULT_MAX_ACTION_SPACE))
         self._strict = bool(strict_source_perfect)
 
         # Welford-style p99 estimator state. We track per-call wall-clock
@@ -180,9 +178,8 @@ class TensorEncoder:
         if not self._latency_ring:
             return 0.0
         ordered = sorted(self._latency_ring)
-        idx = int(math.ceil(0.99 * len(ordered))) - 1
-        if idx < 0:
-            idx = 0
+        idx = math.ceil(0.99 * len(ordered)) - 1
+        idx = max(idx, 0)
         if idx >= len(ordered):
             idx = len(ordered) - 1
         return float(ordered[idx])
@@ -215,9 +212,7 @@ class TensorEncoder:
 
         # Action-space size for this batch: max across the batch, capped
         # at config max_action_space.
-        per_step_legal: list[list[int]] = [
-            list(s.legal_action_ids) for s in steps
-        ]
+        per_step_legal: list[list[int]] = [list(s.legal_action_ids) for s in steps]
         per_step_lens = [len(ids) for ids in per_step_legal]
         max_legal = max(per_step_lens) if per_step_lens else 0
         a = max(1, min(max_legal, self._max_action_space))
@@ -263,9 +258,7 @@ class TensorEncoder:
             # policy=0 — they are effectively pruned for this training step.
 
         # 3) combat_sample_targets — Phase-1 degenerate single per ADR-021.
-        combat_sample_targets = torch.zeros(
-            (b, _SAMPLE_FIELD_COUNT), dtype=torch.float32
-        )
+        combat_sample_targets = torch.zeros((b, _SAMPLE_FIELD_COUNT), dtype=torch.float32)
         for i, step in enumerate(steps):
             samples = list(step.combat_outcome_samples)
             if samples:
@@ -277,9 +270,7 @@ class TensorEncoder:
             # else: zeros — non-combat step has no sample to extract.
 
         # 4) combat_summary_targets — ADR-014 fields, fixed order.
-        combat_summary_targets = torch.zeros(
-            (b, _SUMMARY_FIELD_COUNT), dtype=torch.float32
-        )
+        combat_summary_targets = torch.zeros((b, _SUMMARY_FIELD_COUNT), dtype=torch.float32)
         for i, step in enumerate(steps):
             summary = step.combat_outcome_summary
             combat_summary_targets[i, 0] = float(summary.survival_probability)

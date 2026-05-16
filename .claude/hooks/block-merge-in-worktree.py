@@ -9,6 +9,7 @@ branch from residual CWD; reflog recovery was needed.
 Reads stdin JSON `{tool_name, tool_input: {command}}`. Exit 2 blocks
 with stderr to model; exit 0 allows.
 """
+
 import json
 import os
 import re

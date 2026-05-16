@@ -10,7 +10,6 @@ import pytest
 
 from upstream_sync import extract
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -128,9 +127,7 @@ class TestExtractToStaging:
             _make_file(staging / "scenes" / "main.tscn")
             return _make_subprocess_result(returncode=0)
 
-        result = extract.extract_to_staging(
-            pck, staging, gdre_bin, _subprocess_run=fake_run
-        )
+        result = extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
         assert isinstance(result, extract.StagingResult)
         assert result.staging_dir == staging
@@ -144,9 +141,7 @@ class TestExtractToStaging:
         staging = tmp_path / "staging"
 
         with pytest.raises(FileNotFoundError, match="GDRE"):
-            extract.extract_to_staging(
-                pck, staging, missing, _subprocess_run=lambda *a, **kw: None
-            )
+            extract.extract_to_staging(pck, staging, missing, _subprocess_run=lambda *a, **kw: None)
 
     def test_missing_pck_raises_filenotfound(self, tmp_path: Path) -> None:
         gdre_bin = tmp_path / "gdre_tools.x86_64"
@@ -171,9 +166,7 @@ class TestExtractToStaging:
             return _make_subprocess_result(returncode=1, stderr="boom")
 
         with pytest.raises(RuntimeError, match="GDRE"):
-            extract.extract_to_staging(
-                pck, staging, gdre_bin, _subprocess_run=fake_run
-            )
+            extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
     def test_exit_zero_but_sanity_key_missing_raises(self, tmp_path: Path) -> None:
         gdre_bin = tmp_path / "gdre"
@@ -188,13 +181,9 @@ class TestExtractToStaging:
             return _make_subprocess_result(returncode=0)
 
         with pytest.raises(RuntimeError, match="CombatManager"):
-            extract.extract_to_staging(
-                pck, staging, gdre_bin, _subprocess_run=fake_run
-            )
+            extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
-    def test_dotnet_stderr_line_suppressed_but_not_failure(
-        self, tmp_path: Path, caplog
-    ) -> None:
+    def test_dotnet_stderr_line_suppressed_but_not_failure(self, tmp_path: Path, caplog) -> None:
         """Harmless 'Could not create child process: dotnet' must not appear in log output."""
         gdre_bin = tmp_path / "gdre"
         gdre_bin.touch()
@@ -207,18 +196,13 @@ class TestExtractToStaging:
             _populate_minimal_staging(staging)
             return _make_subprocess_result(
                 returncode=0,
-                stderr=(
-                    "Could not create child process: dotnet\n"
-                    "Some other useful warning\n"
-                ),
+                stderr=("Could not create child process: dotnet\nSome other useful warning\n"),
             )
 
         import logging
 
         with caplog.at_level(logging.INFO, logger="upstream_sync.extract"):
-            result = extract.extract_to_staging(
-                pck, staging, gdre_bin, _subprocess_run=fake_run
-            )
+            result = extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
         assert isinstance(result, extract.StagingResult)
         joined = "\n".join(r.getMessage() for r in caplog.records)
@@ -240,9 +224,7 @@ class TestExtractToStaging:
             _populate_minimal_staging(staging)
             return _make_subprocess_result(returncode=0)
 
-        extract.extract_to_staging(
-            pck, staging, gdre_bin, _subprocess_run=fake_run
-        )
+        extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
         cmd = captured["cmd"]
         assert cmd[0] == str(gdre_bin)
@@ -266,9 +248,7 @@ class TestExtractToStaging:
             _make_file(staging / "_mono_referenced_assemblies" / "x.dll", b"abcdef")
             return _make_subprocess_result(returncode=0)
 
-        result = extract.extract_to_staging(
-            pck, staging, gdre_bin, _subprocess_run=fake_run
-        )
+        result = extract.extract_to_staging(pck, staging, gdre_bin, _subprocess_run=fake_run)
 
         assert result.unmatched_paths == [("_mono_referenced_assemblies", 6)]
 

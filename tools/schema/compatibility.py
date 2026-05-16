@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
@@ -67,7 +67,10 @@ def compare_contracts(baseline: ProtoContract, candidate: ProtoContract) -> Comp
             candidate_field = candidate_fields.get(number)
             if candidate_field is None:
                 messages.append(f"removed field {message_name}.{baseline_field.name} = {number}")
-            elif candidate_field.name != baseline_field.name or candidate_field.type_name != baseline_field.type_name:
+            elif (
+                candidate_field.name != baseline_field.name
+                or candidate_field.type_name != baseline_field.type_name
+            ):
                 messages.append(f"changed field {message_name}.{number}")
 
     return CompatibilityResult(ok=not messages, messages=messages)

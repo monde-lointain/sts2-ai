@@ -9,13 +9,14 @@ Schema-v1 invariants:
 4. Wrong type → ``ValueError`` naming the field.
 5. Round-trip ``to_dict`` → ``from_dict`` preserves values.
 """
+
 from __future__ import annotations
 
 import pytest
 
 from pipeline.trainer.manifest import (
-    ProvenanceManifest,
     SCHEMA_VERSION,
+    ProvenanceManifest,
     validate,
 )
 

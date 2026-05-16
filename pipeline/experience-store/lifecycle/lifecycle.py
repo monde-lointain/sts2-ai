@@ -18,7 +18,8 @@ import json
 import pathlib
 import threading
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from _atomic_io import atomic_write_json
 from _metrics import PrometheusLineBuilder
@@ -133,9 +134,7 @@ class Lifecycle:
 
         hot_bytes = int(self._hot_store.range_size_bytes())
         queue_depth = int(self._queue_depth_provider())
-        pressure = self._retention.classify_pressure(
-            hot_bytes, queue_depth, self._queue_capacity
-        )
+        pressure = self._retention.classify_pressure(hot_bytes, queue_depth, self._queue_capacity)
         pressure_value = self._pressure_value(pressure)
 
         action = "noop"
@@ -173,9 +172,7 @@ class Lifecycle:
         with self._lock:
             self._pressure_state = pressure_value
             if reason is not None:
-                self._dropped_total[reason] = (
-                    self._dropped_total.get(reason, 0) + rows_dropped
-                )
+                self._dropped_total[reason] = self._dropped_total.get(reason, 0) + rows_dropped
             self._last_tick_state = result
             self._tick_seconds_total += time.monotonic() - tick_started_monotonic
             new_cursor = dict(self._cursor)
@@ -186,9 +183,7 @@ class Lifecycle:
 
         # Append audit record (one entry per tick that took action).
         if action != "noop":
-            self._audit.append_tick(
-                result, bytes_freed=self._drop_target_bytes(hot_bytes)
-            )
+            self._audit.append_tick(result, bytes_freed=self._drop_target_bytes(hot_bytes))
 
         return result
 
@@ -286,9 +281,7 @@ class Lifecycle:
         encoded = json.dumps(body, sort_keys=True).encode("utf-8")
         return 200, {"Content-Type": "application/json"}, encoded
 
-    def handle_post_lifecycle_policy(
-        self, body: bytes
-    ) -> tuple[int, dict[str, str], bytes]:
+    def handle_post_lifecycle_policy(self, body: bytes) -> tuple[int, dict[str, str], bytes]:
         """Spec line 62-63: operator-only policy POST."""
         try:
             payload = json.loads(body.decode("utf-8"))
@@ -309,7 +302,7 @@ class Lifecycle:
         """Spec line 64-65: operator-triggered one-tick."""
         try:
             result = self.force_tick()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             err = json.dumps({"error": f"{type(exc).__name__}: {exc}"}).encode("utf-8")
             return 500, {"Content-Type": "application/json"}, err
         encoded = json.dumps(result.to_dict(), sort_keys=True).encode("utf-8")
@@ -330,9 +323,7 @@ class Lifecycle:
             promoted = self._promoted_total
             pressure_state = self._pressure_state
             last_tick_ts_ns = (
-                self._last_tick_state.tick_ts_ns
-                if self._last_tick_state is not None
-                else 0
+                self._last_tick_state.tick_ts_ns if self._last_tick_state is not None else 0
             )
             tick_seconds_total = self._tick_seconds_total
         cursor_ts_ns = int(self._cursor.get("last_promoted_ts_ns", 0))
@@ -352,9 +343,7 @@ class Lifecycle:
                 {"state": state},
                 1 if state == pressure_state else 0,
             )
-        builder.gauge(
-            "sts2_q3_lifecycle_last_tick_ts_ns", value=last_tick_ts_ns
-        )
+        builder.gauge("sts2_q3_lifecycle_last_tick_ts_ns", value=last_tick_ts_ns)
         builder.gauge(
             "sts2_q3_lifecycle_tick_seconds_total",
             value=tick_seconds_total,
@@ -378,9 +367,7 @@ class Lifecycle:
         fractional = int(margin * _DROP_FRACTION_OF_OVERFLOW_MARGIN)
         return max(_MIN_DROP_BYTES, fractional)
 
-    def _drop_oldest_range(
-        self, hot_bytes: int, reason: str
-    ) -> tuple[int, int]:
+    def _drop_oldest_range(self, hot_bytes: int, reason: str) -> tuple[int, int]:
         """Evict the oldest range. Returns (rows_dropped, until_ts_ns).
 
         Strategy:
@@ -395,9 +382,7 @@ class Lifecycle:
         cutoff_ts_ns = 0
         # Scan from -1 so HotStore returns the smallest-ts entry on first
         # `next`. scan() yields ascending ingest_ts_ns.
-        for ts_ns, _tid, traj_bytes in self._hot_store.scan(
-            after_ts_ns=-1, limit=10**9
-        ):
+        for ts_ns, _tid, traj_bytes in self._hot_store.scan(after_ts_ns=-1, limit=10**9):
             cutoff_ts_ns = int(ts_ns)
             accumulated += len(traj_bytes) if traj_bytes is not None else 0
             if accumulated >= target_bytes:

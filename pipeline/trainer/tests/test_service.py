@@ -12,6 +12,7 @@ Q3 is mocked at the prefetcher daemon's HTTP boundary so DataIngest can
 start without a live Q3 service; the daemon is allowed to die naturally
 on its first failed POST without taking the HTTP server with it.
 """
+
 from __future__ import annotations
 
 import json
@@ -29,7 +30,6 @@ from pipeline.trainer.service import (
     TrainerServer,
     _resolve_data_dir,
 )
-
 
 _CFG_PATH = Path(__file__).resolve().parents[1] / "config" / "local.json"
 
@@ -110,16 +110,12 @@ def test_server_constructs(tmp_path: Path) -> None:
 def test_health_returns_smoke_contract(tmp_path: Path) -> None:
     port = _pick_port()
     server = _make_server(tmp_path, port=port)
-    server_thread = threading.Thread(
-        target=server.serve_forever, name="test-server", daemon=True
-    )
+    server_thread = threading.Thread(target=server.serve_forever, name="test-server", daemon=True)
     server_thread.start()
     try:
         # Brief wait for the bind.
         time.sleep(0.05)
-        with urllib.request.urlopen(
-            f"http://127.0.0.1:{port}/health", timeout=2
-        ) as resp:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as resp:
             assert resp.status == 200
             payload = json.loads(resp.read().decode("utf-8"))
         assert payload == {"service": "trainer", "status": "ok", "schema": 0}
@@ -136,15 +132,11 @@ def test_health_returns_smoke_contract(tmp_path: Path) -> None:
 def test_metrics_returns_prometheus_with_service_up(tmp_path: Path) -> None:
     port = _pick_port()
     server = _make_server(tmp_path, port=port)
-    server_thread = threading.Thread(
-        target=server.serve_forever, name="test-server", daemon=True
-    )
+    server_thread = threading.Thread(target=server.serve_forever, name="test-server", daemon=True)
     server_thread.start()
     try:
         time.sleep(0.05)
-        with urllib.request.urlopen(
-            f"http://127.0.0.1:{port}/metrics", timeout=2
-        ) as resp:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/metrics", timeout=2) as resp:
             assert resp.status == 200
             body = resp.read().decode("utf-8")
         # Smoke-contract gate (smoke_services.py checks this exact string).
@@ -163,16 +155,12 @@ def test_metrics_returns_prometheus_with_service_up(tmp_path: Path) -> None:
 def test_404_returns_json(tmp_path: Path) -> None:
     port = _pick_port()
     server = _make_server(tmp_path, port=port)
-    server_thread = threading.Thread(
-        target=server.serve_forever, name="test-server", daemon=True
-    )
+    server_thread = threading.Thread(target=server.serve_forever, name="test-server", daemon=True)
     server_thread.start()
     try:
         time.sleep(0.05)
         try:
-            urllib.request.urlopen(
-                f"http://127.0.0.1:{port}/no-such-endpoint", timeout=2
-            )
+            urllib.request.urlopen(f"http://127.0.0.1:{port}/no-such-endpoint", timeout=2)
             raise AssertionError("expected 404")
         except urllib.error.HTTPError as exc:
             assert exc.code == 404
@@ -209,9 +197,7 @@ def test_shutdown_background_completes_in_time(tmp_path: Path) -> None:
         # Patch the driver loop's get_batch timeout to be tiny so the
         # driver's first iteration short-circuits and the daemon exits
         # cleanly on stop_event.
-        with mock.patch(
-            "pipeline.trainer.train_driver._GET_BATCH_TIMEOUT_SEC", 0.5
-        ):
+        with mock.patch("pipeline.trainer.train_driver._GET_BATCH_TIMEOUT_SEC", 0.5):
             try:
                 server.start_background_threads()
                 # Give the threads a moment to start; the prefetcher will
@@ -222,9 +208,7 @@ def test_shutdown_background_completes_in_time(tmp_path: Path) -> None:
                 server.shutdown_background(timeout=10.0)
                 elapsed = time.monotonic() - t0
                 # All daemons should rejoin well within the budget.
-                assert elapsed < 15.0, (
-                    f"shutdown took {elapsed:.2f}s; budget 15s"
-                )
+                assert elapsed < 15.0, f"shutdown took {elapsed:.2f}s; budget 15s"
             finally:
                 server.server_close()
 

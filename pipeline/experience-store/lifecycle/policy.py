@@ -72,30 +72,19 @@ def validate(policy: dict[str, Any]) -> dict[str, Any]:
     max_age = policy["max_age_seconds"]
 
     if not isinstance(high_water, int) or high_water <= 0:
-        raise ValueError(
-            f"hot_high_water_bytes must be positive int; got {high_water!r}"
-        )
+        raise ValueError(f"hot_high_water_bytes must be positive int; got {high_water!r}")
     if not isinstance(overflow, int) or overflow <= 0:
-        raise ValueError(
-            f"hot_overflow_bytes must be positive int; got {overflow!r}"
-        )
+        raise ValueError(f"hot_overflow_bytes must be positive int; got {overflow!r}")
     if overflow < high_water:
         raise ValueError(
-            f"hot_overflow_bytes ({overflow}) must be >= "
-            f"hot_high_water_bytes ({high_water})"
+            f"hot_overflow_bytes ({overflow}) must be >= hot_high_water_bytes ({high_water})"
         )
     if not isinstance(tick_interval, (int, float)) or tick_interval <= 0:
-        raise ValueError(
-            f"tick_interval_seconds must be positive number; got {tick_interval!r}"
-        )
+        raise ValueError(f"tick_interval_seconds must be positive number; got {tick_interval!r}")
     if not isinstance(cold_enabled, bool):
-        raise ValueError(
-            f"cold_tier_enabled must be bool; got {type(cold_enabled).__name__}"
-        )
+        raise ValueError(f"cold_tier_enabled must be bool; got {type(cold_enabled).__name__}")
     if max_age is not None and (not isinstance(max_age, int) or max_age <= 0):
-        raise ValueError(
-            f"max_age_seconds must be positive int or null; got {max_age!r}"
-        )
+        raise ValueError(f"max_age_seconds must be positive int or null; got {max_age!r}")
 
     return {
         "hot_high_water_bytes": int(high_water),

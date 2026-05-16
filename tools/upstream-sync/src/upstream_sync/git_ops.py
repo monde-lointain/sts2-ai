@@ -83,6 +83,7 @@ def _tag_exists(tree: Path, tag: str) -> bool:
         cwd=tree,
         capture_output=True,
         text=True,
+        check=False,
     )
     return result.returncode == 0
 
@@ -111,10 +112,7 @@ def bootstrap(tree: Path, version: str, buildid: str, gdre_version: str) -> str:
     _run_git(tree, "init", "-q", op="init")
     _run_git(tree, "add", "-A", op="add")
 
-    msg = (
-        f"bootstrap: import {version} "
-        f"(GDRE {gdre_version}, Steam buildid {buildid})"
-    )
+    msg = f"bootstrap: import {version} (GDRE {gdre_version}, Steam buildid {buildid})"
     _run_git(tree, *_AUTHOR_FLAGS, "commit", "-q", "-m", msg, op="commit")
     _run_git(tree, "tag", version, op="tag")
 
@@ -157,7 +155,8 @@ def commit_and_tag(
     # drops upstream-removed files; git add -A then stages those deletions.
     status = _run_git(tree, "status", "--porcelain", op="status").stdout
     offending = [
-        line for line in status.splitlines()
+        line
+        for line in status.splitlines()
         if line and line[:1] not in ("A", "M", "D", "R", "C", " ")
     ]
     if offending:

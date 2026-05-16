@@ -37,18 +37,18 @@ Spec/prompt API surface notes:
 
 from __future__ import annotations
 
+import contextlib
 import os
 import random
 import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator
 
-from rocksdict import Options, Rdict, ReadOptions, WriteBatch
+from rocksdict import Options, Rdict, WriteBatch
 
 from .keys import (
     TRAJ_ID_LEN,
-    TS_LEN,
     decode_traj_key,
     decode_ts,
     encode_traj_key,
@@ -139,9 +139,7 @@ class HotStore:
             return None
         return self._cf_traj.get(encode_traj_key(ts_ns, bytes(trajectory_id)))
 
-    def scan(
-        self, after_ts_ns: int, limit: int
-    ) -> Iterator[tuple[int, bytes, bytes]]:
+    def scan(self, after_ts_ns: int, limit: int) -> Iterator[tuple[int, bytes, bytes]]:
         """Range-scan `traj` strictly after `after_ts_ns`, capped at `limit`.
 
         Yields (ingest_ts_ns, trajectory_id, traj_bytes) tuples.
@@ -185,9 +183,7 @@ class HotStore:
             return 0
         # Atomic delete across both CFs.
         wb = WriteBatch(raw_mode=True)
-        wb.delete_range(
-            traj_range_lo(0), hi, column_family=self._traj_handle
-        )
+        wb.delete_range(traj_range_lo(0), hi, column_family=self._traj_handle)
         for _, tid in victims:
             wb.delete(tid, column_family=self._by_id_handle)
         self._db.write(wb)
@@ -345,19 +341,13 @@ class HotStore:
         to the parent DB and otherwise keep the file lock alive even after
         the user calls close().
         """
-        try:
+        with contextlib.suppress(Exception):
             self.flush()
-        except Exception:
-            pass
         # Drop CF Rdict references; the parent DB's close releases the lock.
-        try:
+        with contextlib.suppress(Exception):
             self._cf_traj.close()
-        except Exception:
-            pass
-        try:
+        with contextlib.suppress(Exception):
             self._cf_by_id.close()
-        except Exception:
-            pass
         self._cf_traj = None  # type: ignore[assignment]
         self._cf_by_id = None  # type: ignore[assignment]
         self._traj_handle = None  # type: ignore[assignment]

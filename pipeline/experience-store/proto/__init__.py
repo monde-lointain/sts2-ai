@@ -18,7 +18,7 @@ _PROJECT_ROOT = str(_Path(__file__).resolve().parents[3])
 if _PROJECT_ROOT not in _sys.path:
     _sys.path.insert(0, _PROJECT_ROOT)
 
-from pipeline.common.trajectory_proto import (  # noqa: E402
+from pipeline.common.trajectory_proto import (
     CombatOutcomeSample,
     CombatOutcomeSummary,
     DecisionType,

@@ -21,6 +21,7 @@ The two-run comparison is the simplest sufficient probe; if the post-step
 state_dict matches tensor-by-tensor, every upstream computation must
 have been deterministic.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -44,15 +45,11 @@ from pipeline.trainer.run_config import (
 )
 from pipeline.trainer.tensor_encoder import TensorEncoder
 
-
 # ---------------------------------------------------------------------------
 # Fixtures / helpers
 # ---------------------------------------------------------------------------
 _REGISTRY_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "contracts"
-    / "registry"
-    / "phase1-silent.json"
+    Path(__file__).resolve().parents[3] / "contracts" / "registry" / "phase1-silent.json"
 )
 _SEED: int = 4242
 
@@ -144,9 +141,7 @@ def _make_batch_steps(n: int = 4) -> list[TrajectoryStep]:
     return [_make_step(action_id=i) for i in range(n)]
 
 
-def _run_one_step(
-    cfg: RunConfig, registry: ContentRegistry, steps: list[TrajectoryStep]
-) -> dict:
+def _run_one_step(cfg: RunConfig, registry: ContentRegistry, steps: list[TrajectoryStep]) -> dict:
     """Construct fresh submodules under a fixed seed and run one full step.
 
     Returns a dict carrying the scalars + state_dict needed for the
@@ -171,9 +166,7 @@ def _run_one_step(
 
     # Snapshot the post-step state_dict to CPU (defensive — already CPU,
     # but ``.cpu()`` is a no-op then) for tensor-equality comparison.
-    state_dict = {
-        k: v.detach().cpu().clone() for k, v in net.state_dict().items()
-    }
+    state_dict = {k: v.detach().cpu().clone() for k, v in net.state_dict().items()}
     return {
         "loss_total": float(loss_result.total.detach().item()),
         "grad_norm_post_clip": float(step_stats.grad_norm_post_clip),
@@ -208,9 +201,7 @@ def test_seeded_step_loss_and_grad_norm_bit_identical(
         f"grad_norm_post_clip diverged: "
         f"{run_a['grad_norm_post_clip']!r} vs {run_b['grad_norm_post_clip']!r}"
     )
-    assert run_a["lr"] == run_b["lr"], (
-        f"lr diverged: {run_a['lr']!r} vs {run_b['lr']!r}"
-    )
+    assert run_a["lr"] == run_b["lr"], f"lr diverged: {run_a['lr']!r} vs {run_b['lr']!r}"
 
 
 def test_seeded_state_dict_bit_identical(registry: ContentRegistry) -> None:
@@ -230,14 +221,11 @@ def test_seeded_state_dict_bit_identical(registry: ContentRegistry) -> None:
 
     sd_a = run_a["state_dict"]
     sd_b = run_b["state_dict"]
-    assert set(sd_a.keys()) == set(sd_b.keys()), (
-        "state_dict keys diverged across runs"
-    )
+    assert set(sd_a.keys()) == set(sd_b.keys()), "state_dict keys diverged across runs"
     for key in sd_a:
         ta, tb = sd_a[key], sd_b[key]
         assert ta.shape == tb.shape, f"{key}: shape diverged {ta.shape} vs {tb.shape}"
         assert ta.dtype == tb.dtype, f"{key}: dtype diverged {ta.dtype} vs {tb.dtype}"
         assert torch.equal(ta, tb), (
-            f"{key}: tensors not bit-identical "
-            f"(max abs diff = {(ta - tb).abs().max().item()})"
+            f"{key}: tensors not bit-identical (max abs diff = {(ta - tb).abs().max().item()})"
         )

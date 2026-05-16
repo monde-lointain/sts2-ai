@@ -2,7 +2,6 @@ import unittest
 
 from tools.schema.compatibility import compare_contracts, parse_proto_contract
 
-
 BASE_PROTO = """
 syntax = "proto3";
 // sts2.schema.major: 0

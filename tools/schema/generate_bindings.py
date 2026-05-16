@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-from pathlib import Path
 import json
 import re
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "contracts" / "schemas" / "codegen.json"
@@ -60,7 +59,11 @@ def main() -> int:
             cpp_namespace = "sts2::generated::" + "::".join(_ident(p) for p in rel.parent.parts)
             write_cpp(contracts_generated / "cpp" / rel.parent / f"{stem}.h", names, cpp_namespace)
             cs_namespace = "Sts2.Generated." + ".".join(_ident(p).upper() for p in rel.parent.parts)
-            write_csharp(contracts_generated / "csharp" / rel.parent / f"{proto.stem}.cs", names, cs_namespace)
+            write_csharp(
+                contracts_generated / "csharp" / rel.parent / f"{proto.stem}.cs",
+                names,
+                cs_namespace,
+            )
     return 0
 
 

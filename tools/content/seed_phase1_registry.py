@@ -5,9 +5,10 @@ import hashlib
 import json
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = Path("/home/clydew372/development/projects/cs/sts2-headless/test/fixtures/q4-manifest-phase1.json")
+SOURCE = Path(
+    "/home/clydew372/development/projects/cs/sts2-headless/test/fixtures/q4-manifest-phase1.json"
+)
 OUT = ROOT / "contracts" / "registry" / "phase1-silent.json"
 
 
@@ -21,7 +22,7 @@ KINDS = [
 
 
 def token_hash(kind: str, name: str) -> str:
-    return hashlib.sha256(f"{kind}:{name}".encode("utf-8")).hexdigest()
+    return hashlib.sha256(f"{kind}:{name}".encode()).hexdigest()
 
 
 def main() -> int:
@@ -29,7 +30,9 @@ def main() -> int:
     tokens = []
     next_id = 1
     for kind, fixed in KINDS:
-        names = fixed if fixed is not None else manifest[kind + "s" if kind != "enemy" else "monsters"]
+        names = (
+            fixed if fixed is not None else manifest[kind + "s" if kind != "enemy" else "monsters"]
+        )
         for name in names:
             token = f"{kind}:{name}" if kind != "special" else name
             tokens.append(

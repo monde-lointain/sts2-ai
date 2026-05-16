@@ -3,6 +3,7 @@
 Replaces scattered `(major, minor)` tuples and `_PHASE1_MAJOR/_MINOR` consts.
 PHASE1 is locked by contracts/schemas/trajectory/trajectory.proto:3-4.
 """
+
 from __future__ import annotations
 
 import dataclasses
@@ -31,11 +32,11 @@ class SchemaVersion:
         return {"major": self.major, "minor": self.minor}
 
     @classmethod
-    def from_fields(cls, fields: dict) -> "SchemaVersion":
+    def from_fields(cls, fields: dict) -> SchemaVersion:
         return cls(int(fields["major"]), int(fields["minor"]))
 
     @classmethod
-    def from_tuple(cls, t: tuple[int, int]) -> "SchemaVersion":
+    def from_tuple(cls, t: tuple[int, int]) -> SchemaVersion:
         return cls(int(t[0]), int(t[1]))
 
     def __str__(self) -> str:

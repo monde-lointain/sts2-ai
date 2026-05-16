@@ -24,10 +24,10 @@ import os
 import sys
 import tempfile
 import uuid
-from contextlib import contextmanager
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from contextlib import contextmanager, suppress
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Iterator
 
 from upstream_sync.config import resolve_config
 from upstream_sync.correlate import correlate
@@ -78,9 +78,7 @@ def _read_state(monorepo_root: Path) -> dict | None:
     try:
         return json.loads(target.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            f"upstream-sync state file {target} is corrupted: {exc}"
-        ) from exc
+        raise RuntimeError(f"upstream-sync state file {target} is corrupted: {exc}") from exc
 
 
 def _write_state(monorepo_root: Path, state: dict) -> None:
@@ -109,7 +107,7 @@ def _tool_version() -> str:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 # --------------------------------------------------------------------------- #
@@ -125,16 +123,14 @@ def _acquire_lock() -> Iterator[None]:
     Raises ``BlockingIOError`` if another sync is already running.
     """
     LOCK_PATH.parent.mkdir(parents=True, exist_ok=True)
-    fh = open(LOCK_PATH, "w", encoding="utf-8")
+    fh = open(LOCK_PATH, "w", encoding="utf-8")  # noqa: SIM115 — flock lifetime spans the context
     try:
         fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         try:
             yield
         finally:
-            try:
+            with suppress(OSError):
                 fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
-            except OSError:
-                pass
     finally:
         fh.close()
 
@@ -207,9 +203,7 @@ def _cmd_check(args: argparse.Namespace) -> int:
         prior_int = cur_int = 0
 
     if cur_int == prior_int:
-        print(
-            f"Status: no patch detected (current buildid == last_synced_buildid)"
-        )
+        print("Status: no patch detected (current buildid == last_synced_buildid)")
         return 0
 
     if cur_int < prior_int:
@@ -219,15 +213,11 @@ def _cmd_check(args: argparse.Namespace) -> int:
         )
         return 0
 
-    print(
-        f"Status: NEW PATCH DETECTED: buildid {meta.buildid} > last_synced {prior_buildid}"
-    )
+    print(f"Status: NEW PATCH DETECTED: buildid {meta.buildid} > last_synced {prior_buildid}")
 
     cache_dir = monorepo / "tools" / "upstream-sync" / "cache" / "patch-notes"
     try:
-        notes = fetch_patch_notes(
-            app_id=cfg.app_id, count=20, cache_dir=cache_dir
-        )
+        notes = fetch_patch_notes(app_id=cfg.app_id, count=20, cache_dir=cache_dir)
     except Exception as exc:  # noqa: BLE001 — best-effort
         print(f"  (could not fetch patch notes: {exc})")
         return 0
@@ -236,10 +226,10 @@ def _cmd_check(args: argparse.Namespace) -> int:
         print("Patch notes since last sync: none retrievable")
         return 0
 
-    print(f"Patch notes (most recent first):")
+    print("Patch notes (most recent first):")
     for note in notes[:5]:
         ts = (
-            datetime.fromtimestamp(note.date, tz=timezone.utc).strftime("%Y-%m-%d")
+            datetime.fromtimestamp(note.date, tz=UTC).strftime("%Y-%m-%d")
             if note.date
             else "????-??-??"
         )
@@ -291,8 +281,7 @@ def _cmd_extract(args: argparse.Namespace) -> int:
     result = extract_to_staging(pck, staging_dir, cfg.gdre_bin)
     if result.unmatched_paths:
         print(
-            f"Allowlist surveillance: {len(result.unmatched_paths)} unmatched "
-            "top-level path(s):",
+            f"Allowlist surveillance: {len(result.unmatched_paths)} unmatched top-level path(s):",
             file=sys.stderr,
         )
         for name, size in result.unmatched_paths:
@@ -320,7 +309,9 @@ def _cmd_extract(args: argparse.Namespace) -> int:
     return 0
 
 
-def _default_tag_range(upstream_tree: Path, from_arg: str | None, to_arg: str | None) -> tuple[str, str]:
+def _default_tag_range(
+    upstream_tree: Path, from_arg: str | None, to_arg: str | None
+) -> tuple[str, str]:
     """Resolve --from / --to defaults to the last two tags in chronological order."""
     if from_arg and to_arg:
         return from_arg, to_arg
@@ -337,9 +328,7 @@ def _default_tag_range(upstream_tree: Path, from_arg: str | None, to_arg: str | 
 
 def _cmd_diff(args: argparse.Namespace) -> int:
     cfg = resolve_config(args)
-    from_tag, to_tag = _default_tag_range(
-        cfg.upstream_tree, args.from_tag, args.to_tag
-    )
+    from_tag, to_tag = _default_tag_range(cfg.upstream_tree, args.from_tag, args.to_tag)
 
     report = analyze_diff(from_tag, to_tag, cfg.upstream_tree)
     print(f"Diff {from_tag}..{to_tag}")
@@ -356,9 +345,7 @@ def _cmd_port_decisions(args: argparse.Namespace) -> int:
     cfg = resolve_config(args)
     monorepo = _resolve_monorepo(args)
 
-    from_tag, to_tag = _default_tag_range(
-        cfg.upstream_tree, args.from_tag, args.to_tag
-    )
+    from_tag, to_tag = _default_tag_range(cfg.upstream_tree, args.from_tag, args.to_tag)
 
     report = analyze_diff(from_tag, to_tag, cfg.upstream_tree)
     cache_dir = monorepo / "tools" / "upstream-sync" / "cache" / "patch-notes"
@@ -428,8 +415,7 @@ def _cmd_sync(args: argparse.Namespace) -> int:
                 },
             )
             print(
-                f"[dry-run] Bootstrap complete for {version_spec.raw}; "
-                "skipping diff (no prior tag)"
+                f"[dry-run] Bootstrap complete for {version_spec.raw}; skipping diff (no prior tag)"
             )
             return 0
         print(f"[dry-run] skipping GDRE extract for {version_spec.raw}")
@@ -452,12 +438,10 @@ def _cmd_sync(args: argparse.Namespace) -> int:
                     "upstream_tree_path": str(cfg.upstream_tree),
                 },
             )
-            print(f"Bootstrap complete (first sync); skipping diff (no prior tag)")
+            print("Bootstrap complete (first sync); skipping diff (no prior tag)")
             return 0
         assert_clean(cfg.upstream_tree)
-        staging_dir = (
-            Path(tempfile.gettempdir()) / f"sts2-extract-{uuid.uuid4().hex[:8]}"
-        )
+        staging_dir = Path(tempfile.gettempdir()) / f"sts2-extract-{uuid.uuid4().hex[:8]}"
         pck = _pck_path(cfg.steam_home, meta.installdir)
         result = extract_to_staging(pck, staging_dir, cfg.gdre_bin)
         if result.unmatched_paths:
@@ -525,9 +509,7 @@ def _add_global_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--steam-home", help="Override Steam install root")
     parser.add_argument("--gdre-bin", help="Override GDRE binary path")
     parser.add_argument("--upstream-tree", help="Override decompiled tree path")
-    parser.add_argument(
-        "--verbose", action="store_true", help="Verbose logging to stdout"
-    )
+    parser.add_argument("--verbose", action="store_true", help="Verbose logging to stdout")
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -555,9 +537,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_diff.add_argument("--from", dest="from_tag", help="Source tag (default: penultimate)")
     p_diff.add_argument("--to", dest="to_tag", help="Destination tag (default: latest)")
 
-    p_pd = sub.add_parser(
-        "port-decisions", help="Render port-decision doc from cached data"
-    )
+    p_pd = sub.add_parser("port-decisions", help="Render port-decision doc from cached data")
     _add_global_args(p_pd)
     p_pd.add_argument("--from", dest="from_tag", help="Source tag (default: penultimate)")
     p_pd.add_argument("--to", dest="to_tag", help="Destination tag (default: latest)")

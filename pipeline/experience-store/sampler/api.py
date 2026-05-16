@@ -34,7 +34,8 @@ from __future__ import annotations
 
 import json
 import threading
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from _metrics import PrometheusLineBuilder
 from schema_registry import Reject, SchemaRegistry
@@ -143,9 +144,7 @@ class Sampler:
 
     # ---------- HTTP entrypoints ----------
 
-    def handle_post_sample(
-        self, body: bytes
-    ) -> tuple[int, dict[str, str], bytes]:
+    def handle_post_sample(self, body: bytes) -> tuple[int, dict[str, str], bytes]:
         """Handle POST /sample.
 
         Returns `(status_code, response_headers, response_body)`. The
@@ -156,9 +155,7 @@ class Sampler:
             request = self._decode_request(body)
         except ValueError as exc:
             self._metrics.request("unknown", "err")
-            return self._error_response(
-                400, {"error": "malformed", "detail": str(exc)}
-            )
+            return self._error_response(400, {"error": "malformed", "detail": str(exc)})
 
         mode = request["mode"]
         if mode != "uniform":
@@ -192,14 +189,10 @@ class Sampler:
         if state is None:
             # cursor_id was supplied but missing/expired.
             self._metrics.request(mode, "err")
-            return self._error_response(
-                404, {"error": "cursor_not_found", "cursor_id": cursor_id}
-            )
+            return self._error_response(404, {"error": "cursor_not_found", "cursor_id": cursor_id})
 
         batch_size = request["batch_size"]
-        steps_iter, trailer, new_state = self._sample_uniform(
-            state, batch_size
-        )
+        steps_iter, trailer, new_state = self._sample_uniform(state, batch_size)
 
         # Persist the advanced cursor state. If this is the first call
         # for a brand-new cursor, `cursor_id` is empty -> create; else
@@ -222,20 +215,14 @@ class Sampler:
         step_frames = list(steps_iter)
         self._metrics.rows(mode, "hot", len(step_frames))
 
-        return self._stream_response(
-            iter(step_frames), trailer=trailer, cursor_id=cursor_id
-        )
+        return self._stream_response(iter(step_frames), trailer=trailer, cursor_id=cursor_id)
 
-    def handle_get_sample_cursor(
-        self, cursor_id: str
-    ) -> tuple[int, dict[str, str], bytes]:
+    def handle_get_sample_cursor(self, cursor_id: str) -> tuple[int, dict[str, str], bytes]:
         """Debug endpoint: return cursor state as JSON."""
         state = self._cursors.get(cursor_id)
         self._metrics.set_cursor_count(self._cursors.count())
         if state is None:
-            return self._error_response(
-                404, {"error": "cursor_not_found", "cursor_id": cursor_id}
-            )
+            return self._error_response(404, {"error": "cursor_not_found", "cursor_id": cursor_id})
         body = json.dumps(
             {"cursor_id": cursor_id, **state.snapshot()},
             sort_keys=True,
@@ -249,9 +236,7 @@ class Sampler:
             body,
         )
 
-    def handle_get_sample_recent(
-        self, batch_size: int = 512
-    ) -> tuple[int, dict[str, str], bytes]:
+    def handle_get_sample_recent(self, batch_size: int = 512) -> tuple[int, dict[str, str], bytes]:
         """Convenience wrapper for Q12 evaluation-harness.
 
         Equivalent to `POST /sample` with
@@ -328,23 +313,16 @@ class Sampler:
             val = raw.get(field_name)
             if val is None:
                 continue
-            if not isinstance(val, list) or not all(
-                isinstance(x, str) for x in val
-            ):
-                raise ValueError(
-                    f"filter {field_name!r} must be a list of strings"
-                )
+            if not isinstance(val, list) or not all(isinstance(x, str) for x in val):
+                raise ValueError(f"filter {field_name!r} must be a list of strings")
             out[field_name] = list(val)
 
         dec = raw.get("decision_type")
         if dec is not None:
             if not isinstance(dec, list) or not all(
-                isinstance(x, (str, int)) and not isinstance(x, bool)
-                for x in dec
+                isinstance(x, (str, int)) and not isinstance(x, bool) for x in dec
             ):
-                raise ValueError(
-                    "filter 'decision_type' must be a list of strings or ints"
-                )
+                raise ValueError("filter 'decision_type' must be a list of strings or ints")
             out["decision_type"] = list(dec)
 
         schema = raw.get("schema_version")
@@ -356,9 +334,7 @@ class Sampler:
                 or not isinstance(schema.get("minor"), int)
                 or isinstance(schema.get("minor"), bool)
             ):
-                raise ValueError(
-                    "filter 'schema_version' must be {major: int, minor: int}"
-                )
+                raise ValueError("filter 'schema_version' must be {major: int, minor: int}")
             out["schema_version"] = {
                 "major": int(schema["major"]),
                 "minor": int(schema["minor"]),
@@ -446,9 +422,7 @@ class Sampler:
         return 200, headers, body
 
     @staticmethod
-    def _error_response(
-        status: int, payload: dict[str, Any]
-    ) -> tuple[int, dict[str, str], bytes]:
+    def _error_response(status: int, payload: dict[str, Any]) -> tuple[int, dict[str, str], bytes]:
         body = json.dumps(payload, sort_keys=True).encode("utf-8")
         return (
             status,
@@ -459,9 +433,7 @@ class Sampler:
             body,
         )
 
-    def _map_schema_reject(
-        self, mode: str, decision: Reject
-    ) -> tuple[int, dict[str, str], bytes]:
+    def _map_schema_reject(self, mode: str, decision: Reject) -> tuple[int, dict[str, str], bytes]:
         """Translate a SchemaRegistry Reject into the spec's HTTP response.
 
         Phase-1A only schema_unknown(400) is reachable; the 503 path is
