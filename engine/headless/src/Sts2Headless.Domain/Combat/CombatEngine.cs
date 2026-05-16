@@ -255,10 +255,14 @@ public static class CombatEngine
     /// Shuffle the deck (routing through the Shuffle bucket) and build the
     /// initial draw pile.
     /// </summary>
+    // CA1859: IRngSource has multiple impls (Rng + test fakes); interface is
+    // load-bearing for determinism harness substitution. Suppress.
+#pragma warning disable CA1859
     private static CardPile BuildInitialDrawPile(
         IReadOnlyList<CardInstance> deck,
         IRngSource shuffleRng
     )
+#pragma warning restore CA1859
     {
         var drawList = new List<CardInstance>(deck);
         shuffleRng.Shuffle(drawList);
@@ -529,7 +533,7 @@ public static class CombatEngine
         var hookRegistry = new HookRegistry();
         var actionQueue = new ActionQueue();
         var execCtx = new DomainExecutionContext(ctx.Clock, ctx.Rng, hookRegistry, actionQueue);
-        string? targetString = targetEnemyId?.ToString();
+        string? targetString = targetEnemyId?.ToString(System.Globalization.CultureInfo.InvariantCulture);
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: targetEnemyId,

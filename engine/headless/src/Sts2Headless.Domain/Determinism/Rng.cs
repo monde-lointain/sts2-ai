@@ -73,7 +73,7 @@ public class Rng : IRngSource
         if (minInclusive >= maxExclusive)
         {
             throw new ArgumentOutOfRangeException(
-                "minInclusive",
+                nameof(minInclusive),
                 "Minimum must be lower than maximum."
             );
         }
@@ -89,7 +89,7 @@ public class Rng : IRngSource
         if (minInclusive >= maxExclusive)
         {
             throw new ArgumentOutOfRangeException(
-                "minInclusive",
+                nameof(minInclusive),
                 "Minimum must be lower than maximum."
             );
         }
@@ -107,7 +107,7 @@ public class Rng : IRngSource
         if (min > max)
         {
             throw new ArgumentOutOfRangeException(
-                "min",
+                nameof(min),
                 "Minimum must not be higher than maximum."
             );
         }
@@ -126,7 +126,7 @@ public class Rng : IRngSource
         if (min > max)
         {
             throw new ArgumentOutOfRangeException(
-                "min",
+                nameof(min),
                 "Minimum must not be higher than maximum."
             );
         }
@@ -151,7 +151,7 @@ public class Rng : IRngSource
         if (min > max)
         {
             throw new ArgumentOutOfRangeException(
-                "min",
+                nameof(min),
                 "Minimum must not be higher than maximum."
             );
         }

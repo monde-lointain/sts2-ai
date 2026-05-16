@@ -16,6 +16,11 @@ namespace Sts2Headless.Domain.Content.Models;
 public enum PowerStackType
 {
     None = 0,
+
+    // CA1720: 'Single' shadows the float-type name. Domain terminology wins;
+    // the enum member is unambiguous in context.
+#pragma warning disable CA1720
     Counter,
     Single,
+#pragma warning restore CA1720
 }

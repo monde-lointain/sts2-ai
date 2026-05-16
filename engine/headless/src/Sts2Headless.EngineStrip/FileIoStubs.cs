@@ -86,8 +86,12 @@ public static class ResourceLoader
 /// </summary>
 public static class ResourceSaver
 {
+    // CA1711: stub mirrors Godot's API surface exactly (SaverFlags/ModeFlags
+    // are the upstream names); renaming would break grep-based parity audits.
+#pragma warning disable CA1711
     [Flags]
     public enum SaverFlags
+#pragma warning restore CA1711
     {
         None = 0,
         RelativePaths = 1,
@@ -172,7 +176,9 @@ public class DirAccess : IDisposable
 /// </summary>
 public class FileAccess : IDisposable
 {
+#pragma warning disable CA1711 // upstream Godot API parity
     public enum ModeFlags
+#pragma warning restore CA1711
     {
         Read = 1,
         Write = 2,

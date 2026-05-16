@@ -70,7 +70,7 @@ public sealed record MonsterIntent(
 {
     /// <summary>"No intent resolved yet" sentinel — Kind=Unknown, no damage, no powers.</summary>
     public static MonsterIntent None { get; } =
-        new(MonsterIntentKind.Unknown, 0, 0, ImmutableList<MonsterIntentPower>.Empty, "");
+        new(MonsterIntentKind.Unknown, 0, 0, ImmutableList<MonsterIntentPower>.Empty, string.Empty);
 
     /// <summary>
     /// Override record-default equality so the AppliesPowers list is compared
@@ -118,7 +118,7 @@ public sealed record MonsterIntent(
     /// monsters configure power-application separately in S6's monster turn glue).
     /// </summary>
     public static MonsterIntent FromContentIntent(Intent source) =>
-        FromContentIntent(source, moveId: "");
+        FromContentIntent(source, moveId: string.Empty);
 
     /// <summary>
     /// Build a runtime <see cref="MonsterIntent"/> with a recorded

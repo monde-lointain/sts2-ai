@@ -1,0 +1,24 @@
+# Test-project-scoped suppressions.
+#
+# xUnit convention is Method_State_ExpectedBehavior naming, which CA1707
+# (no underscores) and SA1300/SA1310 (Hungarian / underscore prefixes)
+# flag. CA1861 (inline const arrays) is fine for test assertions where
+# allocation cost is moot. CA1512 (ArgumentOutOfRangeException.ThrowIf...)
+# is a fluent-API preference irrelevant for tests.
+
+[*.cs]
+dotnet_diagnostic.CA1707.severity = none  # underscore-separated test names
+dotnet_diagnostic.CA1861.severity = none  # const arrays in test assertions
+dotnet_diagnostic.CA1512.severity = none  # legacy throw idiom in tests
+dotnet_diagnostic.CA1859.severity = none  # tests use interface params for fakes
+dotnet_diagnostic.CA1850.severity = none  # legacy hash APIs in tests
+dotnet_diagnostic.CA1822.severity = none  # tests don't care about mark-static
+dotnet_diagnostic.CA1816.severity = none  # GC.SuppressFinalize ceremony irrelevant
+dotnet_diagnostic.CA2000.severity = none  # disposable lifetimes in tests
+dotnet_diagnostic.CA1031.severity = none  # broad catches in tests
+dotnet_diagnostic.SA1122.severity = none  # "" vs string.Empty in test fixtures
+dotnet_diagnostic.SA1214.severity = none  # readonly ordering
+dotnet_diagnostic.SA1300.severity = none  # element-name underscore (test methods)
+dotnet_diagnostic.SA1310.severity = none  # field-name underscore (test helpers)
+dotnet_diagnostic.SA1316.severity = none  # tuple element names
+dotnet_diagnostic.SA1519.severity = none  # braces for multi-line if/while

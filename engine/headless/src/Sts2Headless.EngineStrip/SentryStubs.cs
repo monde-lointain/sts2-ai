@@ -116,4 +116,8 @@ public readonly struct SentryId : IEquatable<SentryId>
     public override int GetHashCode() => 0;
 
     public override string ToString() => "00000000-0000-0000-0000-000000000000";
+
+    public static bool operator ==(SentryId left, SentryId right) => left.Equals(right);
+
+    public static bool operator !=(SentryId left, SentryId right) => !left.Equals(right);
 }

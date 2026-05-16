@@ -174,6 +174,8 @@ public sealed record UpstreamBinding(
 /// </summary>
 public sealed class CompositionRootException : Exception
 {
+    public CompositionRootException() { }
+
     public CompositionRootException(string message)
         : base(message) { }
 

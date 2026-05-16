@@ -95,7 +95,10 @@ public static class Q4ManifestLoader
         }
     }
 
+    // CA1859: IReadOnlyList preserves manifest immutability contract.
+#pragma warning disable CA1859
     private static IReadOnlyList<string> ReadStringArray(JsonElement root, string key)
+#pragma warning restore CA1859
     {
         if (!root.TryGetProperty(key, out JsonElement element))
         {
@@ -142,6 +145,8 @@ public static class Q4ManifestLoader
 /// </summary>
 public sealed class Q4ManifestFormatException : Exception
 {
+    public Q4ManifestFormatException() { }
+
     public Q4ManifestFormatException(string message)
         : base(message) { }
 

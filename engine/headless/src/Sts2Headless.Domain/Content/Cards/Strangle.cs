@@ -16,7 +16,9 @@ public sealed class Strangle : CardModel
     public const int UpgradeDeltaDamage = 2;
     public const int UpgradeDeltaStrangle = 1;
     public int Damage => BaseDamage;
+#pragma warning disable CA1707 // Strangle_ disambiguates the power amount from the type itself
     public int Strangle_ => BaseStrangle;
+#pragma warning restore CA1707
 
     public Strangle()
         : base(CanonicalId, 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }

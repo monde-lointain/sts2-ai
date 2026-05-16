@@ -38,16 +38,21 @@ namespace Sts2Headless.Domain.Actions;
 /// Per Q1-ADR-006 the firing/draining order is part of the public behavior
 /// contract; ordering changes are state-schema-breaking.
 /// </summary>
+// CA1711: type name ends in "Queue" but is not IEnumerable. Renaming would
+// cascade across the engine; the domain-language match (action queue) is the
+// intent. Suppress.
+#pragma warning disable CA1711
 public sealed class ActionQueue
+#pragma warning restore CA1711
 {
-    // Backing list + head pointer. Indices [_head, _items.Count) are pending.
-    private readonly List<IAction> _items = new();
-    private int _head;
-
     // When the prefix wastes more than this many slots, compact. Cheap O(N)
     // memmove that pays for itself by keeping the steady-state allocation
     // bounded. Tuned by feel; revisit if a profiler points here.
     private const int CompactionThreshold = 32;
+
+    // Backing list + head pointer. Indices [_head, _items.Count) are pending.
+    private readonly List<IAction> _items = new();
+    private int _head;
 
     /// <summary>True iff no actions are pending (drained or never enqueued).</summary>
     public bool IsEmpty => _head >= _items.Count;
@@ -55,8 +60,7 @@ public sealed class ActionQueue
     /// <summary>Append an action to the tail of the queue.</summary>
     public void Enqueue(IAction action)
     {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
+        ArgumentNullException.ThrowIfNull(action);
         _items.Add(action);
     }
 
@@ -67,8 +71,7 @@ public sealed class ActionQueue
     /// </summary>
     public void InsertAtFront(IAction action)
     {
-        if (action is null)
-            throw new ArgumentNullException(nameof(action));
+        ArgumentNullException.ThrowIfNull(action);
         // Insert at the logical head (_head index in the backing list).
         // List<T>.Insert is O(N) on the suffix; acceptable given queue depth.
         _items.Insert(_head, action);
@@ -81,8 +84,7 @@ public sealed class ActionQueue
     /// </summary>
     public void Drain(ExecutionContext ctx)
     {
-        if (ctx is null)
-            throw new ArgumentNullException(nameof(ctx));
+        ArgumentNullException.ThrowIfNull(ctx);
         while (_head < _items.Count)
         {
             IAction next = _items[_head];

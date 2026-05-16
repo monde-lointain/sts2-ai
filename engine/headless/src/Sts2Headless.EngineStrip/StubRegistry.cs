@@ -106,9 +106,9 @@ public sealed class StubCapture : IDisposable
 /// </summary>
 public static class StubRegistry
 {
-    private static long s_counter;
     private static readonly ConcurrentQueue<StubHit> s_globalHits = new();
     private static readonly AsyncLocal<StubCapture?> s_currentScope = new();
+    private static long s_counter;
 
     /// <summary>
     /// Recorded by every stub member at the top of its body. Cheap: one interlocked

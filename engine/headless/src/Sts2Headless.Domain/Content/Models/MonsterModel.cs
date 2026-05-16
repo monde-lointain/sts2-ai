@@ -49,7 +49,10 @@ public sealed record MonsterSpawnPower(string PowerId, int Stacks);
 /// </summary>
 public abstract class MonsterModel : IMonsterModel
 {
+    // CA1859: public-API immutability contract preserved via IReadOnlyDictionary.
+#pragma warning disable CA1859
     private readonly IReadOnlyDictionary<string, MonsterMove> _moves;
+#pragma warning restore CA1859
 
     /// <summary>Stable string id matching upstream <c>ModelId.Entry</c>.</summary>
     public string Id { get; }

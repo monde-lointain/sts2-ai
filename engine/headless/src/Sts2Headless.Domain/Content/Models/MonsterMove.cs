@@ -127,7 +127,11 @@ public sealed class RngBranchResolver : IMoveBranchResolver
         System.ArgumentNullException.ThrowIfNull(runRng);
         // Sample uniformly in [0, totalWeight) and find the first cumulative
         // bucket containing the sample. Deterministic for fixed RNG state.
+        // CA1859: IRngSource is the determinism-substitution boundary; concrete
+        // type would defeat test-fake injection.
+#pragma warning disable CA1859
         IRngSource rng = runRng[_bucket];
+#pragma warning restore CA1859
         float sample = rng.NextFloat() * _totalWeight;
         float running = 0f;
         for (int i = 0; i < _choices.Length; i++)

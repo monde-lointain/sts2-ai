@@ -52,6 +52,7 @@ dotnet_diagnostic.SA1309.severity = none  # FieldNamesMustNotBeginWithUnderscore
 dotnet_diagnostic.SA1413.severity = none  # UseTrailingCommasInMultiLineInitializers
 # CSharpier vs StyleCop layout conflicts — formatter wins.
 dotnet_diagnostic.SA1009.severity = none  # ClosingParenthesisMustBeSpacedCorrectly
+dotnet_diagnostic.SA1500.severity = none  # BracesForMultiLineStatementsMustNotShareLine (CSharpier do/while)
 dotnet_diagnostic.SA1111.severity = none  # ClosingParenthesisMustBeOnLineOfLastParameter
 dotnet_diagnostic.SA1502.severity = none  # ElementMustNotBeOnSingleLine
 dotnet_diagnostic.SA1503.severity = none  # BracesMustNotBeOmitted

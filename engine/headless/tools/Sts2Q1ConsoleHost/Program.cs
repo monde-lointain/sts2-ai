@@ -93,7 +93,9 @@ public static class Program
             }
             // Touch the file (create-or-truncate) to confirm we have write
             // access. The driver in δ re-opens this path in append mode.
+#pragma warning disable SA1312 // discard pattern '_' is conventional
             using FileStream _ = new(
+#pragma warning restore SA1312
                 cli.OutputPath,
                 FileMode.Create,
                 FileAccess.Write,
