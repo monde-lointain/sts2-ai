@@ -33,6 +33,9 @@ dotnet_separate_import_directive_groups = false
 dotnet_sort_system_directives_first = true
 
 # ----- StyleCop suppressions -----
+# XML comment analysis: fires when GenerateDocumentationFile is unset.
+# We don't ship XML docs; disable analyzer entirely.
+dotnet_diagnostic.SA0001.severity = none  # XmlCommentAnalysisDisabled
 # Documentation rules — we don't enforce headers/XML-doc completeness.
 dotnet_diagnostic.SA1600.severity = none  # ElementsMustBeDocumented
 dotnet_diagnostic.SA1601.severity = none  # PartialElementsMustBeDocumented
