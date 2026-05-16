@@ -22,7 +22,7 @@ constexpr int kWireTypeLengthDelimited = 2;
 class Cursor {
  public:
   explicit Cursor(std::span<const std::uint8_t> bytes) noexcept
-      : bytes_(bytes), pos_(0) {}
+      : bytes_(bytes) {}
 
   [[nodiscard]] bool exhausted() const noexcept {
     return pos_ >= bytes_.size();
@@ -60,7 +60,7 @@ class Cursor {
 
  private:
   std::span<const std::uint8_t> bytes_;
-  std::size_t pos_;
+  std::size_t pos_ = 0;
 };
 
 void expect_wire_type(int got, int want, std::uint32_t field_num) {
@@ -74,14 +74,14 @@ std::string read_string(Cursor& c, std::uint32_t field_num, int wire_type,
                         const char* what) {
   expect_wire_type(wire_type, kWireTypeLengthDelimited, field_num);
   auto bytes = c.read_length_delimited(what);
-  return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+  return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
 }
 
 std::vector<std::uint8_t> read_bytes(Cursor& c, std::uint32_t field_num,
                                      int wire_type, const char* what) {
   expect_wire_type(wire_type, kWireTypeLengthDelimited, field_num);
   auto span = c.read_length_delimited(what);
-  return std::vector<std::uint8_t>(span.begin(), span.end());
+  return {span.begin(), span.end()};
 }
 
 std::uint32_t read_uint32(Cursor& c, std::uint32_t field_num, int wire_type,
@@ -104,8 +104,8 @@ ParsedEnvelope parse_envelope(std::span<const std::uint8_t> bytes) {
   bool seen[8] = {};  // index by field_num 1..7
   while (!c.exhausted()) {
     const std::uint64_t tag = c.read_varint("field tag");
-    const std::uint32_t field_num = static_cast<std::uint32_t>(tag >> 3);
-    const int wire_type = static_cast<int>(tag & 0x07ULL);
+    const auto field_num = static_cast<std::uint32_t>(tag >> 3);
+    const auto wire_type = static_cast<int>(tag & 0x07ULL);
 
     switch (field_num) {
       case 1:

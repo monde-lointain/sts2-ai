@@ -110,10 +110,10 @@ void emit_manifest_json(std::ostream& os) {
       sts2::oracle::registry::current_phase1_registry_sha256();
 
   os << "{\n";
-  os << "  \"algorithm_sha\": \"" << manifest.algorithm_sha << "\",\n";
-  os << "  \"build_sha\": \"" << manifest.build_sha << "\",\n";
-  os << "  \"version_tag\": \"" << manifest.version_tag << "\",\n";
-  os << "  \"registry_sha\": \"" << registry_sha << "\",\n";
+  os << R"(  "algorithm_sha": ")" << manifest.algorithm_sha << "\",\n";
+  os << R"(  "build_sha": ")" << manifest.build_sha << "\",\n";
+  os << R"(  "version_tag": ")" << manifest.version_tag << "\",\n";
+  os << R"(  "registry_sha": ")" << registry_sha << "\",\n";
   os << "  \"encounters\": [\n";
 
   // Group consecutive same-encounter entries into a single "seeds" array.
@@ -121,7 +121,7 @@ void emit_manifest_json(std::ostream& os) {
   // single-pass group works without sorting.
   for (std::size_t i = 0; i < kEncounterSeeds.size();) {
     const std::string_view enc = kEncounterSeeds[i].encounter_id;
-    os << "    {\"encounter_id\": \"" << enc << "\", \"seeds\": [";
+    os << R"(    {"encounter_id": ")" << enc << R"(", "seeds": [)";
     std::size_t j = i;
     bool first = true;
     while (j < kEncounterSeeds.size() &&
@@ -159,14 +159,14 @@ int main(int argc, char** argv) {
     }
   }
 
-  constexpr std::uint64_t kRngTestSeed = 0xDEADBEEFCAFEULL;
-  constexpr std::uint64_t kCombatTestSeed = 0xC0FFEEULL;
-  constexpr std::uint64_t kCultistTestSeed = 0x42ULL;
+  constexpr std::uint64_t rng_test_seed = 0xDEADBEEFCAFEULL;
+  constexpr std::uint64_t combat_test_seed = 0xC0FFEEULL;
+  constexpr std::uint64_t cultist_test_seed = 0x42ULL;
 
   // 1. shuffle({1, 2})
   std::array<int, 2> shuffle_2{};
   {
-    sts2::game::Rng rng(kRngTestSeed);
+    sts2::game::Rng rng(rng_test_seed);
     std::vector<int> v = {1, 2};
     rng.shuffle(v);
     shuffle_2 = {v[0], v[1]};
@@ -175,7 +175,7 @@ int main(int argc, char** argv) {
   // 2. shuffle({0..9})
   std::array<int, 10> shuffle_10{};
   {
-    sts2::game::Rng rng(kRngTestSeed);
+    sts2::game::Rng rng(rng_test_seed);
     std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     rng.shuffle(v);
     for (size_t i = 0; i < 10; ++i) {
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
   // 3. uniform_int(0, 9) x10
   std::array<int, 10> seq_0_9{};
   {
-    sts2::game::Rng rng(kRngTestSeed);
+    sts2::game::Rng rng(rng_test_seed);
     for (int i = 0; i < 10; ++i) {
       seq_0_9[i] = rng.uniform_int(0, 9);
     }
@@ -195,7 +195,7 @@ int main(int argc, char** argv) {
   // 4. make_calcified_cultist HP at seed 0x42
   int calcified_hp_seed42 = 0;
   {
-    sts2::game::Rng rng(kCultistTestSeed);
+    sts2::game::Rng rng(cultist_test_seed);
     calcified_hp_seed42 =
         sts2::enemies::make_calcified_cultist(rng).vitals.hp.value();
   }
@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
   // 5. make_damp_cultist HP at seed 0x42
   int damp_hp_seed42 = 0;
   {
-    sts2::game::Rng rng(kCultistTestSeed);
+    sts2::game::Rng rng(cultist_test_seed);
     damp_hp_seed42 = sts2::enemies::make_damp_cultist(rng).vitals.hp.value();
   }
 
@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
   // 8. shuffled silent starter deck (12 cards)
   std::array<sts2::game::CardId, 12> deck_shuffled{};
   {
-    sts2::game::Rng rng(kCombatTestSeed);
+    sts2::game::Rng rng(combat_test_seed);
     std::vector<sts2::game::Card> deck =
         sts2::cards::make_silent_starter_deck();
     rng.shuffle(deck);
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
   int first_intmax = 0;
   int second_intmax = 0;
   {
-    sts2::game::Rng rng(kRngTestSeed);
+    sts2::game::Rng rng(rng_test_seed);
     first_intmax = rng.uniform_int(0, INT_MAX);
     second_intmax = rng.uniform_int(0, INT_MAX);
   }
@@ -248,11 +248,11 @@ int main(int argc, char** argv) {
   body << "namespace sts2::tests::seeds {\n";
   body << "\n";
   body << "inline constexpr std::uint64_t kRngTestSeed     = 0x" << std::hex
-       << kRngTestSeed << std::dec << "ULL;\n";
+       << rng_test_seed << std::dec << "ULL;\n";
   body << "inline constexpr std::uint64_t kCombatTestSeed  = 0x" << std::hex
-       << kCombatTestSeed << std::dec << "ULL;\n";
+       << combat_test_seed << std::dec << "ULL;\n";
   body << "inline constexpr std::uint64_t kCultistTestSeed = 0x" << std::hex
-       << kCultistTestSeed << std::dec << "ULL;\n";
+       << cultist_test_seed << std::dec << "ULL;\n";
   body << "\n";
   body << "// T-RNG-005: 10 successive uniform_int(0, 9) calls on "
           "Rng{kRngTestSeed}.\n";

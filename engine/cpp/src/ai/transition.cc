@@ -177,6 +177,8 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   assert(state.get_phase() == Phase::kAtChanceDraw);
 
   struct EndTurnOps {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) --
+    // local struct, never assigned
     CompactState& state;
 
     void end_player_turn() {

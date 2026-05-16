@@ -347,6 +347,8 @@ void append_json_string(std::string& out, std::string_view s) {
       default:
         if (uc < 0x20U) {
           char buf[8];
+          // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg) -- snprintf for
+          // hex escape; no std::format in project
           std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(uc));
           out.append(buf);
         } else {
@@ -360,6 +362,8 @@ void append_json_string(std::string& out, std::string_view s) {
 void append_json_double(std::string& out, double d) {
   // max_digits10 = 17 round-trips IEEE 754 doubles in stdc++.
   char buf[64];
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg) -- snprintf for float
+  // precision; no std::format in project
   const int n = std::snprintf(buf, sizeof(buf), "%.17g", d);
   if (n <= 0 || static_cast<std::size_t>(n) >= sizeof(buf)) {
     throw std::runtime_error("verify-server: double-format buffer overflow");

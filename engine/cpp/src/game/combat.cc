@@ -70,6 +70,8 @@ void Combat::end_turn() {
   }
 
   struct EndTurnOps {
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) --
+    // local struct, never assigned
     Combat& combat;
 
     void end_player_turn() { combat.end_player_turn(); }

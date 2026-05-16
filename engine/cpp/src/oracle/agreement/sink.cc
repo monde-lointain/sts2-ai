@@ -13,7 +13,6 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
-#include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <memory>
@@ -82,7 +81,7 @@ struct DateTuple {
 // work but pulls extra dependencies on some libstdc++ versions; gmtime_r
 // is POSIX-portable and the cast is bounded by int64.
 [[nodiscard]] DateTuple utc_date_from_ms(std::int64_t timestamp_ms) {
-  const std::time_t seconds = static_cast<std::time_t>(timestamp_ms / 1000);
+  const auto seconds = static_cast<std::time_t>(timestamp_ms / 1000);
   std::tm tm_buf{};
   if (::gmtime_r(&seconds, &tm_buf) == nullptr) {
     throw std::runtime_error(
@@ -97,15 +96,19 @@ struct DateTuple {
 }
 
 [[nodiscard]] std::string two_digit(int value) {
-  std::array<char, 8> buf{};
-  std::snprintf(buf.data(), buf.size(), "%02d", value);
-  return std::string(buf.data());
+  std::string s = std::to_string(value);
+  if (s.size() < 2U) {
+    s.insert(0U, 2U - s.size(), '0');
+  }
+  return s;
 }
 
 [[nodiscard]] std::string four_digit(int value) {
-  std::array<char, 8> buf{};
-  std::snprintf(buf.data(), buf.size(), "%04d", value);
-  return std::string(buf.data());
+  std::string s = std::to_string(value);
+  if (s.size() < 4U) {
+    s.insert(0U, 4U - s.size(), '0');
+  }
+  return s;
 }
 
 [[nodiscard]] std::filesystem::path partition_path(
@@ -223,11 +226,11 @@ void write_parquet(const std::filesystem::path& root,
 
   const DateTuple date0 = utc_date_from_ms(rows.front().timestamp_ms);
   const std::string& model0 = rows.front().model_version;
-  // cppcheck-suppress useStlAlgorithm -- loop throws on mismatch; std::any_of
-  // cannot substitute a throwing loop body.
   for (const auto& row : rows) {
-    if (row.model_version != model0 ||
-        utc_date_from_ms(row.timestamp_ms) != date0) {
+    const bool same_partition = (row.model_version == model0) &&
+                                // cppcheck-suppress useStlAlgorithm
+                                (utc_date_from_ms(row.timestamp_ms) == date0);
+    if (!same_partition) {
       throw std::invalid_argument(
           "oracle-agreement: rows span multiple (year, month, day, "
           "model_version) partitions — single-partition write only");

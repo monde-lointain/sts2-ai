@@ -62,7 +62,9 @@ TEST(EnvelopeParser, PayloadShaMismatch_Rejected) {
   std::array<std::uint8_t, 32> wrong{};  // all-zero hash
   put_lp_field(out, 7,
                std::span<const std::uint8_t>(wrong.data(), wrong.size()));
-  EXPECT_THROW(parse_envelope(out), EnvelopePayloadShaMismatch);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(out); },
+      EnvelopePayloadShaMismatch);
 }
 
 TEST(EnvelopeParser, PayloadShaWrongLength_Rejected) {
@@ -80,7 +82,9 @@ TEST(EnvelopeParser, PayloadShaWrongLength_Rejected) {
   put_lp_field(
       out, 7,
       std::span<const std::uint8_t>(short_hash.data(), short_hash.size()));
-  EXPECT_THROW(parse_envelope(out), EnvelopePayloadShaMismatch);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(out); },
+      EnvelopePayloadShaMismatch);
 }
 
 TEST(EnvelopeParser, SchemaMismatch_MajorBump_Rejected) {
@@ -88,7 +92,9 @@ TEST(EnvelopeParser, SchemaMismatch_MajorBump_Rejected) {
   f.schema_major = 1;
   f.schema_minor = 0;
   const auto bytes = encode_envelope(f);
-  EXPECT_THROW(parse_envelope(bytes), EnvelopeSchemaMismatch);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(bytes); },
+      EnvelopeSchemaMismatch);
 }
 
 TEST(EnvelopeParser, SchemaMismatch_MinorBump_Rejected) {
@@ -96,7 +102,9 @@ TEST(EnvelopeParser, SchemaMismatch_MinorBump_Rejected) {
   f.schema_major = 0;
   f.schema_minor = 2;
   const auto bytes = encode_envelope(f);
-  EXPECT_THROW(parse_envelope(bytes), EnvelopeSchemaMismatch);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(bytes); },
+      EnvelopeSchemaMismatch);
 }
 
 TEST(EnvelopeParser, UnknownFieldNumber_Rejected) {
@@ -104,14 +112,18 @@ TEST(EnvelopeParser, UnknownFieldNumber_Rejected) {
   auto bytes = encode_envelope(f);
   // Append a field-99 varint to the end. Field 99 is not in v0.1.
   put_varint_field(bytes, 99, 42U);
-  EXPECT_THROW(parse_envelope(bytes), EnvelopeUnknownField);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(bytes); },
+      EnvelopeUnknownField);
 }
 
 TEST(EnvelopeParser, UnknownWireType_Rejected) {
   // Use wire-type 1 (fixed64), which the parser doesn't accept for any
   // known field. Tag = (field<<3)|wire. Field 1 with wire 1: tag = 9.
   std::vector<std::uint8_t> bytes = {0x09U, 0, 0, 0, 0, 0, 0, 0, 0};
-  EXPECT_THROW(parse_envelope(bytes), EnvelopeWireTypeError);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = parse_envelope(bytes); },
+      EnvelopeWireTypeError);
 }
 
 }  // namespace

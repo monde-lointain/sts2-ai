@@ -38,7 +38,7 @@ inline constexpr std::uint32_t kSha256H0[8] = {
     0x510e527fU, 0x9b05688cU, 0x1f83d9abU, 0x5be0cd19U,
 };
 
-inline constexpr std::uint32_t rotr32(std::uint32_t x, unsigned n) noexcept {
+constexpr std::uint32_t rotr32(std::uint32_t x, unsigned n) noexcept {
   return (x >> n) | (x << (32U - n));
 }
 
@@ -46,10 +46,11 @@ inline void sha256_compress(std::uint32_t state[8],
                             const std::uint8_t block[64]) noexcept {
   std::uint32_t w[64];
   for (unsigned i = 0; i < 16; ++i) {
-    w[i] = (static_cast<std::uint32_t>(block[4U * i]) << 24) |
-           (static_cast<std::uint32_t>(block[4U * i + 1]) << 16) |
-           (static_cast<std::uint32_t>(block[4U * i + 2]) << 8) |
-           (static_cast<std::uint32_t>(block[4U * i + 3]));
+    const auto off = static_cast<std::size_t>(i) * 4U;
+    w[i] = (static_cast<std::uint32_t>(block[off]) << 24) |
+           (static_cast<std::uint32_t>(block[off + 1]) << 16) |
+           (static_cast<std::uint32_t>(block[off + 2]) << 8) |
+           (static_cast<std::uint32_t>(block[off + 3]));
   }
   for (unsigned i = 16; i < 64; ++i) {
     const std::uint32_t s0 =
@@ -59,8 +60,14 @@ inline void sha256_compress(std::uint32_t state[8],
     w[i] = w[i - 16] + s0 + w[i - 7] + s1;
   }
 
-  std::uint32_t a = state[0], b = state[1], c = state[2], d = state[3];
-  std::uint32_t e = state[4], f = state[5], g = state[6], h = state[7];
+  std::uint32_t a = state[0];
+  std::uint32_t b = state[1];
+  std::uint32_t c = state[2];
+  std::uint32_t d = state[3];
+  std::uint32_t e = state[4];
+  std::uint32_t f = state[5];
+  std::uint32_t g = state[6];
+  std::uint32_t h = state[7];
 
   for (unsigned i = 0; i < 64; ++i) {
     const std::uint32_t s1 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);

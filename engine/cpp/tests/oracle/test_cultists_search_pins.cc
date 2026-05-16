@@ -43,7 +43,6 @@ using sts2::ai::SearchResult;
 using sts2::ai::transition::ActionKind;
 using sts2::ai::transition::legal_actions;
 using sts2::game::CardId;
-using sts2::game::EnemySlot;
 using sts2::oracle::adapter::current_manifest;
 using sts2::oracle::registry::current_phase1_registry_sha256;
 using sts2::oracle::registry::PinnedScenarioRow;

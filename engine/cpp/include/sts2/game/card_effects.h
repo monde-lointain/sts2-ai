@@ -92,25 +92,23 @@ inline constexpr std::array<CardId, 4> kCountedCardIds = {
 };
 
 [[nodiscard]] constexpr const CardEffect& card_effect_for(CardId id) noexcept {
-  const auto it =
-      std::find_if(kCardEffects.begin(), kCardEffects.end(),
-                   [id](const CardEffect& e) { return e.id == id; });
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
   assert(it != kCardEffects.end() && "card_effect_for: invalid CardId");
   return (it != kCardEffects.end()) ? *it : kCardEffects.front();
 }
 
 [[nodiscard]] constexpr std::string_view card_wire_model_id(
     CardId id) noexcept {
-  const auto it =
-      std::find_if(kCardEffects.begin(), kCardEffects.end(),
-                   [id](const CardEffect& e) { return e.id == id; });
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
   return (it != kCardEffects.end()) ? it->wire_model_id : std::string_view{};
 }
 
 [[nodiscard]] constexpr CardId card_id_from_wire_model_id(
     std::string_view model_id) noexcept {
-  const auto it = std::find_if(
-      kCardEffects.begin(), kCardEffects.end(),
+  const auto* const it = std::ranges::find_if(
+      kCardEffects,
       [model_id](const CardEffect& e) { return e.wire_model_id == model_id; });
   return (it != kCardEffects.end()) ? it->id : CardId::kNone;
 }
@@ -119,9 +117,8 @@ inline constexpr std::array<CardId, 4> kCountedCardIds = {
   if (id == CardId::kNone) {
     return "kNone";
   }
-  const auto it =
-      std::find_if(kCardEffects.begin(), kCardEffects.end(),
-                   [id](const CardEffect& e) { return e.id == id; });
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
   return (it != kCardEffects.end()) ? it->cpp_name : std::string_view{};
 }
 

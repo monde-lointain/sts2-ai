@@ -106,7 +106,9 @@ constexpr const char* kModelVersionStub = "phase1a-stub-model-sha";
   os << R"({"encounter_id":")" << encounter_id << R"(","monster_ids":[)";
   bool first = true;
   for (const auto& m : monster_ids) {
-    if (!first) os << ',';
+    if (!first) {
+      os << ',';
+    }
     os << '"' << m << '"';
     first = false;
   }

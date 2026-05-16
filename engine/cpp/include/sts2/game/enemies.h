@@ -39,7 +39,7 @@ inline constexpr std::array<CultistArchetype, 2> kCultistArchetypes = {{
 
 [[nodiscard]] constexpr const CultistArchetype*
 cultist_archetype_from_wire_name(std::string_view wire_name) noexcept {
-  const auto it =
+  const auto* const it =
       std::find_if(kCultistArchetypes.begin(), kCultistArchetypes.end(),
                    [wire_name](const CultistArchetype& a) {
                      return a.wire_name == wire_name;
@@ -49,7 +49,7 @@ cultist_archetype_from_wire_name(std::string_view wire_name) noexcept {
 
 [[nodiscard]] constexpr const CultistArchetype*
 cultist_archetype_from_internal_name(std::string_view internal_name) noexcept {
-  const auto it =
+  const auto* const it =
       std::find_if(kCultistArchetypes.begin(), kCultistArchetypes.end(),
                    [internal_name](const CultistArchetype& a) {
                      return a.internal_name == internal_name;
