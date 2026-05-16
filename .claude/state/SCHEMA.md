@@ -108,6 +108,43 @@ referencing the proto edit lands.
 `adr_ref` is null AND no ADR with `Date: >= edited_at` references the
 file path.
 
+## `ci-rescue.json`
+
+Written by `.claude/scripts/write-ci-rescue.sh` (invoked from the
+`rescuing-ci-failures` skill / `/ci-rescue` command). Tracks the
+iterative CI-fix loop: failed-run identity, accumulated fix attempts,
+and the dedup signature that short-circuits same-error-twice loops.
+
+```json
+{
+  "status": "running | green | escalated | idle",
+  "branch": "wave-foo",
+  "head_sha": "abc1234...",
+  "current_run_id": 12345678901,
+  "workflow": "ci.yml",
+  "iteration_count": 2,
+  "max_iterations": 5,
+  "auto_push": false,
+  "last_error_signature": "sha256:...",
+  "attempted_fixes": [
+    {"iteration": 1, "category": "lint", "summary": "ruff S603 in tools/upstream-sync", "commit_sha": "def456..."},
+    {"iteration": 2, "category": "test-failure", "summary": "CombatEngineTests.MonsterDealsDamage", "commit_sha": "789abc..."}
+  ],
+  "started_ts": "2026-05-16T14:23:01Z",
+  "last_update_ts": "2026-05-16T14:47:22Z",
+  "escalation_reason": null
+}
+```
+
+`status` transitions: `idle → running → (green | escalated) → idle`.
+`escalation_reason` enum: `same-error-twice | iteration-cap |
+unactionable | divr | cancelled-run | gh-auth-failure`. The minimal
+idle file is `{"status":"idle"}`; full shape only after a rescue
+initializes.
+
+`attempted_fixes[*].category` enum: `compiler-error | test-failure |
+lint | unactionable`.
+
 ## Schema discipline
 
 - Keys: snake_case

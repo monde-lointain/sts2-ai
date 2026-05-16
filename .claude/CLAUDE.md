@@ -15,11 +15,14 @@ artifacts here instead of re-deriving each session.
 - `bumping-a-schema-version` — proto → codegen → fixture sweep → ADR.
 - `running-a-quantum-ci-gate` — gate-per-quantum table; mandatory backgrounding.
 - `verifying-subagent-claims` — augments superpowers:verification-before-completion.
+- `rescuing-ci-failures` — remote GHA fail → log pull → triage → fix subagent → push loop, bounded by iteration cap + same-error dedup.
 
 **Slash commands** (`.claude/commands/`):
 - `/wave-dispatch`, `/wave-merge`, `/wave-close` — wave lifecycle.
 - `/q-ci <q>`, `/phase0-gate` — backgrounded gate runs (writes `.claude/state/last-gate.json`).
 - `/adr-new <title>`, `/worktree-cleanup`, `/ground-as <persona>` — utility ops.
+- `/ci-rescue [--auto-push] [--max-iterations N]` — fetch failed GHA logs and iterate fixes until green or escalation (writes `.claude/state/ci-rescue.json`).
+- `/ci-logs [<run-id>] [--full]` — one-shot pull of failed-step logs to `/tmp/ci-logs-<run-id>.log` (no loop, no state).
 
 **Hooks** (`.claude/hooks/`) — auto-fire on tool calls:
 - `block-system-python` — refuse bare `python` outside `.venv/bin/`.
