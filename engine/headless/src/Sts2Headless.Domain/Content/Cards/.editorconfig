@@ -1,0 +1,14 @@
+# Folder-scoped editorconfig for card definitions.
+#
+# CA1822 (mark members as static) is silenced here because cards use
+# the polymorphic-property pattern: an abstract/virtual base property
+# is overridden by each card subclass to return a constant. From the
+# analyzer's view, every override "doesn't use instance state" and
+# could be static — but that would break the virtual dispatch the
+# entire card subsystem relies on. The pattern is correct.
+#
+# Suppression is scoped to this directory so non-card code in Domain
+# still gets CA1822 enforcement.
+
+[*.cs]
+dotnet_diagnostic.CA1822.severity = none
