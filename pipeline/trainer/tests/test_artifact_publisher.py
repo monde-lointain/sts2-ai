@@ -553,7 +553,7 @@ def test_onnx_round_trip_logits_match(
     trainer_net: TrainerNet,
     tmp_path: Path,
 ) -> None:
-    import onnxruntime
+    import onnxruntime  # pyright: ignore[reportMissingImports]  # optional dep; test skipped when absent
 
     dummy = _make_dummy_batch(vocab_size=len(registry))
     pub = _build_publisher(

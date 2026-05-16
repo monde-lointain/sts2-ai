@@ -7,7 +7,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "content"))
 
-import validate_registry
+import validate_registry  # pyright: ignore[reportMissingImports]  # path-injected above
 
 REGISTRY_PATH = ROOT / "contracts" / "registry" / "phase1-silent.json"
 SCHEMA_PATH = ROOT / "contracts" / "registry" / "schema.json"

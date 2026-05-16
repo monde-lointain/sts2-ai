@@ -286,7 +286,7 @@ class HotStore:
         rng = random.Random(seed)
         k_pick = min(n, len(keys))
         chosen = rng.sample(keys, k_pick)
-        return [self._cf_traj[k] for k in chosen]
+        return [self._cf_traj[k] for k in chosen]  # pyright: ignore[reportReturnType]  # keys from iterator above
 
     def drop_oldest_age_first(self, target_bytes: int) -> int:
         """Drop oldest-ts rows until at least `target_bytes` freed. Returns count dropped.

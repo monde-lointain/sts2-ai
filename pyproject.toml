@@ -149,6 +149,11 @@ exclude = [
     "**/__pycache__",
     "build",
     "build-*",
+    # protoc-generated; dynamic attribute construction confuses pyright.
+    "pipeline/common/trajectory_proto.py",
+    "pipeline/experience-store/proto",
+    # libclang's clang.cindex uses dynamic attribute creation; no useful stubs.
+    "tools/ast-analyzer",
 ]
 # Start permissive; ratchet to "standard" then "strict" in follow-up waves.
 typeCheckingMode = "basic"
@@ -157,6 +162,15 @@ reportMissingImports = "error"
 reportMissingTypeStubs = "warning"  # torch/numpy stubs are partial.
 reportUnusedImport = "warning"  # ruff F401 is authoritative; basedpyright echoes.
 reportUnusedVariable = "warning"
+# Dynamic-attribute rules dialed down for baseline: protobuf + torch tensor
+# dunder methods produce noise that's not actionable in basic mode.
+# Ratchet up alongside typeCheckingMode in follow-up waves.
+reportAttributeAccessIssue = "warning"
+reportPrivateImportUsage = "none"  # internal re-exports common in the codebase
+reportArgumentType = "warning"
+reportOptionalMemberAccess = "warning"
+reportOptionalOperand = "warning"
+reportOptionalSubscript = "warning"
 
 # ----- vulture (dead code) -----
 [tool.vulture]
@@ -186,4 +200,9 @@ ignore_names = [
     "tearDown",
     "setUpClass",
     "tearDownClass",
+    # Common "intentionally unused" captures in tests + context managers.
+    "kw", "kwargs",
+    "exc_type", "exc_value", "exc_traceback", "exc_info",
+    "fmt",
+    "clean_env",  # pytest fixture used for side effects (env scrubbing)
 ]
