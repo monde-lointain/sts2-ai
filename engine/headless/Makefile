@@ -134,7 +134,7 @@ clean:
 # baseline) run during `dotnet build` via Directory.Build.props.
 
 tools-restore:
-	@(cd ../.. && dotnet tool restore)
+	@dotnet tool restore --tool-manifest ../../.config/dotnet-tools.json
 
 format: tools-restore
 	@echo "==> dotnet csharpier format"
