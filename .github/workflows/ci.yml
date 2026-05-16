@@ -74,6 +74,59 @@ jobs:
       - name: Run q1-ci
         run: make q1-ci
 
+  python-quality:
+    name: Python quality (ruff + basedpyright + vulture)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Setup .venv
+        # basedpyright needs torch stubs for pipeline/trainer/* type
+        # resolution; install CPU torch the same way q10-ci does. The
+        # quality job exists separately from q3/q10-ci so analyzer
+        # failures don't get attributed to test failures (and vice versa).
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install -r requirements-dev.txt
+          .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
+          .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - name: Run python-quality
+        run: make python-quality
+
+  q1-quality:
+    name: Q1 quality (CSharpier + Roslyn analyzers + jb inspectcode)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x"
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('engine/headless/**/*.csproj', 'engine/headless/sts2-headless.sln') }}
+          restore-keys: nuget-
+      - name: Restore dotnet tools (csharpier + jb)
+        run: dotnet tool restore
+      - name: Run q1-quality (format-check + build w/ analyzers)
+        run: make q1-quality
+      - name: Run jb inspectcode (deep)
+        # Slow (multi-minute). Severity gate: fail only on ERROR;
+        # WARNING report uploaded as artifact for inspection.
+        run: make q1-inspect
+        continue-on-error: false
+      - name: Upload inspectcode report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: q1-inspect-report
+          path: engine/headless/.inspect-report.xml
+          if-no-files-found: ignore
+
   q3-ci:
     name: Q3 experience-store (pytest)
     runs-on: ubuntu-latest
