@@ -23,7 +23,8 @@ repos:
         entry: python3 .pre-commit-hooks/no-relative-venv.py
         language: system
         files: '^(Makefile|.*\.(sh|yml|yaml))$'
-        exclude: '^\.pre-commit-config\.yaml$'
+        # CI workflows run on fixed-CWD runners; .venv/bin is unambiguous there.
+        exclude: '^(\.pre-commit-config\.yaml|\.github/workflows/.*)$'
       - id: proto-adr-gate
         name: Block main-bound push if proto edits lack ADR pairing
         entry: python3 .pre-commit-hooks/pre-push-proto-adr-gate.py

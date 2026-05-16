@@ -1,0 +1,225 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  pre-commit:
+    name: pre-commit (clang-format + structural)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install pre-commit + clang-format-18
+        run: |
+          pip install pre-commit
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+      - name: Run pre-commit on all files
+        run: pre-commit run --all-files --show-diff-on-failure
+
+  q2-fast:
+    name: Q2 fast tests (make test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+      - name: Cache build directory
+        uses: actions/cache@v4
+        with:
+          path: build/
+          key: q2-fast-${{ runner.os }}-${{ hashFiles('CMakeLists.txt', 'CMakePresets.json', 'engine/cpp/**/CMakeLists.txt') }}
+          restore-keys: |
+            q2-fast-${{ runner.os }}-
+      - name: Build + test
+        run: make test
+
+  q1-ci:
+    name: Q1 headless (dotnet build+test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.x"
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('engine/headless/**/*.csproj', 'engine/headless/sts2-headless.sln') }}
+          restore-keys: nuget-
+      - name: Run q1-ci
+        run: make q1-ci
+
+  q3-ci:
+    name: Q3 experience-store (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Setup .venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
+      - name: Run q3-ci
+        run: make q3-ci
+
+  q10-ci:
+    name: Q10 trainer (pytest, includes torch CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Setup .venv (CPU torch)
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
+          .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - name: Run q10-ci
+        run: make q10-ci
+
+  schema-test:
+    name: Schema compat (codegen + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Setup .venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest protobuf
+      - name: Run schema-test
+        run: make schema-test
+
+  content-test:
+    name: Content registry tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Setup .venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest PyYAML
+      - name: Run content-test
+        run: make content-test
+
+  tidy:
+    name: clang-tidy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang-tidy-18
+      - name: Cache build directory
+        uses: actions/cache@v4
+        with:
+          path: build/
+          key: tidy-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: tidy-${{ runner.os }}-
+      - name: Run clang-tidy
+        run: make tidy
+
+  cppcheck:
+    name: cppcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install cppcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cppcheck
+      - name: Run cppcheck
+        run: make cppcheck
+
+  sanitize-test:
+    name: ASan + UBSan tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build clang-18
+      - name: Cache sanitize build dir
+        uses: actions/cache@v4
+        with:
+          path: build-sanitize/
+          key: sanitize-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: sanitize-${{ runner.os }}-
+      - name: Run sanitize-test
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: make sanitize-test
+
+  q2-ci:
+    name: Q2 slow regression (~18 min; label-gated)
+    runs-on: ubuntu-latest
+    # Plan resolution #3: label-gated on PRs; not auto-run on push to keep
+    # private-repo minutes predictable. Trigger manually via workflow_dispatch
+    # for explicit pushes.
+    if: |
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'run-q2-ci')) ||
+      (github.event_name == 'workflow_dispatch')
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build
+      - name: Cache q2-ci build dir
+        uses: actions/cache@v4
+        with:
+          path: build-q2-ci/
+          key: q2-ci-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          restore-keys: q2-ci-${{ runner.os }}-
+      - name: Run q2-ci
+        run: make q2-ci
