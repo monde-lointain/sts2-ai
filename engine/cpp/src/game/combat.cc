@@ -70,9 +70,10 @@ void Combat::end_turn() {
   }
 
   struct EndTurnOps {
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) --
-    // local struct, never assigned
+    // NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
+    // Local helper struct, never assigned; reference member is intentional.
     Combat& combat;
+    // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() { combat.end_player_turn(); }
     [[nodiscard]] std::size_t enemy_count() const {

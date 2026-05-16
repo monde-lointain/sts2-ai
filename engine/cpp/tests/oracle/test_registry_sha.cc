@@ -75,11 +75,13 @@ TEST(RegistrySha, ComputeOnMissingFile_ThrowsRuntimeError) {
                        "sts2_registry_sha_definitely_missing_xyz.tmp";
   std::error_code ec;
   std::filesystem::remove(missing, ec);  // ensure absent.
-  // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable) -- EXPECT_THROW
-  // captures return to ensure call happens
+  // NOLINTBEGIN(bugprone-unused-local-non-trivial-variable)
+  // EXPECT_THROW captures the call to ensure it actually fires; r is unused by
+  // design.
   EXPECT_THROW(
       { [[maybe_unused]] auto r = compute_registry_sha256(missing); },
       std::runtime_error);
+  // NOLINTEND(bugprone-unused-local-non-trivial-variable)
 }
 
 TEST(RegistrySha, CurrentPhase1RegistrySha_ShapeIsLowercaseHex64) {

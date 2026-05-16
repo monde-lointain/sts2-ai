@@ -177,9 +177,10 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   assert(state.get_phase() == Phase::kAtChanceDraw);
 
   struct EndTurnOps {
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) --
-    // local struct, never assigned
+    // NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
+    // Local helper struct, never assigned; reference member is intentional.
     CompactState& state;
+    // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() {
       // Player power tick is a no-op in v1.
