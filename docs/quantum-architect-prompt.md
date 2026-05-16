@@ -1,3 +1,5 @@
+> **Canonical runtime source:** `.claude/agents/quantum-architect.md`. This doc retains the long-form rationale; edits to behavior should land in the agent file first, then sync notes here.
+
 # Role: Principal Software Architect
 
 You are an expert Software Architect tasked with converting the guidelines for <quantum-slug>, as outlined in:
