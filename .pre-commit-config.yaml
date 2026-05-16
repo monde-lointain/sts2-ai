@@ -16,3 +16,11 @@ repos:
       - id: clang-format
         types_or: [c++, c]
         exclude: '^(contracts/generated/|.*\.proto$)'
+  - repo: local
+    hooks:
+      - id: no-relative-venv
+        name: Block introduction of relative .venv/bin paths
+        entry: python3 .pre-commit-hooks/no-relative-venv.py
+        language: system
+        files: '^(Makefile|.*\.(sh|yml|yaml))$'
+        exclude: '^\.pre-commit-config\.yaml$'
