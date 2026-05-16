@@ -3,6 +3,7 @@ SHELL := /bin/bash
 export PATH := /usr/bin:$(PATH)
 
 .PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state gc-measurement consolehost-smoke
+.PHONY: tools-restore format format-check format-whitespace format-whitespace-check inspect quality
 
 # Canonical Steam install path for sts2.dll on the Q1 build host. Caller can
 # override via STS2_DLL=... (e.g. on a teammate's machine).
@@ -125,3 +126,36 @@ consolehost-smoke: build
 clean:
 	dotnet clean sts2-headless.sln
 	find . -type d \( -name bin -o -name obj \) -exec rm -rf {} +
+
+# === C# quality gates ================================================
+#
+# Tool versions live in repo-root .config/dotnet-tools.json; restore
+# is idempotent. Roslyn analyzers (StyleCop/Roslynator/VSTHRD/NetAnalyzers
+# baseline) run during `dotnet build` via Directory.Build.props.
+
+tools-restore:
+	@(cd ../.. && dotnet tool restore)
+
+format: tools-restore
+	@echo "==> dotnet csharpier format"
+	dotnet csharpier format .
+
+format-check: tools-restore
+	@echo "==> dotnet csharpier check"
+	dotnet csharpier check .
+
+format-whitespace:
+	@echo "==> dotnet format whitespace (in-place)"
+	dotnet format whitespace sts2-headless.sln --no-restore
+
+format-whitespace-check:
+	@echo "==> dotnet format whitespace --verify-no-changes"
+	dotnet format whitespace sts2-headless.sln --no-restore --verify-no-changes
+
+# Deep inspection. SLOW (multi-minute); CI artifact upload target.
+inspect: tools-restore
+	@echo "==> dotnet jb inspectcode"
+	dotnet jb inspectcode sts2-headless.sln \
+	  --output=.inspect-report.xml --severity=ERROR
+
+quality: format-check format-whitespace-check build

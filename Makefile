@@ -6,6 +6,7 @@
 .PHONY: cloc cloc-full cloc-report cloc-report-full
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
 .PHONY: py-format py-format-check py-lint py-lint-fix py-typecheck py-dead-code python-quality
+.PHONY: q1-format q1-format-check q1-format-whitespace q1-format-whitespace-check q1-inspect q1-quality
 
 # Resolve .venv path so make works from main repo, subdirs, and worktrees alike.
 # $(abspath ...) is critical: in main repo, git rev-parse --git-common-dir
@@ -102,6 +103,14 @@ help:
 	@echo "  py-typecheck      Run basedpyright"
 	@echo "  py-dead-code      Run vulture against .vulture-whitelist.py"
 	@echo "  python-quality    Aggregate: format-check + lint + typecheck + dead-code"
+	@echo ""
+	@echo "Q1 C# quality (engine/headless; .config/dotnet-tools.json + Directory.Build.props):"
+	@echo "  q1-format                   Run CSharpier (in-place)"
+	@echo "  q1-format-check             Run CSharpier --check"
+	@echo "  q1-format-whitespace        Run dotnet format whitespace (in-place)"
+	@echo "  q1-format-whitespace-check  Run dotnet format whitespace --verify-no-changes"
+	@echo "  q1-inspect                  Run jb inspectcode (SLOW; CI artifact)"
+	@echo "  q1-quality                  Aggregate: format-check + ws-check + build w/analyzers"
 
 build: $(BUILD_DIR)/Makefile
 	@cmake --build $(BUILD_DIR) -j$(JOBS)
@@ -296,3 +305,25 @@ py-dead-code:
 	@$(VENV)/bin/vulture pipeline tools .vulture-whitelist.py
 
 python-quality: py-format-check py-lint py-typecheck py-dead-code
+
+# ----- Q1 (engine/headless) C# quality proxies -----
+# Tool versions in .config/dotnet-tools.json; analyzer packs in
+# engine/headless/Directory.Build.props. Tools restore from main repo
+# root via `dotnet tool restore` (idempotent).
+q1-format:
+	@$(MAKE) -C engine/headless format
+
+q1-format-check:
+	@$(MAKE) -C engine/headless format-check
+
+q1-format-whitespace:
+	@$(MAKE) -C engine/headless format-whitespace
+
+q1-format-whitespace-check:
+	@$(MAKE) -C engine/headless format-whitespace-check
+
+q1-inspect:
+	@$(MAKE) -C engine/headless inspect
+
+q1-quality:
+	@$(MAKE) -C engine/headless quality
