@@ -1,0 +1,118 @@
+# Python tooling config — single source of truth for ruff, basedpyright, vulture.
+# Tool versions pinned in requirements-dev.txt.
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    "contracts/generated",
+    ".venv",
+    "build",
+    "build-*",
+]
+
+[tool.ruff.lint]
+# Curated rule set. Covers what pylint + bandit + flake8 + isort historically did.
+# Excludes: D (docstring style — too noisy), ANN (annotation completeness — staged
+# via basedpyright later), COM (commas — handled by formatter).
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (logic bugs, unused imports)
+    "W",    # pycodestyle warnings
+    "I",    # isort (import order)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (modernize syntax)
+    "B",    # flake8-bugbear (likely bugs)
+    "S",    # flake8-bandit (security — replaces standalone bandit)
+    "BLE",  # blind-except
+    "A",    # builtins shadowing
+    "C4",   # comprehensions
+    "DTZ",  # datetime tz-aware
+    "PIE",  # misc anti-patterns
+    "RET",  # return-statement quirks
+    "SIM",  # simplify
+    "ARG",  # unused arguments
+    "PTH",  # use pathlib
+    "PL",   # pylint port (replaces standalone pylint)
+    "RUF",  # ruff-specific
+]
+ignore = [
+    "PLR0913",  # too-many-arguments — sim/training APIs legitimately have many params
+    "PLR0915",  # too-many-statements — game loops are long
+    "PLR2004",  # magic-value — pervasive in math/sim code
+    "S101",    # assert-used — pytest needs it; per-file scope below covers tests
+    "RET504",  # unnecessary-assignment-before-return — readability often wins
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately use asserts, magic numbers, unused fixture args.
+"**/test_*.py" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
+"**/*_test.py" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
+"**/tests/**" = ["S101", "PLR2004", "ARG001", "ARG002", "S105", "S106"]
+# Claude hooks: standalone scripts, not modules.
+".claude/hooks/*.py" = ["E501"]
+# Pre-commit hooks: same.
+".pre-commit-hooks/*.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pipeline", "tools", "upstream_sync"]
+
+[tool.ruff.format]
+# Defaults: black-compatible. Explicit for clarity.
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true
+
+# ----- basedpyright -----
+[tool.basedpyright]
+include = [
+    "pipeline",
+    "tools",
+    ".pre-commit-hooks",
+    ".claude/hooks",
+]
+exclude = [
+    "contracts/generated",
+    "**/.venv",
+    "**/__pycache__",
+    "build",
+    "build-*",
+]
+# Start permissive; ratchet to "standard" then "strict" in follow-up waves.
+typeCheckingMode = "basic"
+pythonVersion = "3.12"
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"  # torch/numpy stubs are partial.
+reportUnusedImport = "warning"  # ruff F401 is authoritative; basedpyright echoes.
+reportUnusedVariable = "warning"
+
+# ----- vulture (dead code) -----
+[tool.vulture]
+paths = ["pipeline", "tools"]
+min_confidence = 80
+exclude = [
+    "contracts/generated/",
+    ".venv/",
+    "build/",
+    "build-*/",
+]
+ignore_decorators = [
+    "@app.*",  # FastAPI / Flask route decorators look unused
+    "@click.*",  # Click CLI command decorators
+    "@pytest.*",  # pytest fixtures look unused
+    "@property",
+    "@*.setter",
+    "@*.deleter",
+    "@override",
+    "@abstractmethod",
+]
+ignore_names = [
+    "test_*",  # pytest collects these by name
+    "*_test",
+    "fixture",
+    "setUp",
+    "tearDown",
+    "setUpClass",
+    "tearDownClass",
+]

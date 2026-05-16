@@ -1,0 +1,5 @@
+# Python dev tooling — pinned for CI reproducibility.
+# Configs in pyproject.toml.
+ruff==0.15.13
+basedpyright==1.39.4
+vulture==2.16

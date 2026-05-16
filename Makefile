@@ -5,6 +5,7 @@
 .PHONY: coverage
 .PHONY: cloc cloc-full cloc-report cloc-report-full
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
+.PHONY: py-format py-format-check py-lint py-lint-fix py-typecheck py-dead-code python-quality
 
 # Resolve .venv path so make works from main repo, subdirs, and worktrees alike.
 # $(abspath ...) is critical: in main repo, git rev-parse --git-common-dir
@@ -92,6 +93,15 @@ help:
 	@echo "  sanitize-run      Build and run with sanitizers (use FILE=path)"
 	@echo "  sanitize-test     Build and run tests with sanitizers"
 	@echo "  sanitize-clean    Remove sanitizer build directory"
+	@echo ""
+	@echo "Python quality (configs in pyproject.toml; pins in requirements-dev.txt):"
+	@echo "  py-format         Run ruff format (in-place)"
+	@echo "  py-format-check   Run ruff format --check"
+	@echo "  py-lint           Run ruff check (no fix)"
+	@echo "  py-lint-fix       Run ruff check --fix"
+	@echo "  py-typecheck      Run basedpyright"
+	@echo "  py-dead-code      Run vulture against .vulture-whitelist.py"
+	@echo "  python-quality    Aggregate: format-check + lint + typecheck + dead-code"
 
 build: $(BUILD_DIR)/Makefile
 	@cmake --build $(BUILD_DIR) -j$(JOBS)
@@ -263,3 +273,26 @@ sync-port-decisions:
 
 sync:
 	@$(VENV)/bin/python -m upstream_sync.cli sync $(SYNC_ARGS)
+
+# ----- Python quality gates -----
+# Configs live in pyproject.toml. Tool versions pinned in requirements-dev.txt.
+# Install with: $(VENV)/bin/pip install -r requirements-dev.txt
+py-format:
+	@$(VENV)/bin/ruff format .
+
+py-format-check:
+	@$(VENV)/bin/ruff format --check .
+
+py-lint:
+	@$(VENV)/bin/ruff check .
+
+py-lint-fix:
+	@$(VENV)/bin/ruff check --fix .
+
+py-typecheck:
+	@$(VENV)/bin/basedpyright
+
+py-dead-code:
+	@$(VENV)/bin/vulture pipeline tools .vulture-whitelist.py
+
+python-quality: py-format-check py-lint py-typecheck py-dead-code

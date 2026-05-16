@@ -16,6 +16,14 @@ repos:
       - id: clang-format
         types_or: [c++, c]
         exclude: '^(contracts/generated/|.*\.proto$)'
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        exclude: '^contracts/generated/'
+      - id: ruff-format
+        exclude: '^contracts/generated/'
   - repo: local
     hooks:
       - id: no-relative-venv

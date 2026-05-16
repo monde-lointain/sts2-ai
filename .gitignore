@@ -81,6 +81,15 @@ __pycache__/
 *.py[cod]
 data/
 
+# Python tooling caches
+.ruff_cache/
+.basedpyright/
+.pytest_cache/
+.mypy_cache/
+.pyright/
+.coverage
+htmlcov/
+
 # AST analyzer outputs (regenerated on demand)
 tools/ast-analyzer/analysis.json
 docs/test-plan/
