@@ -121,6 +121,8 @@ public class PosixSemaphoreTests
     {
         if (!OnLinux)
             return;
+        if (Environment.GetEnvironmentVariable("STS2_LATENCY_GATES") != "1")
+            return;  // latency gates only meaningful on dedicated hardware
         string a = UniqueName() + "-a";
         string b = UniqueName() + "-b";
         PosixSemaphore.Unlink(a);

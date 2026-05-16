@@ -116,6 +116,7 @@ class EnemyState {
 
 class EnemyStateBuilder {
  public:
+  // cppcheck-suppress passedByValueCallback
   explicit EnemyStateBuilder(EnemyState state = {}) noexcept : state_(state) {}
 
   EnemyStateBuilder& hp(sts2::game::Stat value) noexcept {
@@ -159,6 +160,8 @@ class EnemyStateBuilder {
     return *this;
   }
 
+  // cppcheck-suppress returnByReference -- builder is often a temporary;
+  // returning const& would dangle when called on a temporary builder.
   [[nodiscard]] EnemyState build() const noexcept { return state_; }
 
  private:
@@ -222,6 +225,7 @@ class CompactState {
 
 class CompactStateBuilder {
  public:
+  // cppcheck-suppress passedByValueCallback
   explicit CompactStateBuilder(CompactState state = {}) noexcept
       : state_(state) {}
 
@@ -253,7 +257,8 @@ class CompactStateBuilder {
     state_.phase_ = value;
     return *this;
   }
-  CompactStateBuilder& enemy(std::size_t index, EnemyState value) noexcept {
+  CompactStateBuilder& enemy(std::size_t index,
+                             const EnemyState& value) noexcept {
     assert(index < state_.enemies_.size());
     state_.enemies_[index] = value;
     return *this;
@@ -271,6 +276,8 @@ class CompactStateBuilder {
     return *this;
   }
 
+  // cppcheck-suppress returnByReference -- builder is often a temporary;
+  // returning const& would dangle when called on a temporary builder.
   [[nodiscard]] CompactState build() const noexcept { return state_; }
 
  private:

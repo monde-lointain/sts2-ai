@@ -1,5 +1,6 @@
 #include "sts2/game/hand.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <utility>
@@ -49,12 +50,12 @@ void Hand::draw_from(Deck& deck, Rng& rng, int n) {
 }
 
 HandIndex Hand::find(CardId id) const noexcept {
-  for (std::size_t i = 0; i < cards_.size(); ++i) {
-    if (cards_[i].id == id) {
-      return HandIndex{static_cast<int>(i)};
-    }
+  const auto it = std::find_if(cards_.begin(), cards_.end(),
+                               [id](const Card& c) { return c.id == id; });
+  if (it == cards_.end()) {
+    return HandIndex::none();
   }
-  return HandIndex::none();
+  return HandIndex{static_cast<int>(it - cards_.begin())};
 }
 
 bool Hand::valid(HandIndex idx) const noexcept { return idx.in_range(cards_); }

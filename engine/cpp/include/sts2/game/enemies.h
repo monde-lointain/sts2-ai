@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <string_view>
 
@@ -38,22 +39,22 @@ inline constexpr std::array<CultistArchetype, 2> kCultistArchetypes = {{
 
 [[nodiscard]] constexpr const CultistArchetype*
 cultist_archetype_from_wire_name(std::string_view wire_name) noexcept {
-  for (const auto& archetype : kCultistArchetypes) {
-    if (archetype.wire_name == wire_name) {
-      return &archetype;
-    }
-  }
-  return nullptr;
+  const auto it =
+      std::find_if(kCultistArchetypes.begin(), kCultistArchetypes.end(),
+                   [wire_name](const CultistArchetype& a) {
+                     return a.wire_name == wire_name;
+                   });
+  return (it != kCultistArchetypes.end()) ? &*it : nullptr;
 }
 
 [[nodiscard]] constexpr const CultistArchetype*
 cultist_archetype_from_internal_name(std::string_view internal_name) noexcept {
-  for (const auto& archetype : kCultistArchetypes) {
-    if (archetype.internal_name == internal_name) {
-      return &archetype;
-    }
-  }
-  return nullptr;
+  const auto it =
+      std::find_if(kCultistArchetypes.begin(), kCultistArchetypes.end(),
+                   [internal_name](const CultistArchetype& a) {
+                     return a.internal_name == internal_name;
+                   });
+  return (it != kCultistArchetypes.end()) ? &*it : nullptr;
 }
 
 game::Enemy make_calcified_cultist(game::Rng& rng);

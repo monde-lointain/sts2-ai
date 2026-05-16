@@ -56,13 +56,6 @@ class JsonParser {
     }
   }
 
-  char peek() const {
-    if (pos_ >= text_.size()) {
-      throw_at("unexpected EOF");
-    }
-    return text_[pos_];
-  }
-
   void expect(char c) {
     skip_ws();
     if (pos_ >= text_.size() || text_[pos_] != c) {

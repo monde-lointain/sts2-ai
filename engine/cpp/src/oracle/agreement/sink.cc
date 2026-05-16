@@ -223,6 +223,8 @@ void write_parquet(const std::filesystem::path& root,
 
   const DateTuple date0 = utc_date_from_ms(rows.front().timestamp_ms);
   const std::string& model0 = rows.front().model_version;
+  // cppcheck-suppress useStlAlgorithm -- loop throws on mismatch; std::any_of
+  // cannot substitute a throwing loop body.
   for (const auto& row : rows) {
     if (row.model_version != model0 ||
         utc_date_from_ms(row.timestamp_ms) != date0) {

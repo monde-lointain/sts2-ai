@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <set>
 #include <span>
@@ -82,9 +83,9 @@ const std::vector<std::string>& spawn_power_expectation_for(
 std::vector<std::string> sorted_monster_ids(const ParsedCombatState& combat) {
   std::vector<std::string> ids;
   ids.reserve(combat.enemies.size());
-  for (const auto& e : combat.enemies) {
-    ids.push_back(e.name);
-  }
+  std::transform(combat.enemies.begin(), combat.enemies.end(),
+                 std::back_inserter(ids),
+                 [](const ParsedCreature& e) { return e.name; });
   std::sort(ids.begin(), ids.end());
   return ids;
 }
@@ -160,11 +161,10 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   if (!expected.empty()) {
     const auto observed = collect_enemy_power_ids(blob.combat_state);
     std::vector<std::string> absent;
-    for (const auto& want : expected) {
-      if (!observed.contains(want)) {
-        absent.push_back(want);
-      }
-    }
+    std::copy_if(expected.begin(), expected.end(), std::back_inserter(absent),
+                 [&observed](const std::string& want) {
+                   return !observed.contains(want);
+                 });
     if (!absent.empty()) {
       std::sort(absent.begin(), absent.end());
       UnknownPowerDiagnostic diag;

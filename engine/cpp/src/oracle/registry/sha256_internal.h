@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstring>
@@ -94,9 +95,7 @@ inline void sha256_compress(std::uint32_t state[8],
 [[nodiscard]] inline std::array<std::uint8_t, 32> sha256(
     std::span<const std::uint8_t> data) noexcept {
   std::uint32_t state[8];
-  for (unsigned i = 0; i < 8; ++i) {
-    state[i] = kSha256H0[i];
-  }
+  std::copy(std::begin(kSha256H0), std::end(kSha256H0), std::begin(state));
 
   const std::uint64_t total_bits = static_cast<std::uint64_t>(data.size()) * 8U;
 
