@@ -6,7 +6,12 @@ out/
 .vs/
 .vscode/
 .idea/
-.claude/
+# Claude Code: ignore local/runtime state but track design-time artifacts
+# (agents, skills, commands, hooks, CLAUDE.md, plan-templates, state schema)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/**/__pycache__/
+.claude/state/*.json
 .worktrees/
 *.user
 
