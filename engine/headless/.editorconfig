@@ -53,6 +53,20 @@ dotnet_diagnostic.SA1413.severity = none  # UseTrailingCommasInMultiLineInitiali
 # CSharpier vs StyleCop layout conflicts — formatter wins.
 dotnet_diagnostic.SA1009.severity = none  # ClosingParenthesisMustBeSpacedCorrectly
 dotnet_diagnostic.SA1500.severity = none  # BracesForMultiLineStatementsMustNotShareLine (CSharpier do/while)
+dotnet_diagnostic.SA1519.severity = none  # BracesForMultiLineStatementsMustNotShareLine (alt form)
+# Naming-style preferences that conflict with codebase conventions.
+dotnet_diagnostic.SA1300.severity = none  # ElementMustBeginWithUppercaseLetter (P/Invoke names match C lib)
+dotnet_diagnostic.SA1307.severity = none  # AccessibleFieldsMustBeginWithUpperCaseLetter (we use _camelCase)
+dotnet_diagnostic.SA1310.severity = none  # FieldNamesMustNotContainUnderscore (we allow _camelCase)
+dotnet_diagnostic.SA1313.severity = none  # ParameterNamesMustBeginWithLowercaseLetter (record positional params)
+# Modernization preferences we don't enforce uniformly.
+dotnet_diagnostic.CA1512.severity = none  # use ArgumentOutOfRangeException.ThrowIfXxx
+dotnet_diagnostic.CA1513.severity = none  # use ObjectDisposedException.ThrowIf
+dotnet_diagnostic.CA2263.severity = none  # prefer generic overload
+# Codebase-wide design preferences.
+dotnet_diagnostic.CA1859.severity = none  # interface params kept for testability + immutability
+dotnet_diagnostic.CA1711.severity = none  # *Stream / *Queue suffixes match domain language
+dotnet_diagnostic.CA1068.severity = none  # CancellationToken position pragmatic, not last
 dotnet_diagnostic.SA1111.severity = none  # ClosingParenthesisMustBeOnLineOfLastParameter
 dotnet_diagnostic.SA1502.severity = none  # ElementMustNotBeOnSingleLine
 dotnet_diagnostic.SA1503.severity = none  # BracesMustNotBeOmitted

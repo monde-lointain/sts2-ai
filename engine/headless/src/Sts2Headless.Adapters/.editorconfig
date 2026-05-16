@@ -1,0 +1,36 @@
+# Adapters-scoped editorconfig.
+#
+# This layer crosses the managed/native boundary: P/Invoke into libpthread
+# (PosixSemaphore), shared-memory ring buffers (HookProtocolAdapter), and
+# deliberate sync I/O on the replay recorder hot path. Some analyzer rules
+# don't apply here:
+#
+#   - StyleCop SA1xxx layout rules conflict with P/Invoke conventions
+#     (lowercase C symbol names, attribute placement).
+#   - VSTHRD200 (Async-suffix) doesn't fit sync wrapper methods that wrap
+#     blocking native calls intentionally.
+#   - CA1001 on shared-state managers — instance fields are stable for the
+#     adapter lifetime; disposal patterns are bounded by the host.
+#   - CA2101 (P/Invoke marshaling) — the explicit StringMarshalling on each
+#     P/Invoke is sufficient for our libc surface.
+
+[*.cs]
+dotnet_diagnostic.SA1001.severity = none  # P/Invoke comma spacing
+dotnet_diagnostic.SA1113.severity = none  # comma placement in attribute list
+dotnet_diagnostic.SA1115.severity = none  # parameter on new line
+dotnet_diagnostic.SA1203.severity = none  # const before fields (P/Invoke layout)
+dotnet_diagnostic.SA1214.severity = none  # readonly ordering (P/Invoke handles)
+dotnet_diagnostic.SA1308.severity = none  # m_/s_ prefix (legacy adapter state)
+dotnet_diagnostic.SA1401.severity = none  # internal fields exposed for perf
+dotnet_diagnostic.SA1501.severity = none  # one-line statement bodies
+dotnet_diagnostic.CA1001.severity = none  # owned-IDisposable in stable adapter
+dotnet_diagnostic.CA1305.severity = none  # P/Invoke formatting is invariant
+dotnet_diagnostic.CA1859.severity = none  # interface boundaries intentional
+dotnet_diagnostic.CA2101.severity = none  # StringMarshalling already specified
+
+# VSTHRD: keep most rules on (real deadlock guard), but allow the sync
+# recorder shape (intentional blocking on the hot path).
+dotnet_diagnostic.VSTHRD002.severity = none  # sync waits explicit on recorder hot path
+dotnet_diagnostic.VSTHRD103.severity = none  # sync Write deliberate on recorder
+dotnet_diagnostic.VSTHRD110.severity = none  # fire-and-forget RPCs by design
+dotnet_diagnostic.VSTHRD200.severity = none  # sync wrappers around native calls

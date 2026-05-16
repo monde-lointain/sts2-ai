@@ -175,67 +175,67 @@ public static class MainLoop
             switch (next)
             {
                 case PlayerAction.PlayCard pc:
-                    {
-                        // Look up the card model id for the log line BEFORE the
-                        // engine mutates the hand. (PlayerPlayCard moves the
-                        // card to discard so the lookup would still succeed,
-                        // but doing it before keeps the log temporally honest.)
-                        CardInstance? inst = ctx.State.HandPile.Cards.FirstOrDefault(c =>
-                            c.InstanceId == pc.CardInstanceId
-                        );
-                        string modelId = inst?.ModelId ?? "<unknown>";
-                        CombatEngine.PlayerPlayCard(ctx, pc.CardInstanceId, pc.TargetEnemyId);
-                        actionsApplied++;
-                        metrics.IncrementCounter(MetricNames.ActionsTotal, 1);
-                        logger.Log(
-                            "card_played",
-                            new Dictionary<string, object?>
-                            {
-                                ["turn"] = ctx.State.TurnCounter,
-                                ["card"] = modelId,
-                                ["instance_id"] = pc.CardInstanceId,
-                                ["target"] = pc.TargetEnemyId,
-                            }
-                        );
-                        probe?.Emit("card_played", ctx.State);
-                        break;
-                    }
+                {
+                    // Look up the card model id for the log line BEFORE the
+                    // engine mutates the hand. (PlayerPlayCard moves the
+                    // card to discard so the lookup would still succeed,
+                    // but doing it before keeps the log temporally honest.)
+                    CardInstance? inst = ctx.State.HandPile.Cards.FirstOrDefault(c =>
+                        c.InstanceId == pc.CardInstanceId
+                    );
+                    string modelId = inst?.ModelId ?? "<unknown>";
+                    CombatEngine.PlayerPlayCard(ctx, pc.CardInstanceId, pc.TargetEnemyId);
+                    actionsApplied++;
+                    metrics.IncrementCounter(MetricNames.ActionsTotal, 1);
+                    logger.Log(
+                        "card_played",
+                        new Dictionary<string, object?>
+                        {
+                            ["turn"] = ctx.State.TurnCounter,
+                            ["card"] = modelId,
+                            ["instance_id"] = pc.CardInstanceId,
+                            ["target"] = pc.TargetEnemyId,
+                        }
+                    );
+                    probe?.Emit("card_played", ctx.State);
+                    break;
+                }
                 case PlayerAction.EndTurn:
-                    {
-                        CombatEngine.EndPlayerTurn(ctx);
-                        actionsApplied++;
-                        metrics.IncrementCounter(MetricNames.ActionsTotal, 1);
-                        if (ctx.State.IsCombatOver)
-                            break;
-
-                        CombatEngine.EnemyTurn(ctx);
-                        logger.Log(
-                            "enemy_action",
-                            new Dictionary<string, object?>
-                            {
-                                ["turn"] = ctx.State.TurnCounter,
-                                ["player_hp"] = ctx.State.Player.CurrentHp,
-                                ["player_block"] = ctx.State.Player.Block,
-                            }
-                        );
-                        probe?.Emit("enemy_turn", ctx.State);
-                        if (ctx.State.IsCombatOver)
-                            break;
-
-                        CombatEngine.StartPlayerTurn(ctx);
-                        turnsPlayed++;
-                        metrics.IncrementCounter(MetricNames.TurnsTotal, 1);
-                        logger.Log(
-                            "turn_start",
-                            new Dictionary<string, object?>
-                            {
-                                ["turn"] = ctx.State.TurnCounter,
-                                ["hand_size"] = ctx.State.HandPile.Cards.Count,
-                            }
-                        );
-                        probe?.Emit("turn_start", ctx.State);
+                {
+                    CombatEngine.EndPlayerTurn(ctx);
+                    actionsApplied++;
+                    metrics.IncrementCounter(MetricNames.ActionsTotal, 1);
+                    if (ctx.State.IsCombatOver)
                         break;
-                    }
+
+                    CombatEngine.EnemyTurn(ctx);
+                    logger.Log(
+                        "enemy_action",
+                        new Dictionary<string, object?>
+                        {
+                            ["turn"] = ctx.State.TurnCounter,
+                            ["player_hp"] = ctx.State.Player.CurrentHp,
+                            ["player_block"] = ctx.State.Player.Block,
+                        }
+                    );
+                    probe?.Emit("enemy_turn", ctx.State);
+                    if (ctx.State.IsCombatOver)
+                        break;
+
+                    CombatEngine.StartPlayerTurn(ctx);
+                    turnsPlayed++;
+                    metrics.IncrementCounter(MetricNames.TurnsTotal, 1);
+                    logger.Log(
+                        "turn_start",
+                        new Dictionary<string, object?>
+                        {
+                            ["turn"] = ctx.State.TurnCounter,
+                            ["hand_size"] = ctx.State.HandPile.Cards.Count,
+                        }
+                    );
+                    probe?.Emit("turn_start", ctx.State);
+                    break;
+                }
                 default:
                     throw new InvalidOperationException(
                         $"MainLoop: unhandled PlayerAction subtype {next.GetType().Name}."

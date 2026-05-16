@@ -56,8 +56,7 @@ public sealed class Chomper : MonsterModel
                 new(ScreechMoveId, Intent.Status(ScreechStatusCards), FollowUpMoveId: ClampMoveId),
             },
             initialMoveId: ClampMoveId
-        )
-    { }
+        ) { }
 }
 
 /// <summary>
@@ -127,8 +126,7 @@ public sealed class Exoskeleton : MonsterModel
             spawnPowers: ImmutableArray.Create(
                 new MonsterSpawnPower("HardToKillPower", HardToKillStacks)
             )
-        )
-    { }
+        ) { }
 }
 
 public sealed class FuzzyWurmCrawler : MonsterModel
@@ -145,8 +143,7 @@ public sealed class FuzzyWurmCrawler : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 /// <summary>
@@ -190,8 +187,7 @@ public sealed class LouseProgenitor : MonsterModel
             initialMoveId: WebCannonMoveId,
             // Upstream AfterAddedToRoom: CurlUp(CurlBlock=14).
             spawnPowers: ImmutableArray.Create(new MonsterSpawnPower(PowerIds.CurlUp, CurlBlock))
-        )
-    { }
+        ) { }
 }
 
 public sealed class GremlinMerc : MonsterModel
@@ -208,8 +204,7 @@ public sealed class GremlinMerc : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class HauntedShip : MonsterModel
@@ -226,8 +221,7 @@ public sealed class HauntedShip : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class LivingFog : MonsterModel
@@ -244,8 +238,7 @@ public sealed class LivingFog : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 /// <summary>
@@ -293,8 +286,7 @@ public sealed class CeremonialBeast : MonsterModel
                 new(CrushMoveId, Intent.Attack(CrushDamage), FollowUpMoveId: BeastCryMoveId),
             },
             initialMoveId: StampMoveId
-        )
-    { }
+        ) { }
 }
 
 // === Common Act-1 normals ===
@@ -312,8 +304,7 @@ public sealed class JawWorm : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class RedLouse : MonsterModel
@@ -330,8 +321,7 @@ public sealed class RedLouse : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class GreenLouse : MonsterModel
@@ -348,8 +338,7 @@ public sealed class GreenLouse : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class AcidSlimeS : MonsterModel
@@ -366,8 +355,7 @@ public sealed class AcidSlimeS : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class AcidSlimeM : MonsterModel
@@ -384,8 +372,7 @@ public sealed class AcidSlimeM : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class AcidSlimeL : MonsterModel
@@ -402,8 +389,7 @@ public sealed class AcidSlimeL : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class SpikeSlimeS : MonsterModel
@@ -420,8 +406,7 @@ public sealed class SpikeSlimeS : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class SpikeSlimeM : MonsterModel
@@ -438,8 +423,7 @@ public sealed class SpikeSlimeM : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class SpikeSlimeL : MonsterModel
@@ -456,8 +440,7 @@ public sealed class SpikeSlimeL : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class FungalBoss : MonsterModel
@@ -474,8 +457,7 @@ public sealed class FungalBoss : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class SnakePlant : MonsterModel
@@ -492,8 +474,7 @@ public sealed class SnakePlant : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class Sentry : MonsterModel
@@ -510,8 +491,7 @@ public sealed class Sentry : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 /// <summary>
@@ -593,8 +573,7 @@ public sealed class LagavulinMatriarch : MonsterModel
             spawnPowers: ImmutableArray.Create(
                 new MonsterSpawnPower(PowerIds.Plated, PlatingStacks)
             )
-        )
-    { }
+        ) { }
 }
 
 public sealed class CenturyGuard : MonsterModel
@@ -611,8 +590,7 @@ public sealed class CenturyGuard : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class SilverMage : MonsterModel
@@ -629,8 +607,7 @@ public sealed class SilverMage : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 // B.1-final-T2b: KaiserCrab (Q1-invented single-monster boss) replaced by upstream
@@ -708,8 +685,7 @@ public sealed class Crusher : MonsterModel
                 new MonsterSpawnPower("BackAttackLeftPower", 1),
                 new MonsterSpawnPower("CrabRagePower", 1)
             )
-        )
-    { }
+        ) { }
 }
 
 /// <summary>
@@ -776,8 +752,7 @@ public sealed class Rocket : MonsterModel
                 new MonsterSpawnPower("CrabRagePower", 1),
                 new MonsterSpawnPower("SurroundedPower", 1)
             )
-        )
-    { }
+        ) { }
 }
 
 // === Bowlbugs (Act 1 swarms) ===
@@ -798,8 +773,7 @@ public sealed class BowlbugEgg : MonsterModel
             MaxHp,
             new MonsterMove[] { new("BUFF", Intent.Buff(), "BUFF") },
             "BUFF"
-        )
-    { }
+        ) { }
 }
 
 public sealed class BowlbugNectar : MonsterModel
@@ -816,8 +790,7 @@ public sealed class BowlbugNectar : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class BowlbugRock : MonsterModel
@@ -834,8 +807,7 @@ public sealed class BowlbugRock : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 public sealed class BowlbugSilk : MonsterModel
@@ -852,8 +824,7 @@ public sealed class BowlbugSilk : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }
 
 // === Fossil Stalker / Frog Knight (Act 1 elites) ===
@@ -921,8 +892,7 @@ public sealed class FossilStalker : MonsterModel
             },
             // Upstream's machine constructor initialises with LATCH_MOVE.
             initialMoveId: LatchMoveId
-        )
-    { }
+        ) { }
 }
 
 public sealed class FrogKnight : MonsterModel
@@ -939,6 +909,5 @@ public sealed class FrogKnight : MonsterModel
             MaxHp,
             new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
             "ATTACK"
-        )
-    { }
+        ) { }
 }

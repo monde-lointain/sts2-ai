@@ -39,8 +39,7 @@ public class MonsterModelTests
                     new(Id: "DARK_STRIKE", Intent: Intent.Attack(9), FollowUpMoveId: "DARK_STRIKE"),
                 },
                 initialMoveId: "INCANTATION"
-            )
-        { }
+            ) { }
     }
 
     [Fact]
@@ -207,8 +206,7 @@ public class MonsterModelTests
                 maxInitialHp,
                 new MonsterMove[] { new("M", Intent.Buff(), "M") },
                 "M"
-            )
-        { }
+            ) { }
     }
 
     private sealed class DupeMoveCultist : MonsterModel
@@ -220,8 +218,7 @@ public class MonsterModelTests
                 1,
                 new MonsterMove[] { new("A", Intent.Buff(), "A"), new("A", Intent.Buff(), "A") },
                 "A"
-            )
-        { }
+            ) { }
     }
 
     private sealed class BadInitialMoveCultist : MonsterModel
@@ -239,7 +236,6 @@ public class MonsterModelTests
                 1,
                 new MonsterMove[] { new("A", Intent.Buff(), "NONEXISTENT") },
                 "A"
-            )
-        { }
+            ) { }
     }
 }

@@ -47,6 +47,5 @@ public sealed class DampCultist : MonsterModel
                 ),
             },
             initialMoveId: IncantationMoveId
-        )
-    { }
+        ) { }
 }

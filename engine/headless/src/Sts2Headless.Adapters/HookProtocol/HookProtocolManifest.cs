@@ -205,6 +205,8 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
 /// </summary>
 public sealed class HookProtocolHandshakeException : Exception
 {
+    public HookProtocolHandshakeException() { }
+
     public HookProtocolHandshakeException(string message)
         : base(message) { }
 

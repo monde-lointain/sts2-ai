@@ -158,4 +158,8 @@ inspect: tools-restore
 	dotnet jb inspectcode sts2-headless.sln \
 	  --output=.inspect-report.xml --severity=ERROR
 
-quality: format-check format-whitespace-check build
+quality: format-check build
+# Note: dotnet format whitespace disagrees with CSharpier on indentation
+# rules — running both reformats the same lines back and forth. CSharpier
+# is opinionated and owns all whitespace; format-whitespace-check is
+# excluded from the gate. Targets remain available for ad-hoc inspection.

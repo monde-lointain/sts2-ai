@@ -533,7 +533,9 @@ public static class CombatEngine
         var hookRegistry = new HookRegistry();
         var actionQueue = new ActionQueue();
         var execCtx = new DomainExecutionContext(ctx.Clock, ctx.Rng, hookRegistry, actionQueue);
-        string? targetString = targetEnemyId?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        string? targetString = targetEnemyId?.ToString(
+            System.Globalization.CultureInfo.InvariantCulture
+        );
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: targetEnemyId,

@@ -27,8 +27,8 @@ public sealed class GcMetricsSampler
 {
     private readonly PrometheusMetricsRegistry _registry;
     private readonly IGcReader _reader;
-    private bool _hasBaseline;
     private readonly int[] _baselineCounts = new int[3];
+    private bool _hasBaseline;
     private long _baselineAllocated;
     private TimeSpan _baselinePause;
 

@@ -46,8 +46,7 @@ public sealed class MonsterScriptTests
                     new(C, Intent.Buff(), FollowUpMoveId: A),
                 },
                 initialMoveId: A
-            )
-        { }
+            ) { }
     }
 
     /// <summary>
@@ -83,8 +82,7 @@ public sealed class MonsterScriptTests
                     new(ATTACK_LOW, Intent.Attack(5), FollowUpMoveId: SLEEP),
                 },
                 initialMoveId: SLEEP
-            )
-        { }
+            ) { }
     }
 
     private static MoveBranchContext MakeContext(

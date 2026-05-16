@@ -8,6 +8,8 @@ namespace Sts2Headless.Adapters.StateCodec;
 /// </summary>
 public sealed class StateCodecException : Exception
 {
+    public StateCodecException() { }
+
     public StateCodecException(string message)
         : base(message) { }
 

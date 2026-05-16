@@ -130,24 +130,24 @@ public sealed record CliArgs(
             switch (flag)
             {
                 case "--seed":
-                    {
-                        string v = TakeValue(flag);
-                        if (
-                            !uint.TryParse(
-                                v,
-                                NumberStyles.Integer,
-                                CultureInfo.InvariantCulture,
-                                out uint parsed
-                            )
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !uint.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out uint parsed
                         )
-                        {
-                            throw new CliParseException(
-                                $"--seed: expected unsigned integer, got '{v}'."
-                            );
-                        }
-                        seed = parsed;
-                        break;
+                    )
+                    {
+                        throw new CliParseException(
+                            $"--seed: expected unsigned integer, got '{v}'."
+                        );
                     }
+                    seed = parsed;
+                    break;
+                }
                 case "--character":
                     character = TakeValue(flag);
                     break;
@@ -155,52 +155,52 @@ public sealed record CliArgs(
                     deck = TakeValue(flag);
                     break;
                 case "--relics":
-                    {
-                        string v = TakeValue(flag);
-                        relics = ParseCommaList(v, flag);
-                        break;
-                    }
+                {
+                    string v = TakeValue(flag);
+                    relics = ParseCommaList(v, flag);
+                    break;
+                }
                 case "--encounter":
                     encounter = TakeValue(flag);
                     break;
                 case "--ascension":
-                    {
-                        string v = TakeValue(flag);
-                        if (
-                            !int.TryParse(
-                                v,
-                                NumberStyles.Integer,
-                                CultureInfo.InvariantCulture,
-                                out int parsed
-                            )
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
                         )
-                        {
-                            throw new CliParseException($"--ascension: expected integer, got '{v}'.");
-                        }
-                        ascension = parsed;
-                        break;
+                    )
+                    {
+                        throw new CliParseException($"--ascension: expected integer, got '{v}'.");
                     }
+                    ascension = parsed;
+                    break;
+                }
                 case "--metrics-port":
-                    {
-                        string v = TakeValue(flag);
-                        if (
-                            !int.TryParse(
-                                v,
-                                NumberStyles.Integer,
-                                CultureInfo.InvariantCulture,
-                                out int parsed
-                            )
-                            || parsed < 1
-                            || parsed > 65535
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
                         )
-                        {
-                            throw new CliParseException(
-                                $"--metrics-port: expected 1..65535, got '{v}'."
-                            );
-                        }
-                        metricsPort = parsed;
-                        break;
+                        || parsed < 1
+                        || parsed > 65535
+                    )
+                    {
+                        throw new CliParseException(
+                            $"--metrics-port: expected 1..65535, got '{v}'."
+                        );
                     }
+                    metricsPort = parsed;
+                    break;
+                }
                 case "--script":
                     scriptPath = TakeValue(flag);
                     break;
@@ -285,6 +285,8 @@ public sealed record CliArgs(
 public sealed class CliParseException : Exception
 {
     public bool IsHelp { get; init; }
+
+    public CliParseException() { }
 
     public CliParseException(string message)
         : base(message) { }

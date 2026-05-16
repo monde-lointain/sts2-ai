@@ -290,6 +290,8 @@ public static class CompositionRoot
 /// </summary>
 public sealed class CompositionException : Exception
 {
+    public CompositionException() { }
+
     public CompositionException(string message)
         : base(message) { }
 

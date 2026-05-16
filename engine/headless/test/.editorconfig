@@ -7,6 +7,8 @@
 # is a fluent-API preference irrelevant for tests.
 
 [*.cs]
+dotnet_diagnostic.CA1305.severity = none  # culture-specific format in test assertions
+dotnet_diagnostic.CA1310.severity = none  # ordinal/culture string comparison in tests
 dotnet_diagnostic.CA1707.severity = none  # underscore-separated test names
 dotnet_diagnostic.CA1861.severity = none  # const arrays in test assertions
 dotnet_diagnostic.CA1512.severity = none  # legacy throw idiom in tests
@@ -22,3 +24,14 @@ dotnet_diagnostic.SA1300.severity = none  # element-name underscore (test method
 dotnet_diagnostic.SA1310.severity = none  # field-name underscore (test helpers)
 dotnet_diagnostic.SA1316.severity = none  # tuple element names
 dotnet_diagnostic.SA1519.severity = none  # braces for multi-line if/while
+dotnet_diagnostic.SA1003.severity = none  # operator spacing (CSharpier wins)
+dotnet_diagnostic.SA1118.severity = none  # parameter span on multiple lines
+dotnet_diagnostic.SA1203.severity = none  # const before field ordering
+dotnet_diagnostic.SA1312.severity = none  # discard / underscore-prefixed locals
+dotnet_diagnostic.SA1401.severity = none  # public instance fields in test scaffolds
+dotnet_diagnostic.SA1407.severity = none  # arithmetic precedence in test assertions
+dotnet_diagnostic.SA1501.severity = none  # one-line statement bodies
+dotnet_diagnostic.VSTHRD002.severity = none  # sync wait in tests is deliberate
+dotnet_diagnostic.CA1834.severity = none  # StringBuilder.Append(char) micro-perf
+dotnet_diagnostic.CA1869.severity = none  # JsonSerializerOptions caching not worth in tests
+dotnet_diagnostic.SA1001.severity = none  # comma spacing in attribute arrays

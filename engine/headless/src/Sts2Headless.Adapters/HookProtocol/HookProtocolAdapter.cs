@@ -659,8 +659,7 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
 
     private static void ReturnBody(
         byte[] _
-    )
-    { /* thread-static; no-op return */
+    ) { /* thread-static; no-op return */
     }
 
     /// <summary>Tuple-ish info returned by <see cref="PreStart"/>.</summary>

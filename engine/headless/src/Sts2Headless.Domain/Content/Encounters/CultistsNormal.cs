@@ -18,6 +18,5 @@ public sealed class CultistsNormal : EncounterModel
         : base(
             id: CanonicalId,
             monsterIds: new[] { CalcifiedCultist.CanonicalId, DampCultist.CanonicalId }
-        )
-    { }
+        ) { }
 }

@@ -31,8 +31,7 @@ public sealed class ExoskeletonsNormal : EncounterModel
         : base(
             CanonicalId,
             new[] { Exoskeleton.CanonicalId, Exoskeleton.CanonicalId, Exoskeleton.CanonicalId }
-        )
-    { }
+        ) { }
 }
 
 // B.1-final-T2a: deleted JawWormSolo (STS1-only monster JawWorm, no STS2 analogue).
@@ -70,8 +69,7 @@ public sealed class BowlbugsTrio : EncounterModel
         : base(
             CanonicalId,
             new[] { BowlbugRock.CanonicalId, BowlbugNectar.CanonicalId, BowlbugSilk.CanonicalId }
-        )
-    { }
+        ) { }
 }
 
 public sealed class FuzzyWurmCrawlerSolo : EncounterModel

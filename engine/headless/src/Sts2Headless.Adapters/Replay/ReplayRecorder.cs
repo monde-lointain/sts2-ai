@@ -382,7 +382,11 @@ public sealed class ReplayRecorder : IReplaySink
         // Stamp content is irrelevant to the CombatState section bytes — use
         // a fixed throwaway. We pick a zero content_hash + empty strings so
         // the serialize call's stamp validation passes.
-        ManifestStamp throwaway = new("", "", new byte[ReplayConstants.Sha256ByteLength]);
+        ManifestStamp throwaway = new(
+            string.Empty,
+            string.Empty,
+            new byte[ReplayConstants.Sha256ByteLength]
+        );
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
             state,
             runRng,
