@@ -1,3 +1,10 @@
+---
+quantum: Q6
+substrate: n/a (derived from Q12 output)
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Evaluation Reports (Q6)
 
 > Versioned eval reports. The truth source for "is the agent better?" Read by humans and CI gates; written only by Q12 (Evaluation Harness).

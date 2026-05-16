@@ -1,3 +1,10 @@
+---
+quantum: Q4
+substrate: contracts/registry/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Content Registry (Q4)
 
 > Stable identity for every game token across patches. The patch-adaptation lever (ADR-003); packaged as a versioned file inside every model artifact (ADR-010).

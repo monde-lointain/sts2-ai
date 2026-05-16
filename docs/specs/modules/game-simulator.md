@@ -1,3 +1,10 @@
+---
+quantum: Q1
+substrate: engine/headless/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Game Simulator (Q1)
 
 > Headless C# Slay the Spire 2 Core. The deterministic game-state machine the rest of the pipeline talks to. Per ADR-002.

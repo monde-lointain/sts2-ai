@@ -1,3 +1,10 @@
+---
+quantum: Q2
+substrate: engine/cpp/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Oracle Verifier (Q2)
 
 > C++ expectimax solver. Ground-truth labels for tractable states; engine→CompactState adapter (ADR-011); the gold standard the network is regression-tested against.

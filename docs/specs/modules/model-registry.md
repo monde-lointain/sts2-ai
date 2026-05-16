@@ -1,3 +1,10 @@
+---
+quantum: Q5
+substrate: pipeline/model-registry/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Model Registry (Q5)
 
 > Versioned blob store + metadata table for trained model artifacts. Distinct from serving authority (ADR-007).

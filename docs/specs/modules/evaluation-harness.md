@@ -1,3 +1,10 @@
+---
+quantum: Q12
+substrate: pipeline/evaluation-harness/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Evaluation Harness (Q12)
 
 > Runs the regression battery, ascension ladder, counterfactual evaluator, and exploit detector against artifacts in Q5. Writes reports to Q6.

@@ -1,3 +1,10 @@
+---
+quantum: Q7
+substrate: pipeline/observability/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Observability (Q7)
 
 > Time-series metrics, structured logs, replay drilldown index. The platform that lets humans see what the system is doing.

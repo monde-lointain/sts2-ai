@@ -1,3 +1,10 @@
+---
+quantum: Q10
+substrate: pipeline/trainer/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Trainer (Q10)
 
 > PyTorch training loop. Reads Q3, computes losses, publishes checkpoints to Q5. Stateless across runs (state lives in Q5 + Q3).

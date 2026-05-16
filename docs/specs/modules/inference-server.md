@@ -1,3 +1,10 @@
+---
+quantum: Q9
+substrate: pipeline/inference-server/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Inference Server (Q9)
 
 > Batched policy + value forward passes. Stateless. Lives co-located with worker pools so the Worker↔Q9 hot path stays in shared memory.

@@ -1,3 +1,10 @@
+---
+quantum: Q8
+substrate: pipeline/rollout-workers/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Rollout Workers (Q8)
 
 > Stateless self-play workers. Run MCTS using cached weights; emit trajectories to Q3. The hot path of training-data generation.

@@ -62,6 +62,31 @@ Append after the last existing ADR body. Follow this template exactly:
 
 Include date on Accepted: `**Status:** Accepted (YYYY-MM-DD).`
 
+## Badge convention for module specs (per ADR-023)
+
+When an ADR introduces, defers, or marks responsibilities aspirational in a
+module spec (`docs/specs/modules/<quantum-slug>.md`), the affected sections in
+that spec MUST be re-badged per ADR-023:
+
+- `[SHIPPED]` — code exists + passes a gate
+- `[PHASE-N]` — deferred to a named phase (`[PHASE-1.5]`, `[PHASE-2]`, …)
+- `[ASPIRATION]` — design intent only; no roadmap committed
+
+Rule: every Responsibilities / Interfaces / Coupling section carries ≥1 badge
+per claim. Mixed badges within a section are allowed; per-bullet badges are
+encouraged when a section straddles shipped + aspirational.
+
+**No fourth `[CONTRADICTS-CODE]` badge.** If your ADR exposes a spec-vs-code
+contradiction, resolve it in the same PR: update spec to match code (default,
+spec is usually stale) OR add inline `[NOTE: contradicts code at <path>;
+tracking <issue/ADR>]` and surface to project-lead. Persistent
+`[CONTRADICTS-CODE]` is not a state — contradictions resolve at merge boundary.
+
+**Frontmatter requirement.** Every `docs/specs/modules/*.md` has YAML
+frontmatter declaring `quantum` and `substrate`. ADRs editing a spec must
+preserve frontmatter intact (it is the machine-readable input to the
+`spec-edit-tracker` gate per ADR-024).
+
 ## Step 4 — Cross-link affected code/docs
 
 Any file that implements or references the decision should include a comment citing the ADR:

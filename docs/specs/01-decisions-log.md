@@ -26,6 +26,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-020 | Oracle-Agreement Sideband Routes through Q3 | Accepted |
 | ADR-021 | Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention | Accepted |
 | ADR-022 | Trajectory Protobuf Binding Homed at `pipeline/common/` | Accepted |
+| ADR-023 | Spec Status Badges + Module-Spec Frontmatter | Accepted |
 
 ---
 
@@ -484,3 +485,44 @@ Research-lead decision on 2026-05-15 to ratify ahead of Phase-2 boot. Grounded i
 - *Positive:* Q3 boot-time invariants (schema version checks in `schema_registry`) operate on the same generated module Q10 imports — no skew possible.
 
 **Origin.** Q10 boot directive cascade 2026-05-14. Q10-ADR-005 is the load-bearing version; this entry is the cross-quantum mirror.
+
+---
+
+## ADR-023 — Spec Status Badges + Module-Spec Frontmatter
+
+**Status:** Accepted (2026-05-16).
+
+**Context.** Agent-dispatch workflows depend on module specs (`docs/specs/modules/*.md`) for context-bootstrap. A doc-sync audit on 2026-05-16 found that timestamp-drift is small (1–3 days) but **semantic drift is severe**: specs describe Phase-2+ aspirations as Phase-1 responsibilities. Concrete examples — Q4 spec promises a "token-coherence regression battery" that does not exist; Q10 spec lists oracle-agreement priority replay but `pipeline/trainer/` has zero Q2 RPC plumbing; Q1 spec implies 22 encounters working though only 1 has per-step probes. Subagents inherit confident-but-wrong context and waste cycles. There is no machine-readable way to tell, per section, what is shipped vs deferred vs aspirational.
+
+**Decision.** Two coupled conventions.
+
+*Per-section status badges.* Every Responsibilities/Interfaces/Coupling section of every module spec MUST carry at least one inline badge:
+
+- `[SHIPPED]` — section describes code that exists and passes a gate.
+- `[PHASE-N]` — implementation deferred to a named phase (e.g., `[PHASE-1.5]`, `[PHASE-2]`).
+- `[ASPIRATION]` — design intent only; no implementation roadmap committed.
+
+Mixed badges within a section are allowed and encouraged. Per-bullet badges are allowed when a section straddles shipped + aspirational claims. **No fourth `[CONTRADICTS-CODE]` badge exists**: contradictions are merge-boundary states. When a subagent finds spec-says-X / code-does-Y during rebadging, it must EITHER update the spec to match code (the common case — spec is stale) OR add inline `[NOTE: contradicts code at <path>; tracking <issue/ADR>]` and surface to project-lead.
+
+*Module-spec frontmatter.* Every `docs/specs/modules/*.md` MUST carry YAML frontmatter declaring `quantum` and `substrate` path:
+
+```yaml
+---
+quantum: Q1
+substrate: engine/headless/
+---
+```
+
+`substrate: n/a` is allowed for quanta whose substrate is derived (Q6) or Phase-2+ TBD (Q11). Frontmatter is the machine-readable source-of-truth consumed by the Phase 3 spec-edit gate (see ADR-024) — it substitutes for parsing the quantum-map markdown table in `.claude/CLAUDE.md`.
+
+**Consequences.**
+
+- *Negative:* badges add visual noise to every spec section. Trade-off accepted because the noise is the signal.
+- *Negative:* requires discipline to maintain — subagents may forget to badge, mis-badge, or remove badges during unrelated edits. ADR-024 installs a soft-enforcement gate; until then, this is a convention.
+- *Negative:* frontmatter introduces a sync surface between this convention and the quantum-map table in `.claude/CLAUDE.md`. Drift is possible. Mitigation: Phase 1 sweep uses the table as source-of-truth at install time; future divergence flagged for a follow-up CI consistency check.
+- *Negative:* the "no `[CONTRADICTS-CODE]` badge" rule pushes work onto the merge boundary — subagents finding contradictions must resolve, not annotate. Slows down some PRs.
+- *Positive:* agents can scan top-of-section to determine implementation status without reading the substrate. Phantom-feature mirage (specs ahead of dormant substrate) becomes immediately visible.
+- *Positive:* frontmatter unlocks deterministic gate logic (ADR-024) without convention-fragile markdown parsing.
+- *Positive:* the badge taxonomy mirrors the project's phase-gate structure already in use (`docs/scaling-strategy.md` Phase 1 / 1.5 / 2+), so no new mental model.
+
+**Origin.** Doc-sync planning session 2026-05-16. Triggered by project-lead status report flagging Q7/Q8/Q9/Q12 specs newer than dormant substrates ("phantom features") and spot-checks of Q1/Q4/Q10 surfacing aspirational-as-current responsibilities.

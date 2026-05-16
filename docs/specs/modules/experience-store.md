@@ -1,3 +1,10 @@
+---
+quantum: Q3
+substrate: pipeline/experience-store/
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Experience Store (Q3)
 
 > Append-only trajectory store. The async backbone of the training pipeline (ADR-006).

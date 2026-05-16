@@ -1,3 +1,10 @@
+---
+quantum: Q11
+substrate: n/a (Phase-2+ TBD)
+---
+
+> Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
+
 # Module: Curriculum Generator (Q11)
 
 > Synthesizes mid-run starting states and adversarial scenarios. Phase 2+. Writes to Q3 with explicit provenance tags so the trainer can stratify.
