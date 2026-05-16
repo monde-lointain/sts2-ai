@@ -96,7 +96,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
     public byte[] SerializePlayerRngSet(PlayerRngSet set)
     {
         PlayerRngType[] types = Enum.GetValues<PlayerRngType>();
-        int payload = 4 + 4 + types.Length * 8; // seed + count + per-entry
+        int payload = 4 + 4 + (types.Length * 8); // seed + count + per-entry
         byte[] buf = new byte[4 + payload]; // + 4 bytes header (magic+schema)
         int offset = 0;
         BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicPlayerSet);
@@ -132,7 +132,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         {
             throw new InvalidDataException($"PlayerRngSet negative entry count: {count}");
         }
-        int expected = 12 + count * 8;
+        int expected = 12 + (count * 8);
         if (bytes.Length != expected)
         {
             throw new InvalidDataException(
@@ -142,7 +142,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         var counters = new Dictionary<PlayerRngType, int>(count);
         for (int i = 0; i < count; i++)
         {
-            int entryOffset = 12 + i * 8;
+            int entryOffset = 12 + (i * 8);
             int rawEnum = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(entryOffset, 4));
             int counter = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(entryOffset + 4, 4));
             if (!Enum.IsDefined(typeof(PlayerRngType), rawEnum))
@@ -167,7 +167,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
             + stringBytes.Length // string bytes
             + 4 // seed
             + 4 // count
-            + types.Length * 8; // per-entry
+            + (types.Length * 8); // per-entry
         byte[] buf = new byte[4 + payload];
         int offset = 0;
         BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicRunSet);
@@ -220,7 +220,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         {
             throw new InvalidDataException($"RunRngSet negative entry count: {count}");
         }
-        int expected = afterString + 8 + count * 8;
+        int expected = afterString + 8 + (count * 8);
         if (bytes.Length != expected)
         {
             throw new InvalidDataException(
@@ -238,7 +238,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         var counters = new Dictionary<RunRngType, int>(count);
         for (int i = 0; i < count; i++)
         {
-            int entryOffset = afterString + 8 + i * 8;
+            int entryOffset = afterString + 8 + (i * 8);
             int rawEnum = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(entryOffset, 4));
             int counter = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(entryOffset + 4, 4));
             if (!Enum.IsDefined(typeof(RunRngType), rawEnum))

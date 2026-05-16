@@ -23,9 +23,13 @@ public interface IRngStateSerializer
     byte[] SerializeRng(Rng rng);
     Rng DeserializeRng(ReadOnlySpan<byte> bytes);
 
+    // CA1716: `set` shadows VB keyword. Renaming breaks every implementer of
+    // this interface; the parameter name reads as natural English in C# usage.
+#pragma warning disable CA1716
     byte[] SerializePlayerRngSet(PlayerRngSet set);
     PlayerRngSet DeserializePlayerRngSet(ReadOnlySpan<byte> bytes);
 
     byte[] SerializeRunRngSet(RunRngSet set);
     RunRngSet DeserializeRunRngSet(ReadOnlySpan<byte> bytes);
+#pragma warning restore CA1716
 }

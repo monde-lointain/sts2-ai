@@ -112,7 +112,7 @@ public class Rng : IRngSource
             );
         }
         Counter++;
-        return (float)(_random.NextDouble() * (double)(max - min) + (double)min);
+        return (float)((_random.NextDouble() * (double)(max - min)) + (double)min);
     }
 
     public double NextDouble()
@@ -131,7 +131,7 @@ public class Rng : IRngSource
             );
         }
         Counter++;
-        return _random.NextDouble() * (max - min) + min;
+        return (_random.NextDouble() * (max - min)) + min;
     }
 
     public float NextGaussianFloat(
@@ -164,9 +164,9 @@ public class Rng : IRngSource
             double mag = Math.Sqrt(-2.0 * Math.Log(d));
             double angle = Math.PI * 2.0 * n;
             double z = mag * Math.Cos(angle);
-            result = mean + z * stdDev;
+            result = mean + (z * stdDev);
         } while (result < 0.0 || result > 1.0);
-        return result * (max - min) + min;
+        return (result * (max - min)) + min;
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public class Rng : IRngSource
             double d = 1.0 - _random.NextDouble();
             double n = 1.0 - _random.NextDouble();
             double z = Math.Sqrt(-2.0 * Math.Log(d)) * Math.Sin(Math.PI * 2.0 * n);
-            double a = (double)mean + (double)stdDev * z;
+            double a = (double)mean + ((double)stdDev * z);
             r = (int)Math.Round(a);
         } while (r < min || r > max);
         return r;
