@@ -1,1 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk"></Project>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!--
+      EngineStrip contains intentionally-minimal stubs of Godot engine
+      services for unit testing. The codebase uses the s_ static-prefix
+      legacy convention here for module-state visibility; StyleCop's
+      modern PascalCase rules don't apply.
+    -->
+    <NoWarn>$(NoWarn);SA1308;SA1311</NoWarn>
+  </PropertyGroup>
+</Project>
