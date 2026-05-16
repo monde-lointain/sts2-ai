@@ -88,11 +88,15 @@ jobs:
         # resolution; install CPU torch the same way q10-ci does. The
         # quality job exists separately from q3/q10-ci so analyzer
         # failures don't get attributed to test failures (and vice versa).
+        # rocksdict + onnx needed for Q3/schema import resolution.
+        # upstream_sync installed as editable package from tools/.
         run: |
           python -m venv .venv
           .venv/bin/pip install -r requirements-dev.txt
           .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
           .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
+          .venv/bin/pip install rocksdict onnx
+          .venv/bin/pip install -e tools/upstream-sync
       - name: Run python-quality
         run: make python-quality
 
@@ -140,6 +144,7 @@ jobs:
         run: |
           python -m venv .venv
           .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
+          .venv/bin/pip install rocksdict
       - name: Run q3-ci
         run: make q3-ci
 
@@ -245,10 +250,10 @@ jobs:
           cmake -B /tmp/cppcheck-src/build -S /tmp/cppcheck-src -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DHAVE_RULES=ON \
-            -DUSE_MATCHCOMPILER=ON
+            -DUSE_MATCHCOMPILER=ON \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/.cppcheck-install"
           cmake --build /tmp/cppcheck-src/build -j"$(nproc)"
-          cmake --install /tmp/cppcheck-src/build \
-            --prefix "${{ github.workspace }}/.cppcheck-install"
+          cmake --install /tmp/cppcheck-src/build
       - name: Add cppcheck to PATH
         run: echo "${{ github.workspace }}/.cppcheck-install/bin" >> "$GITHUB_PATH"
       - name: Verify cppcheck supports rules
