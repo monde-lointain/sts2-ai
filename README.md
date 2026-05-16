@@ -160,3 +160,13 @@ The `cppcheck` target needs the rules submodule:
 ```
 git submodule update --init external/cppcheck-rules
 ```
+
+## Development setup
+
+After cloning, install pre-commit hooks:
+```
+.venv/bin/pip install pre-commit
+.venv/bin/pre-commit install
+.venv/bin/pre-commit install --hook-type pre-push
+```
+This enforces clang-format and structural checks on every commit; clang-tidy at push time (Wave 1).
