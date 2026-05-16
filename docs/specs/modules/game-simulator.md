@@ -42,7 +42,7 @@ Token IDs from Q4 are *referenced* in these formats but not owned by Q1. Q1 emit
 
 ## Coupling [MIXED — see bullets]
 
-- **Afferent (in):** **Q8 (rollout workers — main hot-path consumer) [PHASE-2]** (Q8 not yet booted; M2 server side is shipped and self-tested); **Q11 (curriculum generator — uses save/restore) [PHASE-2+]** (Q11 substrate TBD); **Q12 (evaluation harness — runs pinned seeds) [PHASE-2]**; **Q2 (oracle — consumes serialized state) [PARKED]** (Q2 oracle adapter parked per gate report; not on Phase-1 critical path).
+- **Afferent (in):** **Q8 (rollout workers — main hot-path consumer) [PHASE-2]** (Q8 not yet booted; M2 server side is shipped and self-tested); **Q11 (curriculum generator — uses save/restore) [PHASE-2+]** (Q11 substrate TBD); **Q12 (evaluation harness — runs pinned seeds) [PHASE-2]**; **Q2 (oracle — consumes serialized state) [ASPIRATION (parked per gate report)]** (Q2 oracle adapter parked per gate report; not on Phase-1 critical path).
 - **Efferent (out):** none operational. **`[SHIPPED]`** Q4 is referenced for token mapping but not called at runtime (Q4 Phase-1 manifest fixture is registered: 96 cards / 58 relics / 45 powers / 32 monsters / 21 potions / 22 encounters).
 - **`[SHIPPED]`** **Indirect:** Q7 (pull-based metrics — endpoint live, scrape pending Q7 boot); filesystem (replay sink — operational).
 
