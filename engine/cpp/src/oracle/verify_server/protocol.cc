@@ -56,13 +56,6 @@ class JsonParser {
     }
   }
 
-  char peek() const {
-    if (pos_ >= text_.size()) {
-      throw_at("unexpected EOF");
-    }
-    return text_[pos_];
-  }
-
   void expect(char c) {
     skip_ws();
     if (pos_ >= text_.size() || text_[pos_] != c) {
@@ -354,7 +347,10 @@ void append_json_string(std::string& out, std::string_view s) {
       default:
         if (uc < 0x20U) {
           char buf[8];
+          // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+          // snprintf for hex escape; no std::format in project.
           std::snprintf(buf, sizeof(buf), "\\u%04x", static_cast<unsigned>(uc));
+          // NOLINTEND(cppcoreguidelines-pro-type-vararg)
           out.append(buf);
         } else {
           out.push_back(c);
@@ -367,7 +363,10 @@ void append_json_string(std::string& out, std::string_view s) {
 void append_json_double(std::string& out, double d) {
   // max_digits10 = 17 round-trips IEEE 754 doubles in stdc++.
   char buf[64];
+  // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg)
+  // snprintf for float precision; no std::format in project.
   const int n = std::snprintf(buf, sizeof(buf), "%.17g", d);
+  // NOLINTEND(cppcoreguidelines-pro-type-vararg)
   if (n <= 0 || static_cast<std::size_t>(n) >= sizeof(buf)) {
     throw std::runtime_error("verify-server: double-format buffer overflow");
   }

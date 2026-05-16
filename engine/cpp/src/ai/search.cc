@@ -133,7 +133,6 @@ SearchResult Search::solve_player(CompactState state) {
       child.score = Score{
           .expected_hp = static_cast<double>(next.get_player_hp().value()),
           .expected_rounds = 0.0};
-      child.terminal = true;
     } else {
       child = solve_player(next);
     }

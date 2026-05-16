@@ -105,12 +105,12 @@ using sts2::oracle::verify_server::handle_request;
       std::string("\"") + std::string(key) + std::string("\":\"");
   const auto k = json.find(needle);
   if (k == std::string_view::npos) {
-    return std::string();
+    return {};
   }
   const auto value_start = k + needle.size();
   const auto value_end = json.find('"', value_start);
   if (value_end == std::string_view::npos) {
-    return std::string();
+    return {};
   }
   return std::string(json.substr(value_start, value_end - value_start));
 }
@@ -185,7 +185,7 @@ TEST(VerifyServer, DISABLED_HappyPathCultistsNormal) {
   // schema_major == 0 && schema_minor == 1 means the synthetic envelope
   // round-tripped through parse_envelope and was forwarded into the
   // verified response (Q1-ADR-013 traceability anchor).
-  const std::string body(resp);
+  const std::string& body = resp;
   // schema_major:0 appears in two places (the envelope is the only one
   // emitted), pin the literal substring directly.
   EXPECT_NE(body.find(R"("schema_major":0)"), std::string::npos);

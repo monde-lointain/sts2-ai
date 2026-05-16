@@ -15,7 +15,7 @@ namespace sts2::oracle::adapter::detail {
 class BinaryCursor {
  public:
   explicit BinaryCursor(std::span<const std::uint8_t> bytes) noexcept
-      : bytes_(bytes), pos_(0) {}
+      : bytes_(bytes) {}
 
   [[nodiscard]] std::size_t pos() const noexcept { return pos_; }
   [[nodiscard]] std::size_t remaining() const noexcept {
@@ -106,7 +106,7 @@ class BinaryCursor {
 
  private:
   std::span<const std::uint8_t> bytes_;
-  std::size_t pos_;
+  std::size_t pos_ = 0;
 };
 
 }  // namespace sts2::oracle::adapter::detail

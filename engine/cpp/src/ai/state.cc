@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <numeric>
 #include <span>
 #include <vector>
 
@@ -70,11 +71,7 @@ bool CardCounts::covers(const CardCounts& subset) const noexcept {
 }
 
 int CardCounts::total() const noexcept {
-  int sum = 0;
-  for (uint8_t c : counts) {
-    sum += c;
-  }
-  return sum;
+  return std::accumulate(counts.begin(), counts.end(), 0);
 }
 
 CompactState from_combat(const sts2::game::Combat& combat) {

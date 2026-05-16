@@ -37,6 +37,8 @@ class ScopedTempFile {
   }
   ScopedTempFile(const ScopedTempFile&) = delete;
   ScopedTempFile& operator=(const ScopedTempFile&) = delete;
+  ScopedTempFile(ScopedTempFile&&) = delete;
+  ScopedTempFile& operator=(ScopedTempFile&&) = delete;
 
   [[nodiscard]] const std::filesystem::path& path() const noexcept {
     return path_;
@@ -73,7 +75,13 @@ TEST(RegistrySha, ComputeOnMissingFile_ThrowsRuntimeError) {
                        "sts2_registry_sha_definitely_missing_xyz.tmp";
   std::error_code ec;
   std::filesystem::remove(missing, ec);  // ensure absent.
-  EXPECT_THROW(compute_registry_sha256(missing), std::runtime_error);
+  // NOLINTBEGIN(bugprone-unused-local-non-trivial-variable)
+  // EXPECT_THROW captures the call to ensure it actually fires; r is unused by
+  // design.
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = compute_registry_sha256(missing); },
+      std::runtime_error);
+  // NOLINTEND(bugprone-unused-local-non-trivial-variable)
 }
 
 TEST(RegistrySha, CurrentPhase1RegistrySha_ShapeIsLowercaseHex64) {

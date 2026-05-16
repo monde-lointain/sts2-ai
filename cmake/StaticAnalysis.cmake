@@ -27,9 +27,10 @@ if(CPPCHECK_EXECUTABLE)
   add_custom_target(cppcheck
     COMMAND ${CPPCHECK_EXECUTABLE}
       --enable=all
+      --suppress=checkersReport
       --suppress=missingIncludeSystem
-      --suppress=unusedFunction
       --suppress=unmatchedSuppression
+      --suppress=unusedFunction
       --inline-suppr
       --std=c++20
       --error-exitcode=1
@@ -47,9 +48,10 @@ if(CPPCHECK_EXECUTABLE)
   add_custom_target(cppcheck-xml
     COMMAND ${CPPCHECK_EXECUTABLE}
       --enable=all
+      --suppress=checkersReport
       --suppress=missingIncludeSystem
-      --suppress=unusedFunction
       --suppress=unmatchedSuppression
+      --suppress=unusedFunction
       --inline-suppr
       --std=c++20
       --check-level=exhaustive

@@ -26,6 +26,13 @@ def token_hash(kind: str, name: str) -> str:
 
 
 def main() -> int:
+    if not SOURCE.exists():
+        print(
+            f"[seed_phase1_registry] SOURCE not found: {SOURCE}\n"
+            "Registry is read-only in environments without the upstream manifest.\n"
+            "Skipping regeneration — using committed contracts/registry/phase1-silent.json."
+        )
+        return 0
     manifest = json.loads(SOURCE.read_text(encoding="utf-8"))
     tokens = []
     next_id = 1

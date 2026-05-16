@@ -368,6 +368,8 @@ public class EndToEndRoundtripTests
     {
         if (!OnLinux)
             return;
+        if (Environment.GetEnvironmentVariable("STS2_LATENCY_GATES") != "1")
+            return; // latency gates only meaningful on dedicated hardware
         string basePath = "/dev/shm/q1-lat-" + Guid.NewGuid().ToString("N");
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);

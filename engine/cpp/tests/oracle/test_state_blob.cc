@@ -81,20 +81,23 @@ TEST(StateBlobReader, CorruptedPayloadByte_Rejected) {
   // Pick an offset well past the header, well before the trailer.
   const std::size_t mid = bytes.size() / 2U;
   bytes[mid] ^= 0xFFU;
-  EXPECT_THROW(read_state_blob(bytes), StateCodecError);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = read_state_blob(bytes); }, StateCodecError);
 }
 
 TEST(StateBlobReader, MagicMismatch_Rejected) {
   auto bytes = load_fixture_blob("01-cultists-normal-seed42");
   // First 4 bytes = magic. Corrupt any of them.
   bytes[0] = 0x00U;
-  EXPECT_THROW(read_state_blob(bytes), StateCodecError);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = read_state_blob(bytes); }, StateCodecError);
 }
 
 TEST(StateBlobReader, TruncatedBlob_Rejected) {
   auto bytes = load_fixture_blob("01-cultists-normal-seed42");
   bytes.resize(8);  // header-magic + schema only; trailer missing.
-  EXPECT_THROW(read_state_blob(bytes), StateCodecError);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = read_state_blob(bytes); }, StateCodecError);
 }
 
 TEST(StateBlobReader, SchemaMismatch_Rejected) {
@@ -103,7 +106,8 @@ TEST(StateBlobReader, SchemaMismatch_Rejected) {
   // disallowed value.
   bytes[4] = 0x42U;
   bytes[5] = 0x00U;
-  EXPECT_THROW(read_state_blob(bytes), StateCodecError);
+  EXPECT_THROW(
+      { [[maybe_unused]] auto r = read_state_blob(bytes); }, StateCodecError);
 }
 
 }  // namespace

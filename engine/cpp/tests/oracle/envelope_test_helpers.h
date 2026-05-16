@@ -93,7 +93,7 @@ constexpr std::uint32_t kSha256H0[8] = {0x6a09e667U, 0xbb67ae85U, 0x3c6ef372U,
                                         0xa54ff53aU, 0x510e527fU, 0x9b05688cU,
                                         0x1f83d9abU, 0x5be0cd19U};
 
-inline constexpr std::uint32_t rotr_sha(std::uint32_t x, unsigned n) {
+constexpr std::uint32_t rotr_sha(std::uint32_t x, unsigned n) {
   return (x >> n) | (x << (32U - n));
 }
 
@@ -107,10 +107,11 @@ inline constexpr std::uint32_t rotr_sha(std::uint32_t x, unsigned n) {
   auto compress = [&](const std::uint8_t* block) {
     std::uint32_t w[64];
     for (unsigned i = 0; i < 16; ++i) {
-      w[i] = (static_cast<std::uint32_t>(block[4U * i]) << 24) |
-             (static_cast<std::uint32_t>(block[(4U * i) + 1]) << 16) |
-             (static_cast<std::uint32_t>(block[(4U * i) + 2]) << 8) |
-             (static_cast<std::uint32_t>(block[(4U * i) + 3]));
+      const auto off = static_cast<std::size_t>(i) * 4U;
+      w[i] = (static_cast<std::uint32_t>(block[off]) << 24) |
+             (static_cast<std::uint32_t>(block[off + 1]) << 16) |
+             (static_cast<std::uint32_t>(block[off + 2]) << 8) |
+             (static_cast<std::uint32_t>(block[off + 3]));
     }
     for (unsigned i = 16; i < 64; ++i) {
       const std::uint32_t s0 =

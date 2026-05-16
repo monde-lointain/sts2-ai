@@ -41,10 +41,31 @@ Branch == main is a hard halt (no override). CI failures on main are an incident
    - `null` with `status` `in_progress` / `queued` / `pending` → **wait**:
      - If the in-flight workflow's longest job ETA is <10min (rule of thumb: `ci.yml` p50 ≈ 3-8min; `q2-ci` ≈ 18min; `phase0-gate` ≈ 20min) → foreground `gh run watch <id>`.
      - Otherwise → `ScheduleWakeup` 270s and re-enter `/ci-rescue`.
-4. **Pull failed logs**:
+4. **Pull failed logs**. `gh run view --log[-failed]` is **unreliable** — it exits 0 with empty output for multi-job runs, matrix jobs, and runs older than ~1h (silent failure, no stderr). Use the REST API per failed job:
+
    ```bash
-   gh run view "$run_id" --log-failed > "/tmp/ci-rescue-$run_id.log"
+   repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+   out="/tmp/ci-rescue-$run_id.log"
+   : > "$out"
+
+   mapfile -t failed_jobs < <(gh run view "$run_id" --json jobs \
+     --jq '.jobs[] | select(.conclusion=="failure") | "\(.databaseId)\t\(.name)"')
+
+   if [[ ${#failed_jobs[@]} -eq 0 ]]; then
+     # conclusion==failure but no failed jobs → workflow-level failure (cancelled,
+     # setup error, etc.). Cannot mechanically diagnose.
+     write-ci-rescue.sh escalate workflow-level-failure
+     exit 12
+   fi
+
+   for line in "${failed_jobs[@]}"; do
+     job_id="${line%%$'\t'*}"; name="${line#*$'\t'}"
+     printf '\n========== JOB %s — %s ==========\n\n' "$job_id" "$name" >> "$out"
+     gh api "repos/$repo/actions/jobs/$job_id/logs" >> "$out" 2>&1
+   done
    ```
+
+   The API path returns timestamp-prefixed lines (`2026-05-16T13:54:37.4679598Z ##[error]…`). Downstream regexes must tolerate the prefix — the Error-signature section below handles this.
 5. **Triage** — classify into one category and compute the error signature. See "Triage rules" + "Error signature" below.
 6. **Dedup check**: if `error_signature == last_error_signature` → `escalate same-error-twice`; surface to user via AskUserQuestion ("the prior fix didn't change the failure — review needed").
 7. **Cap check**: if `iteration_count >= max_iterations` → `escalate iteration-cap`.
@@ -95,17 +116,26 @@ Default if nothing matches → `unactionable` (we don't auto-fix what we can't c
 Deterministic SHA256 over a normalized failure fingerprint. Algorithm:
 
 ```bash
-# extract failed step names (lines like "##[error]…" or "FAILED test_x")
-failed_steps="$(grep -E '^##\[error\]|^FAILED|\[  FAILED  \]' "/tmp/ci-rescue-$run_id.log" \
+# API logs are prefixed "2026-05-16T13:54:37.4679598Z " — strip first so anchored
+# regexes work and timestamps don't pollute the fingerprint.
+stripped="$(sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.Z-]+ //' "/tmp/ci-rescue-$run_id.log")"
+
+# Extract failed-step / failed-test markers. ##[error] lines are mostly the generic
+# "Process completed with exit code N" — the real signal is FAILED / [  FAILED  ].
+failed_steps="$(printf '%s\n' "$stripped" \
+  | grep -E '^##\[error\]|^FAILED|\[  FAILED  \]' | sort -u)"
+
+# Real cause sits in the LAST ~10 lines before the ##[error] exit-code line.
+# Capture context around explicit error markers, normalize off-by-one noise.
+fingerprint="$(printf '%s\n' "$stripped" \
+  | grep -B5 -A0 -E '^##\[error\]|FAIL:|error CS|error SA|error CA|FAILED' \
+  | sed -E 's/:[0-9]+:[0-9]+:/:LINE:COL:/g; s/0x[0-9a-fA-F]+/0xHEX/g' \
   | sort -u)"
-# first 3 lines of each failure cluster, normalized: strip timestamps, line numbers
-fingerprint="$(grep -B0 -A3 -E '^##\[error\]|FAIL:|error CS|error SA|error CA' "/tmp/ci-rescue-$run_id.log" \
-  | sed -E 's/[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.Z]+//g; s/:[0-9]+:[0-9]+:/:LINE:COL:/g; s/0x[0-9a-fA-F]+/0xHEX/g' \
-  | sort -u)"
+
 signature="sha256:$(printf '%s\n%s' "$failed_steps" "$fingerprint" | sha256sum | cut -d' ' -f1)"
 ```
 
-Stored verbatim in `last_error_signature`. The `LINE:COL` / `0xHEX` / timestamp normalizations prevent trivial off-by-one diffs from defeating dedup.
+Stored verbatim in `last_error_signature`. The `LINE:COL` / `0xHEX` normalizations prevent trivial off-by-one diffs from defeating dedup. The timestamp strip is done up front because the API log path always prefixes timestamps; without it the regexes silently miss everything.
 
 ## Stop conditions and exit codes
 
@@ -114,7 +144,7 @@ Stored verbatim in `last_error_signature`. The `LINE:COL` / `0xHEX` / timestamp 
 | 0 | Green — CI passes | `update-status green` |
 | 10 | Iteration cap reached | `escalate iteration-cap` |
 | 11 | Same error signature as prior iteration | `escalate same-error-twice` |
-| 12 | Unactionable category, preflight failure, or branch==main | `escalate unactionable` / `escalate gh-auth-failure` |
+| 12 | Unactionable category, preflight failure, branch==main, or workflow-level failure (no failed jobs to triage) | `escalate unactionable` / `escalate gh-auth-failure` / `escalate workflow-level-failure` |
 | 13 | Fix subagent returned `DIVR` or user rejected diff | `escalate divr` |
 
 On any escalation, AskUserQuestion to surface the state file contents (path + last 2 attempted fixes + escalation_reason) so the user can decide whether to extend iterations, switch strategy, or stop.

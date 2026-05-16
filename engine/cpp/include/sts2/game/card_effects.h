@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <string_view>
@@ -91,45 +92,34 @@ inline constexpr std::array<CardId, 4> kCountedCardIds = {
 };
 
 [[nodiscard]] constexpr const CardEffect& card_effect_for(CardId id) noexcept {
-  for (const auto& e : kCardEffects) {
-    if (e.id == id) {
-      return e;
-    }
-  }
-  assert(false && "card_effect_for: invalid CardId");
-  return kCardEffects.front();
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
+  assert(it != kCardEffects.end() && "card_effect_for: invalid CardId");
+  return (it != kCardEffects.end()) ? *it : kCardEffects.front();
 }
 
 [[nodiscard]] constexpr std::string_view card_wire_model_id(
     CardId id) noexcept {
-  for (const auto& e : kCardEffects) {
-    if (e.id == id) {
-      return e.wire_model_id;
-    }
-  }
-  return "";
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
+  return (it != kCardEffects.end()) ? it->wire_model_id : std::string_view{};
 }
 
 [[nodiscard]] constexpr CardId card_id_from_wire_model_id(
     std::string_view model_id) noexcept {
-  for (const auto& e : kCardEffects) {
-    if (e.wire_model_id == model_id) {
-      return e.id;
-    }
-  }
-  return CardId::kNone;
+  const auto* const it = std::ranges::find_if(
+      kCardEffects,
+      [model_id](const CardEffect& e) { return e.wire_model_id == model_id; });
+  return (it != kCardEffects.end()) ? it->id : CardId::kNone;
 }
 
 [[nodiscard]] constexpr std::string_view card_id_cpp_name(CardId id) noexcept {
   if (id == CardId::kNone) {
     return "kNone";
   }
-  for (const auto& e : kCardEffects) {
-    if (e.id == id) {
-      return e.cpp_name;
-    }
-  }
-  return "";
+  const auto* const it = std::ranges::find_if(
+      kCardEffects, [id](const CardEffect& e) { return e.id == id; });
+  return (it != kCardEffects.end()) ? it->cpp_name : std::string_view{};
 }
 
 }  // namespace sts2::game::card_effects

@@ -50,22 +50,18 @@ sts2::game::MoveId map_move_id(std::string_view move_id) {
 
 // Find power stack count by ModelId; 0 if absent.
 std::int32_t power_stacks(const ParsedCreature& cr, std::string_view id) {
-  for (const auto& p : cr.powers) {
-    if (p.model_id == id) {
-      return p.stacks;
-    }
-  }
-  return 0;
+  const auto it = std::find_if(
+      cr.powers.begin(), cr.powers.end(),
+      [id](const ParsedPowerInstance& p) { return p.model_id == id; });
+  return (it != cr.powers.end()) ? it->stacks : 0;
 }
 
 bool has_power_with_just_applied(const ParsedCreature& cr,
                                  std::string_view id) {
-  for (const auto& p : cr.powers) {
-    if (p.model_id == id) {
-      return p.just_applied;
-    }
-  }
-  return false;
+  const auto it = std::find_if(
+      cr.powers.begin(), cr.powers.end(),
+      [id](const ParsedPowerInstance& p) { return p.model_id == id; });
+  return (it != cr.powers.end()) && it->just_applied;
 }
 
 void tally_pile(sts2::ai::CardCounts& counts,
@@ -122,10 +118,9 @@ bool is_cultists_normal(const ParsedCombatState& combat) {
   // Both enemies must be alive (HP > 0) — a CULTISTS_NORMAL snapshot with
   // one cultist already dead is mid-combat and Phase-1A's prototype expects
   // the starter shape. Looser semantics can land later.
-  for (const auto& e : combat.enemies) {
-    if (e.current_hp <= 0) {
-      return false;
-    }
+  if (!std::all_of(combat.enemies.begin(), combat.enemies.end(),
+                   [](const ParsedCreature& e) { return e.current_hp > 0; })) {
+    return false;
   }
   // The name pair must be exactly { Calcified, Damp } in either order.
   const std::string_view a = combat.enemies[0].name;

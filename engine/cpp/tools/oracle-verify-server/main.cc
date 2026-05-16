@@ -42,8 +42,11 @@ constexpr std::size_t kReadChunkSize = 4096;
 // Global socket-path holder so the signal handler can unlink at shutdown.
 // volatile sig_atomic_t-safe pointer: we copy the path into a fixed buffer
 // at startup; the handler only reads the buffer (never the std::string).
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables)
+// Signal-handler shared state must be global; volatile sig_atomic_t pattern.
 char g_socket_path_buf[sizeof(::sockaddr_un{}.sun_path)] = {};
 volatile std::sig_atomic_t g_shutdown_requested = 0;
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables)
 
 extern "C" void on_signal(int /*sig*/) {
   g_shutdown_requested = 1;
@@ -76,7 +79,7 @@ void install_signal_handlers() {
 
 [[nodiscard]] std::string env_or(const char* key, const char* fallback) {
   const char* v = std::getenv(key);
-  return std::string(v != nullptr ? v : fallback);
+  return {v != nullptr ? v : fallback};
 }
 
 [[nodiscard]] int bind_listen_socket(const std::string& path) {

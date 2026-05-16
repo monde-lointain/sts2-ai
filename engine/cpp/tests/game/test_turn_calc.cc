@@ -67,9 +67,9 @@ struct RecordingEndTurnOps {
   bool stopped = false;
   int current_round = 1;
 
-  void end_player_turn() { calls.push_back("end_player_turn"); }
+  void end_player_turn() { calls.emplace_back("end_player_turn"); }
 
-  [[nodiscard]] std::size_t enemy_count() const { return 3; }
+  [[nodiscard]] static std::size_t enemy_count() { return 3; }
 
   [[nodiscard]] bool enemy_alive(std::size_t slot) const { return alive[slot]; }
 
@@ -91,7 +91,7 @@ struct RecordingEndTurnOps {
   }
 
   void increment_round() {
-    calls.push_back("increment_round");
+    calls.emplace_back("increment_round");
     ++current_round;
   }
 
@@ -101,7 +101,7 @@ struct RecordingEndTurnOps {
     calls.push_back("roll_enemy_next_move:" + std::to_string(slot));
   }
 
-  void reset_player_block() { calls.push_back("reset_player_block"); }
+  void reset_player_block() { calls.emplace_back("reset_player_block"); }
 
   void refill_player_energy(int amount) {
     calls.push_back("refill_player_energy:" + std::to_string(amount));
