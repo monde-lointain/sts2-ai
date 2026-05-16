@@ -9,7 +9,9 @@ substrate: n/a (Phase-2+ TBD)
 
 > Synthesizes mid-run starting states and adversarial scenarios. Phase 2+. Writes to Q3 with explicit provenance tags so the trainer can stratify.
 
-## Responsibilities
+> **Whole-spec status:** `[ASPIRATION (substrate: Phase-2+)]`. Q11 substrate is intentionally deferred to Phase 2+ per the quantum map. Every section below describes future design intent — no implementation exists or is scheduled before Phase 2.
+
+## Responsibilities [ASPIRATION (substrate: Phase-2+)]
 
 - **Synthetic mid-run states.** Generate "start at floor 30 with this deck and these relics" trajectories using Q1 save/restore. Required to teach the value head before the agent's own exploration is reliable (`scaling-strategy.md` §3 Phase 2).
 - **Curriculum scheduling.** Direct workers (via Q11-controlled run configs) toward under-explored regions of `(character × ascension × deck-archetype × encounter)` space.
@@ -18,7 +20,7 @@ substrate: n/a (Phase-2+ TBD)
 
 Out of scope: scoring states (Q12 / value head); writing to Q1's binary state directly (Q11 uses Q1's load/save API).
 
-## Data Ownership
+## Data Ownership [ASPIRATION (substrate: Phase-2+)]
 
 - **Scenario templates** — checked into the repo. Hand-authored or programmatically generated descriptors of `(character, deck composition, relic set, floor, gold, HP, encounter)`.
 - **Archetype clustering definitions** — versioned cluster centers + assignment rules.
@@ -26,7 +28,7 @@ Out of scope: scoring states (Q12 / value head); writing to Q1's binary state di
 
 Q11 does not own the trajectories it produces — those are Q3's. Q11 writes them with a provenance tag.
 
-## Communication
+## Communication [ASPIRATION (substrate: Phase-2+)]
 
 - **Sync — Q1 load/save:** Q11 generates engine save blobs corresponding to scenario templates and feeds them to workers as starting states.
 - **Async — write to Q3:** trajectories produced from synthetic starts arrive in Q3 with `generator = curriculum` and the scenario template ID stamped in provenance.
@@ -34,7 +36,7 @@ Q11 does not own the trajectories it produces — those are Q3's. Q11 writes the
 - **Sync — read from Q12 / dashboards (Phase 5):** value-head uncertainty maps used to drive adversarial scenario synthesis.
 - **Pull — metrics:** Q7 surfaces coverage state and scenario throughput.
 
-## Coupling
+## Coupling [ASPIRATION (substrate: Phase-2+)]
 
 - **Afferent (in):** none directly. Scheduler outputs scenario assignments; workers consume them, not Q11 itself.
 - **Efferent (out):** Q1 (load/save API), Q3 (write), Q4 (token references), Q12 (Phase 5 uncertainty signal).
@@ -42,10 +44,10 @@ Q11 does not own the trajectories it produces — those are Q3's. Q11 writes the
 
 ## Phase Expectations
 
-- **Phase 1.** Not active. Phase 1 trains on natural rollouts only.
-- **Phase 2.** Synthetic mid-run states for value-head bootstrap. Coverage-driven scheduler in early form.
-- **Phase 3.** Full curriculum schedule across decision types. Archetype clustering operational.
-- **Phase 5.** Adversarial scenario generation; held-out content scenarios used for OOD probes.
+- **Phase 1.** `[PHASE-1: not active]` Phase 1 trains on natural rollouts only.
+- **Phase 2.** `[PHASE-2]` Synthetic mid-run states for value-head bootstrap. Coverage-driven scheduler in early form.
+- **Phase 3.** `[PHASE-3]` Full curriculum schedule across decision types. Archetype clustering operational.
+- **Phase 5.** `[PHASE-5]` Adversarial scenario generation; held-out content scenarios used for OOD probes.
 
 ## Open Risks
 

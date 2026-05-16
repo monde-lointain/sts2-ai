@@ -9,7 +9,9 @@ substrate: pipeline/evaluation-harness/
 
 > Runs the regression battery, ascension ladder, counterfactual evaluator, and exploit detector against artifacts in Q5. Writes reports to Q6.
 
-## Responsibilities
+> **Substrate status:** `pipeline/evaluation-harness/` is a 4-LOC service-host stub (one entry point delegating to `pipeline.common.service_host.main`). Nothing in this spec is implemented yet — every section below describes future design intent.
+
+## Responsibilities [ASPIRATION (pre-implementation)]
 
 - **Pinned regression battery.** Reproduce a fixed set of `(seed × encounter × deck)` tuples; compare against known-good outputs (often expectimax-derived). Run on every commit; CI gate.
 - **Held-out seed pool.** 100K seeds reserved, never trained on; used for end-of-phase headline win-rate numbers.
@@ -24,14 +26,14 @@ substrate: pipeline/evaluation-harness/
 
 Out of scope: producing training data (Q11); promoting artifacts (out-of-band workflow per ADR-007); long-term metric storage (Q7).
 
-## Data Ownership
+## Data Ownership [ASPIRATION (pre-implementation)]
 
 None persistent. Outputs land in Q6.
 
 - Eval run config (in-memory) — `(eval_suite_version, target_artifact_id, seed_pool, batch_size, ...)`.
 - Transient batch state during evaluation — discarded after publish to Q6.
 
-## Communication
+## Communication [ASPIRATION (pre-implementation)]
 
 - **Sync — read from Q5:** fetch artifact under test.
 - **Sync — read from Q1:** drive the engine through pinned seeds and held-out seeds.
@@ -40,7 +42,7 @@ None persistent. Outputs land in Q6.
 - **Sync — write to Q6:** publish eval reports + drilldown indices.
 - **Pull — metrics:** Q7 scrapes eval throughput, in-flight batches, gate-check pass/fail counters.
 
-## Coupling
+## Coupling [ASPIRATION (pre-implementation)]
 
 - **Afferent (in):** Q6 (humans + CI gate consumers downstream); promotion workflow (consults Q6 via Q12-produced reports).
 - **Efferent (out):** Q1 (run engine), Q2 (oracle), Q3 (sample), Q5 (artifact load), Q6 (write), Q7 (metrics).
@@ -48,11 +50,11 @@ None persistent. Outputs land in Q6.
 
 ## Phase Expectations
 
-- **Phase 1.** Combat-only: ≥95% A0 normal-encounter win rate; ≥90% expectimax agreement; latency <100ms at 64-sim budget. Pinned regression battery covers the existing 252-test scope plus oracle agreement on tractable states. **Note:** per Q2-ADR-002, the expectimax-agreement denominator is bounded by CULTISTS_NORMAL states (Phase-1A C++ engine scope); non-cultist encounters reject-with-diagnostic and do not factor into the agreement ratio. Q2-ADR-004 schema-promotion event (when Q10 boots) will revisit how non-verifiable states are reported.
-- **Phase 2.** Adds full A0 run win rate (lead character); calibration deciles; deck-archetype entropy.
-- **Phase 3.** Adds ascension ladder (A0–A15); counterfactual map evaluator; exploit detector active.
-- **Phase 4.** Per-character ladder; cross-character regression checks (no >5% degradation on any character after a new one is trained).
-- **Phase 5.** Held-out content evaluation; patch-adaptation timing.
+- **Phase 1.** `[PHASE-1]` Combat-only: ≥95% A0 normal-encounter win rate; ≥90% expectimax agreement; latency <100ms at 64-sim budget. Pinned regression battery covers the existing 252-test scope plus oracle agreement on tractable states. **Note:** per Q2-ADR-002, the expectimax-agreement denominator is bounded by CULTISTS_NORMAL states (Phase-1A C++ engine scope); non-cultist encounters reject-with-diagnostic and do not factor into the agreement ratio. Q2-ADR-004 schema-promotion event (when Q10 boots) will revisit how non-verifiable states are reported.
+- **Phase 2.** `[PHASE-2]` Adds full A0 run win rate (lead character); calibration deciles; deck-archetype entropy.
+- **Phase 3.** `[PHASE-3]` Adds ascension ladder (A0–A15); counterfactual map evaluator; exploit detector active.
+- **Phase 4.** `[PHASE-4]` Per-character ladder; cross-character regression checks (no >5% degradation on any character after a new one is trained).
+- **Phase 5.** `[PHASE-5]` Held-out content evaluation; patch-adaptation timing.
 
 ## Open Risks
 

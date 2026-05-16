@@ -9,7 +9,9 @@ substrate: pipeline/observability/
 
 > Time-series metrics, structured logs, replay drilldown index. The platform that lets humans see what the system is doing.
 
-## Responsibilities
+> **Substrate status:** `pipeline/observability/` is a 4-LOC service-host stub (one entry point delegating to `pipeline.common.service_host.main`). Nothing in this spec is implemented yet — every section below describes future design intent.
+
+## Responsibilities [ASPIRATION (pre-implementation)]
 
 - **Metrics.** Pull-based scrape of every quantum's Prometheus exposition endpoint. Dashboards in Grafana.
 - **Logs.** Receive structured logs from every quantum; index for query.
@@ -19,7 +21,7 @@ substrate: pipeline/observability/
 
 Out of scope: durable storage of training data (Q3); durable storage of eval reports (Q6); model artifacts (Q5).
 
-## Data Ownership
+## Data Ownership [ASPIRATION (pre-implementation)]
 
 - **TSDB** — Prometheus or Mimir. Standard Prometheus metric model. Retention scaled to 90 days hot; longer in cold tier if needed.
 - **Log store** — Loki or equivalent. Structured (JSON) logs; indexed by quantum, run_id, model_version.
@@ -27,7 +29,7 @@ Out of scope: durable storage of training data (Q3); durable storage of eval rep
 - **Dashboards** — Grafana JSON in Git. Dashboards as code.
 - **Drilldown index** — links from metric panels to Q3 / Q6 / Q1 replay-reproduction tools. Index is config, not stored data.
 
-## Communication
+## Communication [ASPIRATION (pre-implementation)]
 
 - **Pull — scrape:** every quantum exposes a Prometheus endpoint; Q7 scrapes on a schedule.
 - **Push — logs:** structured logs pushed via standard agent (e.g., Promtail) to Q7.
@@ -35,7 +37,7 @@ Out of scope: durable storage of training data (Q3); durable storage of eval rep
 - **Read — humans:** Grafana, Loki UI, alert console.
 - **Read — automation:** anomaly hooks (e.g., autoscaler reading worker utilization).
 
-## Coupling
+## Coupling [ASPIRATION (pre-implementation)]
 
 - **Afferent (in):** humans (operators, researchers, leads), alerting recipients, autoscalers.
 - **Efferent (out):** every other quantum (pull metrics endpoint).
@@ -43,9 +45,9 @@ Out of scope: durable storage of training data (Q3); durable storage of eval rep
 
 ## Phase Expectations
 
-- **Phase 1.** Throughput dashboards (combat-steps/sec, decisions/sec); win-rate-over-time; sample-prediction loss + summary-prediction loss + HP-fraction-aux loss (per ADR-014); KL between successive policy versions. Alert on determinism-test failure and replay starvation.
-- **Phase 2.** Adds run-level dashboards (full A0 win rate, deck composition entropy, archetype distribution). Adds **`macro_context` shadow-price calibration** dashboards (predicted HP / MaxHP / gold / per-potion-slot shadow prices vs. realized run-value lift per resource unit, per ADR-015 + ADR-019). Adds **sp derivation-method breakdown** (warmup_heuristic_curve / learned_autodiff / learned_finitediff / joint_proximal / fallback_lagged share over time, per ADR-019). Adds **sample-quality** dashboards (per-call sample count, summary uncertainty distribution).
-- **Phase 3+.** Adds A/B comparison view; counterfactual evaluator output (observational only per ADR-017); exploit-detector live counts. Adds **observability-regime audit** dashboard (per ADR-016: count of `SOURCE_PERFECT` field appearances in deployed inputs — target zero; any non-zero is a P0 alert).
+- **Phase 1.** `[PHASE-1]` Throughput dashboards (combat-steps/sec, decisions/sec); win-rate-over-time; sample-prediction loss + summary-prediction loss + HP-fraction-aux loss (per ADR-014); KL between successive policy versions. Alert on determinism-test failure and replay starvation.
+- **Phase 2.** `[PHASE-2]` Adds run-level dashboards (full A0 win rate, deck composition entropy, archetype distribution). Adds **`macro_context` shadow-price calibration** dashboards (predicted HP / MaxHP / gold / per-potion-slot shadow prices vs. realized run-value lift per resource unit, per ADR-015 + ADR-019). Adds **sp derivation-method breakdown** (warmup_heuristic_curve / learned_autodiff / learned_finitediff / joint_proximal / fallback_lagged share over time, per ADR-019). Adds **sample-quality** dashboards (per-call sample count, summary uncertainty distribution).
+- **Phase 3+.** `[PHASE-3+]` Adds A/B comparison view; counterfactual evaluator output (observational only per ADR-017); exploit-detector live counts. Adds **observability-regime audit** dashboard (per ADR-016: count of `SOURCE_PERFECT` field appearances in deployed inputs — target zero; any non-zero is a P0 alert).
 
 ## Open Risks
 

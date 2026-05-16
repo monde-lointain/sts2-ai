@@ -9,7 +9,9 @@ substrate: pipeline/inference-server/
 
 > Batched policy + value forward passes. Stateless. Lives co-located with worker pools so the Worker↔Q9 hot path stays in shared memory.
 
-## Responsibilities
+> **Substrate status:** `pipeline/inference-server/` is a 4-LOC service-host stub (one entry point delegating to `pipeline.common.service_host.main`). Nothing in this spec is implemented yet — every section below describes future design intent.
+
+## Responsibilities [ASPIRATION (pre-implementation)]
 
 - Serve the model's `forward(rich_state, macro_context) → (prior, combat_outcome_samples, combat_outcome_summary, hp_fraction_aux)` for the combat policy and (later) the run-level heads. Output shape per ADR-014 (samples + summary, HP-fraction aux), input shape per ADR-015 (observable run state + macro_context). Phase-1 inference produces degenerate single-sample outputs while training bootstraps on the scalar HP-fraction; Phase-2+ produces real multi-sample outputs.
 - **Filter `SOURCE_PERFECT` fields out of input** per ADR-016: Q1 emits a full state; Q9 reads the observability-regime manifest and includes only `POLICY_VISIBLE` and `BELIEF_SAMPLED` fields in network inputs. The audit trail is logged for Q12 to verify no hidden-state leak.
@@ -19,7 +21,7 @@ substrate: pipeline/inference-server/
 
 Out of scope: training, model storage, deciding which model is current.
 
-## Data Ownership
+## Data Ownership [ASPIRATION (pre-implementation)]
 
 None persistent.
 
@@ -27,13 +29,13 @@ None persistent.
 - Batch buffers (request and response).
 - Optionally: small KV cache for repeated states within an MCTS subtree (not a true cache layer; transient).
 
-## Communication
+## Communication [ASPIRATION (pre-implementation)]
 
 - **Sync — shared memory from Q8:** request `(batch of RichState)` → response `(batch of (prior, value))`. Target <50µs warm-batch round-trip.
 - **Sync — fetch from Q5:** at startup, and when a config update signals a new artifact ID.
 - **Pull — metrics:** Q7 scrapes batch sizes, batch latency P50/P95/P99, GPU utilization, queue wait.
 
-## Coupling
+## Coupling [ASPIRATION (pre-implementation)]
 
 - **Afferent (in):** Q8 (workers).
 - **Efferent (out):** Q5 (artifact load), Q7 (metrics), Q4 (loaded as part of artifact bundle).
@@ -41,9 +43,9 @@ None persistent.
 
 ## Phase Expectations
 
-- **Phase 1.** Single inference server per host serving a 64–128-worker pool. ONNX Runtime + a single GPU. Combat policy only (degenerate-sample output bootstrapped from scalar HP-fraction per ADR-014 Phase-1 convention). `macro_context` input may be zero-stub until Phase-2.
-- **Phase 2.** Add run-level heads (card-pick, value head). Same artifact, multiple output heads. Combat output transitions to real multi-sample shape; `macro_context` carries v1.1 fields (HP / MaxHP / gold / per-potion-slot shadow prices) derived per ADR-019 (Accepted 2026-05-15) — sp head positioned downstream of the shared run encoder with stop-gradient on the consumption path.
-- **Phase 3+.** May split into separate Q9 instances per head if heads diverge in latency / throughput characteristics. Multi-GPU per host if a single GPU saturates.
+- **Phase 1.** `[PHASE-1]` Single inference server per host serving a 64–128-worker pool. ONNX Runtime + a single GPU. Combat policy only (degenerate-sample output bootstrapped from scalar HP-fraction per ADR-014 Phase-1 convention). `macro_context` input may be zero-stub until Phase-2.
+- **Phase 2.** `[PHASE-2]` Add run-level heads (card-pick, value head). Same artifact, multiple output heads. Combat output transitions to real multi-sample shape; `macro_context` carries v1.1 fields (HP / MaxHP / gold / per-potion-slot shadow prices) derived per ADR-019 (Accepted 2026-05-15) — sp head positioned downstream of the shared run encoder with stop-gradient on the consumption path.
+- **Phase 3+.** `[PHASE-3+]` May split into separate Q9 instances per head if heads diverge in latency / throughput characteristics. Multi-GPU per host if a single GPU saturates.
 
 ## Open Risks
 

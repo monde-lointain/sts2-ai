@@ -9,7 +9,9 @@ substrate: pipeline/rollout-workers/
 
 > Stateless self-play workers. Run MCTS using cached weights; emit trajectories to Q3. The hot path of training-data generation.
 
-## Responsibilities
+> **Substrate status:** `pipeline/rollout-workers/` is a 4-LOC service-host stub (one entry point delegating to `pipeline.common.service_host.main`). Nothing in this spec is implemented yet — every section below describes future design intent.
+
+## Responsibilities [ASPIRATION (pre-implementation)]
 
 - Run AlphaZero-style PUCT MCTS over Q1's combat MDP (per ADR-009-amended). At each node, query Q9 for prior + outcome samples + summary (per ADR-014); use Q1 to expand children.
 - Propagate `macro_context` (HP / MaxHP / gold / per-potion-slot shadow prices, risk tolerance, pressure indicators per ADR-015; v1.1 schema) from external orchestration through Q1 hook to Q9 inference calls. Phase-1A `macro_context` may be zero-stub until Phase-2 derivation is wired (per ADR-019, Accepted 2026-05-15: hybrid heuristic-curve warmup → learned head with autodiff/FD supervision against V_run → joint proximal reserve).
@@ -20,7 +22,7 @@ substrate: pipeline/rollout-workers/
 
 Out of scope: model training, inference network internals (delegated to Q9), state schema (delegated to Q1).
 
-## Data Ownership
+## Data Ownership [ASPIRATION (pre-implementation)]
 
 None persistent. In-memory only:
 
@@ -29,7 +31,7 @@ None persistent. In-memory only:
 - MCTS tree (transient; per-decision).
 - Loaded Q4 registry (in-memory mirror).
 
-## Communication
+## Communication [ASPIRATION (pre-implementation)]
 
 - **Sync — IPC to Q1 (hot path):** shared-memory ring buffer per ADR-005. <500µs per decision target.
 - **Sync — IPC to Q9 (hot path):** shared-memory request for batched policy/value. Target <50µs round-trip when batches are warm.
@@ -37,7 +39,7 @@ None persistent. In-memory only:
 - **Sync — fetch artifact (cold path):** Q5 fetch on startup and on weight-refresh trigger.
 - **Pull — metrics:** Q7 scrapes per-worker throughput, MCTS depth distributions, queue waits.
 
-## Coupling
+## Coupling [ASPIRATION (pre-implementation)]
 
 - **Afferent (in):** none. Nothing depends on workers' internal state.
 - **Efferent (out):** Q1, Q3, Q4, Q5 (artifact load), Q9, Q7.
@@ -45,9 +47,9 @@ None persistent. In-memory only:
 
 ## Phase Expectations
 
-- **Phase 1.** 64–128 cores total, single-host or small fleet. One Q1 process per worker. MCTS budget tunable up to 1024 sims per decision; default 64–256.
-- **Phase 2.** 256–512 cores. Workers handle both combat and run-level decision queries; pull combat policy and meta-policy heads from the same Q5 artifact.
-- **Phase 3+.** 1024+ cores. Sharded by character or scenario class. Curriculum scheduler (in Q11) directs worker assignments.
+- **Phase 1.** `[PHASE-1]` 64–128 cores total, single-host or small fleet. One Q1 process per worker. MCTS budget tunable up to 1024 sims per decision; default 64–256.
+- **Phase 2.** `[PHASE-2]` 256–512 cores. Workers handle both combat and run-level decision queries; pull combat policy and meta-policy heads from the same Q5 artifact.
+- **Phase 3+.** `[PHASE-3+]` 1024+ cores. Sharded by character or scenario class. Curriculum scheduler (in Q11) directs worker assignments.
 
 ## Open Risks
 
