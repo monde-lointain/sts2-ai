@@ -95,8 +95,9 @@ public class StubRegistryTests
     [Fact]
     public void ThrowNotStubbed_ThrowsNotImplementedWithFormattedMessage()
     {
-        var ex = Assert.Throws<NotImplementedException>(
-            () => StubRegistry.ThrowNotStubbed(StubCategory.Localization, "Tr", "Missing"));
+        var ex = Assert.Throws<NotImplementedException>(() =>
+            StubRegistry.ThrowNotStubbed(StubCategory.Localization, "Tr", "Missing")
+        );
         Assert.Contains("Tr.Missing", ex.Message);
         Assert.Contains("Localization", ex.Message);
     }
@@ -110,26 +111,30 @@ public class StubRegistryTests
         const int hitsPerTask = 50;
         var errors = new ConcurrentBag<string>();
 
-        await Task.WhenAll(Enumerable.Range(0, taskCount).Select(taskId =>
-            Task.Run(() =>
-            {
-                using var capture = StubRegistry.Capture();
-                for (int i = 0; i < hitsPerTask; i++)
-                {
-                    StubRegistry.Record(
-                        StubCategory.Rendering,
-                        $"Task{taskId}",
-                        $"M{i}");
-                }
-                if (capture.Hits.Count != hitsPerTask)
-                {
-                    errors.Add($"task {taskId} saw {capture.Hits.Count} hits, expected {hitsPerTask}");
-                }
-                if (capture.Hits.Any(h => h.Type != $"Task{taskId}"))
-                {
-                    errors.Add($"task {taskId} saw cross-task hits");
-                }
-            })));
+        await Task.WhenAll(
+            Enumerable
+                .Range(0, taskCount)
+                .Select(taskId =>
+                    Task.Run(() =>
+                    {
+                        using var capture = StubRegistry.Capture();
+                        for (int i = 0; i < hitsPerTask; i++)
+                        {
+                            StubRegistry.Record(StubCategory.Rendering, $"Task{taskId}", $"M{i}");
+                        }
+                        if (capture.Hits.Count != hitsPerTask)
+                        {
+                            errors.Add(
+                                $"task {taskId} saw {capture.Hits.Count} hits, expected {hitsPerTask}"
+                            );
+                        }
+                        if (capture.Hits.Any(h => h.Type != $"Task{taskId}"))
+                        {
+                            errors.Add($"task {taskId} saw cross-task hits");
+                        }
+                    })
+                )
+        );
 
         Assert.Empty(errors);
     }
@@ -142,17 +147,19 @@ public class StubRegistryTests
         const int taskCount = 16;
         const int hitsPerTask = 100;
 
-        await Task.WhenAll(Enumerable.Range(0, taskCount).Select(taskId =>
-            Task.Run(() =>
-            {
-                for (int i = 0; i < hitsPerTask; i++)
-                {
-                    StubRegistry.Record(
-                        StubCategory.Audio,
-                        $"Task{taskId}",
-                        $"M{i}");
-                }
-            })));
+        await Task.WhenAll(
+            Enumerable
+                .Range(0, taskCount)
+                .Select(taskId =>
+                    Task.Run(() =>
+                    {
+                        for (int i = 0; i < hitsPerTask; i++)
+                        {
+                            StubRegistry.Record(StubCategory.Audio, $"Task{taskId}", $"M{i}");
+                        }
+                    })
+                )
+        );
 
         Assert.Equal(taskCount * hitsPerTask, StubRegistry.GlobalHits.Count);
     }

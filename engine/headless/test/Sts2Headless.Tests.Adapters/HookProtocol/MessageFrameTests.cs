@@ -26,7 +26,12 @@ public class MessageFrameTests
     [Fact]
     public void Encode_writes_le_bytes_at_fixed_offsets()
     {
-        var hdr = new MessageHeader(MessageType.HookRequest, 0x1234, 0x10203040, 0xCAFEBABEDEADBEEFul);
+        var hdr = new MessageHeader(
+            MessageType.HookRequest,
+            0x1234,
+            0x10203040,
+            0xCAFEBABEDEADBEEFul
+        );
         byte[] buf = new byte[MessageHeader.HeaderSize];
         hdr.Encode(buf);
 
@@ -64,11 +69,11 @@ public class MessageFrameTests
     }
 
     [Theory]
-    [InlineData(0, 64)]       // header only, 16 bytes, rounds to 64
-    [InlineData(48, 64)]      // 16+48=64, exact
-    [InlineData(49, 128)]     // 16+49=65, rounds to 128
-    [InlineData(112, 128)]    // 16+112=128, exact
-    [InlineData(113, 192)]    // rounds up
+    [InlineData(0, 64)] // header only, 16 bytes, rounds to 64
+    [InlineData(48, 64)] // 16+48=64, exact
+    [InlineData(49, 128)] // 16+49=65, rounds to 128
+    [InlineData(112, 128)] // 16+112=128, exact
+    [InlineData(113, 192)] // rounds up
     [InlineData(64 * 100, 64 * 100 + 64)]
     public void WireFrameSize_rounds_up_to_64(int payloadLen, int expectedWire)
     {
@@ -89,8 +94,9 @@ public class MessageFrameTests
     [Fact]
     public void Encode_negative_payload_length_rejected_at_construction()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(
-            () => new MessageHeader(MessageType.HookRequest, 1, -1, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new MessageHeader(MessageType.HookRequest, 1, -1, 0)
+        );
     }
 
     [Fact]
@@ -104,8 +110,10 @@ public class MessageFrameTests
         int written = MessageFrame.Encode(hdr, payload, dest);
         Assert.Equal(hdr.WireSize, written);
         // First 16 bytes = header. Next 5 bytes = payload. Rest = zero padding.
-        for (int i = 16; i < 21; i++) Assert.Equal(payload[i - 16], dest[i]);
-        for (int i = 21; i < written; i++) Assert.Equal((byte)0, dest[i]);
+        for (int i = 16; i < 21; i++)
+            Assert.Equal(payload[i - 16], dest[i]);
+        for (int i = 21; i < written; i++)
+            Assert.Equal((byte)0, dest[i]);
     }
 
     [Fact]
@@ -145,8 +153,7 @@ public class MessageFrameTests
     {
         // A payload of int.MaxValue won't construct a header normally (it would),
         // but WireFrameSize must guard against silent wraparound.
-        Assert.Throws<ArgumentOutOfRangeException>(
-            () => MessageHeader.WireFrameSize(int.MaxValue));
+        Assert.Throws<ArgumentOutOfRangeException>(() => MessageHeader.WireFrameSize(int.MaxValue));
     }
 
     [Fact]

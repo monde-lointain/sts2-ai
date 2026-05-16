@@ -16,7 +16,8 @@ public sealed class Abrasive : CardModel
     public const int UpgradeDelta = 2;
     public int Thorns => BaseThorns;
 
-    public Abrasive() : base(CanonicalId, cost: 3, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public Abrasive()
+        : base(CanonicalId, cost: 3, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

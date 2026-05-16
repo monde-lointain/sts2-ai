@@ -133,9 +133,7 @@ public class TokenMapTests
         map.GetOrAddId("mu");
 
         (string Token, int Id)[] entries = map.Enumerate().ToArray();
-        Assert.Equal(
-            new[] { ("zeta", 0), ("alpha", 1), ("mu", 2) },
-            entries);
+        Assert.Equal(new[] { ("zeta", 0), ("alpha", 1), ("mu", 2) }, entries);
     }
 
     [Fact]

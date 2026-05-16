@@ -25,10 +25,8 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// per call.
 /// </para>
 /// </summary>
-public sealed record CalcDamageAction(
-    int BaseDamage,
-    string MultiplierKey,
-    string? Target) : IAction
+public sealed record CalcDamageAction(int BaseDamage, string MultiplierKey, string? Target)
+    : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

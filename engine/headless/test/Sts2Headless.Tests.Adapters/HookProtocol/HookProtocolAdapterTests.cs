@@ -26,15 +26,24 @@ public unsafe class HookProtocolAdapterTests
 {
     private static bool OnLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
-    private static HookProtocolManifest MakeManifest(int ringCapacity = HookProtocolAdapter.DefaultRingCapacity)
+    private static HookProtocolManifest MakeManifest(
+        int ringCapacity = HookProtocolAdapter.DefaultRingCapacity
+    )
     {
         byte[] hash = new byte[HookProtocolManifest.ContentHashSize];
-        for (int i = 0; i < hash.Length; i++) hash[i] = (byte)i;
-        return new HookProtocolManifest(hash, HookProtocolAdapter.SchemaVersion, ringCapacity, "q1-test");
+        for (int i = 0; i < hash.Length; i++)
+            hash[i] = (byte)i;
+        return new HookProtocolManifest(
+            hash,
+            HookProtocolAdapter.SchemaVersion,
+            ringCapacity,
+            "q1-test"
+        );
     }
 
-    private static string UniqueBase([System.Runtime.CompilerServices.CallerMemberName] string member = "")
-        => Path.Combine("/dev/shm", $"q1-adapter-test-{member}-{Guid.NewGuid():N}");
+    private static string UniqueBase(
+        [System.Runtime.CompilerServices.CallerMemberName] string member = ""
+    ) => Path.Combine("/dev/shm", $"q1-adapter-test-{member}-{Guid.NewGuid():N}");
 
     /// <summary>
     /// In-process worker simulation. Attaches to the existing shm + semaphores
@@ -43,24 +52,34 @@ public unsafe class HookProtocolAdapterTests
     [SupportedOSPlatform("linux")]
     private sealed class FakePeer : IDisposable
     {
-        private readonly SharedMemorySegment _inboundShm;   // q1->q8 (we read from this)
-        private readonly SharedMemorySegment _outboundShm;  // q8->q1 (we write to this)
+        private readonly SharedMemorySegment _inboundShm; // q1->q8 (we read from this)
+        private readonly SharedMemorySegment _outboundShm; // q8->q1 (we write to this)
         private readonly SpscRingBuffer _inboundRing;
         private readonly SpscRingBuffer _outboundRing;
-        private readonly PosixSemaphore _inboundSem;        // q1->q8 sem; we WAIT on this
-        private readonly PosixSemaphore _outboundSem;       // q8->q1 sem; we RELEASE this
+        private readonly PosixSemaphore _inboundSem; // q1->q8 sem; we WAIT on this
+        private readonly PosixSemaphore _outboundSem; // q8->q1 sem; we RELEASE this
         private readonly CancellationTokenSource _cts = new();
         private readonly Thread _thread;
         private readonly Action<MessageHeader, byte[], Action<MessageType, byte[]>> _onFrame;
 
-        public FakePeer(HookProtocolAdapter.StartResult info,
-                        Action<MessageHeader, byte[], Action<MessageType, byte[]>> onFrame)
+        public FakePeer(
+            HookProtocolAdapter.StartResult info,
+            Action<MessageHeader, byte[], Action<MessageType, byte[]>> onFrame
+        )
         {
             int total = SpscRingBuffer.HeaderSize + info.RingCapacity;
             _inboundShm = SharedMemorySegment.OpenExisting(info.OutboundShmPath, total);
             _outboundShm = SharedMemorySegment.OpenExisting(info.InboundShmPath, total);
-            _inboundRing = new SpscRingBuffer(_inboundShm.BasePtr, info.RingCapacity, initializeHeader: false);
-            _outboundRing = new SpscRingBuffer(_outboundShm.BasePtr, info.RingCapacity, initializeHeader: false);
+            _inboundRing = new SpscRingBuffer(
+                _inboundShm.BasePtr,
+                info.RingCapacity,
+                initializeHeader: false
+            );
+            _outboundRing = new SpscRingBuffer(
+                _outboundShm.BasePtr,
+                info.RingCapacity,
+                initializeHeader: false
+            );
             _inboundSem = PosixSemaphore.Open(info.OutboundSemName);
             _outboundSem = PosixSemaphore.Open(info.InboundSemName);
             _onFrame = onFrame;
@@ -70,7 +89,12 @@ public unsafe class HookProtocolAdapterTests
 
         public void SendFrame(MessageType type, ulong correlationId, byte[] payload)
         {
-            var hdr = new MessageHeader(type, HookProtocolAdapter.SchemaVersion, payload.Length, correlationId);
+            var hdr = new MessageHeader(
+                type,
+                HookProtocolAdapter.SchemaVersion,
+                payload.Length,
+                correlationId
+            );
             byte[] wire = new byte[hdr.WireSize];
             MessageFrame.Encode(hdr, payload, wire);
             while (!_outboundRing.TryWrite(wire))
@@ -86,7 +110,12 @@ public unsafe class HookProtocolAdapterTests
             Span<byte> headerSpan = stackalloc byte[MessageHeader.HeaderSize];
             void Respond(MessageType type, byte[] payload)
             {
-                var hdr = new MessageHeader(type, HookProtocolAdapter.SchemaVersion, payload.Length, _lastCorr);
+                var hdr = new MessageHeader(
+                    type,
+                    HookProtocolAdapter.SchemaVersion,
+                    payload.Length,
+                    _lastCorr
+                );
                 byte[] wire = new byte[hdr.WireSize];
                 MessageFrame.Encode(hdr, payload, wire);
                 while (!_outboundRing.TryWrite(wire))
@@ -99,31 +128,52 @@ public unsafe class HookProtocolAdapterTests
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    if (!_inboundSem.Wait(TimeSpan.FromMilliseconds(100))) continue;
+                    if (!_inboundSem.Wait(TimeSpan.FromMilliseconds(100)))
+                        continue;
                     while (true)
                     {
-                        if (_inboundRing.AvailableToRead < MessageHeader.HeaderSize) break;
-                        if (!_inboundRing.TryPeek(headerSpan)) break;
+                        if (_inboundRing.AvailableToRead < MessageHeader.HeaderSize)
+                            break;
+                        if (!_inboundRing.TryPeek(headerSpan))
+                            break;
                         var hdr = MessageHeader.Decode(headerSpan);
-                        if (_inboundRing.AvailableToRead < hdr.WireSize) break;
+                        if (_inboundRing.AvailableToRead < hdr.WireSize)
+                            break;
                         byte[] frameBuf = new byte[hdr.WireSize];
                         _inboundRing.TryRead(frameBuf);
                         byte[] payload = new byte[hdr.PayloadLength];
-                        Buffer.BlockCopy(frameBuf, MessageHeader.HeaderSize, payload, 0, hdr.PayloadLength);
+                        Buffer.BlockCopy(
+                            frameBuf,
+                            MessageHeader.HeaderSize,
+                            payload,
+                            0,
+                            hdr.PayloadLength
+                        );
                         _lastCorr = hdr.CorrelationId;
-                        if (hdr.Type == MessageType.Terminate) { _cts.Cancel(); break; }
+                        if (hdr.Type == MessageType.Terminate)
+                        {
+                            _cts.Cancel();
+                            break;
+                        }
                         _onFrame(hdr, payload, Respond);
                     }
                 }
             }
-            catch { /* shutdown */ }
+            catch
+            { /* shutdown */
+            }
         }
+
         private ulong _lastCorr;
 
         public void Dispose()
         {
             _cts.Cancel();
-            try { _inboundSem.Release(); } catch { }
+            try
+            {
+                _inboundSem.Release();
+            }
+            catch { }
             _thread.Join(TimeSpan.FromSeconds(2));
             _inboundSem.Dispose();
             _outboundSem.Dispose();
@@ -135,25 +185,33 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void Start_with_matching_manifest_completes_handshake()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
         FakePeer? peer = null;
         try
         {
-            adapter.Start(basePath, info =>
-            {
-                peer = new FakePeer(info, (hdr, payload, respond) =>
+            adapter.Start(
+                basePath,
+                info =>
                 {
-                    // Echo any HookRequest -> HookResponse with same payload.
-                    if (hdr.Type == MessageType.HookRequest) respond(MessageType.HookResponse, payload);
-                });
-                // Worker would first send its manifest; do that.
-                byte[] mbuf = new byte[manifest.EncodedSize];
-                manifest.Encode(mbuf);
-                peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-            });
+                    peer = new FakePeer(
+                        info,
+                        (hdr, payload, respond) =>
+                        {
+                            // Echo any HookRequest -> HookResponse with same payload.
+                            if (hdr.Type == MessageType.HookRequest)
+                                respond(MessageType.HookResponse, payload);
+                        }
+                    );
+                    // Worker would first send its manifest; do that.
+                    byte[] mbuf = new byte[manifest.EncodedSize];
+                    manifest.Encode(mbuf);
+                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                }
+            );
             Assert.True(adapter.IsRunning);
         }
         finally
@@ -166,7 +224,8 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void Start_with_mismatched_schema_throws_handshake_exception()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
@@ -174,17 +233,24 @@ public unsafe class HookProtocolAdapterTests
         try
         {
             var ex = Assert.Throws<HookProtocolHandshakeException>(() =>
-                adapter.Start(basePath, info =>
-                {
-                    peer = new FakePeer(info, (hdr, payload, respond) => { });
-                    // Send a manifest with WRONG schema version.
-                    var wrong = new HookProtocolManifest(
-                        manifest.ContentHash, schemaVersion: (ushort)(manifest.SchemaVersion + 1),
-                        manifest.RingCapacity, manifest.BuildId);
-                    byte[] mbuf = new byte[wrong.EncodedSize];
-                    wrong.Encode(mbuf);
-                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-                }));
+                adapter.Start(
+                    basePath,
+                    info =>
+                    {
+                        peer = new FakePeer(info, (hdr, payload, respond) => { });
+                        // Send a manifest with WRONG schema version.
+                        var wrong = new HookProtocolManifest(
+                            manifest.ContentHash,
+                            schemaVersion: (ushort)(manifest.SchemaVersion + 1),
+                            manifest.RingCapacity,
+                            manifest.BuildId
+                        );
+                        byte[] mbuf = new byte[wrong.EncodedSize];
+                        wrong.Encode(mbuf);
+                        peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                    }
+                )
+            );
             Assert.Contains("schema_version", ex.Message, StringComparison.Ordinal);
         }
         finally
@@ -197,7 +263,8 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void Start_with_mismatched_content_hash_throws()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
@@ -205,17 +272,26 @@ public unsafe class HookProtocolAdapterTests
         try
         {
             byte[] otherHash = new byte[HookProtocolManifest.ContentHashSize];
-            for (int i = 0; i < otherHash.Length; i++) otherHash[i] = 0xFF;
+            for (int i = 0; i < otherHash.Length; i++)
+                otherHash[i] = 0xFF;
             var ex = Assert.Throws<HookProtocolHandshakeException>(() =>
-                adapter.Start(basePath, info =>
-                {
-                    peer = new FakePeer(info, (hdr, payload, respond) => { });
-                    var wrong = new HookProtocolManifest(
-                        otherHash, manifest.SchemaVersion, manifest.RingCapacity, manifest.BuildId);
-                    byte[] mbuf = new byte[wrong.EncodedSize];
-                    wrong.Encode(mbuf);
-                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-                }));
+                adapter.Start(
+                    basePath,
+                    info =>
+                    {
+                        peer = new FakePeer(info, (hdr, payload, respond) => { });
+                        var wrong = new HookProtocolManifest(
+                            otherHash,
+                            manifest.SchemaVersion,
+                            manifest.RingCapacity,
+                            manifest.BuildId
+                        );
+                        byte[] mbuf = new byte[wrong.EncodedSize];
+                        wrong.Encode(mbuf);
+                        peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                    }
+                )
+            );
             Assert.Contains("content_hash", ex.Message, StringComparison.Ordinal);
         }
         finally
@@ -228,24 +304,32 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void FireHook_then_WaitResponseSync_returns_echoed_payload()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
         FakePeer? peer = null;
         try
         {
-            adapter.Start(basePath, info =>
-            {
-                peer = new FakePeer(info, (hdr, payload, respond) =>
+            adapter.Start(
+                basePath,
+                info =>
                 {
-                    // Echo HookRequest -> HookResponse.
-                    if (hdr.Type == MessageType.HookRequest) respond(MessageType.HookResponse, payload);
-                });
-                byte[] mbuf = new byte[manifest.EncodedSize];
-                manifest.Encode(mbuf);
-                peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-            });
+                    peer = new FakePeer(
+                        info,
+                        (hdr, payload, respond) =>
+                        {
+                            // Echo HookRequest -> HookResponse.
+                            if (hdr.Type == MessageType.HookRequest)
+                                respond(MessageType.HookResponse, payload);
+                        }
+                    );
+                    byte[] mbuf = new byte[manifest.EncodedSize];
+                    manifest.Encode(mbuf);
+                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                }
+            );
 
             byte[] payload = { 0xAA, 0xBB, 0xCC };
             adapter.FireHook(HookType.BeforeCombatStart, payload, correlationId: 42);
@@ -269,23 +353,31 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void Multiple_concurrent_FireHook_calls_route_by_correlation_id()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
         FakePeer? peer = null;
         try
         {
-            adapter.Start(basePath, info =>
-            {
-                peer = new FakePeer(info, (hdr, payload, respond) =>
+            adapter.Start(
+                basePath,
+                info =>
                 {
-                    if (hdr.Type == MessageType.HookRequest) respond(MessageType.HookResponse, payload);
-                });
-                byte[] mbuf = new byte[manifest.EncodedSize];
-                manifest.Encode(mbuf);
-                peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-            });
+                    peer = new FakePeer(
+                        info,
+                        (hdr, payload, respond) =>
+                        {
+                            if (hdr.Type == MessageType.HookRequest)
+                                respond(MessageType.HookResponse, payload);
+                        }
+                    );
+                    byte[] mbuf = new byte[manifest.EncodedSize];
+                    manifest.Encode(mbuf);
+                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                }
+            );
 
             // Fire three back-to-back, then wait in reverse order. Each
             // wait must match the right correlation_id.
@@ -316,23 +408,32 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void Duplicate_correlation_id_rejected()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
         FakePeer? peer = null;
         try
         {
-            adapter.Start(basePath, info =>
-            {
-                peer = new FakePeer(info, (hdr, payload, respond) => { });
-                byte[] mbuf = new byte[manifest.EncodedSize];
-                manifest.Encode(mbuf);
-                peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-            });
+            adapter.Start(
+                basePath,
+                info =>
+                {
+                    peer = new FakePeer(info, (hdr, payload, respond) => { });
+                    byte[] mbuf = new byte[manifest.EncodedSize];
+                    manifest.Encode(mbuf);
+                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                }
+            );
             adapter.FireHook(HookType.AfterCombatEnd, ReadOnlySpan<byte>.Empty, correlationId: 7);
-            Assert.Throws<InvalidOperationException>(
-                () => adapter.FireHook(HookType.AfterCombatEnd, ReadOnlySpan<byte>.Empty, correlationId: 7));
+            Assert.Throws<InvalidOperationException>(() =>
+                adapter.FireHook(
+                    HookType.AfterCombatEnd,
+                    ReadOnlySpan<byte>.Empty,
+                    correlationId: 7
+                )
+            );
         }
         finally
         {
@@ -344,23 +445,31 @@ public unsafe class HookProtocolAdapterTests
     [Fact]
     public void SubscribeForwardingTo_invokes_FireHook_on_registry_Fire()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = UniqueBase();
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
         FakePeer? peer = null;
         try
         {
-            adapter.Start(basePath, info =>
-            {
-                peer = new FakePeer(info, (hdr, payload, respond) =>
+            adapter.Start(
+                basePath,
+                info =>
                 {
-                    if (hdr.Type == MessageType.HookRequest) respond(MessageType.HookResponse, new byte[] { 0xEC });
-                });
-                byte[] mbuf = new byte[manifest.EncodedSize];
-                manifest.Encode(mbuf);
-                peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
-            });
+                    peer = new FakePeer(
+                        info,
+                        (hdr, payload, respond) =>
+                        {
+                            if (hdr.Type == MessageType.HookRequest)
+                                respond(MessageType.HookResponse, new byte[] { 0xEC });
+                        }
+                    );
+                    byte[] mbuf = new byte[manifest.EncodedSize];
+                    manifest.Encode(mbuf);
+                    peer!.SendFrame(MessageType.ManifestResponse, 0, mbuf);
+                }
+            );
 
             var registry = new HookRegistry();
             int received = 0;
@@ -368,7 +477,8 @@ public unsafe class HookProtocolAdapterTests
                 registry,
                 hookTypes: new[] { HookType.BeforeSideTurnStart, HookType.BeforeTurnEnd },
                 payloadFactory: _ => new byte[] { 0xFF },
-                responseSink: (_, _) => Interlocked.Increment(ref received));
+                responseSink: (_, _) => Interlocked.Increment(ref received)
+            );
             Assert.Equal(2, handles.Count);
 
             // Fire with default(HookContext); our handler does NOT dereference

@@ -18,7 +18,8 @@ public sealed class SuckerPunch : CardModel
     public int Damage => BaseDamage;
     public int Weak => BaseWeak;
 
-    public SuckerPunch() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
+    public SuckerPunch()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

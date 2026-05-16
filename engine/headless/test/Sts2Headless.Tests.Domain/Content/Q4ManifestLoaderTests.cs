@@ -35,7 +35,8 @@ public class Q4ManifestLoaderTests
     [Fact]
     public void LoadFromString_preserves_order_of_ids_inside_bucket()
     {
-        const string json = @"{
+        const string json =
+            @"{
             ""cards"":    [""strike"", ""defend"", ""bash""],
             ""relics"":   [],
             ""powers"":   [],
@@ -58,8 +59,9 @@ public class Q4ManifestLoaderTests
     public void LoadFromString_throws_for_malformed_json()
     {
         const string malformed = "{ \"cards\": [ "; // unterminated
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(malformed));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(malformed)
+        );
         Assert.Contains("not valid JSON", ex.Message);
     }
 
@@ -67,8 +69,9 @@ public class Q4ManifestLoaderTests
     public void LoadFromString_throws_when_root_is_not_an_object()
     {
         const string arrayRoot = "[]";
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(arrayRoot));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(arrayRoot)
+        );
         Assert.Contains("root must be a JSON object", ex.Message);
     }
 
@@ -77,7 +80,8 @@ public class Q4ManifestLoaderTests
     {
         // Catches typos like "monster" (singular) vs "monsters". Without this guard the
         // bucket would silently default to [] and the coverage gate would lie.
-        const string json = @"{
+        const string json =
+            @"{
             ""cards"":    [],
             ""relics"":   [],
             ""powers"":   [],
@@ -85,8 +89,9 @@ public class Q4ManifestLoaderTests
             ""potions"":  [],
             ""bogus"":    []
         }";
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(json));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(json)
+        );
         Assert.Contains("'bogus'", ex.Message);
     }
 
@@ -94,14 +99,16 @@ public class Q4ManifestLoaderTests
     public void LoadFromString_throws_for_missing_required_key()
     {
         // "monsters" missing.
-        const string json = @"{
+        const string json =
+            @"{
             ""cards"":   [],
             ""relics"":  [],
             ""powers"":  [],
             ""potions"": []
         }";
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(json));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(json)
+        );
         Assert.Contains("'monsters'", ex.Message);
         Assert.Contains("missing", ex.Message);
     }
@@ -109,15 +116,17 @@ public class Q4ManifestLoaderTests
     [Fact]
     public void LoadFromString_throws_when_bucket_is_not_an_array()
     {
-        const string json = @"{
+        const string json =
+            @"{
             ""cards"":    {},
             ""relics"":   [],
             ""powers"":   [],
             ""monsters"": [],
             ""potions"":  []
         }";
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(json));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(json)
+        );
         Assert.Contains("'cards'", ex.Message);
         Assert.Contains("must be an array", ex.Message);
     }
@@ -125,15 +134,17 @@ public class Q4ManifestLoaderTests
     [Fact]
     public void LoadFromString_throws_when_bucket_entry_is_not_a_string()
     {
-        const string json = @"{
+        const string json =
+            @"{
             ""cards"":    [""strike"", 42, ""defend""],
             ""relics"":   [],
             ""powers"":   [],
             ""monsters"": [],
             ""potions"":  []
         }";
-        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(
-            () => Q4ManifestLoader.LoadFromString(json));
+        Q4ManifestFormatException ex = Assert.Throws<Q4ManifestFormatException>(() =>
+            Q4ManifestLoader.LoadFromString(json)
+        );
         Assert.Contains("'cards'", ex.Message);
         Assert.Contains("[1]", ex.Message);
         Assert.Contains("must be a string", ex.Message);
@@ -190,6 +201,7 @@ public class Q4ManifestLoaderTests
             dir = Path.GetDirectoryName(dir);
         }
         throw new InvalidOperationException(
-            "Could not locate repo root (no sts2-headless.sln above the test assembly).");
+            "Could not locate repo root (no sts2-headless.sln above the test assembly)."
+        );
     }
 }

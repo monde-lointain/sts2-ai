@@ -90,8 +90,8 @@ internal static class StateByteSerializer
     }
 
     /// <summary>Stand-in creature for missing enemy slots in the smoke spec's 2-enemy schema.</summary>
-    private static Creature EmptyCreaturePadding(int slotIndex)
-        => new(
+    private static Creature EmptyCreaturePadding(int slotIndex) =>
+        new(
             Id: 0xFFFFFFFFu,
             Name: $"__pad_{slotIndex}",
             CurrentHp: 0,
@@ -99,5 +99,6 @@ internal static class StateByteSerializer
             Block: 0,
             Powers: System.Collections.Immutable.ImmutableList<PowerInstance>.Empty,
             Intent: null,
-            IsPlayer: false);
+            IsPlayer: false
+        );
 }

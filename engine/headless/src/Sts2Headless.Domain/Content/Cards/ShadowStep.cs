@@ -15,7 +15,8 @@ public sealed class ShadowStep : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public ShadowStep() : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public ShadowStep()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

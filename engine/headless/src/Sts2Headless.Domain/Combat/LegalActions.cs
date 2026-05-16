@@ -51,7 +51,8 @@ public static class LegalActions
             CardInstance instance = state.HandPile.Cards[i];
             var model = (CardModel)cards.Get(instance.ModelId);
             int cost = instance.CostOverride ?? model.Cost;
-            if (cost > state.Energy) continue;
+            if (cost > state.Energy)
+                continue;
 
             switch (model.Target)
             {
@@ -60,7 +61,8 @@ public static class LegalActions
                     for (int e = 0; e < state.Enemies.Count; e++)
                     {
                         Creature enemy = state.Enemies[e];
-                        if (enemy.IsDead) continue;
+                        if (enemy.IsDead)
+                            continue;
                         builder.Add(new PlayerAction.PlayCard(instance.InstanceId, enemy.Id));
                     }
                     break;
@@ -70,7 +72,9 @@ public static class LegalActions
                     // damage against all enemies in the AppliesPowers list).
                     if (state.Enemies.Any(e => e.IsAlive))
                     {
-                        builder.Add(new PlayerAction.PlayCard(instance.InstanceId, TargetEnemyId: null));
+                        builder.Add(
+                            new PlayerAction.PlayCard(instance.InstanceId, TargetEnemyId: null)
+                        );
                     }
                     break;
 
@@ -82,7 +86,9 @@ public static class LegalActions
                 case TargetType.TargetedNoCreature:
                 case TargetType.Osty:
                 default:
-                    builder.Add(new PlayerAction.PlayCard(instance.InstanceId, TargetEnemyId: null));
+                    builder.Add(
+                        new PlayerAction.PlayCard(instance.InstanceId, TargetEnemyId: null)
+                    );
                     break;
             }
         }

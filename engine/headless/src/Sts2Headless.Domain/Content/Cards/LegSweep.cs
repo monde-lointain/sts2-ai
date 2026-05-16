@@ -18,7 +18,8 @@ public sealed class LegSweep : CardModel
     public int Block => BaseBlock;
     public int Weak => BaseWeak;
 
-    public LegSweep() : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public LegSweep()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

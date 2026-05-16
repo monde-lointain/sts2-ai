@@ -14,7 +14,8 @@ public sealed class EchoingSlash : CardModel
     public const int UpgradeDelta = 3;
     public int Damage => BaseDamage;
 
-    public EchoingSlash() : base(CanonicalId, 1, CardType.Attack, CardRarity.Rare, TargetType.AllEnemies) { }
+    public EchoingSlash()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Rare, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

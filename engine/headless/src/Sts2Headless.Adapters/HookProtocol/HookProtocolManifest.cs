@@ -44,14 +44,22 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
     public int RingCapacity { get; }
     public string BuildId { get; }
 
-    public HookProtocolManifest(ReadOnlyMemory<byte> contentHash, ushort schemaVersion, int ringCapacity, string buildId)
+    public HookProtocolManifest(
+        ReadOnlyMemory<byte> contentHash,
+        ushort schemaVersion,
+        int ringCapacity,
+        string buildId
+    )
     {
         if (contentHash.Length != ContentHashSize)
         {
             throw new ArgumentException(
-                $"contentHash must be exactly {ContentHashSize} bytes; got {contentHash.Length}", nameof(contentHash));
+                $"contentHash must be exactly {ContentHashSize} bytes; got {contentHash.Length}",
+                nameof(contentHash)
+            );
         }
-        if (ringCapacity <= 0) throw new ArgumentOutOfRangeException(nameof(ringCapacity));
+        if (ringCapacity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(ringCapacity));
         ArgumentNullException.ThrowIfNull(buildId);
         ContentHash = contentHash;
         SchemaVersion = schemaVersion;
@@ -73,7 +81,8 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
     public int Encode(Span<byte> dest)
     {
         int size = EncodedSize;
-        if (dest.Length < size) throw new ArgumentException("dest too small", nameof(dest));
+        if (dest.Length < size)
+            throw new ArgumentException("dest too small", nameof(dest));
 
         ContentHash.Span.CopyTo(dest);
         int off = ContentHashSize;
@@ -99,7 +108,8 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
         if (src.Length < ContentHashSize + 2 + 2 + 4 + 4)
         {
             throw new FormatException(
-                $"Manifest payload truncated: {src.Length} bytes (< minimum {ContentHashSize + 12})");
+                $"Manifest payload truncated: {src.Length} bytes (< minimum {ContentHashSize + 12})"
+            );
         }
         byte[] hash = src.Slice(0, ContentHashSize).ToArray();
         int off = ContentHashSize;
@@ -120,7 +130,9 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
         off += 4;
         if (idLen > int.MaxValue - off || off + idLen > src.Length)
         {
-            throw new FormatException($"Manifest build_id_length {idLen} exceeds remaining buffer ({src.Length - off})");
+            throw new FormatException(
+                $"Manifest build_id_length {idLen} exceeds remaining buffer ({src.Length - off})"
+            );
         }
         string id = idLen == 0 ? string.Empty : Encoding.UTF8.GetString(src.Slice(off, (int)idLen));
         return new HookProtocolManifest(hash, schema, (int)cap, id);
@@ -134,10 +146,14 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
     /// </summary>
     public bool IsCompatibleWith(HookProtocolManifest other)
     {
-        if (other is null) return false;
-        if (SchemaVersion != other.SchemaVersion) return false;
-        if (RingCapacity != other.RingCapacity) return false;
-        if (!ContentHash.Span.SequenceEqual(other.ContentHash.Span)) return false;
+        if (other is null)
+            return false;
+        if (SchemaVersion != other.SchemaVersion)
+            return false;
+        if (RingCapacity != other.RingCapacity)
+            return false;
+        if (!ContentHash.Span.SequenceEqual(other.ContentHash.Span))
+            return false;
         return true;
     }
 
@@ -147,7 +163,8 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
     /// </summary>
     public string? DescribeMismatch(HookProtocolManifest other)
     {
-        if (other is null) return "peer manifest is null";
+        if (other is null)
+            return "peer manifest is null";
         if (SchemaVersion != other.SchemaVersion)
         {
             return $"schema_version mismatch: local={SchemaVersion} peer={other.SchemaVersion}";
@@ -172,10 +189,13 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
 
     public bool Equals(HookProtocolManifest? other)
     {
-        if (other is null) return false;
+        if (other is null)
+            return false;
         return IsCompatibleWith(other) && BuildId == other.BuildId;
     }
+
     public override bool Equals(object? obj) => Equals(obj as HookProtocolManifest);
+
     public override int GetHashCode() => HashCode.Combine(SchemaVersion, RingCapacity, BuildId);
 }
 
@@ -185,6 +205,9 @@ public sealed class HookProtocolManifest : IEquatable<HookProtocolManifest>
 /// </summary>
 public sealed class HookProtocolHandshakeException : Exception
 {
-    public HookProtocolHandshakeException(string message) : base(message) { }
-    public HookProtocolHandshakeException(string message, Exception inner) : base(message, inner) { }
+    public HookProtocolHandshakeException(string message)
+        : base(message) { }
+
+    public HookProtocolHandshakeException(string message, Exception inner)
+        : base(message, inner) { }
 }

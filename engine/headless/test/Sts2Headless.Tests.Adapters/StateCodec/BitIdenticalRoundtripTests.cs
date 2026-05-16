@@ -29,25 +29,38 @@ public class BitIdenticalRoundtripTests
     public void Serialize_Deserialize_Serialize_is_byte_identical(string name, StateCodecFixture f)
     {
         byte[] first = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            f.State, f.RunRng, f.PlayerRng, f.Tokens, f.Stamp);
+            f.State,
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens,
+            f.Stamp
+        );
 
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(first);
         Assert.True(decoded.TrailerValidated, $"[{name}] trailer must validate");
         Assert.Equal(StateCodecConstants.SchemaVersion, decoded.SchemaVersion);
 
         // Reconstruct each section back to its source type.
-        var rebuiltState = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        var rebuiltState = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
         var (rebuiltRunRng, rebuiltPlayerRng) =
             global::Sts2Headless.Adapters.StateCodec.StateCodec.ToRngBundle(decoded);
         var rebuiltTokens = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(decoded);
 
         // Re-serialize: must produce identical bytes.
         byte[] second = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            rebuiltState, rebuiltRunRng, rebuiltPlayerRng, rebuiltTokens, decoded.Stamp);
+            rebuiltState,
+            rebuiltRunRng,
+            rebuiltPlayerRng,
+            rebuiltTokens,
+            decoded.Stamp
+        );
 
         Assert.True(
             first.AsSpan().SequenceEqual(second),
-            $"[{name}] bit-identical roundtrip failed: first={first.Length}B second={second.Length}B");
+            $"[{name}] bit-identical roundtrip failed: first={first.Length}B second={second.Length}B"
+        );
     }
 
     [Theory]
@@ -55,12 +68,19 @@ public class BitIdenticalRoundtripTests
     public void CombatState_record_equals_after_roundtrip(string name, StateCodecFixture f)
     {
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            f.State, f.RunRng, f.PlayerRng, f.Tokens, f.Stamp);
+            f.State,
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens,
+            f.Stamp
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         global::Sts2Headless.Domain.Combat.CombatState recovered =
             global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
-        Assert.True(f.State.Equals(recovered),
-            $"[{name}] CombatState.Equals broke after roundtrip");
+        Assert.True(
+            f.State.Equals(recovered),
+            $"[{name}] CombatState.Equals broke after roundtrip"
+        );
     }
 
     [Theory]
@@ -68,11 +88,14 @@ public class BitIdenticalRoundtripTests
     public void Manifest_stamp_survives_roundtrip(string name, StateCodecFixture f)
     {
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            f.State, f.RunRng, f.PlayerRng, f.Tokens, f.Stamp);
+            f.State,
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens,
+            f.Stamp
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
-        Assert.True(
-            f.Stamp.Equals(decoded.Stamp),
-            $"[{name}] manifest stamp roundtrip broke");
+        Assert.True(f.Stamp.Equals(decoded.Stamp), $"[{name}] manifest stamp roundtrip broke");
     }
 
     [Fact]
@@ -80,8 +103,10 @@ public class BitIdenticalRoundtripTests
     {
         // Pin the corpus floor — the spec requires ~20.
         List<StateCodecFixture> all = StateCodecFixtures.GenerateAll();
-        Assert.True(all.Count >= 20,
-            $"Fixture corpus has {all.Count} fixtures; spec requires >=20.");
+        Assert.True(
+            all.Count >= 20,
+            $"Fixture corpus has {all.Count} fixtures; spec requires >=20."
+        );
     }
 
     [Fact]

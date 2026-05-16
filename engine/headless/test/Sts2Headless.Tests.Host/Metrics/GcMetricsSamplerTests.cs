@@ -18,7 +18,9 @@ public sealed class GcMetricsSamplerTests
         public TimeSpan TotalPause;
 
         public int GetCollectionCount(int generation) => Counts[generation];
+
         public long GetTotalAllocatedBytes() => Allocated;
+
         public TimeSpan GetTotalPauseDuration() => TotalPause;
     }
 
@@ -112,8 +114,9 @@ public sealed class GcMetricsSamplerTests
     public void Sampler_throws_when_registry_or_reader_is_null()
     {
         Assert.Throws<ArgumentNullException>(() => new GcMetricsSampler(null!, new FakeGcReader()));
-        Assert.Throws<ArgumentNullException>(
-            () => new GcMetricsSampler(new PrometheusMetricsRegistry(), null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            new GcMetricsSampler(new PrometheusMetricsRegistry(), null!)
+        );
     }
 
     [Fact]

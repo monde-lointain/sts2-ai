@@ -27,8 +27,8 @@ public static partial class StringHelpers
     /// Convert a CamelCase / PascalCase identifier to snake_case. Direct port of upstream
     /// <c>StringHelper.SnakeCase</c>.
     /// </summary>
-    public static string SnakeCase(string txt)
-        => CamelCaseRegex().Replace(txt.Trim(), "$1_$2").ToLowerInvariant();
+    public static string SnakeCase(string txt) =>
+        CamelCaseRegex().Replace(txt.Trim(), "$1_$2").ToLowerInvariant();
 
     /// <summary>
     /// Stable, version-independent string hash. Direct port of upstream

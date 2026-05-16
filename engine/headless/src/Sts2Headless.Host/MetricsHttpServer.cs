@@ -57,21 +57,19 @@ public sealed class MetricsHttpServer : IDisposable
     /// <summary>Start accepting connections. Idempotent.</summary>
     public void Start()
     {
-        if (_running) return;
+        if (_running)
+            return;
         _listener.Start();
         _running = true;
-        _worker = new Thread(WorkerLoop)
-        {
-            IsBackground = true,
-            Name = "sts2-metrics-listener",
-        };
+        _worker = new Thread(WorkerLoop) { IsBackground = true, Name = "sts2-metrics-listener" };
         _worker.Start();
     }
 
     /// <summary>Stop accepting connections and join the worker. Idempotent.</summary>
     public void Stop()
     {
-        if (!_running) return;
+        if (!_running)
+            return;
         _running = false;
         try
         {
@@ -119,8 +117,14 @@ public sealed class MetricsHttpServer : IDisposable
             catch
             {
                 // Never let an exception kill the listener.
-                try { ctx.Response.StatusCode = 500; ctx.Response.Close(); }
-                catch { /* swallow */ }
+                try
+                {
+                    ctx.Response.StatusCode = 500;
+                    ctx.Response.Close();
+                }
+                catch
+                { /* swallow */
+                }
             }
         }
     }

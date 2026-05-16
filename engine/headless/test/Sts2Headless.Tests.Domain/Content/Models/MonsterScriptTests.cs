@@ -23,22 +23,30 @@ public sealed class MonsterScriptTests
         public const string B = "B";
         public const string C = "C";
 
-        public FakeRngBranchMonster() : base(
-            id: "fake_rng_branch",
-            minInitialHp: 20, maxInitialHp: 20,
-            moves: new MonsterMove[]
-            {
-                new(A, Intent.Attack(1), FollowUpMoveId: A,
-                    BranchResolver: new RngBranchResolver(
-                        choices: ImmutableArray.Create(
-                            new RngBranchChoice(B, 1f),
-                            new RngBranchChoice(C, 1f)),
-                        bucket: RunRngType.MonsterAi)),
-                new(B, Intent.Attack(2), FollowUpMoveId: A),
-                new(C, Intent.Buff(),    FollowUpMoveId: A),
-            },
-            initialMoveId: A)
-        { }
+        public FakeRngBranchMonster()
+            : base(
+                id: "fake_rng_branch",
+                minInitialHp: 20,
+                maxInitialHp: 20,
+                moves: new MonsterMove[]
+                {
+                    new(
+                        A,
+                        Intent.Attack(1),
+                        FollowUpMoveId: A,
+                        BranchResolver: new RngBranchResolver(
+                            choices: ImmutableArray.Create(
+                                new RngBranchChoice(B, 1f),
+                                new RngBranchChoice(C, 1f)
+                            ),
+                            bucket: RunRngType.MonsterAi
+                        )
+                    ),
+                    new(B, Intent.Attack(2), FollowUpMoveId: A),
+                    new(C, Intent.Buff(), FollowUpMoveId: A),
+                },
+                initialMoveId: A
+            ) { }
     }
 
     /// <summary>
@@ -53,32 +61,43 @@ public sealed class MonsterScriptTests
         public const string ATTACK_HIGH = "ATTACK_HIGH";
         public const string ATTACK_LOW = "ATTACK_LOW";
 
-        public FakeHpThresholdMonster() : base(
-            id: "fake_hp_threshold",
-            minInitialHp: 100, maxInitialHp: 100,
-            moves: new MonsterMove[]
-            {
-                new(SLEEP, Intent.Buff(), FollowUpMoveId: ATTACK_HIGH,
-                    BranchResolver: new HpThresholdResolver(
-                        fraction: 0.5f,
-                        belowMoveId: ATTACK_LOW,
-                        aboveMoveId: ATTACK_HIGH)),
-                new(ATTACK_HIGH, Intent.Attack(10), FollowUpMoveId: SLEEP),
-                new(ATTACK_LOW,  Intent.Attack(5),  FollowUpMoveId: SLEEP),
-            },
-            initialMoveId: SLEEP)
-        { }
+        public FakeHpThresholdMonster()
+            : base(
+                id: "fake_hp_threshold",
+                minInitialHp: 100,
+                maxInitialHp: 100,
+                moves: new MonsterMove[]
+                {
+                    new(
+                        SLEEP,
+                        Intent.Buff(),
+                        FollowUpMoveId: ATTACK_HIGH,
+                        BranchResolver: new HpThresholdResolver(
+                            fraction: 0.5f,
+                            belowMoveId: ATTACK_LOW,
+                            aboveMoveId: ATTACK_HIGH
+                        )
+                    ),
+                    new(ATTACK_HIGH, Intent.Attack(10), FollowUpMoveId: SLEEP),
+                    new(ATTACK_LOW, Intent.Attack(5), FollowUpMoveId: SLEEP),
+                },
+                initialMoveId: SLEEP
+            ) { }
     }
 
-    private static MoveBranchContext MakeContext(int currentHp, int maxHp,
-        params string[] activePowers)
+    private static MoveBranchContext MakeContext(
+        int currentHp,
+        int maxHp,
+        params string[] activePowers
+    )
     {
         HashSet<string> powers = new(activePowers);
         return new MoveBranchContext(
             CurrentHp: currentHp,
             MaxHp: maxHp,
             HasPower: id => powers.Contains(id),
-            GetPowerStacks: id => powers.Contains(id) ? 1 : 0);
+            GetPowerStacks: id => powers.Contains(id) ? 1 : 0
+        );
     }
 
     // ===== Plain (no-resolver) move keeps FollowUpMoveId behavior =====
@@ -112,7 +131,8 @@ public sealed class MonsterScriptTests
         Assert.Equal(next1, next2);
         Assert.True(
             next1 == FakeRngBranchMonster.B || next1 == FakeRngBranchMonster.C,
-            $"Expected next move to be B or C; got {next1}.");
+            $"Expected next move to be B or C; got {next1}."
+        );
     }
 
     [Fact]
@@ -125,7 +145,8 @@ public sealed class MonsterScriptTests
         {
             var rng = new RunRngSet($"branch-spread-{i}");
             seen.Add(model.AdvanceMoveId(FakeRngBranchMonster.A, ctx, rng));
-            if (seen.Count == 2) break;
+            if (seen.Count == 2)
+                break;
         }
         Assert.Contains(FakeRngBranchMonster.B, seen);
         Assert.Contains(FakeRngBranchMonster.C, seen);
@@ -170,8 +191,12 @@ public sealed class MonsterScriptTests
     {
         var moves = new MonsterMove[]
         {
-            new("SLEEP", Intent.Buff(), FollowUpMoveId: "ATTACK",
-                BranchResolver: new HasPowerResolver("Asleep", "SLEEP", "ATTACK")),
+            new(
+                "SLEEP",
+                Intent.Buff(),
+                FollowUpMoveId: "ATTACK",
+                BranchResolver: new HasPowerResolver("Asleep", "SLEEP", "ATTACK")
+            ),
             new("ATTACK", Intent.Attack(10), "SLEEP"),
         };
         var model = new TestMonster("sleeper", 10, 10, moves, "SLEEP");
@@ -194,7 +219,9 @@ public sealed class MonsterScriptTests
         // refactor must not add NEW observable fields. We sanity-check by
         // listing the public-instance properties.
         var props = typeof(Sts2Headless.Domain.Combat.MonsterIntent)
-            .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+            .GetProperties(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+            )
             .Where(p => p.Name != "EqualityContract")
             .Select(p => p.Name)
             .ToHashSet();
@@ -205,15 +232,22 @@ public sealed class MonsterScriptTests
         Assert.Contains(nameof(Sts2Headless.Domain.Combat.MonsterIntent.AppliesPowers), props);
         Assert.Contains(nameof(Sts2Headless.Domain.Combat.MonsterIntent.MoveId), props);
         // Allow the None static (it is a property too).
-        Assert.True(props.Count <= 6,
-            $"MonsterIntent has unexpected public properties: {string.Join(',', props)}");
+        Assert.True(
+            props.Count <= 6,
+            $"MonsterIntent has unexpected public properties: {string.Join(',', props)}"
+        );
     }
 
     /// <summary>Concrete test-only monster opening up the protected constructor.</summary>
     private sealed class TestMonster : MonsterModel
     {
-        public TestMonster(string id, int min, int max, IEnumerable<MonsterMove> moves, string initialMoveId)
-            : base(id, min, max, moves, initialMoveId)
-        { }
+        public TestMonster(
+            string id,
+            int min,
+            int max,
+            IEnumerable<MonsterMove> moves,
+            string initialMoveId
+        )
+            : base(id, min, max, moves, initialMoveId) { }
     }
 }

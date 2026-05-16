@@ -12,12 +12,18 @@ public sealed class ProbeOutTests
 {
     private static readonly string[] MinimalSmokeArgs = new[]
     {
-        "--seed", "42",
-        "--character", "silent",
-        "--deck", "starter",
-        "--relics", "ring_of_the_snake",
-        "--encounter", "cultists_normal",
-        "--ascension", "0",
+        "--seed",
+        "42",
+        "--character",
+        "silent",
+        "--deck",
+        "starter",
+        "--relics",
+        "ring_of_the_snake",
+        "--encounter",
+        "cultists_normal",
+        "--ascension",
+        "0",
     };
 
     [Fact]
@@ -36,9 +42,13 @@ public sealed class ProbeOutTests
         try
         {
             int exit = Program.Run(
-                args: MinimalSmokeArgs.Concat(new[] { "--script", scriptPath, "--probe-out", probePath }).ToArray(),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                args: MinimalSmokeArgs
+                    .Concat(new[] { "--script", scriptPath, "--probe-out", probePath })
+                    .ToArray(),
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             _ = exit;
 
             Assert.True(File.Exists(probePath), $"probe output not written to {probePath}");
@@ -53,7 +63,8 @@ public sealed class ProbeOutTests
         finally
         {
             File.Delete(scriptPath);
-            if (File.Exists(probePath)) File.Delete(probePath);
+            if (File.Exists(probePath))
+                File.Delete(probePath);
         }
     }
 
@@ -66,13 +77,21 @@ public sealed class ProbeOutTests
         try
         {
             Program.Run(
-                args: MinimalSmokeArgs.Concat(new[] { "--script", scriptPath, "--probe-out", p1 }).ToArray(),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                args: MinimalSmokeArgs
+                    .Concat(new[] { "--script", scriptPath, "--probe-out", p1 })
+                    .ToArray(),
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             Program.Run(
-                args: MinimalSmokeArgs.Concat(new[] { "--script", scriptPath, "--probe-out", p2 }).ToArray(),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                args: MinimalSmokeArgs
+                    .Concat(new[] { "--script", scriptPath, "--probe-out", p2 })
+                    .ToArray(),
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
 
             string c1 = File.ReadAllText(p1);
             string c2 = File.ReadAllText(p2);
@@ -81,8 +100,10 @@ public sealed class ProbeOutTests
         finally
         {
             File.Delete(scriptPath);
-            if (File.Exists(p1)) File.Delete(p1);
-            if (File.Exists(p2)) File.Delete(p2);
+            if (File.Exists(p1))
+                File.Delete(p1);
+            if (File.Exists(p2))
+                File.Delete(p2);
         }
     }
 
@@ -97,12 +118,17 @@ public sealed class ProbeOutTests
         {
             int exit = Program.Run(
                 args: MinimalSmokeArgs.Concat(new[] { "--probe-out", probePath }).ToArray(),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             _ = exit;
             Assert.True(File.Exists(probePath));
             string[] lines = File.ReadAllLines(probePath);
-            Assert.True(lines.Length >= 2, $"expected at least combat_start + turn_start, got {lines.Length}");
+            Assert.True(
+                lines.Length >= 2,
+                $"expected at least combat_start + turn_start, got {lines.Length}"
+            );
 
             using var firstDoc = JsonDocument.Parse(lines[0]);
             Assert.Equal("combat_start", firstDoc.RootElement.GetProperty("event").GetString());
@@ -112,7 +138,8 @@ public sealed class ProbeOutTests
         }
         finally
         {
-            if (File.Exists(probePath)) File.Delete(probePath);
+            if (File.Exists(probePath))
+                File.Delete(probePath);
         }
     }
 
@@ -127,16 +154,25 @@ public sealed class ProbeOutTests
             int exit = Program.Run(
                 args: new[]
                 {
-                    "--seed", "42",
-                    "--character", "silent",
-                    "--deck", "starter",
-                    "--relics", "ring_of_the_snake",
-                    "--encounter", "ChompersNormal",
-                    "--ascension", "0",
-                    "--probe-out", probePath,
+                    "--seed",
+                    "42",
+                    "--character",
+                    "silent",
+                    "--deck",
+                    "starter",
+                    "--relics",
+                    "ring_of_the_snake",
+                    "--encounter",
+                    "ChompersNormal",
+                    "--ascension",
+                    "0",
+                    "--probe-out",
+                    probePath,
                 },
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             _ = exit;
             Assert.True(File.Exists(probePath));
             string[] lines = File.ReadAllLines(probePath);
@@ -148,7 +184,8 @@ public sealed class ProbeOutTests
         }
         finally
         {
-            if (File.Exists(probePath)) File.Delete(probePath);
+            if (File.Exists(probePath))
+                File.Delete(probePath);
         }
     }
 

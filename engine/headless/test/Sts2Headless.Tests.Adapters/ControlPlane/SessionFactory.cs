@@ -23,19 +23,38 @@ internal static class SessionFactory
     {
         // Stable stamp — identical across runs so save/load byte equality is
         // testable. ContentHash uses the smoke catalog's id set.
-        byte[] contentHash = ManifestStamp.ContentHashFromIds(new[]
-        {
-            "Acrobatics", "Anchor", "Backflip", "BagOfPreparation",
-            "BloodVial", "CalcifiedCultist", "CultistsNormal",
-            "DampCultist", "DeadlyPoison", "DefendSilent", "DodgeAndRoll",
-            "Neutralize", "PoisonPower", "RingOfTheSnake", "RitualPower",
-            "Slice", "StrengthPower", "StrikeSilent", "Survivor", "Vajra",
-            "VulnerablePower", "WeakPower",
-        });
+        byte[] contentHash = ManifestStamp.ContentHashFromIds(
+            new[]
+            {
+                "Acrobatics",
+                "Anchor",
+                "Backflip",
+                "BagOfPreparation",
+                "BloodVial",
+                "CalcifiedCultist",
+                "CultistsNormal",
+                "DampCultist",
+                "DeadlyPoison",
+                "DefendSilent",
+                "DodgeAndRoll",
+                "Neutralize",
+                "PoisonPower",
+                "RingOfTheSnake",
+                "RitualPower",
+                "Slice",
+                "StrengthPower",
+                "StrikeSilent",
+                "Survivor",
+                "Vajra",
+                "VulnerablePower",
+                "WeakPower",
+            }
+        );
         return new ManifestStamp(
             GitSha: "test-controlplane",
             BuildId: "Q1-Phase1-S11",
-            ContentHash: contentHash);
+            ContentHash: contentHash
+        );
     }
 
     public static ControlPlaneSession BootSmokeSession(uint seed = 42u)
@@ -55,23 +74,24 @@ internal static class SessionFactory
 
         var deck = new List<CardInstance>();
         uint id = 100u;
-        for (int i = 0; i < 5; i++) deck.Add(new CardInstance(id++, StrikeSilent.CanonicalId, 0, null));
-        for (int i = 0; i < 5; i++) deck.Add(new CardInstance(id++, DefendSilent.CanonicalId, 0, null));
+        for (int i = 0; i < 5; i++)
+            deck.Add(new CardInstance(id++, StrikeSilent.CanonicalId, 0, null));
+        for (int i = 0; i < 5; i++)
+            deck.Add(new CardInstance(id++, DefendSilent.CanonicalId, 0, null));
         deck.Add(new CardInstance(id++, Neutralize.CanonicalId, 0, null));
         deck.Add(new CardInstance(id++, Survivor.CanonicalId, 0, null));
         deck.Add(new CardInstance(id++, DeadlyPoison.CanonicalId, 0, null));
         deck.Add(new CardInstance(id++, Backflip.CanonicalId, 0, null));
 
         var bootstrap = new CombatBootstrap(cards, relics, powers, monsters, encounters);
-        var playerSpec = new PlayerSpec(
-            RelicIds: new[] { RingOfTheSnake.CanonicalId },
-            Deck: deck);
+        var playerSpec = new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck);
         CombatContext ctx = CombatEngine.StartCombat(
             (IEncounterModel)encounters.Get(CultistsNormal.CanonicalId),
             bootstrap,
             playerSpec,
             runRng,
-            clock);
+            clock
+        );
 
         TokenMap tokens = new();
         // Pre-populate token map with the smoke ids so round-trips have content.
@@ -94,6 +114,7 @@ internal static class SessionFactory
             runRng: runRng,
             playerRng: playerRng,
             tokens: tokens,
-            stamp: DefaultStamp());
+            stamp: DefaultStamp()
+        );
     }
 }

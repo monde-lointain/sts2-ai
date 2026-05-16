@@ -13,7 +13,8 @@ public sealed class Burn : CardModel
     public const int UpgradeDelta = 2;
     public int Damage => BaseDamage;
 
-    public Burn() : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
+    public Burn()
+        : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

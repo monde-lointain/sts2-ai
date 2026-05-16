@@ -47,7 +47,8 @@ public sealed class CalcDamageCardTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck),
             new RunRngSet($"seed-{seed}"),
-            new LogicalClock());
+            new LogicalClock()
+        );
         return (ctx, CombatEngine.FirstEnemyId);
     }
 
@@ -56,7 +57,12 @@ public sealed class CalcDamageCardTests
     [Fact]
     public void CalcDamageAction_records_into_observer()
     {
-        ExecutionContext ec = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+        ExecutionContext ec = new(
+            new LogicalClock(),
+            new Rng(0u),
+            new HookRegistry(),
+            new ActionQueue()
+        );
         using (EffectObserver.Attach(out List<IAction> log))
         {
             new CalcDamageAction(6, "attacks_played_this_turn", "m0").Execute(ec);
@@ -80,9 +86,14 @@ public sealed class CalcDamageCardTests
             CardInstance? finisher = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Finisher.CanonicalId) { finisher = c; break; }
+                if (c.ModelId == Finisher.CanonicalId)
+                {
+                    finisher = c;
+                    break;
+                }
             }
-            if (finisher is null) continue;
+            if (finisher is null)
+                continue;
             // Make sure no prior attacks this turn.
             Assert.Equal(0, ctx.State.AttacksPlayedThisTurn);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
@@ -106,10 +117,13 @@ public sealed class CalcDamageCardTests
             var strikes = new List<CardInstance>();
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Finisher.CanonicalId) finisher = c;
-                else if (c.ModelId == StrikeSilent.CanonicalId) strikes.Add(c);
+                if (c.ModelId == Finisher.CanonicalId)
+                    finisher = c;
+                else if (c.ModelId == StrikeSilent.CanonicalId)
+                    strikes.Add(c);
             }
-            if (finisher is null || strikes.Count < 2) continue;
+            if (finisher is null || strikes.Count < 2)
+                continue;
 
             // Play 2 strikes (2 attacks played); then Finisher.
             CombatEngine.PlayerPlayCard(ctx, strikes[0].InstanceId, enemyId);
@@ -137,9 +151,14 @@ public sealed class CalcDamageCardTests
             CardInstance? murder = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Murder.CanonicalId) { murder = c; break; }
+                if (c.ModelId == Murder.CanonicalId)
+                {
+                    murder = c;
+                    break;
+                }
             }
-            if (murder is null) continue;
+            if (murder is null)
+                continue;
             int drawnSoFar = ctx.State.CardsDrawnThisCombat;
             Assert.True(drawnSoFar > 0, "Initial hand draw should have happened.");
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
@@ -163,9 +182,14 @@ public sealed class CalcDamageCardTests
             CardInstance? mirage = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Mirage.CanonicalId) { mirage = c; break; }
+                if (c.ModelId == Mirage.CanonicalId)
+                {
+                    mirage = c;
+                    break;
+                }
             }
-            if (mirage is null) continue;
+            if (mirage is null)
+                continue;
             // Manually stamp 5 Poison on the lone enemy.
             ctx.ApplyPower(enemyId, PowerIds.Poison, 5, enemyId);
             int blockBefore = ctx.State.Player.Block;
@@ -203,15 +227,21 @@ public sealed class CalcDamageCardTests
             CardInstance? strike = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == StrikeSilent.CanonicalId) { strike = c; break; }
+                if (c.ModelId == StrikeSilent.CanonicalId)
+                {
+                    strike = c;
+                    break;
+                }
             }
-            if (strike is null) continue;
+            if (strike is null)
+                continue;
             CombatEngine.PlayerPlayCard(ctx, strike!.InstanceId, enemyId);
             Assert.Equal(1, ctx.State.AttacksPlayedThisTurn);
             // End turn, enemy turn, then a new player turn.
             CombatEngine.EndPlayerTurn(ctx);
             CombatEngine.EnemyTurn(ctx);
-            if (ctx.State.IsCombatOver) return; // ignore if combat ended
+            if (ctx.State.IsCombatOver)
+                return; // ignore if combat ended
             CombatEngine.StartPlayerTurn(ctx);
             Assert.Equal(0, ctx.State.AttacksPlayedThisTurn);
             return;
@@ -221,7 +251,10 @@ public sealed class CalcDamageCardTests
 
     // ===== B.1-gamma-T5: X-cost cards =====
 
-    private static (CombatContext ctx, uint enemyId, CardInstance xCardOrNull) StartCombatWithXCard(uint seed, string cardId)
+    private static (CombatContext ctx, uint enemyId, CardInstance xCardOrNull) StartCombatWithXCard(
+        uint seed,
+        string cardId
+    )
     {
         CardCatalog cards = Phase1Content.BuildCardCatalog();
         RelicCatalog relics = Phase1Content.BuildRelicCatalog();
@@ -243,11 +276,16 @@ public sealed class CalcDamageCardTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck),
             new RunRngSet($"xc-{seed}"),
-            new LogicalClock());
+            new LogicalClock()
+        );
         CardInstance? found = null;
         foreach (CardInstance c in ctx.State.HandPile.Cards)
         {
-            if (c.ModelId == cardId) { found = c; break; }
+            if (c.ModelId == cardId)
+            {
+                found = c;
+                break;
+            }
         }
         return (ctx, CombatEngine.FirstEnemyId, found!);
     }
@@ -257,9 +295,12 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? skewer) =
-                StartCombatWithXCard(seed, Skewer.CanonicalId);
-            if (skewer is null) continue;
+            (CombatContext ctx, uint enemyId, CardInstance? skewer) = StartCombatWithXCard(
+                seed,
+                Skewer.CanonicalId
+            );
+            if (skewer is null)
+                continue;
             int energyBefore = ctx.State.Energy; // 3 for Silent
             Assert.Equal(3, energyBefore);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
@@ -279,16 +320,21 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? skewer) =
-                StartCombatWithXCard(seed, Skewer.CanonicalId);
-            if (skewer is null) continue;
+            (CombatContext ctx, uint enemyId, CardInstance? skewer) = StartCombatWithXCard(
+                seed,
+                Skewer.CanonicalId
+            );
+            if (skewer is null)
+                continue;
             // Burn all 3 energy first via strikes.
             var strikes = new List<CardInstance>();
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == StrikeSilent.CanonicalId) strikes.Add(c);
+                if (c.ModelId == StrikeSilent.CanonicalId)
+                    strikes.Add(c);
             }
-            if (strikes.Count < 3) continue;
+            if (strikes.Count < 3)
+                continue;
             for (int i = 0; i < 3; i++)
             {
                 CombatEngine.PlayerPlayCard(ctx, strikes[i].InstanceId, enemyId);
@@ -308,17 +354,23 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? malaise) =
-                StartCombatWithXCard(seed, Malaise.CanonicalId);
-            if (malaise is null) continue;
+            (CombatContext ctx, uint enemyId, CardInstance? malaise) = StartCombatWithXCard(
+                seed,
+                Malaise.CanonicalId
+            );
+            if (malaise is null)
+                continue;
             CombatEngine.PlayerPlayCard(ctx, malaise!.InstanceId, enemyId);
             // Energy was 3. So Strength = -3, Weak = +3.
             Creature enemy = ctx.State.GetEnemy(enemyId);
-            int strength = 0, weak = 0;
+            int strength = 0,
+                weak = 0;
             foreach (PowerInstance p in enemy.Powers)
             {
-                if (p.ModelId == PowerIds.Strength) strength = p.Stacks;
-                if (p.ModelId == PowerIds.Weak) weak = p.Stacks;
+                if (p.ModelId == PowerIds.Strength)
+                    strength = p.Stacks;
+                if (p.ModelId == PowerIds.Weak)
+                    weak = p.Stacks;
             }
             Assert.Equal(-3, strength);
             Assert.Equal(3, weak);
@@ -332,9 +384,12 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? trap) =
-                StartCombatWithXCard(seed, KnifeTrap.CanonicalId);
-            if (trap is null) continue;
+            (CombatContext ctx, uint enemyId, CardInstance? trap) = StartCombatWithXCard(
+                seed,
+                KnifeTrap.CanonicalId
+            );
+            if (trap is null)
+                continue;
             // Smoke set has no Shiv generators, so ExhaustedShivCount stays at 0.
             Assert.Equal(0, ctx.State.ExhaustedShivCount);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
@@ -352,9 +407,12 @@ public sealed class CalcDamageCardTests
         // Manually set ExhaustedShivCount on the state to simulate Shivs in exhaust.
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? trap) =
-                StartCombatWithXCard(seed, KnifeTrap.CanonicalId);
-            if (trap is null) continue;
+            (CombatContext ctx, uint enemyId, CardInstance? trap) = StartCombatWithXCard(
+                seed,
+                KnifeTrap.CanonicalId
+            );
+            if (trap is null)
+                continue;
             ctx.SetState(ctx.State with { ExhaustedShivCount = 3 });
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, trap!.InstanceId, enemyId);

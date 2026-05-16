@@ -40,13 +40,19 @@ public class Tween
         return this;
     }
 
-    public PropertyTweener TweenProperty(Node? target, string property, object? finalValue, double duration)
+    public PropertyTweener TweenProperty(
+        Node? target,
+        string property,
+        object? finalValue,
+        double duration
+    )
     {
         StubRegistry.Record(
             StubCategory.Animation,
             nameof(Tween),
             nameof(TweenProperty),
-            $"prop={property},dur={duration}");
+            $"prop={property},dur={duration}"
+        );
         return new PropertyTweener();
     }
 
@@ -97,7 +103,8 @@ public class PropertyTweener
             StubCategory.Animation,
             nameof(PropertyTweener),
             nameof(SetEase),
-            $"ease={ease}");
+            $"ease={ease}"
+        );
         return this;
     }
 
@@ -107,7 +114,8 @@ public class PropertyTweener
             StubCategory.Animation,
             nameof(PropertyTweener),
             nameof(SetTrans),
-            $"trans={trans}");
+            $"trans={trans}"
+        );
         return this;
     }
 }

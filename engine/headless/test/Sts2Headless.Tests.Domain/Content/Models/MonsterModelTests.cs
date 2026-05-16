@@ -19,9 +19,8 @@ public class MonsterModelTests
     /// monsters used here either have no <c>BranchResolver</c> (deterministic
     /// follow-up only) or a self-loop, so the payload doesn't matter for
     /// rotation assertions.</summary>
-    private static MoveBranchContext MakeBranchContextForTest()
-        => new(CurrentHp: 100, MaxHp: 100,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+    private static MoveBranchContext MakeBranchContextForTest() =>
+        new(CurrentHp: 100, MaxHp: 100, HasPower: _ => false, GetPowerStacks: _ => 0);
 
     /// <summary>
     /// Two-move cycle (BUFF → ATTACK → ATTACK → ...), modelled after the Cultist
@@ -29,17 +28,18 @@ public class MonsterModelTests
     /// </summary>
     private sealed class FakeCultist : MonsterModel
     {
-        public FakeCultist() : base(
-            id: "fake_cultist",
-            minInitialHp: 38,
-            maxInitialHp: 41,
-            moves: new MonsterMove[]
-            {
-                new(Id: "INCANTATION", Intent: Intent.Buff(), FollowUpMoveId: "DARK_STRIKE"),
-                new(Id: "DARK_STRIKE", Intent: Intent.Attack(9), FollowUpMoveId: "DARK_STRIKE"),
-            },
-            initialMoveId: "INCANTATION")
-        { }
+        public FakeCultist()
+            : base(
+                id: "fake_cultist",
+                minInitialHp: 38,
+                maxInitialHp: 41,
+                moves: new MonsterMove[]
+                {
+                    new(Id: "INCANTATION", Intent: Intent.Buff(), FollowUpMoveId: "DARK_STRIKE"),
+                    new(Id: "DARK_STRIKE", Intent: Intent.Attack(9), FollowUpMoveId: "DARK_STRIKE"),
+                },
+                initialMoveId: "INCANTATION"
+            ) { }
     }
 
     [Fact]
@@ -143,7 +143,8 @@ public class MonsterModelTests
             int hp = m.RollInitialHp(new Rng(seed));
             sawMin |= hp == 38;
             sawMax |= hp == 41;
-            if (sawMin && sawMax) break;
+            if (sawMin && sawMax)
+                break;
         }
         Assert.True(sawMin, "Expected at least one seed to roll min HP (38).");
         Assert.True(sawMax, "Expected at least one seed to roll max HP (41).");
@@ -160,9 +161,13 @@ public class MonsterModelTests
     public void Construction_rejects_invalid_HP_envelope()
     {
         // max < min
-        Assert.Throws<System.ArgumentOutOfRangeException>(() => new BadCultist(minInitialHp: 10, maxInitialHp: 5));
+        Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+            new BadCultist(minInitialHp: 10, maxInitialHp: 5)
+        );
         // min <= 0
-        Assert.Throws<System.ArgumentOutOfRangeException>(() => new BadCultist(minInitialHp: 0, maxInitialHp: 10));
+        Assert.Throws<System.ArgumentOutOfRangeException>(() =>
+            new BadCultist(minInitialHp: 0, maxInitialHp: 10)
+        );
     }
 
     [Fact]
@@ -195,29 +200,42 @@ public class MonsterModelTests
     private sealed class BadCultist : MonsterModel
     {
         public BadCultist(int minInitialHp, int maxInitialHp)
-            : base("bad_cultist", minInitialHp, maxInitialHp,
-                new MonsterMove[] { new("M", Intent.Buff(), "M") }, "M") { }
+            : base(
+                "bad_cultist",
+                minInitialHp,
+                maxInitialHp,
+                new MonsterMove[] { new("M", Intent.Buff(), "M") },
+                "M"
+            ) { }
     }
 
     private sealed class DupeMoveCultist : MonsterModel
     {
-        public DupeMoveCultist() : base("dupe", 1, 1,
-            new MonsterMove[]
-            {
-                new("A", Intent.Buff(), "A"),
-                new("A", Intent.Buff(), "A"),
-            }, "A") { }
+        public DupeMoveCultist()
+            : base(
+                "dupe",
+                1,
+                1,
+                new MonsterMove[] { new("A", Intent.Buff(), "A"), new("A", Intent.Buff(), "A") },
+                "A"
+            ) { }
     }
 
     private sealed class BadInitialMoveCultist : MonsterModel
     {
-        public BadInitialMoveCultist() : base("bad_init", 1, 1,
-            new MonsterMove[] { new("A", Intent.Buff(), "A") }, "B") { }
+        public BadInitialMoveCultist()
+            : base("bad_init", 1, 1, new MonsterMove[] { new("A", Intent.Buff(), "A") }, "B") { }
     }
 
     private sealed class BadFollowUpCultist : MonsterModel
     {
-        public BadFollowUpCultist() : base("bad_followup", 1, 1,
-            new MonsterMove[] { new("A", Intent.Buff(), "NONEXISTENT") }, "A") { }
+        public BadFollowUpCultist()
+            : base(
+                "bad_followup",
+                1,
+                1,
+                new MonsterMove[] { new("A", Intent.Buff(), "NONEXISTENT") },
+                "A"
+            ) { }
     }
 }

@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <IsPackable>false</IsPackable>
     <!--
@@ -42,7 +41,7 @@
       Projects="..\mock-worker\Sts2Headless.MockWorker.csproj"
       Targets="Restore;Build"
       Properties="Configuration=$(Configuration)"
-      BuildInParallel="false" />
+      BuildInParallel="false"
+    />
   </Target>
-
 </Project>

@@ -23,13 +23,18 @@ public sealed class RingOfTheSnake : RelicModel
     /// <summary>How many extra cards this relic adds — upstream <c>CardsVar(2)</c>.</summary>
     public const int ExtraCards = 2;
 
-    public RingOfTheSnake() : base(CanonicalId, "Ring of the Snake", RelicRarity.Starter) { }
+    public RingOfTheSnake()
+        : base(CanonicalId, "Ring of the Snake", RelicRarity.Starter) { }
 
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.ModifyHandDraw, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ExtraHandDrawAction(ExtraCards));
-        });
+        Subscribe(
+            hooks,
+            HookType.ModifyHandDraw,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new ExtraHandDrawAction(ExtraCards));
+            }
+        );
     }
 }

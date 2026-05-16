@@ -37,7 +37,8 @@ public readonly struct HookRegistration
         int priority = 0,
         ulong ownerCreatureId = 0,
         ulong ownerContentId = 0,
-        int sourcePosition = 0)
+        int sourcePosition = 0
+    )
     {
         Handler = handler ?? throw new ArgumentNullException(nameof(handler));
         Priority = priority;

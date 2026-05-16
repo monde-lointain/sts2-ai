@@ -15,7 +15,8 @@ public sealed class Expose : CardModel
     public const int UpgradeDelta = 1;
     public int Power => BasePower;
 
-    public Expose() : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Expose()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

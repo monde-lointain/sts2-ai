@@ -94,7 +94,8 @@ public abstract class MonsterModel : IMonsterModel
         int maxInitialHp,
         IEnumerable<MonsterMove> moves,
         string initialMoveId,
-        ImmutableArray<MonsterSpawnPower> spawnPowers = default)
+        ImmutableArray<MonsterSpawnPower> spawnPowers = default
+    )
     {
         SpawnPowers = spawnPowers.IsDefault ? ImmutableArray<MonsterSpawnPower>.Empty : spawnPowers;
         if (string.IsNullOrWhiteSpace(id))
@@ -103,18 +104,25 @@ public abstract class MonsterModel : IMonsterModel
         }
         if (minInitialHp <= 0)
         {
-            throw new System.ArgumentOutOfRangeException(nameof(minInitialHp),
-                $"MonsterModel '{id}': MinInitialHp must be positive (got {minInitialHp}).");
+            throw new System.ArgumentOutOfRangeException(
+                nameof(minInitialHp),
+                $"MonsterModel '{id}': MinInitialHp must be positive (got {minInitialHp})."
+            );
         }
         if (maxInitialHp < minInitialHp)
         {
-            throw new System.ArgumentOutOfRangeException(nameof(maxInitialHp),
-                $"MonsterModel '{id}': MaxInitialHp ({maxInitialHp}) must be >= MinInitialHp ({minInitialHp}).");
+            throw new System.ArgumentOutOfRangeException(
+                nameof(maxInitialHp),
+                $"MonsterModel '{id}': MaxInitialHp ({maxInitialHp}) must be >= MinInitialHp ({minInitialHp})."
+            );
         }
         System.ArgumentNullException.ThrowIfNull(moves);
         if (string.IsNullOrWhiteSpace(initialMoveId))
         {
-            throw new System.ArgumentException("initialMoveId must be non-empty.", nameof(initialMoveId));
+            throw new System.ArgumentException(
+                "initialMoveId must be non-empty.",
+                nameof(initialMoveId)
+            );
         }
 
         Id = id;
@@ -130,14 +138,16 @@ public abstract class MonsterModel : IMonsterModel
             if (byId.ContainsKey(move.Id))
             {
                 throw new System.InvalidOperationException(
-                    $"MonsterModel '{id}': duplicate move id '{move.Id}'.");
+                    $"MonsterModel '{id}': duplicate move id '{move.Id}'."
+                );
             }
             byId.Add(move.Id, move);
         }
         if (!byId.ContainsKey(initialMoveId))
         {
             throw new System.InvalidOperationException(
-                $"MonsterModel '{id}': initialMoveId '{initialMoveId}' not in moves list.");
+                $"MonsterModel '{id}': initialMoveId '{initialMoveId}' not in moves list."
+            );
         }
         // Validate every follow-up references a real move id to catch typos at init.
         foreach (MonsterMove move in movesList)
@@ -145,7 +155,8 @@ public abstract class MonsterModel : IMonsterModel
             if (!byId.ContainsKey(move.FollowUpMoveId))
             {
                 throw new System.InvalidOperationException(
-                    $"MonsterModel '{id}': move '{move.Id}' references unknown FollowUpMoveId '{move.FollowUpMoveId}'.");
+                    $"MonsterModel '{id}': move '{move.Id}' references unknown FollowUpMoveId '{move.FollowUpMoveId}'."
+                );
             }
         }
         _moves = byId;
@@ -221,7 +232,8 @@ public abstract class MonsterModel : IMonsterModel
         if (picked is null)
         {
             throw new System.InvalidOperationException(
-                $"MonsterModel '{Id}': NextItem returned null on a non-empty HashSet (Count={hpRange.Count}).");
+                $"MonsterModel '{Id}': NextItem returned null on a non-empty HashSet (Count={hpRange.Count})."
+            );
         }
         return picked.Value;
     }
@@ -242,7 +254,8 @@ public abstract class MonsterModel : IMonsterModel
         if (!_moves.TryGetValue(moveId, out MonsterMove? move))
         {
             throw new System.Collections.Generic.KeyNotFoundException(
-                $"MonsterModel '{Id}': no move with id '{moveId}'.");
+                $"MonsterModel '{Id}': no move with id '{moveId}'."
+            );
         }
         return move;
     }
@@ -265,14 +278,19 @@ public abstract class MonsterModel : IMonsterModel
     /// <param name="currentMoveId">The move just executed.</param>
     /// <param name="context">Creature snapshot for branch predicates.</param>
     /// <param name="runRng">Run-scope RNG fan-out (resolver picks the bucket).</param>
-    public virtual string AdvanceMoveId(string currentMoveId, MoveBranchContext context, RunRngSet runRng)
+    public virtual string AdvanceMoveId(
+        string currentMoveId,
+        MoveBranchContext context,
+        RunRngSet runRng
+    )
     {
         System.ArgumentException.ThrowIfNullOrWhiteSpace(currentMoveId);
         System.ArgumentNullException.ThrowIfNull(runRng);
         if (!_moves.TryGetValue(currentMoveId, out MonsterMove? move))
         {
             throw new System.Collections.Generic.KeyNotFoundException(
-                $"MonsterModel '{Id}': no move with id '{currentMoveId}'.");
+                $"MonsterModel '{Id}': no move with id '{currentMoveId}'."
+            );
         }
         return move.BranchResolver?.Resolve(context, runRng) ?? move.FollowUpMoveId;
     }

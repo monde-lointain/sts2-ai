@@ -10,12 +10,14 @@ namespace Sts2Headless.Domain.Content.Cards;
 public sealed class PreciseCut : CardModel
 {
     public const string CanonicalId = "PreciseCut";
+
     /// <summary>Base damage (field <c>_base</c> in upstream port).</summary>
     public const int BaseDamage = 13;
     public const int UpgradeDelta = 3;
     public const int PerCard = 2;
 
-    public PreciseCut() : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public PreciseCut()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

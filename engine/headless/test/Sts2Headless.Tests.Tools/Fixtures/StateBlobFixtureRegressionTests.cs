@@ -33,32 +33,45 @@ public class StateBlobFixtureRegressionTests
 
     [Theory]
     [MemberData(nameof(AllSlots))]
-    public void Fixture_bytes_reproduce_from_clean_Q1_boot(string dirName, StateBlobFixtureRecipe.Slot slot)
+    public void Fixture_bytes_reproduce_from_clean_Q1_boot(
+        string dirName,
+        StateBlobFixtureRecipe.Slot slot
+    )
     {
         string fixtureDir = FixtureLocator.StateBlobFixtureDir(slot.DirName);
         string blobPath = Path.Combine(fixtureDir, "state.blob");
-        Assert.True(File.Exists(blobPath),
-            $"[{dirName}] fixture missing on disk at {blobPath}; run the generator.");
+        Assert.True(
+            File.Exists(blobPath),
+            $"[{dirName}] fixture missing on disk at {blobPath}; run the generator."
+        );
 
         byte[] onDisk = File.ReadAllBytes(blobPath);
         byte[] reproduced = StateBlobFixtureRecipe.ProduceBootBlob(slot.Seed, slot.EncounterId);
 
         Assert.True(
             onDisk.AsSpan().SequenceEqual(reproduced),
-            $"[{dirName}] state.blob ({onDisk.Length}B on disk) != freshly-produced ({reproduced.Length}B); " +
-            $"Q1's M1 codec or its inputs drifted relative to the recorded fixture.");
+            $"[{dirName}] state.blob ({onDisk.Length}B on disk) != freshly-produced ({reproduced.Length}B); "
+                + $"Q1's M1 codec or its inputs drifted relative to the recorded fixture."
+        );
     }
 
     [Theory]
     [MemberData(nameof(AllSlots))]
-    public void Metadata_canonical_hash_matches_live_M5_CanonicalHash(string dirName, StateBlobFixtureRecipe.Slot slot)
+    public void Metadata_canonical_hash_matches_live_M5_CanonicalHash(
+        string dirName,
+        StateBlobFixtureRecipe.Slot slot
+    )
     {
         string fixtureDir = FixtureLocator.StateBlobFixtureDir(slot.DirName);
         string metadataPath = Path.Combine(fixtureDir, "metadata.json");
-        Assert.True(File.Exists(metadataPath),
-            $"[{dirName}] metadata.json missing at {metadataPath}; run the generator.");
+        Assert.True(
+            File.Exists(metadataPath),
+            $"[{dirName}] metadata.json missing at {metadataPath}; run the generator."
+        );
 
-        StateBlobFixtureRecipe.Metadata meta = StateBlobFixtureRecipe.ParseMetadata(File.ReadAllText(metadataPath));
+        StateBlobFixtureRecipe.Metadata meta = StateBlobFixtureRecipe.ParseMetadata(
+            File.ReadAllText(metadataPath)
+        );
         byte[] reproduced = StateBlobFixtureRecipe.ProduceBootBlob(slot.Seed, slot.EncounterId);
         string liveHash = CanonicalHash.Sha256Hex(reproduced);
 

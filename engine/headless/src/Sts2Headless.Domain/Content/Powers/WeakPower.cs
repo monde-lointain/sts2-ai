@@ -16,5 +16,6 @@ public sealed class WeakPower : PowerModel
     /// </summary>
     public const decimal DamageDecrease = 0.75m;
 
-    public WeakPower() : base(PowerIds.Weak, PowerType.Debuff, PowerStackType.Counter) { }
+    public WeakPower()
+        : base(PowerIds.Weak, PowerType.Debuff, PowerStackType.Counter) { }
 }

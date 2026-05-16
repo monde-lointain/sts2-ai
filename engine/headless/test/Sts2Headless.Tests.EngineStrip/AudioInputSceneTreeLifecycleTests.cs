@@ -19,9 +19,18 @@ public class AudioStubsTests
         player.Play(fromPosition: 1.5f);
         player.Stop();
 
-        Assert.Contains(capture.Hits, h => h.Type == nameof(AudioStreamPlayer) && h.Member == ".ctor");
-        Assert.Contains(capture.Hits, h => h.Type == nameof(AudioStreamPlayer) && h.Member == nameof(AudioStreamPlayer.Play));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(AudioStreamPlayer) && h.Member == nameof(AudioStreamPlayer.Stop));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(AudioStreamPlayer) && h.Member == ".ctor"
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(AudioStreamPlayer) && h.Member == nameof(AudioStreamPlayer.Play)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(AudioStreamPlayer) && h.Member == nameof(AudioStreamPlayer.Stop)
+        );
         Assert.Contains(StubCategory.Audio, capture.Categories);
     }
 }
@@ -72,7 +81,10 @@ public class SceneTreeStubsTests
         var awaiter = obj.ToSignal(obj, SceneTree.SignalName.ProcessFrame);
         Assert.True(awaiter.IsCompleted);
         await awaiter; // must not deadlock under single-threaded sync context
-        Assert.Contains(capture.Hits, h => h.Type == nameof(GodotObject) && h.Member == nameof(GodotObject.ToSignal));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(GodotObject) && h.Member == nameof(GodotObject.ToSignal)
+        );
     }
 
     [Fact]
@@ -83,7 +95,10 @@ public class SceneTreeStubsTests
         var timer = tree.CreateTimer(1.5d);
         Assert.NotNull(timer);
         Assert.Equal(new StringName("timeout"), SceneTreeTimer.SignalName.Timeout);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(SceneTree) && h.Member == nameof(SceneTree.CreateTimer));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(SceneTree) && h.Member == nameof(SceneTree.CreateTimer)
+        );
         Assert.Contains(StubCategory.SceneTree, capture.Categories);
     }
 
@@ -103,7 +118,10 @@ public class SceneTreeStubsTests
         using var capture = StubRegistry.Capture();
         var tree = (SceneTree)Engine.GetMainLoop();
         await tree.ToSignal(tree, SceneTree.SignalName.ProcessFrame);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Engine) && h.Member == nameof(Engine.GetMainLoop));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Engine) && h.Member == nameof(Engine.GetMainLoop)
+        );
     }
 }
 
@@ -119,9 +137,12 @@ public class LifecycleStubsTests
         var a = Engine.GetMainLoop();
         var b = Engine.GetMainLoop();
         Assert.NotNull(a);
-        Assert.Same(a, b);  // singleton
-        Assert.IsType<SceneTree>(a);  // cast target upstream uses
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Engine) && h.Member == nameof(Engine.GetMainLoop));
+        Assert.Same(a, b); // singleton
+        Assert.IsType<SceneTree>(a); // cast target upstream uses
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Engine) && h.Member == nameof(Engine.GetMainLoop)
+        );
         Assert.Contains(StubCategory.Lifecycle, capture.Categories);
     }
 

@@ -10,15 +10,24 @@ namespace Sts2Headless.Tests.Host;
 
 public sealed class CompositionRootTests
 {
-    private static CliArgs MinimalArgs() => CliArgs.Parse(new[]
-    {
-        "--seed", "42",
-        "--character", "silent",
-        "--deck", "starter",
-        "--relics", "ring_of_the_snake",
-        "--encounter", "cultists_normal",
-        "--ascension", "0",
-    });
+    private static CliArgs MinimalArgs() =>
+        CliArgs.Parse(
+            new[]
+            {
+                "--seed",
+                "42",
+                "--character",
+                "silent",
+                "--deck",
+                "starter",
+                "--relics",
+                "ring_of_the_snake",
+                "--encounter",
+                "cultists_normal",
+                "--ascension",
+                "0",
+            }
+        );
 
     [Fact]
     public void Build_returns_wired_bundle_with_populated_catalogs()
@@ -62,13 +71,13 @@ public sealed class CompositionRootTests
         var bundle = CompositionRoot.Build(MinimalArgs());
         // After Build: deck is shuffled into DrawPile, then HandDrawSize cards
         // are drawn into HandPile. DrawPile + HandPile == initial deck.
-        int totalDeck = bundle.Context.State.DrawPile.Cards.Count
-                      + bundle.Context.State.HandPile.Cards.Count;
+        int totalDeck =
+            bundle.Context.State.DrawPile.Cards.Count + bundle.Context.State.HandPile.Cards.Count;
         Assert.Equal(12, totalDeck);
 
         // Composition: 5 Strike + 5 Defend + 1 Neutralize + 1 Survivor.
-        var allCards = bundle.Context.State.DrawPile.Cards
-            .Concat(bundle.Context.State.HandPile.Cards)
+        var allCards = bundle
+            .Context.State.DrawPile.Cards.Concat(bundle.Context.State.HandPile.Cards)
             .GroupBy(c => c.ModelId)
             .ToDictionary(g => g.Key, g => g.Count());
         Assert.Equal(5, allCards[StrikeSilent.CanonicalId]);
@@ -124,10 +133,12 @@ public sealed class CompositionRootTests
         // Same seed → same shuffle → same draw pile order.
         Assert.Equal(
             bundle1.Context.State.DrawPile.Cards.Select(c => c.InstanceId),
-            bundle2.Context.State.DrawPile.Cards.Select(c => c.InstanceId));
+            bundle2.Context.State.DrawPile.Cards.Select(c => c.InstanceId)
+        );
         Assert.Equal(
             bundle1.Context.State.HandPile.Cards.Select(c => c.InstanceId),
-            bundle2.Context.State.HandPile.Cards.Select(c => c.InstanceId));
+            bundle2.Context.State.HandPile.Cards.Select(c => c.InstanceId)
+        );
     }
 
     /// <summary>

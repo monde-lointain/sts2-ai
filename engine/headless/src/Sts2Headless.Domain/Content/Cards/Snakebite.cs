@@ -15,7 +15,8 @@ public sealed class Snakebite : CardModel
     public const int UpgradeDelta = 3;
     public int Poison => BasePoison;
 
-    public Snakebite() : base(CanonicalId, 2, CardType.Skill, CardRarity.Common, TargetType.AnyEnemy) { }
+    public Snakebite()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

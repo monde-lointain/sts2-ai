@@ -14,7 +14,8 @@ public sealed class Pinpoint : CardModel
     public const int UpgradeDelta = 4;
     public int Damage => BaseDamage;
 
-    public Pinpoint() : base(CanonicalId, 3, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Pinpoint()
+        : base(CanonicalId, 3, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

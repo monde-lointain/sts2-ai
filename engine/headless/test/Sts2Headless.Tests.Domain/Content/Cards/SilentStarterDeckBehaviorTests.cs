@@ -61,7 +61,8 @@ public sealed class SilentStarterDeckBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck),
             runRng,
-            clock);
+            clock
+        );
         return (ctx, CombatEngine.FirstEnemyId);
     }
 
@@ -75,7 +76,11 @@ public sealed class SilentStarterDeckBehaviorTests
         CardInstance? strike = null;
         foreach (CardInstance c in ctx.State.HandPile.Cards)
         {
-            if (c.ModelId == StrikeSilent.CanonicalId) { strike = c; break; }
+            if (c.ModelId == StrikeSilent.CanonicalId)
+            {
+                strike = c;
+                break;
+            }
         }
         Assert.NotNull(strike);
         Creature beforeEnemy = ctx.State.GetEnemy(enemyId);
@@ -95,7 +100,11 @@ public sealed class SilentStarterDeckBehaviorTests
         CardInstance? defend = null;
         foreach (CardInstance c in ctx.State.HandPile.Cards)
         {
-            if (c.ModelId == DefendSilent.CanonicalId) { defend = c; break; }
+            if (c.ModelId == DefendSilent.CanonicalId)
+            {
+                defend = c;
+                break;
+            }
         }
         Assert.NotNull(defend);
         int blockBefore = ctx.State.Player.Block;
@@ -115,9 +124,14 @@ public sealed class SilentStarterDeckBehaviorTests
             CardInstance? neut = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Neutralize.CanonicalId) { neut = c; break; }
+                if (c.ModelId == Neutralize.CanonicalId)
+                {
+                    neut = c;
+                    break;
+                }
             }
-            if (neut is null) continue;
+            if (neut is null)
+                continue;
             Creature beforeEnemy = ctx.State.GetEnemy(enemyId);
             int hpBefore = beforeEnemy.CurrentHp;
 
@@ -129,7 +143,11 @@ public sealed class SilentStarterDeckBehaviorTests
             bool hasWeak = false;
             foreach (PowerInstance p in afterEnemy.Powers)
             {
-                if (p.ModelId == PowerIds.Weak && p.Stacks == 1) { hasWeak = true; break; }
+                if (p.ModelId == PowerIds.Weak && p.Stacks == 1)
+                {
+                    hasWeak = true;
+                    break;
+                }
             }
             Assert.True(hasWeak, "Neutralize must apply 1 Weak to its target.");
             return;
@@ -146,9 +164,14 @@ public sealed class SilentStarterDeckBehaviorTests
             CardInstance? sur = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
-                if (c.ModelId == Survivor.CanonicalId) { sur = c; break; }
+                if (c.ModelId == Survivor.CanonicalId)
+                {
+                    sur = c;
+                    break;
+                }
             }
-            if (sur is null) continue;
+            if (sur is null)
+                continue;
             int blockBefore = ctx.State.Player.Block;
             int handSizeBefore = ctx.State.HandPile.Cards.Count;
 

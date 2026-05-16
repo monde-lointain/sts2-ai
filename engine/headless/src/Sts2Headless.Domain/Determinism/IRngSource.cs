@@ -38,7 +38,12 @@ public interface IRngSource
     double NextDouble(double min, double max);
 
     float NextGaussianFloat(float mean = 0f, float stdDev = 1f, float min = 0f, float max = 1f);
-    double NextGaussianDouble(double mean = 0.0, double stdDev = 1.0, double min = 0.0, double max = 1.0);
+    double NextGaussianDouble(
+        double mean = 0.0,
+        double stdDev = 1.0,
+        double min = 0.0,
+        double max = 1.0
+    );
 
     /// <summary>Pinned upstream quirk: does NOT advance <see cref="Counter"/>.</summary>
     int NextGaussianInt(int mean, int stdDev, int min, int max);

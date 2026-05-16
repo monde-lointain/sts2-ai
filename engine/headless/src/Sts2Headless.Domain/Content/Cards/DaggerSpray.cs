@@ -15,7 +15,8 @@ public sealed class DaggerSpray : CardModel
     public int Damage => BaseDamage;
     public const int Hits = 2;
 
-    public DaggerSpray() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AllEnemies) { }
+    public DaggerSpray()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

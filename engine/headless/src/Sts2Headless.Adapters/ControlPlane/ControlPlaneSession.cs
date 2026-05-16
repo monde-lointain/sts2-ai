@@ -69,7 +69,8 @@ public sealed class ControlPlaneSession
         RunRngSet runRng,
         PlayerRngSet playerRng,
         TokenMap tokens,
-        ManifestStamp stamp)
+        ManifestStamp stamp
+    )
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(rng);
@@ -112,7 +113,16 @@ public sealed class ControlPlaneSession
         // and routes `ctx.Rng` to `.Shuffle` internally. The session's RunRng
         // is the source of truth; the legacy `_rng` field is kept as the
         // back-compat handle that mirrors `RunRng.Shuffle`.
-        _context = new CombatContext(state, RunRng, Clock, Cards, Relics, Powers, Monsters, Encounters);
+        _context = new CombatContext(
+            state,
+            RunRng,
+            Clock,
+            Cards,
+            Relics,
+            Powers,
+            Monsters,
+            Encounters
+        );
     }
 
     /// <summary>
@@ -149,7 +159,15 @@ public sealed class ControlPlaneSession
         RunRng = newRunRng;
         _rng = newRunRng.Shuffle;
         _context = new CombatContext(
-            _context.State, RunRng, Clock, Cards, Relics, Powers, Monsters, Encounters);
+            _context.State,
+            RunRng,
+            Clock,
+            Cards,
+            Relics,
+            Powers,
+            Monsters,
+            Encounters
+        );
     }
 
     /// <summary>
@@ -170,6 +188,14 @@ public sealed class ControlPlaneSession
         ArgumentNullException.ThrowIfNull(newRng);
         _rng = newRng;
         _context = new CombatContext(
-            _context.State, RunRng, Clock, Cards, Relics, Powers, Monsters, Encounters);
+            _context.State,
+            RunRng,
+            Clock,
+            Cards,
+            Relics,
+            Powers,
+            Monsters,
+            Encounters
+        );
     }
 }

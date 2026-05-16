@@ -60,15 +60,20 @@ public sealed record CliArgs(
     string? ScriptPath,
     string? OutPath,
     string? ProbeOutPath,
-    string? RegistryPath)
+    string? RegistryPath
+)
 {
     /// <summary>The single canonical usage block. Emitted on parse failure and on <c>--help</c>.</summary>
     public const string UsageText =
-        "Usage: sts2-headless --seed <uint> --character <name> --deck <name>" + "\n" +
-        "                    --relics <id>[,<id>...] --encounter <id>" + "\n" +
-        "                    --ascension <int>" + "\n" +
-        "                    [--metrics-port <port>] [--script <path>] [--out <path>]" + "\n" +
-        "                    [--probe-out <path>] [--registry <path>]";
+        "Usage: sts2-headless --seed <uint> --character <name> --deck <name>"
+        + "\n"
+        + "                    --relics <id>[,<id>...] --encounter <id>"
+        + "\n"
+        + "                    --ascension <int>"
+        + "\n"
+        + "                    [--metrics-port <port>] [--script <path>] [--out <path>]"
+        + "\n"
+        + "                    [--probe-out <path>] [--registry <path>]";
 
     /// <summary>Parse a CLI argument vector. Throws <see cref="CliParseException"/> on any malformed input.</summary>
     public static CliArgs Parse(string[] args)
@@ -113,7 +118,8 @@ public sealed record CliArgs(
 
             string TakeValue(string forFlag)
             {
-                if (inlineValue is not null) return inlineValue;
+                if (inlineValue is not null)
+                    return inlineValue;
                 if (i + 1 >= args.Length)
                 {
                     throw new CliParseException($"missing value for {forFlag}.");
@@ -124,15 +130,24 @@ public sealed record CliArgs(
             switch (flag)
             {
                 case "--seed":
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !uint.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out uint parsed
+                        )
+                    )
                     {
-                        string v = TakeValue(flag);
-                        if (!uint.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint parsed))
-                        {
-                            throw new CliParseException($"--seed: expected unsigned integer, got '{v}'.");
-                        }
-                        seed = parsed;
-                        break;
+                        throw new CliParseException(
+                            $"--seed: expected unsigned integer, got '{v}'."
+                        );
                     }
+                    seed = parsed;
+                    break;
+                }
                 case "--character":
                     character = TakeValue(flag);
                     break;
@@ -140,35 +155,52 @@ public sealed record CliArgs(
                     deck = TakeValue(flag);
                     break;
                 case "--relics":
-                    {
-                        string v = TakeValue(flag);
-                        relics = ParseCommaList(v, flag);
-                        break;
-                    }
+                {
+                    string v = TakeValue(flag);
+                    relics = ParseCommaList(v, flag);
+                    break;
+                }
                 case "--encounter":
                     encounter = TakeValue(flag);
                     break;
                 case "--ascension":
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
+                        )
+                    )
                     {
-                        string v = TakeValue(flag);
-                        if (!int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
-                        {
-                            throw new CliParseException($"--ascension: expected integer, got '{v}'.");
-                        }
-                        ascension = parsed;
-                        break;
+                        throw new CliParseException($"--ascension: expected integer, got '{v}'.");
                     }
+                    ascension = parsed;
+                    break;
+                }
                 case "--metrics-port":
+                {
+                    string v = TakeValue(flag);
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
+                        )
+                        || parsed < 1
+                        || parsed > 65535
+                    )
                     {
-                        string v = TakeValue(flag);
-                        if (!int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed)
-                            || parsed < 1 || parsed > 65535)
-                        {
-                            throw new CliParseException($"--metrics-port: expected 1..65535, got '{v}'.");
-                        }
-                        metricsPort = parsed;
-                        break;
+                        throw new CliParseException(
+                            $"--metrics-port: expected 1..65535, got '{v}'."
+                        );
                     }
+                    metricsPort = parsed;
+                    break;
+                }
                 case "--script":
                     scriptPath = TakeValue(flag);
                     break;
@@ -191,12 +223,18 @@ public sealed record CliArgs(
             i++;
         }
 
-        if (seed is null) throw new CliParseException("--seed is required.");
-        if (character is null) throw new CliParseException("--character is required.");
-        if (deck is null) throw new CliParseException("--deck is required.");
-        if (relics is null) throw new CliParseException("--relics is required.");
-        if (encounter is null) throw new CliParseException("--encounter is required.");
-        if (ascension is null) throw new CliParseException("--ascension is required.");
+        if (seed is null)
+            throw new CliParseException("--seed is required.");
+        if (character is null)
+            throw new CliParseException("--character is required.");
+        if (deck is null)
+            throw new CliParseException("--deck is required.");
+        if (relics is null)
+            throw new CliParseException("--relics is required.");
+        if (encounter is null)
+            throw new CliParseException("--encounter is required.");
+        if (ascension is null)
+            throw new CliParseException("--ascension is required.");
 
         return new CliArgs(
             Seed: seed.Value,
@@ -209,7 +247,8 @@ public sealed record CliArgs(
             ScriptPath: scriptPath,
             OutPath: outPath,
             ProbeOutPath: probeOutPath,
-            RegistryPath: registryPath);
+            RegistryPath: registryPath
+        );
     }
 
     private static List<string> ParseCommaList(string raw, string flag)
@@ -247,6 +286,9 @@ public sealed class CliParseException : Exception
 {
     public bool IsHelp { get; init; }
 
-    public CliParseException(string message) : base(message) { }
-    public CliParseException(string message, Exception inner) : base(message, inner) { }
+    public CliParseException(string message)
+        : base(message) { }
+
+    public CliParseException(string message, Exception inner)
+        : base(message, inner) { }
 }

@@ -18,7 +18,8 @@ public sealed class Suppress : CardModel
     public int Damage => BaseDamage;
     public int Weak => BaseWeak;
 
-    public Suppress() : base(CanonicalId, 0, CardType.Attack, CardRarity.Ancient, TargetType.AnyEnemy) { }
+    public Suppress()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Ancient, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

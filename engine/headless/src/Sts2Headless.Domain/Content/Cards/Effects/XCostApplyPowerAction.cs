@@ -14,7 +14,8 @@ public sealed record XCostApplyPowerAction(
     string PowerId,
     int SignMultiplier,
     string? Target,
-    int Bonus = 0) : IAction
+    int Bonus = 0
+) : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

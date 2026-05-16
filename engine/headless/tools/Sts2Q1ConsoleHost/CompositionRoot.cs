@@ -48,12 +48,16 @@ public static class CompositionRoot
         ArgumentNullException.ThrowIfNull(stdout);
 
         string dllAbsolutePath = Path.GetFullPath(cli.Sts2DllPath);
-        string steamDir = Path.GetDirectoryName(dllAbsolutePath)
+        string steamDir =
+            Path.GetDirectoryName(dllAbsolutePath)
             ?? throw new CompositionRootException(
-                $"--sts2-dll has no parent directory: {cli.Sts2DllPath}");
+                $"--sts2-dll has no parent directory: {cli.Sts2DllPath}"
+            );
 
-        AssemblyLoadContext loadContext = new($"sts2-q1-{cli.Seed}-{cli.EncounterId}",
-            isCollectible: false);
+        AssemblyLoadContext loadContext = new(
+            $"sts2-q1-{cli.Seed}-{cli.EncounterId}",
+            isCollectible: false
+        );
         loadContext.Resolving += (ctx, name) => ResolveFromSteamDir(ctx, name, steamDir);
 
         Assembly sts2;
@@ -64,7 +68,9 @@ public static class CompositionRoot
         catch (Exception ex)
         {
             throw new CompositionRootException(
-                $"Assembly.LoadFromAssemblyPath('{dllAbsolutePath}') failed: {ex.GetType().Name}: {ex.Message}", ex);
+                $"Assembly.LoadFromAssemblyPath('{dllAbsolutePath}') failed: {ex.GetType().Name}: {ex.Message}",
+                ex
+            );
         }
 
         Type combatManagerType = ResolveType(sts2, "MegaCrit.Sts2.Core.Combat.CombatManager");
@@ -76,7 +82,8 @@ public static class CompositionRoot
             Sts2Assembly: sts2,
             CombatManagerType: combatManagerType,
             PlayerType: playerType,
-            SteamDir: steamDir);
+            SteamDir: steamDir
+        );
     }
 
     /// <summary>
@@ -86,11 +93,16 @@ public static class CompositionRoot
     /// <c>&lt;assembly-name&gt;.dll</c> probe so MonoMod / Sentry / SmartFormat
     /// also resolve.
     /// </summary>
-    private static Assembly? ResolveFromSteamDir(AssemblyLoadContext context, AssemblyName name, string steamDir)
+    private static Assembly? ResolveFromSteamDir(
+        AssemblyLoadContext context,
+        AssemblyName name,
+        string steamDir
+    )
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(name);
-        if (name.Name is null) return null;
+        if (name.Name is null)
+            return null;
         string candidate = Path.Combine(steamDir, name.Name + ".dll");
         if (File.Exists(candidate))
         {
@@ -113,22 +125,21 @@ public static class CompositionRoot
         if (t is null)
         {
             throw new CompositionRootException(
-                $"upstream type '{fullName}' not found in sts2.dll at '{sts2.Location}'.");
+                $"upstream type '{fullName}' not found in sts2.dll at '{sts2.Location}'."
+            );
         }
         return t;
     }
 
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        WriteIndented = false,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = false };
 
     private static void EmitUpstreamBound(
         TextWriter stdout,
         string sts2DllPath,
         Assembly sts2,
         Type combatManagerType,
-        Type playerType)
+        Type playerType
+    )
     {
         var doc = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -153,7 +164,8 @@ public sealed record UpstreamBinding(
     Assembly Sts2Assembly,
     Type CombatManagerType,
     Type PlayerType,
-    string SteamDir);
+    string SteamDir
+);
 
 /// <summary>
 /// Thrown when the composition root fails to bind upstream. Caller (the
@@ -162,6 +174,9 @@ public sealed record UpstreamBinding(
 /// </summary>
 public sealed class CompositionRootException : Exception
 {
-    public CompositionRootException(string message) : base(message) { }
-    public CompositionRootException(string message, Exception inner) : base(message, inner) { }
+    public CompositionRootException(string message)
+        : base(message) { }
+
+    public CompositionRootException(string message, Exception inner)
+        : base(message, inner) { }
 }

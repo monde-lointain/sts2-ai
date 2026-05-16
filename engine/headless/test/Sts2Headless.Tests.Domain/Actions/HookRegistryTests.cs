@@ -19,8 +19,8 @@ namespace Sts2Headless.Tests.Domain.Actions;
 
 public class HookRegistryTests
 {
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     private static HookContext NewHookCtx(ExecutionContext ctx) => new(ctx);
 
@@ -37,9 +37,7 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         int calls = 0;
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => calls++,
-            priority: 0));
+        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => calls++, priority: 0));
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(1, calls);
     }
@@ -51,9 +49,10 @@ public class HookRegistryTests
         var ctx = NewCtx();
         var hookCtx = NewHookCtx(ctx);
         HookContext? captured = null;
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => captured = h,
-            priority: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => captured = h, priority: 0)
+        );
         reg.Fire(HookType.AfterCardPlayed, hookCtx);
         Assert.NotNull(captured);
         Assert.Same(ctx, captured!.Value.Execution);
@@ -65,9 +64,18 @@ public class HookRegistryTests
         var reg = new HookRegistry();
         var log = new List<string>();
         // Subscribe in low-then-high order; priority must override.
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("low"), priority: 1));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("high"), priority: 10));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("mid"), priority: 5));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("low"), priority: 1)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("high"), priority: 10)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("mid"), priority: 5)
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "high", "mid", "low" }, log);
     }
@@ -77,9 +85,18 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("a"), priority: 0));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("b"), priority: 0));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("c"), priority: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("a"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("b"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("c"), priority: 0)
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "a", "b", "c" }, log);
     }
@@ -90,10 +107,26 @@ public class HookRegistryTests
         // When priority + ownerCreatureId match, sort by ownerContentId.
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("b"), priority: 0, ownerCreatureId: 1, ownerContentId: 200, sourcePosition: 0));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("a"), priority: 0, ownerCreatureId: 1, ownerContentId: 100, sourcePosition: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) => log.Add("b"),
+                priority: 0,
+                ownerCreatureId: 1,
+                ownerContentId: 200,
+                sourcePosition: 0
+            )
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) => log.Add("a"),
+                priority: 0,
+                ownerCreatureId: 1,
+                ownerContentId: 100,
+                sourcePosition: 0
+            )
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "a", "b" }, log);
     }
@@ -103,10 +136,26 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("second"), priority: 0, ownerCreatureId: 1, ownerContentId: 1, sourcePosition: 7));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("first"), priority: 0, ownerCreatureId: 1, ownerContentId: 1, sourcePosition: 3));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) => log.Add("second"),
+                priority: 0,
+                ownerCreatureId: 1,
+                ownerContentId: 1,
+                sourcePosition: 7
+            )
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) => log.Add("first"),
+                priority: 0,
+                ownerCreatureId: 1,
+                ownerContentId: 1,
+                sourcePosition: 3
+            )
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "first", "second" }, log);
     }
@@ -117,10 +166,14 @@ public class HookRegistryTests
         // Owner-creature-id is the first tiebreaker after priority.
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("creature-2"), priority: 0, ownerCreatureId: 2));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => log.Add("creature-1"), priority: 0, ownerCreatureId: 1));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("creature-2"), priority: 0, ownerCreatureId: 2)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("creature-1"), priority: 0, ownerCreatureId: 1)
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "creature-1", "creature-2" }, log);
     }
@@ -130,8 +183,14 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         var log = new List<string>();
-        var h1 = reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("a"), priority: 0));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("b"), priority: 0));
+        var h1 = reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("a"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("b"), priority: 0)
+        );
         reg.Unsubscribe(h1);
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "b" }, log);
@@ -142,7 +201,10 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         var log = new List<string>();
-        var h1 = reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("a"), priority: 0));
+        var h1 = reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("a"), priority: 0)
+        );
         reg.Unsubscribe(h1);
         // Second unsubscribe with the same (now stale) handle: no-op, no throw.
         reg.Unsubscribe(h1);
@@ -158,7 +220,10 @@ public class HookRegistryTests
         // must not throw and must not affect any existing subscription.
         reg.Unsubscribe(default);
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("a"), priority: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("a"), priority: 0)
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "a" }, log);
     }
@@ -183,8 +248,14 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((h) => log.Add("played"), priority: 0));
-        reg.Subscribe(HookType.AfterDamageReceived, new HookRegistration((h) => log.Add("damaged"), priority: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration((h) => log.Add("played"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.AfterDamageReceived,
+            new HookRegistration((h) => log.Add("damaged"), priority: 0)
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "played" }, log);
     }
@@ -194,8 +265,9 @@ public class HookRegistryTests
     {
         var reg = new HookRegistry();
         // The struct itself can't be null, but the inner handler can.
-        Assert.Throws<System.ArgumentNullException>(()
-            => reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(null!, priority: 0)));
+        Assert.Throws<System.ArgumentNullException>(() =>
+            reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(null!, priority: 0))
+        );
     }
 
     [Fact]
@@ -214,14 +286,23 @@ public class HookRegistryTests
         // FUTURE triggers, not the in-progress one."
         var reg = new HookRegistry();
         var log = new List<string>();
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) =>
-            {
-                log.Add("first");
-                reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-                    (_) => log.Add("second-added-during-fire"), priority: 0));
-            },
-            priority: 0));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) =>
+                {
+                    log.Add("first");
+                    reg.Subscribe(
+                        HookType.AfterCardPlayed,
+                        new HookRegistration(
+                            (_) => log.Add("second-added-during-fire"),
+                            priority: 0
+                        )
+                    );
+                },
+                priority: 0
+            )
+        );
         reg.Fire(HookType.AfterCardPlayed, NewHookCtx(NewCtx()));
         Assert.Equal(new[] { "first" }, log);
 

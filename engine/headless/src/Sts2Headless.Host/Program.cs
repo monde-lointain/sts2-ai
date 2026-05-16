@@ -44,7 +44,12 @@ public static class Program
     /// Test-friendly main: lets the caller swap stdout/stderr writers and
     /// disable process-level signal attachment. Returns the exit code.
     /// </summary>
-    public static int Run(string[] args, TextWriter stdout, TextWriter stderr, bool attachProcessSignals)
+    public static int Run(
+        string[] args,
+        TextWriter stdout,
+        TextWriter stderr,
+        bool attachProcessSignals
+    )
     {
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(stdout);
@@ -103,7 +108,10 @@ public static class Program
         if (cli.MetricsPort.HasValue)
         {
             metricsServer = new MetricsHttpServer(metrics, cli.MetricsPort.Value);
-            try { metricsServer.Start(); }
+            try
+            {
+                metricsServer.Start();
+            }
             catch (Exception ex)
             {
                 stderr.WriteLine($"sts2-headless: metrics endpoint failed to start: {ex.Message}");
@@ -146,7 +154,9 @@ public static class Program
             }
             catch (Exception ex)
             {
-                stderr.WriteLine($"sts2-headless: failed to open --probe-out '{cli.ProbeOutPath}': {ex.Message}");
+                stderr.WriteLine(
+                    $"sts2-headless: failed to open --probe-out '{cli.ProbeOutPath}': {ex.Message}"
+                );
                 metricsServer?.Dispose();
                 return ExitError;
             }
@@ -156,7 +166,15 @@ public static class Program
         MainLoop.RunResult result;
         try
         {
-            result = MainLoop.Run(bundle.Context, bundle.Cards, provider, logger, metrics, shutdown.Token, probe);
+            result = MainLoop.Run(
+                bundle.Context,
+                bundle.Cards,
+                provider,
+                logger,
+                metrics,
+                shutdown.Token,
+                probe
+            );
         }
         catch (ScriptParseException spex)
         {
@@ -197,7 +215,8 @@ public static class Program
             _ => "unknown",
         };
         stdout.WriteLine(
-            $"{outcomeLabel} | turns={result.TurnsPlayed} | final_state_sha256={finalHash}");
+            $"{outcomeLabel} | turns={result.TurnsPlayed} | final_state_sha256={finalHash}"
+        );
 
         // --- Shutdown -----------------------------------------------------
         probe?.Dispose();
@@ -218,7 +237,8 @@ public static class Program
     private static byte[] BuildStateBlob(
         CombatState state,
         CompositionRoot.CompositionRootBundle bundle,
-        byte[]? registryShaBytes)
+        byte[]? registryShaBytes
+    )
     {
         // Token map: register the catalog ids so the codec's Tokens section
         // is non-empty. Smoke set: a stable, sorted union of all ids in the
@@ -240,13 +260,14 @@ public static class Program
         // position for state_blob.proto/registry_sha. Otherwise fall back to
         // the legacy catalog-id-derived hash so callers without a registry
         // (e.g. the S8-T7 golden test) keep their stable hash.
-        byte[] contentHash = registryShaBytes ?? ManifestStamp.ContentHashFromIds(
-            EnumerateAllCatalogIds(bundle));
+        byte[] contentHash =
+            registryShaBytes ?? ManifestStamp.ContentHashFromIds(EnumerateAllCatalogIds(bundle));
 
         var stamp = new ManifestStamp(
             GitSha: "00000000",
             BuildId: "S8-T7",
-            ContentHash: contentHash);
+            ContentHash: contentHash
+        );
 
         return StateCodec.Serialize(state, runRng, playerRng, tokens, stamp);
     }
@@ -254,7 +275,8 @@ public static class Program
     private static string ComputeFinalStateSha(
         CombatState state,
         CompositionRoot.CompositionRootBundle bundle,
-        byte[]? registryShaBytes)
+        byte[]? registryShaBytes
+    )
     {
         byte[] blob = BuildStateBlob(state, bundle, registryShaBytes);
         Span<byte> hash = stackalloc byte[32];
@@ -262,12 +284,19 @@ public static class Program
         return Convert.ToHexString(hash).ToLower(CultureInfo.InvariantCulture);
     }
 
-    private static IEnumerable<string> EnumerateAllCatalogIds(CompositionRoot.CompositionRootBundle bundle)
+    private static IEnumerable<string> EnumerateAllCatalogIds(
+        CompositionRoot.CompositionRootBundle bundle
+    )
     {
-        foreach (string id in bundle.Cards.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Relics.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Powers.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Monsters.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Encounters.EnumerateIds()) yield return id;
+        foreach (string id in bundle.Cards.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Relics.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Powers.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Monsters.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Encounters.EnumerateIds())
+            yield return id;
     }
 }

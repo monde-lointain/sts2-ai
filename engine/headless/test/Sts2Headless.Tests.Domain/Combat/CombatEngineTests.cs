@@ -22,7 +22,8 @@ public sealed class CombatEngineTests
         IReadOnlyList<string>? relicIds = null,
         IReadOnlyList<CardInstance>? deck = null,
         uint seed = 42u,
-        int initialPlayerHp = 70)
+        int initialPlayerHp = 70
+    )
     {
         var cards = SmokeContent.BuildCardCatalog();
         var relics = SmokeContent.BuildRelicCatalog();
@@ -41,16 +42,14 @@ public sealed class CombatEngineTests
         relicIds ??= new[] { RingOfTheSnake.CanonicalId };
 
         var bootstrap = new CombatBootstrap(cards, relics, powers, monsters, encounters);
-        var playerSpec = new PlayerSpec(
-            RelicIds: relicIds,
-            Deck: deck,
-            InitialHp: initialPlayerHp);
+        var playerSpec = new PlayerSpec(RelicIds: relicIds, Deck: deck, InitialHp: initialPlayerHp);
         return CombatEngine.StartCombat(
             (IEncounterModel)encounters.Get(CultistsNormal.CanonicalId),
             bootstrap,
             playerSpec,
             runRng,
-            clock);
+            clock
+        );
     }
 
     private static IReadOnlyList<CardInstance> BuildBasicDeck()
@@ -121,7 +120,8 @@ public sealed class CombatEngineTests
     {
         var ctx = BootSilentVsCultists(
             relicIds: new[] { BloodVial.CanonicalId },
-            initialPlayerHp: 65);
+            initialPlayerHp: 65
+        );
         Assert.Equal(67, ctx.State.Player.CurrentHp);
     }
 
@@ -192,7 +192,8 @@ public sealed class CombatEngineTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: BuildBasicDeck()),
             runRng,
-            clock);
+            clock
+        );
 
         int nicheAfter = runRng.GetCounter(RunRngType.Niche);
         int shuffleAfter = runRng.GetCounter(RunRngType.Shuffle);
@@ -203,10 +204,14 @@ public sealed class CombatEngineTests
         // OR NextItem, and either advances the Niche counter; what we pin is
         // that the Niche bucket DID advance and the Shuffle bucket DID NOT
         // (i.e. they're independent streams).
-        Assert.True(nicheAfter - nicheBefore >= 2,
-            $"Niche bucket should advance for HP rolls; advanced by {nicheAfter - nicheBefore}.");
-        Assert.True(shuffleAfter - shuffleBefore >= 1,
-            $"Shuffle bucket should advance for deck shuffle; advanced by {shuffleAfter - shuffleBefore}.");
+        Assert.True(
+            nicheAfter - nicheBefore >= 2,
+            $"Niche bucket should advance for HP rolls; advanced by {nicheAfter - nicheBefore}."
+        );
+        Assert.True(
+            shuffleAfter - shuffleBefore >= 1,
+            $"Shuffle bucket should advance for deck shuffle; advanced by {shuffleAfter - shuffleBefore}."
+        );
     }
 
     /// <summary>
@@ -232,7 +237,8 @@ public sealed class CombatEngineTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: BuildBasicDeck()),
             runRng,
-            clock);
+            clock
+        );
 
         Assert.Equal(2, ctx.State.Enemies.Count);
         Creature c1 = ctx.State.Enemies[0];
@@ -275,7 +281,8 @@ public sealed class CombatEngineTests
         var rng2 = new Rng(99u);
         Assert.Equal(
             egg1.RollUniqueInitialHp(rng1, new[] { 21 }),
-            egg2.RollUniqueInitialHp(rng2, new[] { 21 }));
+            egg2.RollUniqueInitialHp(rng2, new[] { 21 })
+        );
     }
 
     /// <summary>
@@ -391,7 +398,8 @@ public sealed class CombatEngineTests
         }
         Assert.Equal(
             a.State.HandPile.Cards.Select(c => c.InstanceId),
-            b.State.HandPile.Cards.Select(c => c.InstanceId));
+            b.State.HandPile.Cards.Select(c => c.InstanceId)
+        );
     }
 
     [Fact]
@@ -401,13 +409,15 @@ public sealed class CombatEngineTests
         var b = BootSilentVsCultists(seed: 2u);
         // Different seeds yield different draws or different enemy HP rolls.
         bool enemyHpDiffers =
-            a.State.Enemies[0].CurrentHp != b.State.Enemies[0].CurrentHp ||
-            a.State.Enemies[1].CurrentHp != b.State.Enemies[1].CurrentHp;
-        bool handOrderDiffers = !a.State.HandPile.Cards
-            .Select(c => c.InstanceId)
+            a.State.Enemies[0].CurrentHp != b.State.Enemies[0].CurrentHp
+            || a.State.Enemies[1].CurrentHp != b.State.Enemies[1].CurrentHp;
+        bool handOrderDiffers = !a
+            .State.HandPile.Cards.Select(c => c.InstanceId)
             .SequenceEqual(b.State.HandPile.Cards.Select(c => c.InstanceId));
-        Assert.True(enemyHpDiffers || handOrderDiffers,
-            "Two different seeds produced identical observable state; that's suspicious.");
+        Assert.True(
+            enemyHpDiffers || handOrderDiffers,
+            "Two different seeds produced identical observable state; that's suspicious."
+        );
     }
 
     // === PlayerPlayCard ===================================================
@@ -417,7 +427,9 @@ public sealed class CombatEngineTests
     {
         var ctx = BootSilentVsCultists();
         // Find a Strike in hand.
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         uint enemyId = ctx.State.Enemies[0].Id;
         int hpBefore = ctx.State.Enemies[0].CurrentHp;
 
@@ -431,7 +443,9 @@ public sealed class CombatEngineTests
     public void PlayerPlayCard_Defend_Gives_Block_To_Player()
     {
         var ctx = BootSilentVsCultists();
-        CardInstance defend = ctx.State.HandPile.Cards.First(c => c.ModelId == DefendSilent.CanonicalId);
+        CardInstance defend = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == DefendSilent.CanonicalId
+        );
         int blockBefore = ctx.State.Player.Block;
 
         CombatEngine.PlayerPlayCard(ctx, defend.InstanceId, targetEnemyId: null);
@@ -443,7 +457,9 @@ public sealed class CombatEngineTests
     public void PlayerPlayCard_Consumes_Energy()
     {
         var ctx = BootSilentVsCultists();
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         int energyBefore = ctx.State.Energy;
 
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, ctx.State.Enemies[0].Id);
@@ -455,7 +471,9 @@ public sealed class CombatEngineTests
     public void PlayerPlayCard_Moves_Card_To_Discard()
     {
         var ctx = BootSilentVsCultists();
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         int handBefore = ctx.State.HandPile.Count;
 
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, ctx.State.Enemies[0].Id);
@@ -470,7 +488,8 @@ public sealed class CombatEngineTests
     {
         var ctx = BootSilentVsCultists();
         Assert.Throws<InvalidOperationException>(() =>
-            CombatEngine.PlayerPlayCard(ctx, cardInstanceId: 9999u, targetEnemyId: 1u));
+            CombatEngine.PlayerPlayCard(ctx, cardInstanceId: 9999u, targetEnemyId: 1u)
+        );
     }
 
     [Fact]
@@ -479,16 +498,21 @@ public sealed class CombatEngineTests
         var ctx = BootSilentVsCultists();
         // Set energy to zero.
         ctx.SetState(ctx.State with { Energy = 0 });
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         Assert.Throws<InvalidOperationException>(() =>
-            CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, ctx.State.Enemies[0].Id));
+            CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, ctx.State.Enemies[0].Id)
+        );
     }
 
     [Fact]
     public void PlayerPlayCard_Strike_With_Vajra_Strength_Deals_Plus_One()
     {
         var ctx = BootSilentVsCultists(relicIds: new[] { Vajra.CanonicalId });
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         uint enemyId = ctx.State.Enemies[0].Id;
         int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
 

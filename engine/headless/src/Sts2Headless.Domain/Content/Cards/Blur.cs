@@ -15,7 +15,8 @@ public sealed class Blur : CardModel
     public int Block => BaseBlock;
     public const int BlurStacks = 1;
 
-    public Blur() : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public Blur()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

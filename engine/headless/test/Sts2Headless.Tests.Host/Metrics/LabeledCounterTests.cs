@@ -69,8 +69,9 @@ public sealed class LabeledCounterTests
     {
         var r = new PrometheusMetricsRegistry();
         r.Register("q1_test_total", PrometheusMetricsRegistry.MetricKind.Counter, "Test counter.");
-        Assert.Throws<ArgumentException>(
-            () => r.IncrementLabeledCounter("q1_test_total", "k", string.Empty, 1));
+        Assert.Throws<ArgumentException>(() =>
+            r.IncrementLabeledCounter("q1_test_total", "k", string.Empty, 1)
+        );
     }
 
     private static int CountOccurrences(string s, string needle)

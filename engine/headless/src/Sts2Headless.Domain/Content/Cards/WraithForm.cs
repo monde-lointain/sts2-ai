@@ -17,7 +17,8 @@ public sealed class WraithForm : CardModel
     public int Intangible => BaseIntangible;
     public const int WraithFormStacks = 1;
 
-    public WraithForm() : base(CanonicalId, 3, CardType.Power, CardRarity.Ancient, TargetType.Self) { }
+    public WraithForm()
+        : base(CanonicalId, 3, CardType.Power, CardRarity.Ancient, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

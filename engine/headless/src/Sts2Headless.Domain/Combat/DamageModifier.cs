@@ -18,7 +18,8 @@ public static class DamageModifier
     /// </summary>
     public static int Modify(CombatState state, uint sourceId, uint targetId, int raw)
     {
-        if (raw <= 0) return raw;
+        if (raw <= 0)
+            return raw;
 
         Creature source = state.GetCreature(sourceId);
         Creature target = state.GetCreature(targetId);

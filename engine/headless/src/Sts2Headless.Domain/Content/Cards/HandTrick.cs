@@ -14,7 +14,8 @@ public sealed class HandTrick : CardModel
     public const int UpgradeDelta = 3;
     public int Block => BaseBlock;
 
-    public HandTrick() : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public HandTrick()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

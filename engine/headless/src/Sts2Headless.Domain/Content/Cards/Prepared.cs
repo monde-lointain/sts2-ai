@@ -14,7 +14,8 @@ public sealed class Prepared : CardModel
     public const int UpgradeDelta = 1;
     public int Cards => BaseCards;
 
-    public Prepared() : base(CanonicalId, 0, CardType.Skill, CardRarity.Common, TargetType.Self) { }
+    public Prepared()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

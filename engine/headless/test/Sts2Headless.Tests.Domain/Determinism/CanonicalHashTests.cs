@@ -40,7 +40,8 @@ public class CanonicalHashTests
         {
             Assert.True(
                 c is (>= '0' and <= '9') or (>= 'a' and <= 'f'),
-                $"non-lowercase-hex char in output: '{c}'");
+                $"non-lowercase-hex char in output: '{c}'"
+            );
         }
     }
 
@@ -78,7 +79,8 @@ public class CanonicalHashTests
     public void AcceptsLargeInput()
     {
         byte[] input = new byte[1 << 16];
-        for (int i = 0; i < input.Length; i++) input[i] = (byte)i;
+        for (int i = 0; i < input.Length; i++)
+            input[i] = (byte)i;
         string hex = CanonicalHash.Sha256Hex(input);
         Assert.Equal(64, hex.Length);
     }

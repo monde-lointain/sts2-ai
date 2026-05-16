@@ -48,10 +48,7 @@ namespace Sts2Headless.Adapters.Replay;
 /// </summary>
 public static class ReplayDebugDumper
 {
-    private static readonly JsonSerializerOptions JsonOpts = new()
-    {
-        WriteIndented = true,
-    };
+    private static readonly JsonSerializerOptions JsonOpts = new() { WriteIndented = true };
 
     /// <summary>
     /// Read the binary replay at <paramref name="replayPath"/>, decode it,
@@ -86,7 +83,8 @@ public static class ReplayDebugDumper
         ManifestStampDto stampDto = new(
             GitSha: stamp.GitSha,
             BuildId: stamp.BuildId,
-            ContentHashHex: Convert.ToHexStringLower(stamp.ContentHash));
+            ContentHashHex: Convert.ToHexStringLower(stamp.ContentHash)
+        );
 
         EntryDto[] entryDtos = new EntryDto[blob.Entries.Count];
         for (int i = 0; i < blob.Entries.Count; i++)
@@ -97,7 +95,8 @@ public static class ReplayDebugDumper
                 Phase: e.Phase.ToString(),
                 ActionType: e.ActionType.ToString(),
                 ActionDataHex: Convert.ToHexStringLower(e.ActionData),
-                PostHashHex: Convert.ToHexStringLower(e.PostHash));
+                PostHashHex: Convert.ToHexStringLower(e.PostHash)
+            );
         }
 
         return new ReplayDumpDto(
@@ -105,7 +104,8 @@ public static class ReplayDebugDumper
             ManifestStamp: stampDto,
             InitialSeed: blob.InitialSeed,
             Entries: entryDtos,
-            TrailerValidated: blob.TrailerValidated);
+            TrailerValidated: blob.TrailerValidated
+        );
     }
 }
 
@@ -115,13 +115,11 @@ public sealed record ReplayDumpDto(
     ManifestStampDto ManifestStamp,
     uint InitialSeed,
     EntryDto[] Entries,
-    bool TrailerValidated);
+    bool TrailerValidated
+);
 
 /// <summary>Manifest-stamp DTO with hex-encoded content_hash.</summary>
-public sealed record ManifestStampDto(
-    string GitSha,
-    string BuildId,
-    string ContentHashHex);
+public sealed record ManifestStampDto(string GitSha, string BuildId, string ContentHashHex);
 
 /// <summary>Per-step DTO. Bytes are hex-encoded for diff-friendliness.</summary>
 public sealed record EntryDto(
@@ -129,4 +127,5 @@ public sealed record EntryDto(
     string Phase,
     string ActionType,
     string ActionDataHex,
-    string PostHashHex);
+    string PostHashHex
+);

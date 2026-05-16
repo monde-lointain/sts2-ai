@@ -17,8 +17,7 @@ public sealed class Acrobatics : CardModel
     public int Cards => BaseCards;
 
     public Acrobatics()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

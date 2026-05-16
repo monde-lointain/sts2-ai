@@ -18,13 +18,15 @@ public sealed class Mirage : CardModel
 {
     public const string CanonicalId = "Mirage";
     public const string MultiplierKey = "poison_total_on_enemies";
+
     /// <summary>Base block — upstream <c>CalculationBaseVar(0)</c>.</summary>
     public const int BaseBlock = 0;
     public const int BaseCost = 1;
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public Mirage() : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public Mirage()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

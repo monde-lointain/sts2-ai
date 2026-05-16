@@ -16,13 +16,18 @@ public sealed class Anchor : RelicModel
     /// <summary>Block granted at combat start — upstream <c>BlockVar(10m)</c>.</summary>
     public const int BlockAtStart = 10;
 
-    public Anchor() : base(CanonicalId, "Anchor", RelicRarity.Common) { }
+    public Anchor()
+        : base(CanonicalId, "Anchor", RelicRarity.Common) { }
 
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new GainBlockAction(BlockAtStart));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new GainBlockAction(BlockAtStart));
+            }
+        );
     }
 }

@@ -15,9 +15,16 @@ public class ResourceLoaderStubsTests
     public void Load_Texture2D_ReturnsSentinelAndRecords()
     {
         using var capture = StubRegistry.Capture();
-        var tex = ResourceLoader.Load<Texture2D>("res://card.png", null, ResourceLoader.CacheMode.Reuse);
+        var tex = ResourceLoader.Load<Texture2D>(
+            "res://card.png",
+            null,
+            ResourceLoader.CacheMode.Reuse
+        );
         Assert.NotNull(tex);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(ResourceLoader) && h.Member == nameof(ResourceLoader.Load));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(ResourceLoader) && h.Member == nameof(ResourceLoader.Load)
+        );
         Assert.Contains(StubCategory.GodotFileIo, capture.Categories);
     }
 
@@ -49,7 +56,10 @@ public class ResourceSaverStubsTests
         using var capture = StubRegistry.Capture();
         var result = ResourceSaver.Save(new Texture2D(), "res://out.tres");
         Assert.Equal(0, result);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(ResourceSaver) && h.Member == nameof(ResourceSaver.Save));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(ResourceSaver) && h.Member == nameof(ResourceSaver.Save)
+        );
         Assert.Contains(StubCategory.GodotFileIo, capture.Categories);
     }
 }
@@ -65,7 +75,10 @@ public class DirAccessStubsTests
         using var capture = StubRegistry.Capture();
         var dir = DirAccess.Open("res://scenes/backgrounds/foo/layers");
         Assert.Null(dir);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(DirAccess) && h.Member == nameof(DirAccess.Open));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(DirAccess) && h.Member == nameof(DirAccess.Open)
+        );
     }
 }
 
@@ -80,7 +93,10 @@ public class FileAccessStubsTests
         using var capture = StubRegistry.Capture();
         var f = FileAccess.Open("res://save.dat", FileAccess.ModeFlags.Read);
         Assert.Null(f);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(FileAccess) && h.Member == nameof(FileAccess.Open));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(FileAccess) && h.Member == nameof(FileAccess.Open)
+        );
     }
 
     [Fact]
@@ -102,8 +118,16 @@ public class TranslationServerStubsTests
     {
         using var capture = StubRegistry.Capture();
         Assert.Equal("ui.start", TranslationServer.Translate(new StringName("ui.start")));
-        Assert.Equal("dlg.intro", TranslationServer.Translate(new StringName("dlg.intro"), new StringName("act1")));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(TranslationServer) && h.Member == nameof(TranslationServer.Translate));
+        Assert.Equal(
+            "dlg.intro",
+            TranslationServer.Translate(new StringName("dlg.intro"), new StringName("act1"))
+        );
+        Assert.Contains(
+            capture.Hits,
+            h =>
+                h.Type == nameof(TranslationServer)
+                && h.Member == nameof(TranslationServer.Translate)
+        );
         Assert.Contains(StubCategory.Localization, capture.Categories);
     }
 

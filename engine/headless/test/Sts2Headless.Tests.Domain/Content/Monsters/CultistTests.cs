@@ -14,9 +14,8 @@ public class CultistTests
 {
     /// <summary>Vanilla branch context for cultists — they have no
     /// <c>BranchResolver</c>, so the payload doesn't influence rotation.</summary>
-    private static MoveBranchContext FullHpNoPowers()
-        => new(CurrentHp: 100, MaxHp: 100,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+    private static MoveBranchContext FullHpNoPowers() =>
+        new(CurrentHp: 100, MaxHp: 100, HasPower: _ => false, GetPowerStacks: _ => 0);
 
     // ===== CalcifiedCultist (upstream: src/Core/Models/Monsters/CalcifiedCultist.cs) =====
 

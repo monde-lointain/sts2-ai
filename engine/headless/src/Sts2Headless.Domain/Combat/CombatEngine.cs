@@ -106,7 +106,8 @@ public static class CombatEngine
         CombatBootstrap catalogs,
         PlayerSpec player,
         RunRngSet runRng,
-        IClock clock)
+        IClock clock
+    )
     {
         ArgumentNullException.ThrowIfNull(encounter);
         ArgumentNullException.ThrowIfNull(catalogs);
@@ -114,7 +115,12 @@ public static class CombatEngine
         ArgumentNullException.ThrowIfNull(runRng);
         ArgumentNullException.ThrowIfNull(clock);
 
-        ImmutableList<Creature> enemies = SpawnEnemies(encounter, catalogs.Monsters, catalogs.Powers, runRng);
+        ImmutableList<Creature> enemies = SpawnEnemies(
+            encounter,
+            catalogs.Monsters,
+            catalogs.Powers,
+            runRng
+        );
         Creature playerCreature = BuildPlayerCreature(player.InitialHp, player.MaxHp);
         CardPile drawPile = BuildInitialDrawPile(player.Deck, runRng.Shuffle);
 
@@ -131,10 +137,19 @@ public static class CombatEngine
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: runRng.GetCounter(RunRngType.Shuffle),
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
 
-        var ctx = new CombatContext(initial, runRng, clock,
-            catalogs.Cards, catalogs.Relics, catalogs.Powers, catalogs.Monsters, catalogs.Encounters);
+        var ctx = new CombatContext(
+            initial,
+            runRng,
+            clock,
+            catalogs.Cards,
+            catalogs.Relics,
+            catalogs.Powers,
+            catalogs.Monsters,
+            catalogs.Encounters
+        );
 
         var hookRegistry = new HookRegistry();
         var actionQueue = new ActionQueue();
@@ -142,11 +157,19 @@ public static class CombatEngine
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: null,
-            SourceCreatureId: PlayerId);
+            SourceCreatureId: PlayerId
+        );
 
         WireUpRelics(player.RelicIds, catalogs.Relics, execCtx);
         FireStartupHooks(hookRegistry, actionQueue, execCtx, ctx, dispatch);
-        OpenFirstPlayerTurn(ctx, hookRegistry, actionQueue, execCtx, dispatch, player.BaseEnergyPerTurn);
+        OpenFirstPlayerTurn(
+            ctx,
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            dispatch,
+            player.BaseEnergyPerTurn
+        );
 
         // Stash the hook plumbing onto the context so subsequent turn/phase
         // boundaries can fire hooks without reconstructing the wiring.
@@ -164,7 +187,8 @@ public static class CombatEngine
         IEncounterModel encounter,
         MonsterCatalog monsters,
         PowerCatalog powers,
-        RunRngSet runRng)
+        RunRngSet runRng
+    )
     {
         var enemies = ImmutableList.CreateBuilder<Creature>();
         uint nextEnemyId = FirstEnemyId;
@@ -179,24 +203,34 @@ public static class CombatEngine
             for (int i = 0; i < monsterModel.SpawnPowers.Length; i++)
             {
                 MonsterSpawnPower sp = monsterModel.SpawnPowers[i];
-                if (!powers.TryGet(sp.PowerId, out _)) continue;
-                spawnPowerList = spawnPowerList.Add(new PowerInstance(
-                    ModelId: sp.PowerId,
-                    Stacks: sp.Stacks,
-                    SourceCreatureId: nextEnemyId,
-                    JustApplied: false));
+                if (!powers.TryGet(sp.PowerId, out _))
+                    continue;
+                spawnPowerList = spawnPowerList.Add(
+                    new PowerInstance(
+                        ModelId: sp.PowerId,
+                        Stacks: sp.Stacks,
+                        SourceCreatureId: nextEnemyId,
+                        JustApplied: false
+                    )
+                );
             }
-            enemies.Add(new Creature(
-                Id: nextEnemyId,
-                Name: monsterId,
-                CurrentHp: hp,
-                MaxHp: hp,
-                Block: 0,
-                Powers: spawnPowerList,
-                // Stream-B-T3: stamp the initial move-id so multi-state monsters
-                // (Chomper et al.) start their per-creature cursor cleanly.
-                Intent: MonsterIntent.FromContentIntent(monsterModel.InitialIntent, monsterModel.InitialMoveId),
-                IsPlayer: false));
+            enemies.Add(
+                new Creature(
+                    Id: nextEnemyId,
+                    Name: monsterId,
+                    CurrentHp: hp,
+                    MaxHp: hp,
+                    Block: 0,
+                    Powers: spawnPowerList,
+                    // Stream-B-T3: stamp the initial move-id so multi-state monsters
+                    // (Chomper et al.) start their per-creature cursor cleanly.
+                    Intent: MonsterIntent.FromContentIntent(
+                        monsterModel.InitialIntent,
+                        monsterModel.InitialMoveId
+                    ),
+                    IsPlayer: false
+                )
+            );
             nextEnemyId++;
         }
         return enemies.ToImmutable();
@@ -214,13 +248,17 @@ public static class CombatEngine
             Block: 0,
             Powers: ImmutableList<PowerInstance>.Empty,
             Intent: null,
-            IsPlayer: true);
+            IsPlayer: true
+        );
 
     /// <summary>
     /// Shuffle the deck (routing through the Shuffle bucket) and build the
     /// initial draw pile.
     /// </summary>
-    private static CardPile BuildInitialDrawPile(IReadOnlyList<CardInstance> deck, IRngSource shuffleRng)
+    private static CardPile BuildInitialDrawPile(
+        IReadOnlyList<CardInstance> deck,
+        IRngSource shuffleRng
+    )
     {
         var drawList = new List<CardInstance>(deck);
         shuffleRng.Shuffle(drawList);
@@ -235,7 +273,8 @@ public static class CombatEngine
     private static void WireUpRelics(
         IReadOnlyList<string> relicIds,
         RelicCatalog relics,
-        DomainExecutionContext execCtx)
+        DomainExecutionContext execCtx
+    )
     {
         foreach (string relicId in relicIds)
         {
@@ -254,11 +293,26 @@ public static class CombatEngine
         ActionQueue actionQueue,
         DomainExecutionContext execCtx,
         ICombatContext combatCtx,
-        EffectDispatcher.DispatchContext dispatch)
+        EffectDispatcher.DispatchContext dispatch
+    )
     {
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.BeforeCombatStart, combatCtx, dispatch);
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.BeforeCombatStart,
+            combatCtx,
+            dispatch
+        );
         // RingOfTheSnake / BagOfPreparation add +2 each on round 1.
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.ModifyHandDraw, combatCtx, dispatch);
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.ModifyHandDraw,
+            combatCtx,
+            dispatch
+        );
     }
 
     /// <summary>
@@ -273,23 +327,54 @@ public static class CombatEngine
         ActionQueue actionQueue,
         DomainExecutionContext execCtx,
         EffectDispatcher.DispatchContext dispatch,
-        int baseEnergyPerTurn)
+        int baseEnergyPerTurn
+    )
     {
-        ctx.SetState(ctx.State with
-        {
-            TurnCounter = 1,
-            Phase = CombatPhase.PlayerTurnStart,
-            Energy = baseEnergyPerTurn,
-        });
+        ctx.SetState(
+            ctx.State with
+            {
+                TurnCounter = 1,
+                Phase = CombatPhase.PlayerTurnStart,
+                Energy = baseEnergyPerTurn,
+            }
+        );
         // BloodVial fires AfterPlayerTurnStartLate on turn 1 too. After-side-turn
         // and after-player-turn-start fire too (Akabeko, MercuryHourglass) — these
         // were deferred in Stream-B-T2.
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.AfterSideTurnStart, ctx, dispatch);
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.AfterPlayerTurnStart, ctx, dispatch);
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.AfterPlayerTurnStartLate, ctx, dispatch);
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.AfterSideTurnStart,
+            ctx,
+            dispatch
+        );
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.AfterPlayerTurnStart,
+            ctx,
+            dispatch
+        );
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.AfterPlayerTurnStartLate,
+            ctx,
+            dispatch
+        );
         // AfterRoomEntered fires once on combat-room entry — upstream uses this
         // for OddlySmoothStone / Vajra / Pantograph / DataDisk-style relics.
-        FireHookAndDrain(hookRegistry, actionQueue, execCtx, HookType.AfterRoomEntered, ctx, dispatch);
+        FireHookAndDrain(
+            hookRegistry,
+            actionQueue,
+            execCtx,
+            HookType.AfterRoomEntered,
+            ctx,
+            dispatch
+        );
         ctx.DrawCards(ctx.State.HandDrawSize);
         ctx.SetState(ctx.State with { Phase = CombatPhase.PlayerActing });
     }
@@ -303,19 +388,25 @@ public static class CombatEngine
     public static void StartPlayerTurn(CombatContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.State.Phase == CombatPhase.CombatEnd) return;
+        if (ctx.State.Phase == CombatPhase.CombatEnd)
+            return;
 
         CombatState s = ctx.State;
-        ctx.SetState(s with
-        {
-            TurnCounter = s.TurnCounter + 1,
-            Phase = CombatPhase.PlayerTurnStart,
-            Energy = s.BaseEnergyPerTurn,
-            // Reset block at start of player turn (upstream: not-Barricade).
-            Player = s.Player with { Block = 0 },
-            // Stream-B-T4: reset per-turn attacks counter (Finisher etc.).
-            AttacksPlayedThisTurn = 0,
-        });
+        ctx.SetState(
+            s with
+            {
+                TurnCounter = s.TurnCounter + 1,
+                Phase = CombatPhase.PlayerTurnStart,
+                Energy = s.BaseEnergyPerTurn,
+                // Reset block at start of player turn (upstream: not-Barricade).
+                Player = s.Player with
+                {
+                    Block = 0,
+                },
+                // Stream-B-T4: reset per-turn attacks counter (Finisher etc.).
+                AttacksPlayedThisTurn = 0,
+            }
+        );
 
         // Note: BloodVial's hook is round-1 only in upstream. The smoke
         // ModifyHandDraw / AfterPlayerTurnStartLate hooks were already
@@ -360,7 +451,8 @@ public static class CombatEngine
         if (ctx.State.Phase != CombatPhase.PlayerActing)
         {
             throw new InvalidOperationException(
-                $"PlayerPlayCard called in phase {ctx.State.Phase}; expected PlayerActing.");
+                $"PlayerPlayCard called in phase {ctx.State.Phase}; expected PlayerActing."
+            );
         }
 
         CombatState s = ctx.State;
@@ -377,31 +469,33 @@ public static class CombatEngine
         if (cardInstance is null)
         {
             throw new InvalidOperationException(
-                $"PlayerPlayCard: card instance id={cardInstanceId} not in hand " +
-                $"(hand has: {string.Join(",", s.HandPile.Cards.Select(c => c.InstanceId))}).");
+                $"PlayerPlayCard: card instance id={cardInstanceId} not in hand "
+                    + $"(hand has: {string.Join(",", s.HandPile.Cards.Select(c => c.InstanceId))})."
+            );
         }
 
         // --- Resolve model + cost ----------------------------------------
         var cardModel = (CardModel)ctx.Cards.Get(cardInstance.ModelId);
         // B.1-gamma-T5: X-cost cards consume ALL the player's current energy.
         // Upstream's CardModel.ResolveEnergyXValue() reads exactly this value.
-        int cost = cardModel.IsXCost
-            ? s.Energy
-            : (cardInstance.CostOverride ?? cardModel.Cost);
+        int cost = cardModel.IsXCost ? s.Energy : (cardInstance.CostOverride ?? cardModel.Cost);
         if (s.Energy < cost)
         {
             throw new InvalidOperationException(
-                $"PlayerPlayCard: insufficient energy (have {s.Energy}, need {cost} for {cardModel.Id}).");
+                $"PlayerPlayCard: insufficient energy (have {s.Energy}, need {cost} for {cardModel.Id})."
+            );
         }
 
         // --- Validate target shape ---------------------------------------
-        bool needsEnemy = cardModel.Target == TargetType.AnyEnemy ||
-                          cardModel.Target == TargetType.AllEnemies ||
-                          cardModel.Target == TargetType.RandomEnemy;
+        bool needsEnemy =
+            cardModel.Target == TargetType.AnyEnemy
+            || cardModel.Target == TargetType.AllEnemies
+            || cardModel.Target == TargetType.RandomEnemy;
         if (needsEnemy && targetEnemyId is null)
         {
             throw new InvalidOperationException(
-                $"PlayerPlayCard: card {cardModel.Id} requires an enemy target.");
+                $"PlayerPlayCard: card {cardModel.Id} requires an enemy target."
+            );
         }
         if (needsEnemy && targetEnemyId.HasValue)
         {
@@ -413,19 +507,23 @@ public static class CombatEngine
         // B.1-gamma-T5: also snapshot the spent energy for X-cost cards so the
         // card's OnPlay body can read it via CombatContext.AllRemainingEnergy()
         // / CombatState.LastSpentEnergy.
-        ctx.SetState(ctx.State with
-        {
-            Energy = ctx.State.Energy - cost,
-            LastSpentEnergy = cardModel.IsXCost ? cost : ctx.State.LastSpentEnergy,
-        });
+        ctx.SetState(
+            ctx.State with
+            {
+                Energy = ctx.State.Energy - cost,
+                LastSpentEnergy = cardModel.IsXCost ? cost : ctx.State.LastSpentEnergy,
+            }
+        );
 
         // --- Move card from hand to discard ------------------------------
         // Done BEFORE OnPlay so cards that draw can refill from a clean hand.
-        ctx.SetState(ctx.State with
-        {
-            HandPile = ctx.State.HandPile.Remove(cardInstanceId),
-            DiscardPile = ctx.State.DiscardPile.Add(cardInstance),
-        });
+        ctx.SetState(
+            ctx.State with
+            {
+                HandPile = ctx.State.HandPile.Remove(cardInstanceId),
+                DiscardPile = ctx.State.DiscardPile.Add(cardInstance),
+            }
+        );
 
         // --- Invoke OnPlay; dispatch enqueued effects --------------------
         var hookRegistry = new HookRegistry();
@@ -435,7 +533,8 @@ public static class CombatEngine
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: targetEnemyId,
-            SourceCreatureId: PlayerId);
+            SourceCreatureId: PlayerId
+        );
 
         using (EffectObserver.Attach(out List<IAction> log))
         {
@@ -450,13 +549,15 @@ public static class CombatEngine
         // calc-damage formulas (Finisher's "× attacks played THIS turn") see
         // the prior count — matching upstream's CardPlaysFinished semantics
         // (the entry for THIS card is recorded only after its play completes).
-        int newAttacks = ctx.State.AttacksPlayedThisTurn
-            + (cardModel.Type == CardType.Attack ? 1 : 0);
-        ctx.SetState(ctx.State with
-        {
-            PlayerRngCounter = ctx.Rng.Counter,
-            AttacksPlayedThisTurn = newAttacks,
-        });
+        int newAttacks =
+            ctx.State.AttacksPlayedThisTurn + (cardModel.Type == CardType.Attack ? 1 : 0);
+        ctx.SetState(
+            ctx.State with
+            {
+                PlayerRngCounter = ctx.Rng.Counter,
+                AttacksPlayedThisTurn = newAttacks,
+            }
+        );
 
         // Check end on every mutation point in case the card killed an enemy.
         CheckCombatEnd(ctx);
@@ -475,7 +576,8 @@ public static class CombatEngine
         if (ctx.State.Phase != CombatPhase.PlayerActing)
         {
             throw new InvalidOperationException(
-                $"EndPlayerTurn called in phase {ctx.State.Phase}; expected PlayerActing.");
+                $"EndPlayerTurn called in phase {ctx.State.Phase}; expected PlayerActing."
+            );
         }
         ctx.SetState(ctx.State with { Phase = CombatPhase.PlayerTurnEnd });
 
@@ -510,7 +612,8 @@ public static class CombatEngine
         if (ctx.State.Phase != CombatPhase.EnemyTurnStart)
         {
             throw new InvalidOperationException(
-                $"EnemyTurn called in phase {ctx.State.Phase}; expected EnemyTurnStart.");
+                $"EnemyTurn called in phase {ctx.State.Phase}; expected EnemyTurnStart."
+            );
         }
         ctx.SetState(ctx.State with { Phase = CombatPhase.EnemyActing });
 
@@ -520,7 +623,8 @@ public static class CombatEngine
         foreach (uint id in enemyIds)
         {
             Creature? enemy = ctx.State.FindEnemy(id);
-            if (enemy is null || enemy.IsDead) continue;
+            if (enemy is null || enemy.IsDead)
+                continue;
 
             // --- Reset block (enemies clear block at THEIR turn start) ---
             ctx.SetState(ctx.State.WithEnemy(enemy with { Block = 0 }));
@@ -528,10 +632,12 @@ public static class CombatEngine
             // --- Poison fires at owner's turn start: damage = stacks, then decrement ---
             ApplyPoisonAtTurnStart(ctx, id);
             CheckCombatEnd(ctx);
-            if (ctx.State.IsCombatOver) return;
+            if (ctx.State.IsCombatOver)
+                return;
             // Re-fetch in case Poison killed the enemy.
             Creature? aliveEnemy = ctx.State.FindEnemy(id);
-            if (aliveEnemy is null || aliveEnemy.IsDead) continue;
+            if (aliveEnemy is null || aliveEnemy.IsDead)
+                continue;
 
             // --- Resolve current intent ----------------------------------
             var enemyModel = (MonsterModel)ctx.Monsters.Get(aliveEnemy.Name);
@@ -546,7 +652,8 @@ public static class CombatEngine
             ResolveMove(ctx, aliveEnemy.Id, enemyModel, moveId);
 
             CheckCombatEnd(ctx);
-            if (ctx.State.IsCombatOver) return;
+            if (ctx.State.IsCombatOver)
+                return;
 
             // --- Ritual-on-turn-end: grant Strength ----------------------
             ApplyRitualEndOfTurn(ctx, ctx.State.GetEnemy(id));
@@ -566,8 +673,13 @@ public static class CombatEngine
                 MonsterIntent priorIntent = postResolveEnemy.Intent ?? MonsterIntent.None;
                 // We only need to update the MoveId; ResolveEnemyIntents will
                 // rebuild Kind / DamagePerHit / HitCount from the new move.
-                var advancedIntent = priorIntent with { MoveId = nextMoveId };
-                ctx.SetState(ctx.State.WithEnemy(postResolveEnemy with { Intent = advancedIntent }));
+                var advancedIntent = priorIntent with
+                {
+                    MoveId = nextMoveId,
+                };
+                ctx.SetState(
+                    ctx.State.WithEnemy(postResolveEnemy with { Intent = advancedIntent })
+                );
             }
         }
 
@@ -575,7 +687,8 @@ public static class CombatEngine
         foreach (uint id in enemyIds)
         {
             Creature? enemy = ctx.State.FindEnemy(id);
-            if (enemy is null || enemy.IsDead) continue;
+            if (enemy is null || enemy.IsDead)
+                continue;
             TickPowerDurations(ctx, enemy);
             // Reset JustApplied flag now that we've passed end-of-owner-turn.
             ResetJustApplied(ctx, ctx.State.FindEnemy(id)!);
@@ -588,7 +701,8 @@ public static class CombatEngine
 
         // Transition to next player turn (handled by caller via
         // StartPlayerTurn) or to CombatEnd.
-        if (ctx.State.IsCombatOver) return;
+        if (ctx.State.IsCombatOver)
+            return;
 
         // Note: we deliberately leave phase at EnemyTurnEnd; the smoke
         // harness calls StartPlayerTurn next, which bumps the turn counter
@@ -604,7 +718,8 @@ public static class CombatEngine
     public static void CheckCombatEnd(CombatContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
-        if (ctx.State.IsCombatOver) return;
+        if (ctx.State.IsCombatOver)
+            return;
 
         bool playerDead = ctx.State.Player.IsDead;
         bool allEnemiesDead = ctx.State.Enemies.All(e => e.IsDead);
@@ -623,7 +738,8 @@ public static class CombatEngine
         DomainExecutionContext execCtx,
         HookType type,
         ICombatContext combatCtx,
-        EffectDispatcher.DispatchContext dispatch)
+        EffectDispatcher.DispatchContext dispatch
+    )
     {
         using (EffectObserver.Attach(out List<IAction> log))
         {
@@ -643,18 +759,27 @@ public static class CombatEngine
     /// </summary>
     private static void FirePersistedHook(CombatContext ctx, HookType type)
     {
-        if (ctx.HookRegistryHandle is null || ctx.ActionQueueHandle is null
-            || ctx.ExecutionContextHandle is null)
+        if (
+            ctx.HookRegistryHandle is null
+            || ctx.ActionQueueHandle is null
+            || ctx.ExecutionContextHandle is null
+        )
         {
             return;
         }
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: null,
-            SourceCreatureId: PlayerId);
+            SourceCreatureId: PlayerId
+        );
         FireHookAndDrain(
-            ctx.HookRegistryHandle, ctx.ActionQueueHandle,
-            ctx.ExecutionContextHandle, type, ctx, dispatch);
+            ctx.HookRegistryHandle,
+            ctx.ActionQueueHandle,
+            ctx.ExecutionContextHandle,
+            type,
+            ctx,
+            dispatch
+        );
     }
 
     /// <summary>
@@ -674,7 +799,8 @@ public static class CombatEngine
             {
                 for (int i = 0; i < powers.Count; i++)
                 {
-                    if (powers[i].ModelId == id && powers[i].Stacks > 0) return true;
+                    if (powers[i].ModelId == id && powers[i].Stacks > 0)
+                        return true;
                 }
                 return false;
             },
@@ -682,10 +808,12 @@ public static class CombatEngine
             {
                 for (int i = 0; i < powers.Count; i++)
                 {
-                    if (powers[i].ModelId == id) return powers[i].Stacks;
+                    if (powers[i].ModelId == id)
+                        return powers[i].Stacks;
                 }
                 return 0;
-            });
+            }
+        );
     }
 
     /// <summary>
@@ -698,7 +826,8 @@ public static class CombatEngine
         for (int i = 0; i < ctx.State.Enemies.Count; i++)
         {
             Creature enemy = ctx.State.Enemies[i];
-            if (enemy.IsDead) continue;
+            if (enemy.IsDead)
+                continue;
             var model = (MonsterModel)ctx.Monsters.Get(enemy.Name);
             // Stream-B-T3: prefer the per-creature MoveId (if any) over the shared
             // model's InitialMoveId. The model is a singleton in the catalog —
@@ -718,13 +847,19 @@ public static class CombatEngine
     /// - INCANTATION (CalcifiedCultist/DampCultist) → apply Ritual to self.
     /// More moves added in S12.
     /// </summary>
-    private static void ResolveMove(CombatContext ctx, uint enemyId, MonsterModel model, string moveId)
+    private static void ResolveMove(
+        CombatContext ctx,
+        uint enemyId,
+        MonsterModel model,
+        string moveId
+    )
     {
         MonsterMove move = model.GetMove(moveId);
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: PlayerId,
-            SourceCreatureId: enemyId);
+            SourceCreatureId: enemyId
+        );
 
         if (move.Intent.Kind == IntentKind.Attack)
         {
@@ -738,7 +873,8 @@ public static class CombatEngine
             for (int i = 0; i < hits; i++)
             {
                 // Re-check liveness between hits — the player can die mid-stream.
-                if (ctx.State.Player.IsDead) break;
+                if (ctx.State.Player.IsDead)
+                    break;
                 int modified = DamageModifier.Modify(ctx.State, enemyId, PlayerId, raw);
                 ctx.DealDamage(PlayerId, modified, enemyId);
             }
@@ -767,13 +903,17 @@ public static class CombatEngine
     /// </summary>
     private static int ExtractIncantationStacks(MonsterModel model, string moveId)
     {
-        if (model is Sts2Headless.Domain.Content.Monsters.CalcifiedCultist
-            && moveId == Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationMoveId)
+        if (
+            model is Sts2Headless.Domain.Content.Monsters.CalcifiedCultist
+            && moveId == Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationMoveId
+        )
         {
             return Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationRitualStacks;
         }
-        if (model is Sts2Headless.Domain.Content.Monsters.DampCultist
-            && moveId == Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationMoveId)
+        if (
+            model is Sts2Headless.Domain.Content.Monsters.DampCultist
+            && moveId == Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationMoveId
+        )
         {
             return Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationRitualStacks;
         }
@@ -815,9 +955,11 @@ public static class CombatEngine
         if (anyChanged)
         {
             var newCreature = creature with { Powers = updated };
-            ctx.SetState(creature.IsPlayer
-                ? ctx.State.WithPlayer(newCreature)
-                : ctx.State.WithEnemy(newCreature));
+            ctx.SetState(
+                creature.IsPlayer
+                    ? ctx.State.WithPlayer(newCreature)
+                    : ctx.State.WithEnemy(newCreature)
+            );
         }
     }
 
@@ -831,7 +973,8 @@ public static class CombatEngine
     private static void ApplyPoisonAtTurnStart(CombatContext ctx, uint ownerId)
     {
         Creature? owner = ownerId == PlayerId ? ctx.State.Player : ctx.State.FindEnemy(ownerId);
-        if (owner is null || owner.IsDead) return;
+        if (owner is null || owner.IsDead)
+            return;
 
         int poisonIndex = -1;
         for (int i = 0; i < owner.Powers.Count; i++)
@@ -842,10 +985,12 @@ public static class CombatEngine
                 break;
             }
         }
-        if (poisonIndex < 0) return;
+        if (poisonIndex < 0)
+            return;
 
         PowerInstance poison = owner.Powers[poisonIndex];
-        if (poison.Stacks <= 0) return;
+        if (poison.Stacks <= 0)
+            return;
 
         // Poison damage IGNORES block (upstream calls it "unblockable").
         // To bypass our DealDamage block-first logic, we directly mutate HP.
@@ -854,14 +999,15 @@ public static class CombatEngine
 
         // Decrement stacks; remove if zero.
         int newStacks = poison.Stacks - 1;
-        ImmutableList<PowerInstance> newPowers = newStacks > 0
-            ? hpReduced.Powers.SetItem(poisonIndex, poison with { Stacks = newStacks })
-            : hpReduced.Powers.RemoveAt(poisonIndex);
+        ImmutableList<PowerInstance> newPowers =
+            newStacks > 0
+                ? hpReduced.Powers.SetItem(poisonIndex, poison with { Stacks = newStacks })
+                : hpReduced.Powers.RemoveAt(poisonIndex);
 
         var updated = hpReduced with { Powers = newPowers };
-        ctx.SetState(updated.IsPlayer
-            ? ctx.State.WithPlayer(updated)
-            : ctx.State.WithEnemy(updated));
+        ctx.SetState(
+            updated.IsPlayer ? ctx.State.WithPlayer(updated) : ctx.State.WithEnemy(updated)
+        );
     }
 
     /// <summary>
@@ -889,9 +1035,9 @@ public static class CombatEngine
             // Strip zero-stack powers.
             newPowers = newPowers.RemoveAll(p => p.Stacks <= 0 && p.ModelId != PowerIds.Strength);
             var updated = owner with { Powers = newPowers };
-            ctx.SetState(owner.IsPlayer
-                ? ctx.State.WithPlayer(updated)
-                : ctx.State.WithEnemy(updated));
+            ctx.SetState(
+                owner.IsPlayer ? ctx.State.WithPlayer(updated) : ctx.State.WithEnemy(updated)
+            );
         }
     }
 }

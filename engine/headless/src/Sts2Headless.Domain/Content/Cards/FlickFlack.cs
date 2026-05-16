@@ -14,7 +14,8 @@ public sealed class FlickFlack : CardModel
     public const int UpgradeDelta = 2;
     public int Damage => BaseDamage;
 
-    public FlickFlack() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AllEnemies) { }
+    public FlickFlack()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -15,19 +15,38 @@ public sealed class CombatContextTests
 {
     // === Test fixtures ====================================================
 
-    private static Creature PlayerWith(int hp = 70, int block = 0,
-        ImmutableList<PowerInstance>? powers = null)
-        => new(
-            Id: 0u, Name: "Silent", CurrentHp: hp, MaxHp: 70, Block: block,
+    private static Creature PlayerWith(
+        int hp = 70,
+        int block = 0,
+        ImmutableList<PowerInstance>? powers = null
+    ) =>
+        new(
+            Id: 0u,
+            Name: "Silent",
+            CurrentHp: hp,
+            MaxHp: 70,
+            Block: block,
             Powers: powers ?? ImmutableList<PowerInstance>.Empty,
-            Intent: null, IsPlayer: true);
+            Intent: null,
+            IsPlayer: true
+        );
 
-    private static Creature EnemyWith(uint id, int hp = 38, int block = 0,
-        ImmutableList<PowerInstance>? powers = null)
-        => new(
-            Id: id, Name: "Cultist", CurrentHp: hp, MaxHp: hp, Block: block,
+    private static Creature EnemyWith(
+        uint id,
+        int hp = 38,
+        int block = 0,
+        ImmutableList<PowerInstance>? powers = null
+    ) =>
+        new(
+            Id: id,
+            Name: "Cultist",
+            CurrentHp: hp,
+            MaxHp: hp,
+            Block: block,
             Powers: powers ?? ImmutableList<PowerInstance>.Empty,
-            Intent: MonsterIntent.None, IsPlayer: false);
+            Intent: MonsterIntent.None,
+            IsPlayer: false
+        );
 
     private static CombatContext NewContext(CombatState state, RunRngSet? runRng = null)
     {
@@ -39,11 +58,12 @@ public sealed class CombatContextTests
             relics: SmokeContent.BuildRelicCatalog(),
             powers: SmokeContent.BuildPowerCatalog(),
             monsters: SmokeContent.BuildMonsterCatalog(),
-            encounters: SmokeContent.BuildEncounterCatalog());
+            encounters: SmokeContent.BuildEncounterCatalog()
+        );
     }
 
-    private static CombatState NewState(Creature? player = null, params Creature[] enemies)
-        => new(
+    private static CombatState NewState(Creature? player = null, params Creature[] enemies) =>
+        new(
             TurnCounter: 0,
             Phase: CombatPhase.CombatStart,
             Player: player ?? PlayerWith(),
@@ -56,7 +76,8 @@ public sealed class CombatContextTests
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: 0,
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
 
     // === DealDamage =======================================================
 
@@ -195,11 +216,13 @@ public sealed class CombatContextTests
     [Fact]
     public void DrawCards_Moves_Top_Of_Draw_To_Hand()
     {
-        var draw = CardPile.OfRange(new[]
-        {
-            new CardInstance(1u, "StrikeSilent", 0, null),
-            new CardInstance(2u, "DefendSilent", 0, null),
-        });
+        var draw = CardPile.OfRange(
+            new[]
+            {
+                new CardInstance(1u, "StrikeSilent", 0, null),
+                new CardInstance(2u, "DefendSilent", 0, null),
+            }
+        );
         var state = NewState() with { DrawPile = draw };
         var ctx = NewContext(state);
         ctx.DrawCards(1);
@@ -213,12 +236,14 @@ public sealed class CombatContextTests
     public void DrawCards_Reshuffles_Discard_When_Draw_Empty()
     {
         var runRng = new RunRngSet("seed-42");
-        var discard = CardPile.OfRange(new[]
-        {
-            new CardInstance(1u, "StrikeSilent", 0, null),
-            new CardInstance(2u, "DefendSilent", 0, null),
-            new CardInstance(3u, "StrikeSilent", 0, null),
-        });
+        var discard = CardPile.OfRange(
+            new[]
+            {
+                new CardInstance(1u, "StrikeSilent", 0, null),
+                new CardInstance(2u, "DefendSilent", 0, null),
+                new CardInstance(3u, "StrikeSilent", 0, null),
+            }
+        );
         var state = NewState() with { DiscardPile = discard };
         var ctx = NewContext(state, runRng);
         ctx.DrawCards(3);
@@ -229,7 +254,8 @@ public sealed class CombatContextTests
         // All three instance ids must be in hand (some order).
         Assert.Equal(
             new[] { 1u, 2u, 3u }.OrderBy(x => x),
-            ctx.State.HandPile.Cards.Select(c => c.InstanceId).OrderBy(x => x));
+            ctx.State.HandPile.Cards.Select(c => c.InstanceId).OrderBy(x => x)
+        );
     }
 
     [Fact]
@@ -245,11 +271,13 @@ public sealed class CombatContextTests
     [Fact]
     public void DiscardHand_Moves_All_Hand_To_Discard()
     {
-        var hand = CardPile.OfRange(new[]
-        {
-            new CardInstance(1u, "StrikeSilent", 0, null),
-            new CardInstance(2u, "DefendSilent", 0, null),
-        });
+        var hand = CardPile.OfRange(
+            new[]
+            {
+                new CardInstance(1u, "StrikeSilent", 0, null),
+                new CardInstance(2u, "DefendSilent", 0, null),
+            }
+        );
         var state = NewState() with { HandPile = hand };
         var ctx = NewContext(state);
         ctx.DiscardHand();

@@ -70,6 +70,7 @@ public static class PowerIds
     // ===== Relic-applied buff powers (B.1-gamma-T4) =====
     /// <summary>Akabeko's +8 Vigor at side-turn-start (first turn).</summary>
     public const string Vigor = "VigorPower";
+
     /// <summary>DataDisk's +1 Focus on combat start (orb damage).</summary>
     public const string Focus = "FocusPower";
 }

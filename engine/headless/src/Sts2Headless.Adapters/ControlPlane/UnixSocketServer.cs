@@ -74,7 +74,8 @@ public sealed class UnixSocketServer : IDisposable
     {
         get
         {
-            lock (_lifecycleLock) return _started;
+            lock (_lifecycleLock)
+                return _started;
         }
     }
 
@@ -91,7 +92,8 @@ public sealed class UnixSocketServer : IDisposable
             if (_started)
             {
                 throw new InvalidOperationException(
-                    $"UnixSocketServer at '{_socketPath}' is already started.");
+                    $"UnixSocketServer at '{_socketPath}' is already started."
+                );
             }
 
             // Remove stale file (left over from a crash).
@@ -106,7 +108,8 @@ public sealed class UnixSocketServer : IDisposable
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 throw new DirectoryNotFoundException(
-                    $"UnixSocketServer: socket directory does not exist: '{dir}'.");
+                    $"UnixSocketServer: socket directory does not exist: '{dir}'."
+                );
             }
 
             Socket listener = new(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
@@ -138,13 +141,20 @@ public sealed class UnixSocketServer : IDisposable
         Thread? toJoin = null;
         lock (_lifecycleLock)
         {
-            if (!_started) return;
+            if (!_started)
+                return;
             _started = false;
             _cts?.Cancel();
             // Closing the listener interrupts any blocking Accept() with a
             // SocketException (ObjectDisposed/OperationAborted) — the accept
             // loop catches and exits.
-            try { _listener?.Close(); } catch { /* swallowed */ }
+            try
+            {
+                _listener?.Close();
+            }
+            catch
+            { /* swallowed */
+            }
             toJoin = _acceptThread;
         }
 
@@ -163,7 +173,13 @@ public sealed class UnixSocketServer : IDisposable
             // after close.
             if (File.Exists(_socketPath))
             {
-                try { File.Delete(_socketPath); } catch { /* swallowed */ }
+                try
+                {
+                    File.Delete(_socketPath);
+                }
+                catch
+                { /* swallowed */
+                }
             }
         }
     }
@@ -171,9 +187,11 @@ public sealed class UnixSocketServer : IDisposable
     /// <summary>Calls <see cref="Stop"/>.</summary>
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+            return;
         Stop();
-        lock (_lifecycleLock) _disposed = true;
+        lock (_lifecycleLock)
+            _disposed = true;
     }
 
     // === Internals ========================================================
@@ -184,7 +202,8 @@ public sealed class UnixSocketServer : IDisposable
         CancellationToken ct;
         lock (_lifecycleLock)
         {
-            if (_listener is null || _cts is null) return;
+            if (_listener is null || _cts is null)
+                return;
             listener = _listener;
             ct = _cts.Token;
         }

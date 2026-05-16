@@ -18,7 +18,8 @@ public sealed class Strangle : CardModel
     public int Damage => BaseDamage;
     public int Strangle_ => BaseStrangle;
 
-    public Strangle() : base(CanonicalId, 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Strangle()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

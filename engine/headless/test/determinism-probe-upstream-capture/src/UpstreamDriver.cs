@@ -55,12 +55,13 @@ public sealed class UpstreamDriver
     public void ResetCombatManagerState()
     {
         Type combatManagerType = TypeOrThrow("MegaCrit.Sts2.Core.Combat.CombatManager");
-        object instance = combatManagerType.GetProperty("Instance",
-                BindingFlags.Public | BindingFlags.Static)!
-            .GetValue(null)
+        object instance =
+            combatManagerType
+                .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+                .GetValue(null)
             ?? throw new InvalidOperationException("CombatManager.Instance returned null.");
-        FieldInfo stateField = combatManagerType.GetField("_state",
-            BindingFlags.NonPublic | BindingFlags.Instance)
+        FieldInfo stateField =
+            combatManagerType.GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("CombatManager._state field not found.");
         stateField.SetValue(instance, null);
     }
@@ -98,9 +99,12 @@ public sealed class UpstreamDriver
         return null;
     }
 
-    private static string SteamDir() => Environment.GetEnvironmentVariable("STEAM_STS2_DIR")
-        ?? Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? "",
-                        "snap/steam/common/.local/share/Steam/steamapps/common/Slay the Spire 2/data_sts2_linuxbsd_x86_64");
+    private static string SteamDir() =>
+        Environment.GetEnvironmentVariable("STEAM_STS2_DIR")
+        ?? Path.Combine(
+            Environment.GetEnvironmentVariable("HOME") ?? "",
+            "snap/steam/common/.local/share/Steam/steamapps/common/Slay the Spire 2/data_sts2_linuxbsd_x86_64"
+        );
 
     private static Assembly LoadSts2Assembly()
     {
@@ -136,7 +140,8 @@ public sealed class UpstreamDriver
                 }
             }
             throw new FileNotFoundException(
-                $"Could not locate upstream sts2.dll. Set STEAM_STS2_DIR or place sts2.dll next to UpstreamCapture binary. Tried: {sts2Path}.");
+                $"Could not locate upstream sts2.dll. Set STEAM_STS2_DIR or place sts2.dll next to UpstreamCapture binary. Tried: {sts2Path}."
+            );
         }
     }
 
@@ -150,15 +155,17 @@ public sealed class UpstreamDriver
         if (plan.Kind != EncounterCatalog.PlanKind.UpstreamComparable)
         {
             throw new InvalidOperationException(
-                $"Capture() called for non-comparable encounter '{plan.EncounterId}'; " +
-                $"caller should have routed to MissingUpstream path. Reason: {plan.Reason}.");
+                $"Capture() called for non-comparable encounter '{plan.EncounterId}'; "
+                    + $"caller should have routed to MissingUpstream path. Reason: {plan.Reason}."
+            );
         }
 
         // --- 0a. Turn on upstream's TestMode. This switches several singletons
         // (SaveManager, GodotFileIo) to mock variants that don't require the
         // Godot scene tree.
         Type testModeType = TypeOrThrow("MegaCrit.Sts2.Core.TestSupport.TestMode");
-        testModeType.GetProperty("IsOn", BindingFlags.Public | BindingFlags.Static)!
+        testModeType
+            .GetProperty("IsOn", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, true);
         // Inject a fake SaveManager instance (private static field _mockInstance)
         // so Player ctor's `SaveManager.Instance?.Progress.GetStatsForCharacter`
@@ -166,8 +173,8 @@ public sealed class UpstreamDriver
         // (which would call Steam / Godot natives that segfault outside game
         // runtime).
         Type saveManagerType = TypeOrThrow("MegaCrit.Sts2.Core.Saves.SaveManager");
-        FieldInfo mockField = saveManagerType.GetField("_mockInstance",
-            BindingFlags.NonPublic | BindingFlags.Static)
+        FieldInfo mockField =
+            saveManagerType.GetField("_mockInstance", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("SaveManager._mockInstance field not found.");
         // Build a SaveManager via uninitialized object, then poke its
         // _progressSaveManager field with a ProgressSaveManager whose
@@ -175,24 +182,38 @@ public sealed class UpstreamDriver
         // `SaveManager.Instance?.Progress.GetStatsForCharacter(...)` which
         // chains through Progress; GetStatsForCharacter returns
         // CharacterStats? so null is acceptable downstream.
-        object fakeSaveManager = System.Runtime.CompilerServices.RuntimeHelpers
-            .GetUninitializedObject(saveManagerType);
-        Type progressSaveManagerType = TypeOrThrow("MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager");
-        object fakeProgressSaveManager = System.Runtime.CompilerServices.RuntimeHelpers
-            .GetUninitializedObject(progressSaveManagerType);
+        object fakeSaveManager =
+            System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(saveManagerType);
+        Type progressSaveManagerType = TypeOrThrow(
+            "MegaCrit.Sts2.Core.Saves.Managers.ProgressSaveManager"
+        );
+        object fakeProgressSaveManager =
+            System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(
+                progressSaveManagerType
+            );
         // Set ProgressSaveManager.Progress backing field to default ProgressState.
         Type progressStateType = TypeOrThrow("MegaCrit.Sts2.Core.Saves.ProgressState");
-        object defaultProgressState = progressStateType.GetMethod("CreateDefault",
-            BindingFlags.Public | BindingFlags.Static)!
+        object defaultProgressState = progressStateType
+            .GetMethod("CreateDefault", BindingFlags.Public | BindingFlags.Static)!
             .Invoke(null, null)!;
-        FieldInfo progressBackingField = progressSaveManagerType.GetField(
-            "<Progress>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("ProgressSaveManager <Progress>k__BackingField not found.");
+        FieldInfo progressBackingField =
+            progressSaveManagerType.GetField(
+                "<Progress>k__BackingField",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            )
+            ?? throw new InvalidOperationException(
+                "ProgressSaveManager <Progress>k__BackingField not found."
+            );
         progressBackingField.SetValue(fakeProgressSaveManager, defaultProgressState);
         // Plug into SaveManager._progressSaveManager.
-        FieldInfo psmField = saveManagerType.GetField("_progressSaveManager",
-            BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("SaveManager._progressSaveManager field not found.");
+        FieldInfo psmField =
+            saveManagerType.GetField(
+                "_progressSaveManager",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            )
+            ?? throw new InvalidOperationException(
+                "SaveManager._progressSaveManager field not found."
+            );
         psmField.SetValue(fakeSaveManager, fakeProgressSaveManager);
         mockField.SetValue(null, fakeSaveManager);
 
@@ -231,10 +252,11 @@ public sealed class UpstreamDriver
         // process (the host CLI), so no reset is required, but if we ever
         // batch we'd need to reset CombatManager + NetCombatCardDb here.
 
-        MethodInfo modelDbCharacterGeneric = modelDbType_local.GetMethod("Character",
-            BindingFlags.Static | BindingFlags.Public)
+        MethodInfo modelDbCharacterGeneric =
+            modelDbType_local.GetMethod("Character", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ModelDb.Character not found.");
-        object silentCharacter = modelDbCharacterGeneric.MakeGenericMethod(silentType).Invoke(null, null)
+        object silentCharacter =
+            modelDbCharacterGeneric.MakeGenericMethod(silentType).Invoke(null, null)
             ?? throw new InvalidOperationException("ModelDb.Character<Silent> returned null.");
 
         // Player has a private 10-arg ctor:
@@ -242,43 +264,74 @@ public sealed class UpstreamDriver
         //          int maxEnergy, int gold, int potionSlotCount, int orbSlotCount,
         //          RelicGrabBag, UnlockState, ...optional discovered lists)
         // We invoke it directly with Silent's defaults.
-        int startingHp = ToInt(characterModelType.GetProperty("StartingHp")!.GetValue(silentCharacter)!);
-        int maxEnergy = ToInt(characterModelType.GetProperty("MaxEnergy")!.GetValue(silentCharacter)!);
-        int startingGold = ToInt(characterModelType.GetProperty("StartingGold")!.GetValue(silentCharacter)!);
-        int orbSlotCount = ToInt(characterModelType.GetProperty("BaseOrbSlotCount")!.GetValue(silentCharacter)!);
+        int startingHp = ToInt(
+            characterModelType.GetProperty("StartingHp")!.GetValue(silentCharacter)!
+        );
+        int maxEnergy = ToInt(
+            characterModelType.GetProperty("MaxEnergy")!.GetValue(silentCharacter)!
+        );
+        int startingGold = ToInt(
+            characterModelType.GetProperty("StartingGold")!.GetValue(silentCharacter)!
+        );
+        int orbSlotCount = ToInt(
+            characterModelType.GetProperty("BaseOrbSlotCount")!.GetValue(silentCharacter)!
+        );
         Type relicGrabBagType = TypeOrThrow("MegaCrit.Sts2.Core.Runs.RelicGrabBag");
-        object relicGrabBag = Activator.CreateInstance(relicGrabBagType, args: new object[] { /* refreshAllowed: */ false })
-            ?? throw new InvalidOperationException("RelicGrabBag ctor returned null.");
+        object relicGrabBag =
+            Activator.CreateInstance(
+                relicGrabBagType,
+                args: new object[]
+                { /* refreshAllowed: */
+                    false,
+                }
+            ) ?? throw new InvalidOperationException("RelicGrabBag ctor returned null.");
 
-        ConstructorInfo? playerCtor = playerType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+        ConstructorInfo? playerCtor = playerType
+            .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
             .FirstOrDefault(c => c.GetParameters().Length == 15);
         if (playerCtor is null)
         {
             throw new InvalidOperationException(
-                $"Player ctor with 15 params not found. Found these ctors: " +
-                string.Join("; ", playerType.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .Select(c => $"({c.GetParameters().Length} params)")));
+                $"Player ctor with 15 params not found. Found these ctors: "
+                    + string.Join(
+                        "; ",
+                        playerType
+                            .GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+                            .Select(c => $"({c.GetParameters().Length} params)")
+                    )
+            );
         }
         // Match the upstream Player ctor signature exactly:
         //   (CharacterModel, ulong, int, int, int, int, int, int, RelicGrabBag,
         //    UnlockState, List<ModelId>?, List<ModelId>?, List<string>?,
         //    List<ModelId>?, List<ModelId>?)
-        object player = playerCtor.Invoke(new object?[]
-        {
-            silentCharacter, /* netId */ 1uL,
-            /* currentHp */ startingHp, /* maxHp */ startingHp,
-            /* maxEnergy */ maxEnergy, /* gold */ startingGold,
-            /* potionSlotCount */ 3, /* orbSlotCount */ orbSlotCount,
-            relicGrabBag, unlockStateInstance,
-            /* discoveredCards */ null, /* discoveredEnemies */ null,
-            /* discoveredEpochs */ null, /* discoveredPotions */ null,
-            /* discoveredRelics */ null,
-        });
+        object player = playerCtor.Invoke(
+            new object?[]
+            {
+                silentCharacter, /* netId */
+                1uL,
+                /* currentHp */startingHp, /* maxHp */
+                startingHp,
+                /* maxEnergy */maxEnergy, /* gold */
+                startingGold,
+                /* potionSlotCount */3, /* orbSlotCount */
+                orbSlotCount,
+                relicGrabBag,
+                unlockStateInstance,
+                /* discoveredCards */null, /* discoveredEnemies */
+                null,
+                /* discoveredEpochs */null, /* discoveredPotions */
+                null,
+                /* discoveredRelics */null,
+            }
+        );
         // Populate the player's starting inventory (mimic CreateForNewRun
         // which calls player.PopulateStartingInventory() after the ctor).
-        MethodInfo populateInventoryMi = playerType.GetMethod("PopulateStartingInventory",
-            BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("PopulateStartingInventory not found.");
+        MethodInfo populateInventoryMi =
+            playerType.GetMethod(
+                "PopulateStartingInventory",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            ) ?? throw new InvalidOperationException("PopulateStartingInventory not found.");
         populateInventoryMi.Invoke(player, null);
 
         // RunState.CreateForNewRun(players, ActModel.GetDefaultList(), [], GameMode.Standard, 0, seed)
@@ -287,12 +340,14 @@ public sealed class UpstreamDriver
         Type modifierModelType = TypeOrThrow("MegaCrit.Sts2.Core.Models.ModifierModel");
         Type gameModeType = TypeOrThrow("MegaCrit.Sts2.Core.Runs.GameMode");
         object gameModeStandard = Enum.Parse(gameModeType, "Standard");
-        object canonicalActs = actModelType.GetMethod("GetDefaultList", BindingFlags.Static | BindingFlags.Public)!
-            .Invoke(null, null)
+        object canonicalActs =
+            actModelType
+                .GetMethod("GetDefaultList", BindingFlags.Static | BindingFlags.Public)!
+                .Invoke(null, null)
             ?? throw new InvalidOperationException("ActModel.GetDefaultList returned null.");
         // RunState.CreateForNewRun asserts each act is mutable. Convert.
-        MethodInfo actToMutableMi = actModelType.GetMethod("ToMutable",
-            BindingFlags.Public | BindingFlags.Instance)
+        MethodInfo actToMutableMi =
+            actModelType.GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("ActModel.ToMutable not found.");
         var actList = (System.Collections.IEnumerable)canonicalActs;
         Type listOfAct = typeof(List<>).MakeGenericType(actModelType);
@@ -313,13 +368,22 @@ public sealed class UpstreamDriver
         Type readOnlyListOfModifier = typeof(IReadOnlyList<>).MakeGenericType(modifierModelType);
         // acts is already IReadOnlyList<ActModel> per GetDefaultList signature.
 
-        MethodInfo createRunFromNew = runStateType.GetMethod("CreateForNewRun",
-            BindingFlags.Static | BindingFlags.Public)
+        MethodInfo createRunFromNew =
+            runStateType.GetMethod("CreateForNewRun", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("RunState.CreateForNewRun not found.");
-        object runState = createRunFromNew.Invoke(null, new object[]
-        {
-            players, acts, emptyModifiers, gameModeStandard, /* ascensionLevel */ 0, stringSeed,
-        }) ?? throw new InvalidOperationException("RunState.CreateForNewRun returned null.");
+        object runState =
+            createRunFromNew.Invoke(
+                null,
+                new object[]
+                {
+                    players,
+                    acts,
+                    emptyModifiers,
+                    gameModeStandard, /* ascensionLevel */
+                    0,
+                    stringSeed,
+                }
+            ) ?? throw new InvalidOperationException("RunState.CreateForNewRun returned null.");
 
         // --- 2. Resolve the encounter list (Q1 invented encounters; we drive
         // by direct monster instantiation rather than EncounterModel.ToMutable
@@ -330,22 +394,31 @@ public sealed class UpstreamDriver
         object combatSideEnemy = Enum.Parse(combatSideType, "Enemy");
 
         // Find IRunState and the modifiers/multiplayer fields.
-        object multiplayerScalingModel = runStateType.GetProperty("MultiplayerScalingModel")!
+        object multiplayerScalingModel = runStateType
+            .GetProperty("MultiplayerScalingModel")!
             .GetValue(runState)!;
         object modifiers = runStateType.GetProperty("Modifiers")!.GetValue(runState)!;
 
         // new CombatState(encounter: null, runState, modifiers, multiplayerScalingModel)
         // (Encounter is optional, used only by certain hooks. We pass null and
         // let SetUpCombat call AddCreature for our pre-built monster list.)
-        ConstructorInfo combatStateCtor = combatStateType.GetConstructors()
+        ConstructorInfo combatStateCtor = combatStateType
+            .GetConstructors()
             .Single(c => c.GetParameters().Length == 4);
-        object combatState = combatStateCtor.Invoke(new object?[]
-        {
-            null /* encounter */, runState, modifiers, multiplayerScalingModel,
-        });
+        object combatState = combatStateCtor.Invoke(
+            new object?[]
+            {
+                null /* encounter */
+                ,
+                runState,
+                modifiers,
+                multiplayerScalingModel,
+            }
+        );
 
         // state.AddPlayer(player) — registers player.Creature in _allies.
-        combatStateType.GetMethod("AddPlayer", BindingFlags.Public | BindingFlags.Instance)!
+        combatStateType
+            .GetMethod("AddPlayer", BindingFlags.Public | BindingFlags.Instance)!
             .Invoke(combatState, new object[] { player });
 
         // --- 3. Spawn enemies via CombatState.CreateCreature.
@@ -354,8 +427,8 @@ public sealed class UpstreamDriver
         // monster class directly and call state.CreateCreature + AddCreature.
         Type monsterModelType = TypeOrThrow("MegaCrit.Sts2.Core.Models.MonsterModel");
         Type modelDbType = TypeOrThrow("MegaCrit.Sts2.Core.Models.ModelDb");
-        MethodInfo modelDbMonsterGeneric = modelDbType.GetMethod("Monster",
-            BindingFlags.Static | BindingFlags.Public)
+        MethodInfo modelDbMonsterGeneric =
+            modelDbType.GetMethod("Monster", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ModelDb.Monster not found.");
 
         var monsters = new List<object>();
@@ -367,42 +440,59 @@ public sealed class UpstreamDriver
             // ModelDb.Monster<T>() — fetch canonical instance.
             Type monsterClassType = TypeOrThrow($"MegaCrit.Sts2.Core.Models.Monsters.{monsterId}");
             MethodInfo modelDbMonster = modelDbMonsterGeneric.MakeGenericMethod(monsterClassType);
-            object canonicalMonster = modelDbMonster.Invoke(null, null)
-                ?? throw new InvalidOperationException($"ModelDb.Monster<{monsterId}> returned null.");
+            object canonicalMonster =
+                modelDbMonster.Invoke(null, null)
+                ?? throw new InvalidOperationException(
+                    $"ModelDb.Monster<{monsterId}> returned null."
+                );
 
             // monster.ToMutable() — get a mutable clone to add to combat.
-            object mutableMonster = monsterModelType.GetMethod("ToMutable",
-                    BindingFlags.Public | BindingFlags.Instance)!
-                .Invoke(canonicalMonster, null)
+            object mutableMonster =
+                monsterModelType
+                    .GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)!
+                    .Invoke(canonicalMonster, null)
                 ?? throw new InvalidOperationException($"{monsterId}.ToMutable returned null.");
             monsters.Add(mutableMonster);
 
             // creature = combatState.CreateCreature(monster, CombatSide.Enemy, slot)
-            MethodInfo createCreatureMi = combatStateType.GetMethod("CreateCreature",
-                BindingFlags.Public | BindingFlags.Instance)
-                ?? throw new InvalidOperationException("CombatState.CreateCreature not found.");
-            object creature = createCreatureMi.Invoke(combatState,
-                new object?[] { mutableMonster, combatSideEnemy, slot })
-                ?? throw new InvalidOperationException($"CreateCreature returned null for {monsterId}.");
+            MethodInfo createCreatureMi =
+                combatStateType.GetMethod(
+                    "CreateCreature",
+                    BindingFlags.Public | BindingFlags.Instance
+                ) ?? throw new InvalidOperationException("CombatState.CreateCreature not found.");
+            object creature =
+                createCreatureMi.Invoke(
+                    combatState,
+                    new object?[] { mutableMonster, combatSideEnemy, slot }
+                )
+                ?? throw new InvalidOperationException(
+                    $"CreateCreature returned null for {monsterId}."
+                );
 
             // combatState.AddCreature(creature)
-            combatStateType.GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!
+            combatStateType
+                .GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!
                 .Invoke(combatState, new object[] { creature });
         }
 
         // --- 4. Invoke CombatManager.SetUpCombat ---------------------------
         Type combatManagerType = TypeOrThrow("MegaCrit.Sts2.Core.Combat.CombatManager");
-        object combatManagerInstance = combatManagerType.GetProperty("Instance",
-                BindingFlags.Public | BindingFlags.Static)!
-            .GetValue(null)
+        object combatManagerInstance =
+            combatManagerType
+                .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+                .GetValue(null)
             ?? throw new InvalidOperationException("CombatManager.Instance returned null.");
 
         // NOTE: We DON'T call CombatManager.Reset() — its last line calls
         // RunManager.Instance.ActionQueueSynchronizer (scene-tree singleton)
         // and NREs. Since we run one capture per process invocation, the
         // CombatManager state is fresh.
-        InvokeMethod(combatManagerType, combatManagerInstance, "SetUpCombat",
-            new object[] { combatState });
+        InvokeMethod(
+            combatManagerType,
+            combatManagerInstance,
+            "SetUpCombat",
+            new object[] { combatState }
+        );
 
         // --- 5. Serialize canonical bytes ---------------------------------
         return SerializeCanonical(combatState, player, monsters);
@@ -427,7 +517,11 @@ public sealed class UpstreamDriver
     ///   <item>HandPile.Count = 0 / DiscardPile = 0 / ExhaustPile = 0</item>
     /// </list>
     /// </summary>
-    private byte[] SerializeCanonical(object combatState, object player, IReadOnlyList<object> monsters)
+    private byte[] SerializeCanonical(
+        object combatState,
+        object player,
+        IReadOnlyList<object> monsters
+    )
     {
         using var ms = new MemoryStream();
         using var bw = new BinaryWriter(ms, Encoding.UTF8, leaveOpen: false);
@@ -442,7 +536,7 @@ public sealed class UpstreamDriver
 
         // Phase: Q1 uses CombatPhase enum (CombatStart=0). Write 0 to match
         // the post-SetUpCombat (pre-StartCombatInternal) snapshot.
-        bw.Write((int)0);  // CombatPhase.CombatStart
+        bw.Write((int)0); // CombatPhase.CombatStart
 
         // Player creature
         object playerCreature = GetProperty(player, "Creature")!;
@@ -467,9 +561,13 @@ public sealed class UpstreamDriver
         }
         for (int i = enemyCreatures.Count; i < 2; i++)
         {
-            WriteCreature(bw, currentHp: 0, block: 0,
+            WriteCreature(
+                bw,
+                currentHp: 0,
+                block: 0,
                 powers: Array.Empty<(string id, int stacks, uint source, bool justApplied)>(),
-                playerSourceId: 0);
+                playerSourceId: 0
+            );
         }
 
         // Energy: post-SetUpCombat = 0 (StartCombatInternal not run).
@@ -491,9 +589,13 @@ public sealed class UpstreamDriver
         return ms.ToArray();
     }
 
-    private static void WriteCreature(BinaryWriter bw, int currentHp, int block,
+    private static void WriteCreature(
+        BinaryWriter bw,
+        int currentHp,
+        int block,
         IReadOnlyList<(string id, int stacks, uint source, bool justApplied)> powers,
-        uint playerSourceId)
+        uint playerSourceId
+    )
     {
         bw.Write(currentHp);
         bw.Write(block);
@@ -509,11 +611,14 @@ public sealed class UpstreamDriver
         }
     }
 
-    private static IReadOnlyList<(string id, int stacks, uint source, bool justApplied)> GetPowers(object creature)
+    private static IReadOnlyList<(string id, int stacks, uint source, bool justApplied)> GetPowers(
+        object creature
+    )
     {
         // Upstream: creature.Powers : IReadOnlyList<Power>
         object? powersObj = GetProperty(creature, "Powers");
-        if (powersObj is null) return Array.Empty<(string, int, uint, bool)>();
+        if (powersObj is null)
+            return Array.Empty<(string, int, uint, bool)>();
         var result = new List<(string id, int stacks, uint source, bool justApplied)>();
         foreach (object pw in (IEnumerable)powersObj)
         {
@@ -539,7 +644,8 @@ public sealed class UpstreamDriver
                 {
                     cid = GetProperty(cid, "Value");
                 }
-                if (cid is uint u) sourceId = u;
+                if (cid is uint u)
+                    sourceId = u;
             }
             bool justApplied = (GetProperty(pw, "JustApplied") as bool?) ?? false;
             result.Add((modelId, stacks, sourceId, justApplied));
@@ -549,11 +655,14 @@ public sealed class UpstreamDriver
 
     private static int PileCount(object pile)
     {
-        object cards = GetProperty(pile, "Cards")
+        object cards =
+            GetProperty(pile, "Cards")
             ?? throw new InvalidOperationException("CardPile.Cards not found.");
-        if (cards is ICollection c) return c.Count;
+        if (cards is ICollection c)
+            return c.Count;
         int count = 0;
-        foreach (var _ in (IEnumerable)cards) count++;
+        foreach (var _ in (IEnumerable)cards)
+            count++;
         return count;
     }
 
@@ -566,16 +675,23 @@ public sealed class UpstreamDriver
     private void InjectAllSubtypes(MethodInfo injectMi, string baseTypeName, string kind)
     {
         Type? baseType = _sts2.GetType(baseTypeName);
-        if (baseType is null) return;
-        var subtypes = _sts2.GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && baseType.IsAssignableFrom(t)
-                        // Skip mock/test types — they tend to call into
-                        // upstream's TestSupport which crashes outside the
-                        // game runtime.
-                        && !t.Namespace?.Contains("Mocks", StringComparison.Ordinal) is true
-                        && !t.Name.StartsWith("Mock", StringComparison.Ordinal))
+        if (baseType is null)
+            return;
+        var subtypes = _sts2
+            .GetTypes()
+            .Where(t =>
+                t.IsClass
+                && !t.IsAbstract
+                && baseType.IsAssignableFrom(t)
+                // Skip mock/test types — they tend to call into
+                // upstream's TestSupport which crashes outside the
+                // game runtime.
+                && !t.Namespace?.Contains("Mocks", StringComparison.Ordinal) is true
+                && !t.Name.StartsWith("Mock", StringComparison.Ordinal)
+            )
             .ToList();
-        int succ = 0, fail = 0;
+        int succ = 0,
+            fail = 0;
         foreach (Type t in subtypes)
         {
             try
@@ -590,7 +706,9 @@ public sealed class UpstreamDriver
         }
         if (Environment.GetEnvironmentVariable("UPSTREAM_CAPTURE_VERBOSE") is not null)
         {
-            Console.Error.WriteLine($"inject {kind}: {succ} ok, {fail} skipped (of {subtypes.Count})");
+            Console.Error.WriteLine(
+                $"inject {kind}: {succ} ok, {fail} skipped (of {subtypes.Count})"
+            );
         }
     }
 
@@ -606,25 +724,37 @@ public sealed class UpstreamDriver
     /// </summary>
     private static object MakeUninitializedUnlockState(Type unlockStateType, Type modelIdType)
     {
-        object instance = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(unlockStateType);
+        object instance = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(
+            unlockStateType
+        );
         // Set the two private readonly fields to empty hashsets.
-        FieldInfo epochsField = unlockStateType.GetField("_unlockedEpochIds",
-            BindingFlags.NonPublic | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("UnlockState._unlockedEpochIds field not found.");
+        FieldInfo epochsField =
+            unlockStateType.GetField(
+                "_unlockedEpochIds",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            )
+            ?? throw new InvalidOperationException(
+                "UnlockState._unlockedEpochIds field not found."
+            );
         Type hashSetOfString = typeof(HashSet<>).MakeGenericType(typeof(string));
         object emptyEpochs = Activator.CreateInstance(hashSetOfString)!;
         epochsField.SetValue(instance, emptyEpochs);
 
-        FieldInfo encField = unlockStateType.GetField("_encountersSeen",
-            BindingFlags.NonPublic | BindingFlags.Instance)
+        FieldInfo encField =
+            unlockStateType.GetField(
+                "_encountersSeen",
+                BindingFlags.NonPublic | BindingFlags.Instance
+            )
             ?? throw new InvalidOperationException("UnlockState._encountersSeen field not found.");
         Type hashSetOfModelId = typeof(HashSet<>).MakeGenericType(modelIdType);
         object emptyEnc = Activator.CreateInstance(hashSetOfModelId)!;
         encField.SetValue(instance, emptyEnc);
 
         // NumberOfRuns is a get-only auto-property; backing field is "<NumberOfRuns>k__BackingField".
-        FieldInfo? runsBacking = unlockStateType.GetField("<NumberOfRuns>k__BackingField",
-            BindingFlags.NonPublic | BindingFlags.Instance);
+        FieldInfo? runsBacking = unlockStateType.GetField(
+            "<NumberOfRuns>k__BackingField",
+            BindingFlags.NonPublic | BindingFlags.Instance
+        );
         runsBacking?.SetValue(instance, 0);
 
         return instance;
@@ -636,17 +766,19 @@ public sealed class UpstreamDriver
     /// AbstractModel ctor throws on re-init).
     /// </summary>
     private bool _modelDbInitialized;
+
     private void EnsureModelDbInitialized()
     {
-        if (_modelDbInitialized) return;
+        if (_modelDbInitialized)
+            return;
         Type modelDbType = TypeOrThrow("MegaCrit.Sts2.Core.Models.ModelDb");
         // ModelDb.Init iterates all AbstractModel subtypes and Activator.CreateInstance
         // each. Some constructors (Godot-bound resources, multiplayer types) crash
         // the runtime. We instead call Inject() for only the specific types we need
         // for SetUpCombat (Silent, the encounter's monsters, starter cards/relic, acts).
         // This skips the unsafe types entirely.
-        MethodInfo injectMi = modelDbType.GetMethod("Inject",
-            BindingFlags.Static | BindingFlags.Public)
+        MethodInfo injectMi =
+            modelDbType.GetMethod("Inject", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ModelDb.Inject not found.");
         // The seed-types we need to populate. Each Inject() call also reaches
         // their AbstractModel-typed dependencies via the type's parameterless
@@ -679,8 +811,14 @@ public sealed class UpstreamDriver
             Type? t = _sts2.GetType(tn);
             if (t is not null)
             {
-                try { injectMi.Invoke(null, new object?[] { t }); }
-                catch (Exception ex) { /* log later */ Console.Error.WriteLine($"warn: Inject {tn}: {(ex.InnerException ?? ex).Message}"); }
+                try
+                {
+                    injectMi.Invoke(null, new object?[] { t });
+                }
+                catch (Exception ex)
+                { /* log later */
+                    Console.Error.WriteLine($"warn: Inject {tn}: {(ex.InnerException ?? ex).Message}");
+                }
             }
         }
 
@@ -712,7 +850,9 @@ public sealed class UpstreamDriver
         Type? t = _sts2.GetType(fullName);
         if (t is null)
         {
-            throw new InvalidOperationException($"Upstream type '{fullName}' not found in sts2.dll.");
+            throw new InvalidOperationException(
+                $"Upstream type '{fullName}' not found in sts2.dll."
+            );
         }
         return t;
     }
@@ -725,10 +865,14 @@ public sealed class UpstreamDriver
             FieldInfo? f = t.GetField(name, BindingFlags.Static | BindingFlags.Public);
             if (f is null)
             {
-                throw new InvalidOperationException($"Static member '{name}' on {t.FullName} not found.");
+                throw new InvalidOperationException(
+                    $"Static member '{name}' on {t.FullName} not found."
+                );
             }
             return f.GetValue(null)
-                ?? throw new InvalidOperationException($"Static field {t.FullName}.{name} is null.");
+                ?? throw new InvalidOperationException(
+                    $"Static field {t.FullName}.{name} is null."
+                );
         }
         return p.GetValue(null)
             ?? throw new InvalidOperationException($"Static property {t.FullName}.{name} is null.");
@@ -738,31 +882,37 @@ public sealed class UpstreamDriver
     {
         Type t = instance.GetType();
         PropertyInfo? p = t.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
-        if (p is not null) return p.GetValue(instance);
+        if (p is not null)
+            return p.GetValue(instance);
         FieldInfo? f = t.GetField(name, BindingFlags.Public | BindingFlags.Instance);
         return f?.GetValue(instance);
     }
 
     private static void InvokeMethod(Type t, object? instance, string name, object?[] args)
     {
-        MethodInfo? mi = t.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+        MethodInfo? mi = t.GetMethods(
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static
+            )
             .Where(m => m.Name == name && m.GetParameters().Length == args.Length)
             .FirstOrDefault();
         if (mi is null)
         {
-            throw new InvalidOperationException($"{t.FullName}.{name}({args.Length} args) not found.");
+            throw new InvalidOperationException(
+                $"{t.FullName}.{name}({args.Length} args) not found."
+            );
         }
         mi.Invoke(instance, args);
     }
 
-    private static int ToInt(object value) => value switch
-    {
-        int i => i,
-        long l => (int)l,
-        uint u => (int)u,
-        decimal d => (int)d,
-        _ => Convert.ToInt32(value),
-    };
+    private static int ToInt(object value) =>
+        value switch
+        {
+            int i => i,
+            long l => (int)l,
+            uint u => (int)u,
+            decimal d => (int)d,
+            _ => Convert.ToInt32(value),
+        };
 
     private static object MakeReadOnlyList(Type elementType, object[] items)
     {

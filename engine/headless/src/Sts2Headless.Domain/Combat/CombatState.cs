@@ -106,7 +106,8 @@ public sealed record CombatState(
     int AttacksPlayedThisTurn = 0,
     int CardsDrawnThisCombat = 0,
     int LastSpentEnergy = 0,
-    int ExhaustedShivCount = 0)
+    int ExhaustedShivCount = 0
+)
 {
     /// <summary>
     /// Find the enemy with the given id; returns null if missing. Convenience for
@@ -117,7 +118,8 @@ public sealed record CombatState(
     {
         for (int i = 0; i < Enemies.Count; i++)
         {
-            if (Enemies[i].Id == id) return Enemies[i];
+            if (Enemies[i].Id == id)
+                return Enemies[i];
         }
         return null;
     }
@@ -133,7 +135,8 @@ public sealed record CombatState(
         if (enemy is null)
         {
             throw new InvalidOperationException(
-                $"CombatState: no enemy with id={id} (have ids: {string.Join(",", Enemies.Select(e => e.Id))}).");
+                $"CombatState: no enemy with id={id} (have ids: {string.Join(",", Enemies.Select(e => e.Id))})."
+            );
         }
         return enemy;
     }
@@ -143,7 +146,8 @@ public sealed record CombatState(
     /// </summary>
     public Creature GetCreature(uint id)
     {
-        if (Player.Id == id) return Player;
+        if (Player.Id == id)
+            return Player;
         return GetEnemy(id);
     }
 
@@ -166,7 +170,9 @@ public sealed record CombatState(
         if (!updated.IsPlayer)
         {
             throw new ArgumentException(
-                "WithPlayer requires a creature with IsPlayer=true.", nameof(updated));
+                "WithPlayer requires a creature with IsPlayer=true.",
+                nameof(updated)
+            );
         }
         return this with { Player = updated };
     }
@@ -177,17 +183,22 @@ public sealed record CombatState(
         if (updated.IsPlayer)
         {
             throw new ArgumentException(
-                "WithEnemy requires a creature with IsPlayer=false.", nameof(updated));
+                "WithEnemy requires a creature with IsPlayer=false.",
+                nameof(updated)
+            );
         }
         int index = -1;
         for (int i = 0; i < Enemies.Count; i++)
         {
-            if (Enemies[i].Id == updated.Id) { index = i; break; }
+            if (Enemies[i].Id == updated.Id)
+            {
+                index = i;
+                break;
+            }
         }
         if (index < 0)
         {
-            throw new InvalidOperationException(
-                $"WithEnemy: no enemy with id={updated.Id}.");
+            throw new InvalidOperationException($"WithEnemy: no enemy with id={updated.Id}.");
         }
         return this with { Enemies = Enemies.SetItem(index, updated) };
     }
@@ -202,25 +213,45 @@ public sealed record CombatState(
     /// </summary>
     public bool Equals(CombatState? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (TurnCounter != other.TurnCounter || Phase != other.Phase) return false;
-        if (Energy != other.Energy || BaseEnergyPerTurn != other.BaseEnergyPerTurn) return false;
-        if (HandDrawSize != other.HandDrawSize) return false;
-        if (PlayerRngCounter != other.PlayerRngCounter || MonsterRngCounter != other.MonsterRngCounter) return false;
-        if (AttacksPlayedThisTurn != other.AttacksPlayedThisTurn) return false;
-        if (CardsDrawnThisCombat != other.CardsDrawnThisCombat) return false;
-        if (LastSpentEnergy != other.LastSpentEnergy) return false;
-        if (ExhaustedShivCount != other.ExhaustedShivCount) return false;
-        if (!Player.Equals(other.Player)) return false;
-        if (!DrawPile.Equals(other.DrawPile)) return false;
-        if (!HandPile.Equals(other.HandPile)) return false;
-        if (!DiscardPile.Equals(other.DiscardPile)) return false;
-        if (!ExhaustPile.Equals(other.ExhaustPile)) return false;
-        if (Enemies.Count != other.Enemies.Count) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (TurnCounter != other.TurnCounter || Phase != other.Phase)
+            return false;
+        if (Energy != other.Energy || BaseEnergyPerTurn != other.BaseEnergyPerTurn)
+            return false;
+        if (HandDrawSize != other.HandDrawSize)
+            return false;
+        if (
+            PlayerRngCounter != other.PlayerRngCounter
+            || MonsterRngCounter != other.MonsterRngCounter
+        )
+            return false;
+        if (AttacksPlayedThisTurn != other.AttacksPlayedThisTurn)
+            return false;
+        if (CardsDrawnThisCombat != other.CardsDrawnThisCombat)
+            return false;
+        if (LastSpentEnergy != other.LastSpentEnergy)
+            return false;
+        if (ExhaustedShivCount != other.ExhaustedShivCount)
+            return false;
+        if (!Player.Equals(other.Player))
+            return false;
+        if (!DrawPile.Equals(other.DrawPile))
+            return false;
+        if (!HandPile.Equals(other.HandPile))
+            return false;
+        if (!DiscardPile.Equals(other.DiscardPile))
+            return false;
+        if (!ExhaustPile.Equals(other.ExhaustPile))
+            return false;
+        if (Enemies.Count != other.Enemies.Count)
+            return false;
         for (int i = 0; i < Enemies.Count; i++)
         {
-            if (!Enemies[i].Equals(other.Enemies[i])) return false;
+            if (!Enemies[i].Equals(other.Enemies[i]))
+                return false;
         }
         return true;
     }
@@ -245,7 +276,8 @@ public sealed record CombatState(
         h.Add(HandPile);
         h.Add(DiscardPile);
         h.Add(ExhaustPile);
-        for (int i = 0; i < Enemies.Count; i++) h.Add(Enemies[i]);
+        for (int i = 0; i < Enemies.Count; i++)
+            h.Add(Enemies[i]);
         return h.ToHashCode();
     }
 }

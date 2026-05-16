@@ -12,12 +12,14 @@ public class PowerModelTests
 {
     private sealed class CounterPower : PowerModel
     {
-        public CounterPower() : base("counter_power", PowerType.Buff, PowerStackType.Counter) { }
+        public CounterPower()
+            : base("counter_power", PowerType.Buff, PowerStackType.Counter) { }
     }
 
     private sealed class SinglePower : PowerModel
     {
-        public SinglePower() : base("single_power", PowerType.Debuff, PowerStackType.Single) { }
+        public SinglePower()
+            : base("single_power", PowerType.Debuff, PowerStackType.Single) { }
     }
 
     [Fact]
@@ -61,11 +63,13 @@ public class PowerModelTests
 
     private sealed class BadPower : PowerModel
     {
-        public BadPower() : base("bad", PowerType.Buff, PowerStackType.None) { }
+        public BadPower()
+            : base("bad", PowerType.Buff, PowerStackType.None) { }
     }
 
     private sealed class EmptyIdPower : PowerModel
     {
-        public EmptyIdPower() : base("", PowerType.Buff, PowerStackType.Counter) { }
+        public EmptyIdPower()
+            : base("", PowerType.Buff, PowerStackType.Counter) { }
     }
 }

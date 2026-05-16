@@ -35,19 +35,24 @@ internal static class ManifestStampCodec
         if (gitShaBytes.Length > byte.MaxValue)
         {
             throw new ArgumentException(
-                $"ManifestStamp.GitSha exceeds 255 UTF-8 bytes ({gitShaBytes.Length}).", nameof(stamp));
+                $"ManifestStamp.GitSha exceeds 255 UTF-8 bytes ({gitShaBytes.Length}).",
+                nameof(stamp)
+            );
         }
         byte[] buildIdBytes = Encoding.UTF8.GetBytes(stamp.BuildId);
         if (buildIdBytes.Length > ushort.MaxValue)
         {
             throw new ArgumentException(
-                $"ManifestStamp.BuildId exceeds 65535 UTF-8 bytes ({buildIdBytes.Length}).", nameof(stamp));
+                $"ManifestStamp.BuildId exceeds 65535 UTF-8 bytes ({buildIdBytes.Length}).",
+                nameof(stamp)
+            );
         }
         if (stamp.ContentHash.Length != Sha256ByteLength)
         {
             throw new ArgumentException(
                 $"ManifestStamp.ContentHash must be {Sha256ByteLength} bytes (got {stamp.ContentHash.Length}).",
-                nameof(stamp));
+                nameof(stamp)
+            );
         }
 
         int totalLen = 1 + gitShaBytes.Length + 2 + buildIdBytes.Length + Sha256ByteLength;
@@ -57,7 +62,10 @@ internal static class ManifestStampCodec
         pos += 1;
         gitShaBytes.AsSpan().CopyTo(result.AsSpan(pos, gitShaBytes.Length));
         pos += gitShaBytes.Length;
-        BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(pos, 2), (ushort)buildIdBytes.Length);
+        BinaryPrimitives.WriteUInt16LittleEndian(
+            result.AsSpan(pos, 2),
+            (ushort)buildIdBytes.Length
+        );
         pos += 2;
         buildIdBytes.AsSpan().CopyTo(result.AsSpan(pos, buildIdBytes.Length));
         pos += buildIdBytes.Length;
@@ -74,7 +82,9 @@ internal static class ManifestStampCodec
     {
         if (bytes.Length < 1)
         {
-            throw new ReplayException("ManifestStampCodec.Decode: buffer too short for git_sha_len.");
+            throw new ReplayException(
+                "ManifestStampCodec.Decode: buffer too short for git_sha_len."
+            );
         }
         int pos = 0;
         byte gitShaLen = bytes[pos];
@@ -82,21 +92,25 @@ internal static class ManifestStampCodec
         if (pos + gitShaLen > bytes.Length)
         {
             throw new ReplayException(
-                $"ManifestStampCodec.Decode: git_sha_len={gitShaLen} exceeds buffer (remaining {bytes.Length - pos}).");
+                $"ManifestStampCodec.Decode: git_sha_len={gitShaLen} exceeds buffer (remaining {bytes.Length - pos})."
+            );
         }
         string gitSha = Encoding.UTF8.GetString(bytes.Slice(pos, gitShaLen));
         pos += gitShaLen;
 
         if (pos + 2 > bytes.Length)
         {
-            throw new ReplayException("ManifestStampCodec.Decode: buffer too short for build_id_len.");
+            throw new ReplayException(
+                "ManifestStampCodec.Decode: buffer too short for build_id_len."
+            );
         }
         ushort buildIdLen = BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(pos, 2));
         pos += 2;
         if (pos + buildIdLen > bytes.Length)
         {
             throw new ReplayException(
-                $"ManifestStampCodec.Decode: build_id_len={buildIdLen} exceeds buffer (remaining {bytes.Length - pos}).");
+                $"ManifestStampCodec.Decode: build_id_len={buildIdLen} exceeds buffer (remaining {bytes.Length - pos})."
+            );
         }
         string buildId = Encoding.UTF8.GetString(bytes.Slice(pos, buildIdLen));
         pos += buildIdLen;
@@ -104,7 +118,8 @@ internal static class ManifestStampCodec
         if (pos + Sha256ByteLength > bytes.Length)
         {
             throw new ReplayException(
-                $"ManifestStampCodec.Decode: buffer too short for content_hash (remaining {bytes.Length - pos}).");
+                $"ManifestStampCodec.Decode: buffer too short for content_hash (remaining {bytes.Length - pos})."
+            );
         }
         byte[] contentHash = bytes.Slice(pos, Sha256ByteLength).ToArray();
         pos += Sha256ByteLength;
@@ -112,7 +127,8 @@ internal static class ManifestStampCodec
         if (pos != bytes.Length)
         {
             throw new ReplayException(
-                $"ManifestStampCodec.Decode: {bytes.Length - pos} trailing bytes after content_hash.");
+                $"ManifestStampCodec.Decode: {bytes.Length - pos} trailing bytes after content_hash."
+            );
         }
         return new ManifestStamp(gitSha, buildId, contentHash);
     }

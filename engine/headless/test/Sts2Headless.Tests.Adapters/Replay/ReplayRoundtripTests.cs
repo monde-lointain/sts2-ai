@@ -38,8 +38,7 @@ public class ReplayRoundtripTests
     private static readonly byte[] ZeroHash = new byte[32];
 
     private static ManifestStamp MakeStamp() =>
-        new("deadbeefcafebabe1234567890abcdef12345678",
-            "Q1-Phase1-replay-roundtrip", ZeroHash);
+        new("deadbeefcafebabe1234567890abcdef12345678", "Q1-Phase1-replay-roundtrip", ZeroHash);
 
     /// <summary>
     /// Synthesize a deterministic per-fixture <see cref="PlayerAction"/>.
@@ -68,7 +67,12 @@ public class ReplayRoundtripTests
         // are independent of the stamp, so the digest is stamp-independent.
         ManifestStamp throwaway = new("", "", new byte[32]);
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            f.State, f.RunRng, f.PlayerRng, f.Tokens, throwaway);
+            f.State,
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens,
+            throwaway
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         byte[] csBytes = decoded.CombatStateBytes!;
         return SHA256.HashData(csBytes);
@@ -106,10 +110,12 @@ public class ReplayRoundtripTests
             byte[] expected = ExpectedPostHash(fixtures[i]);
             byte[] recorded = blob.Entries[i].PostHash;
 
-            Assert.True(expected.AsSpan().SequenceEqual(recorded),
-                $"[fixture #{i} {fixtures[i].Name}] post_hash mismatch: " +
-                $"expected={Convert.ToHexString(expected)}, " +
-                $"recorded={Convert.ToHexString(recorded)}");
+            Assert.True(
+                expected.AsSpan().SequenceEqual(recorded),
+                $"[fixture #{i} {fixtures[i].Name}] post_hash mismatch: "
+                    + $"expected={Convert.ToHexString(expected)}, "
+                    + $"recorded={Convert.ToHexString(recorded)}"
+            );
         }
     }
 
@@ -127,8 +133,10 @@ public class ReplayRoundtripTests
         List<StateCodecFixture> fixtures2 = StateCodecFixtures.GenerateAll();
         byte[] second = RecordCorpus(fixtures2, initialSeed: 0xCAFEBABEu);
 
-        Assert.True(first.AsSpan().SequenceEqual(second),
-            $"record-then-replay must be byte-identical: first={first.Length}B second={second.Length}B");
+        Assert.True(
+            first.AsSpan().SequenceEqual(second),
+            $"record-then-replay must be byte-identical: first={first.Length}B second={second.Length}B"
+        );
     }
 
     // ============================================================
@@ -159,8 +167,7 @@ public class ReplayRoundtripTests
     [Fact]
     public void Header_roundtrip_preserves_stamp_and_seed()
     {
-        ManifestStamp stamp = new(
-            "abcdef0123456789", "Q1-Phase1-h", ZeroHash);
+        ManifestStamp stamp = new("abcdef0123456789", "Q1-Phase1-h", ZeroHash);
         StateCodecFixture f = StateCodecFixtures.GenerateAll()[0];
         using MemoryStream ms = new();
         ReplayRecorder rec = new();
@@ -188,8 +195,13 @@ public class ReplayRoundtripTests
         using MemoryStream msA = new();
         ReplayRecorder a = new();
         a.OpenStream(msA, MakeStamp(), 0u);
-        a.AppendStep(f0.State, PlayerAction.EndTurn.Instance,
-            new RunRngSet("seed-A"), new PlayerRngSet(1u), new TokenMap());
+        a.AppendStep(
+            f0.State,
+            PlayerAction.EndTurn.Instance,
+            new RunRngSet("seed-A"),
+            new PlayerRngSet(1u),
+            new TokenMap()
+        );
         a.Close();
 
         using MemoryStream msB = new();
@@ -199,14 +211,21 @@ public class ReplayRoundtripTests
         TokenMap tm = new();
         tm.GetOrAddId("foo");
         tm.GetOrAddId("bar");
-        b.AppendStep(f0.State, PlayerAction.EndTurn.Instance,
-            new RunRngSet("seed-B"), new PlayerRngSet(2u), tm);
+        b.AppendStep(
+            f0.State,
+            PlayerAction.EndTurn.Instance,
+            new RunRngSet("seed-B"),
+            new PlayerRngSet(2u),
+            tm
+        );
         b.Close();
 
         ReplayBlob blobA = ReplayReader.Decode(msA.ToArray());
         ReplayBlob blobB = ReplayReader.Decode(msB.ToArray());
 
-        Assert.True(blobA.Entries[0].PostHash.AsSpan().SequenceEqual(blobB.Entries[0].PostHash),
-            "post_hash must be a function of CombatState alone (Rng/TokenMap don't enter)");
+        Assert.True(
+            blobA.Entries[0].PostHash.AsSpan().SequenceEqual(blobB.Entries[0].PostHash),
+            "post_hash must be a function of CombatState alone (Rng/TokenMap don't enter)"
+        );
     }
 }

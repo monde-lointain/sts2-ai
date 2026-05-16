@@ -21,20 +21,20 @@ namespace Sts2Headless.Domain.Content;
 /// </summary>
 public static class CoverageGate
 {
-    public static CoverageResult ComputeForCards(Q4Manifest manifest, CardCatalog catalog)
-        => Compute(manifest.Cards, catalog.EnumerateIds());
+    public static CoverageResult ComputeForCards(Q4Manifest manifest, CardCatalog catalog) =>
+        Compute(manifest.Cards, catalog.EnumerateIds());
 
-    public static CoverageResult ComputeForRelics(Q4Manifest manifest, RelicCatalog catalog)
-        => Compute(manifest.Relics, catalog.EnumerateIds());
+    public static CoverageResult ComputeForRelics(Q4Manifest manifest, RelicCatalog catalog) =>
+        Compute(manifest.Relics, catalog.EnumerateIds());
 
-    public static CoverageResult ComputeForPowers(Q4Manifest manifest, PowerCatalog catalog)
-        => Compute(manifest.Powers, catalog.EnumerateIds());
+    public static CoverageResult ComputeForPowers(Q4Manifest manifest, PowerCatalog catalog) =>
+        Compute(manifest.Powers, catalog.EnumerateIds());
 
-    public static CoverageResult ComputeForMonsters(Q4Manifest manifest, MonsterCatalog catalog)
-        => Compute(manifest.Monsters, catalog.EnumerateIds());
+    public static CoverageResult ComputeForMonsters(Q4Manifest manifest, MonsterCatalog catalog) =>
+        Compute(manifest.Monsters, catalog.EnumerateIds());
 
-    public static CoverageResult ComputeForPotions(Q4Manifest manifest, PotionCatalog catalog)
-        => Compute(manifest.Potions, catalog.EnumerateIds());
+    public static CoverageResult ComputeForPotions(Q4Manifest manifest, PotionCatalog catalog) =>
+        Compute(manifest.Potions, catalog.EnumerateIds());
 
     /// <summary>
     /// Aggregate coverage check over all five catalogs at once.
@@ -45,7 +45,8 @@ public static class CoverageGate
         RelicCatalog relics,
         PowerCatalog powers,
         MonsterCatalog monsters,
-        PotionCatalog potions)
+        PotionCatalog potions
+    )
     {
         ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(cards);
@@ -55,11 +56,12 @@ public static class CoverageGate
         ArgumentNullException.ThrowIfNull(potions);
 
         return new AggregateCoverageResult(
-            Cards:    ComputeForCards(manifest, cards),
-            Relics:   ComputeForRelics(manifest, relics),
-            Powers:   ComputeForPowers(manifest, powers),
+            Cards: ComputeForCards(manifest, cards),
+            Relics: ComputeForRelics(manifest, relics),
+            Powers: ComputeForPowers(manifest, powers),
             Monsters: ComputeForMonsters(manifest, monsters),
-            Potions:  ComputeForPotions(manifest, potions));
+            Potions: ComputeForPotions(manifest, potions)
+        );
     }
 
     /// <summary>
@@ -69,7 +71,8 @@ public static class CoverageGate
     /// </summary>
     private static CoverageResult Compute(
         IReadOnlyList<string> expected,
-        IEnumerable<string> actual)
+        IEnumerable<string> actual
+    )
     {
         // Materialize actual once so we can both probe membership and walk in insertion
         // order without depending on the iterator's re-enumeration semantics.
@@ -85,7 +88,8 @@ public static class CoverageGate
             if (!seenInExpected.Add(id))
             {
                 throw new InvalidOperationException(
-                    $"Duplicate id '{id}' in Q4 manifest bucket — manifest schema bug.");
+                    $"Duplicate id '{id}' in Q4 manifest bucket — manifest schema bug."
+                );
             }
             if (actualSet.Contains(id))
             {

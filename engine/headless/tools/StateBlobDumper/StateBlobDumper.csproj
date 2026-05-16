@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!-- The tool is a debugging aid; we ship a stable assembly name -->
@@ -11,5 +10,4 @@
     <ProjectReference Include="..\..\src\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
     <ProjectReference Include="..\..\src\Sts2Headless.Domain\Sts2Headless.Domain.csproj" />
   </ItemGroup>
-
 </Project>

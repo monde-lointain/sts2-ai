@@ -10,15 +10,23 @@ public sealed class FileScriptedActionProviderTests
 {
     private static CompositionRoot.CompositionRootBundle BootstrapCombat()
     {
-        var args = CliArgs.Parse(new[]
-        {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
-        });
+        var args = CliArgs.Parse(
+            new[]
+            {
+                "--seed",
+                "42",
+                "--character",
+                "silent",
+                "--deck",
+                "starter",
+                "--relics",
+                "ring_of_the_snake",
+                "--encounter",
+                "cultists_normal",
+                "--ascension",
+                "0",
+            }
+        );
         return CompositionRoot.Build(args);
     }
 
@@ -29,12 +37,7 @@ public sealed class FileScriptedActionProviderTests
         // Use a card we know is in the starting hand. With seed 42, the hand
         // contains some mix of starter cards; iterate provider's actions and
         // assert all are legal.
-        var script = new[]
-        {
-            "# comment line",
-            "",
-            "end_turn",
-        };
+        var script = new[] { "# comment line", "", "end_turn" };
         var provider = new FileScriptedActionProvider(script, bundle.Cards);
         Assert.Equal(1, provider.DirectiveCount);
 
@@ -64,14 +67,7 @@ public sealed class FileScriptedActionProviderTests
     public void Comments_and_blank_lines_are_ignored()
     {
         var bundle = BootstrapCombat();
-        var script = new[]
-        {
-            "",
-            "  ",
-            "# a comment",
-            "# another comment",
-            "end_turn",
-        };
+        var script = new[] { "", "  ", "# a comment", "# another comment", "end_turn" };
         var provider = new FileScriptedActionProvider(script, bundle.Cards);
         Assert.Equal(1, provider.DirectiveCount);
     }
@@ -81,7 +77,9 @@ public sealed class FileScriptedActionProviderTests
     {
         var bundle = BootstrapCombat();
         var script = new[] { "lol_unknown" };
-        Assert.Throws<ScriptParseException>(() => new FileScriptedActionProvider(script, bundle.Cards));
+        Assert.Throws<ScriptParseException>(() =>
+            new FileScriptedActionProvider(script, bundle.Cards)
+        );
     }
 
     [Fact]
@@ -89,7 +87,9 @@ public sealed class FileScriptedActionProviderTests
     {
         var bundle = BootstrapCombat();
         var script = new[] { "play" };
-        Assert.Throws<ScriptParseException>(() => new FileScriptedActionProvider(script, bundle.Cards));
+        Assert.Throws<ScriptParseException>(() =>
+            new FileScriptedActionProvider(script, bundle.Cards)
+        );
     }
 
     [Fact]
@@ -97,7 +97,9 @@ public sealed class FileScriptedActionProviderTests
     {
         var bundle = BootstrapCombat();
         var script = new[] { $"play {StrikeSilent.CanonicalId} target=banana" };
-        Assert.Throws<ScriptParseException>(() => new FileScriptedActionProvider(script, bundle.Cards));
+        Assert.Throws<ScriptParseException>(() =>
+            new FileScriptedActionProvider(script, bundle.Cards)
+        );
     }
 
     [Fact]
@@ -125,7 +127,8 @@ public sealed class FileScriptedActionProviderTests
         // If the same model id is in hand (because starter has duplicates), the
         // provider succeeds. Skip the test in that case.
         bool alsoInHand = bundle.Context.State.HandPile.Cards.Any(c => c.ModelId == inDraw.ModelId);
-        if (alsoInHand) return;
+        if (alsoInHand)
+            return;
         Assert.Throws<ScriptParseException>(() => provider.NextAction(bundle.Context.State, legal));
     }
 
@@ -144,7 +147,11 @@ public sealed class FileScriptedActionProviderTests
     public void Constructor_with_missing_file_throws()
     {
         Assert.Throws<ScriptParseException>(() =>
-            new FileScriptedActionProvider("/tmp/does-not-exist-sts2-headless.txt", new CardCatalog()));
+            new FileScriptedActionProvider(
+                "/tmp/does-not-exist-sts2-headless.txt",
+                new CardCatalog()
+            )
+        );
     }
 
     [Fact]
@@ -160,7 +167,8 @@ public sealed class FileScriptedActionProviderTests
         }
         finally
         {
-            if (File.Exists(tempPath)) File.Delete(tempPath);
+            if (File.Exists(tempPath))
+                File.Delete(tempPath);
         }
     }
 }
@@ -168,15 +176,25 @@ public sealed class FileScriptedActionProviderTests
 public sealed class MainLoopTests
 {
     private static CompositionRoot.CompositionRootBundle BootstrapCombat() =>
-        CompositionRoot.Build(CliArgs.Parse(new[]
-        {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
-        }));
+        CompositionRoot.Build(
+            CliArgs.Parse(
+                new[]
+                {
+                    "--seed",
+                    "42",
+                    "--character",
+                    "silent",
+                    "--deck",
+                    "starter",
+                    "--relics",
+                    "ring_of_the_snake",
+                    "--encounter",
+                    "cultists_normal",
+                    "--ascension",
+                    "0",
+                }
+            )
+        );
 
     [Fact]
     public void Run_emits_combat_start_and_combat_end_events()
@@ -216,12 +234,21 @@ public sealed class MainLoopTests
     {
         var bundle = BootstrapCombat();
         var provider = new FileScriptedActionProvider(
-            Enumerable.Repeat("end_turn", 100), bundle.Cards);
+            Enumerable.Repeat("end_turn", 100),
+            bundle.Cards
+        );
         var logger = new CapturingLogger();
         var metrics = new InMemoryMetrics();
         var cts = new CancellationTokenSource();
         cts.Cancel(); // pre-cancelled — loop should exit immediately
-        var result = MainLoop.Run(bundle.Context, bundle.Cards, provider, logger, metrics, cts.Token);
+        var result = MainLoop.Run(
+            bundle.Context,
+            bundle.Cards,
+            provider,
+            logger,
+            metrics,
+            cts.Token
+        );
         Assert.Equal(MainLoop.LoopOutcome.Cancelled, result.Outcome);
     }
 }

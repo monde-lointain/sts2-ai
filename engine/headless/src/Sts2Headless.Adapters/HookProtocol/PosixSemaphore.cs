@@ -85,7 +85,8 @@ public sealed class PosixSemaphore : IDisposable
         {
             int errno = Marshal.GetLastPInvokeError();
             throw new InvalidOperationException(
-                $"sem_open(O_CREAT|O_EXCL, \"{posix}\") failed: errno={errno} ({StrError(errno)})");
+                $"sem_open(O_CREAT|O_EXCL, \"{posix}\") failed: errno={errno} ({StrError(errno)})"
+            );
         }
         return new PosixSemaphore(handle, posix, owner: true);
     }
@@ -104,7 +105,8 @@ public sealed class PosixSemaphore : IDisposable
         {
             int errno = Marshal.GetLastPInvokeError();
             throw new InvalidOperationException(
-                $"sem_open(\"{posix}\") failed: errno={errno} ({StrError(errno)})");
+                $"sem_open(\"{posix}\") failed: errno={errno} ({StrError(errno)})"
+            );
         }
         return new PosixSemaphore(handle, posix, owner: false);
     }
@@ -132,12 +134,15 @@ public sealed class PosixSemaphore : IDisposable
         do
         {
             r = sem_wait(_handle);
-        } while (r != 0 && Marshal.GetLastPInvokeError() == 4 /* EINTR */);
+        } while (
+            r != 0 && Marshal.GetLastPInvokeError() == 4 /* EINTR */
+        );
         if (r != 0)
         {
             int errno = Marshal.GetLastPInvokeError();
             throw new InvalidOperationException(
-                $"sem_wait failed: errno={errno} ({StrError(errno)})");
+                $"sem_wait failed: errno={errno} ({StrError(errno)})"
+            );
         }
     }
 
@@ -148,17 +153,25 @@ public sealed class PosixSemaphore : IDisposable
     public bool Wait(TimeSpan timeout)
     {
         ThrowIfDisposed();
-        if (timeout < TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(timeout));
+        if (timeout < TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(timeout));
 
         // Compute absolute deadline using CLOCK_REALTIME. sem_timedwait expects
         // an absolute timespec; relative-to-absolute conversion is the caller's
         // job per the man page.
         Timespec abs = default;
-        if (clock_gettime(0 /* CLOCK_REALTIME */, ref abs) != 0)
+        if (
+            clock_gettime(
+                0 /* CLOCK_REALTIME */
+                ,
+                ref abs
+            ) != 0
+        )
         {
             int errno = Marshal.GetLastPInvokeError();
             throw new InvalidOperationException(
-                $"clock_gettime(CLOCK_REALTIME) failed: errno={errno}");
+                $"clock_gettime(CLOCK_REALTIME) failed: errno={errno}"
+            );
         }
         long addNs = (long)(timeout.TotalMilliseconds * 1_000_000.0);
         abs.tv_sec += addNs / 1_000_000_000;
@@ -173,13 +186,18 @@ public sealed class PosixSemaphore : IDisposable
         do
         {
             r = sem_timedwait(_handle, ref abs);
-        } while (r != 0 && Marshal.GetLastPInvokeError() == 4 /* EINTR */);
+        } while (
+            r != 0 && Marshal.GetLastPInvokeError() == 4 /* EINTR */
+        );
 
-        if (r == 0) return true;
+        if (r == 0)
+            return true;
         int err = Marshal.GetLastPInvokeError();
-        if (err == 110 /* ETIMEDOUT */) return false;
-        throw new InvalidOperationException(
-            $"sem_timedwait failed: errno={err} ({StrError(err)})");
+        if (
+            err == 110 /* ETIMEDOUT */
+        )
+            return false;
+        throw new InvalidOperationException($"sem_timedwait failed: errno={err} ({StrError(err)})");
     }
 
     /// <summary>
@@ -192,14 +210,16 @@ public sealed class PosixSemaphore : IDisposable
         {
             int errno = Marshal.GetLastPInvokeError();
             throw new InvalidOperationException(
-                $"sem_post failed: errno={errno} ({StrError(errno)})");
+                $"sem_post failed: errno={errno} ({StrError(errno)})"
+            );
         }
     }
 
     public void Dispose()
     {
         // Interlocked guard so concurrent Dispose calls don't double-close.
-        if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
         if (_handle != IntPtr.Zero && _handle != SemFailed)
         {
             _ = sem_close(_handle);
@@ -221,16 +241,23 @@ public sealed class PosixSemaphore : IDisposable
 
     private static string NormalizeName(string name)
     {
-        if (string.IsNullOrEmpty(name)) throw new ArgumentException("name must not be empty", nameof(name));
-        if (name[0] != '/') name = "/" + name;
+        if (string.IsNullOrEmpty(name))
+            throw new ArgumentException("name must not be empty", nameof(name));
+        if (name[0] != '/')
+            name = "/" + name;
         for (int i = 1; i < name.Length; i++)
         {
-            if (name[i] == '/') throw new ArgumentException("POSIX semaphore name may contain at most one leading '/'", nameof(name));
+            if (name[i] == '/')
+                throw new ArgumentException(
+                    "POSIX semaphore name may contain at most one leading '/'",
+                    nameof(name)
+                );
         }
         return name;
     }
 
-    private static string StrError(int errno) => Marshal.PtrToStringAnsi(strerror(errno)) ?? errno.ToString();
+    private static string StrError(int errno) =>
+        Marshal.PtrToStringAnsi(strerror(errno)) ?? errno.ToString();
 
     // ---- libc P/Invoke ----
 
@@ -242,7 +269,12 @@ public sealed class PosixSemaphore : IDisposable
     }
 
     [DllImport("libc", SetLastError = true)]
-    private static extern IntPtr sem_open([MarshalAs(UnmanagedType.LPStr)] string name, int oflag, uint mode, uint value);
+    private static extern IntPtr sem_open(
+        [MarshalAs(UnmanagedType.LPStr)] string name,
+        int oflag,
+        uint mode,
+        uint value
+    );
 
     [DllImport("libc", SetLastError = true)]
     private static extern int sem_close(IntPtr sem);

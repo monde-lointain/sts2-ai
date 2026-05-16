@@ -52,9 +52,14 @@ public unsafe class SpscRingBufferTests
         try
         {
             byte* ptr = (byte*)h.AddrOfPinnedObject();
-            Assert.Throws<ArgumentException>(() => new SpscRingBuffer(ptr, 1000, initializeHeader: true));
+            Assert.Throws<ArgumentException>(() =>
+                new SpscRingBuffer(ptr, 1000, initializeHeader: true)
+            );
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -65,9 +70,14 @@ public unsafe class SpscRingBufferTests
         try
         {
             byte* ptr = (byte*)h.AddrOfPinnedObject();
-            Assert.Throws<ArgumentOutOfRangeException>(() => new SpscRingBuffer(ptr, 32, initializeHeader: true));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                new SpscRingBuffer(ptr, 32, initializeHeader: true)
+            );
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -86,7 +96,10 @@ public unsafe class SpscRingBufferTests
             Assert.Equal(payload, readBack);
             Assert.Equal(0, ring.AvailableToRead);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -102,7 +115,10 @@ public unsafe class SpscRingBufferTests
             // Next write fails because ring is full.
             Assert.False(ring.TryWrite(new byte[1]));
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -114,7 +130,10 @@ public unsafe class SpscRingBufferTests
             var ring = new SpscRingBuffer(ptr, Capacity, initializeHeader: true);
             Assert.False(ring.TryRead(new byte[4]));
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -126,7 +145,8 @@ public unsafe class SpscRingBufferTests
             var ring = new SpscRingBuffer(ptr, Capacity, initializeHeader: true);
             // Push tail near end-of-buffer, then drain so head=tail≈Capacity-10.
             byte[] prime = new byte[Capacity - 10];
-            for (int i = 0; i < prime.Length; i++) prime[i] = (byte)(i % 251);
+            for (int i = 0; i < prime.Length; i++)
+                prime[i] = (byte)(i % 251);
             Assert.True(ring.TryWrite(prime));
             byte[] sink = new byte[Capacity - 10];
             Assert.True(ring.TryRead(sink));
@@ -134,14 +154,18 @@ public unsafe class SpscRingBufferTests
 
             // Now write a 50-byte payload that wraps around.
             byte[] wrap = new byte[50];
-            for (int i = 0; i < wrap.Length; i++) wrap[i] = (byte)(0xA0 + i);
+            for (int i = 0; i < wrap.Length; i++)
+                wrap[i] = (byte)(0xA0 + i);
             Assert.True(ring.TryWrite(wrap));
 
             byte[] readback = new byte[50];
             Assert.True(ring.TryRead(readback));
             Assert.Equal(wrap, readback);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -164,7 +188,10 @@ public unsafe class SpscRingBufferTests
             Assert.True(ring.TryRead(read));
             Assert.Equal(payload, read);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -179,7 +206,10 @@ public unsafe class SpscRingBufferTests
             Assert.True(ring.TryWrite(payload));
             Assert.Equal(Capacity - 10, ring.FreeCapacity);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -197,7 +227,8 @@ public unsafe class SpscRingBufferTests
 
             const int totalBytes = 200_000;
             byte[] produced = new byte[totalBytes];
-            for (int i = 0; i < totalBytes; i++) produced[i] = (byte)(i * 7 + 13);
+            for (int i = 0; i < totalBytes; i++)
+                produced[i] = (byte)(i * 7 + 13);
 
             byte[] consumed = new byte[totalBytes];
             var consumer = Task.Run(() =>
@@ -231,7 +262,10 @@ public unsafe class SpscRingBufferTests
             Assert.True(Task.WaitAll(new[] { producer, consumer }, TimeSpan.FromSeconds(30)));
             Assert.Equal(produced, consumed);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -267,7 +301,10 @@ public unsafe class SpscRingBufferTests
             // letting real allocations slip through.
             Assert.True(delta < 4096, $"Allocated {delta} bytes on hot path (expected ~0).");
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 
     [Fact]
@@ -279,11 +316,15 @@ public unsafe class SpscRingBufferTests
             // Owner initializes with Capacity.
             _ = new SpscRingBuffer(ptr, Capacity, initializeHeader: true);
             // Peer with mismatched expected capacity should be rejected.
-            Assert.Throws<InvalidOperationException>(
-                () => new SpscRingBuffer(ptr, Capacity * 2, initializeHeader: false));
+            Assert.Throws<InvalidOperationException>(() =>
+                new SpscRingBuffer(ptr, Capacity * 2, initializeHeader: false)
+            );
             // Peer with matching capacity attaches cleanly.
             _ = new SpscRingBuffer(ptr, Capacity, initializeHeader: false);
         }
-        finally { h.Free(); }
+        finally
+        {
+            h.Free();
+        }
     }
 }

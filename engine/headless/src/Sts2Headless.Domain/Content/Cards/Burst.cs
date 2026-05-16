@@ -15,7 +15,8 @@ public sealed class Burst : CardModel
     public const int UpgradeDelta = 1;
     public int Skills => BaseSkills;
 
-    public Burst() : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public Burst()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -38,9 +38,7 @@ public sealed class RegistryShaRoundtripTests : IDisposable
 
     public RegistryShaRoundtripTests()
     {
-        _tempDir = Path.Combine(
-            Path.GetTempPath(),
-            $"sts2-d6-registry-{Guid.NewGuid():N}");
+        _tempDir = Path.Combine(Path.GetTempPath(), $"sts2-d6-registry-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
         _registryPath = Path.Combine(_tempDir, "phase1-silent.json");
         File.Copy(LocateCanonicalRegistry(), _registryPath);
@@ -127,27 +125,40 @@ public sealed class RegistryShaRoundtripTests : IDisposable
 
         string[] args =
         {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
-            "--registry", registryPath,
-            "--script", scriptPath,
-            "--out", outPath,
+            "--seed",
+            "42",
+            "--character",
+            "silent",
+            "--deck",
+            "starter",
+            "--relics",
+            "ring_of_the_snake",
+            "--encounter",
+            "cultists_normal",
+            "--ascension",
+            "0",
+            "--registry",
+            registryPath,
+            "--script",
+            scriptPath,
+            "--out",
+            outPath,
         };
 
         int exit = Program.Run(
-            args, new StringWriter(), new StringWriter(), attachProcessSignals: false);
+            args,
+            new StringWriter(),
+            new StringWriter(),
+            attachProcessSignals: false
+        );
         Assert.True(
             exit == Program.ExitVictory || exit == Program.ExitDefeat || exit == Program.ExitError,
-            $"Program.Run returned unexpected exit code {exit}");
+            $"Program.Run returned unexpected exit code {exit}"
+        );
         Assert.True(File.Exists(outPath), $"Expected state-blob at {outPath}");
 
         byte[] blob = File.ReadAllBytes(outPath);
-        StateBlob decoded =
-            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
+        StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         return decoded.Stamp.ContentHash;
     }
 
@@ -167,10 +178,12 @@ public sealed class RegistryShaRoundtripTests : IDisposable
                 return candidate;
             }
             DirectoryInfo? parent = Directory.GetParent(dir);
-            if (parent is null) break;
+            if (parent is null)
+                break;
             dir = parent.FullName;
         }
         throw new FileNotFoundException(
-            $"Could not locate contracts/registry/phase1-silent.json walking up from {AppContext.BaseDirectory}.");
+            $"Could not locate contracts/registry/phase1-silent.json walking up from {AppContext.BaseDirectory}."
+        );
     }
 }

@@ -76,8 +76,10 @@ public sealed class HookRegistry
     /// </summary>
     public void Unsubscribe(HookSubscriptionHandle handle)
     {
-        if (handle.Id == 0) return; // default(handle) — nothing to remove
-        if (!_subs.TryGetValue(handle.Type, out var list)) return;
+        if (handle.Id == 0)
+            return; // default(handle) — nothing to remove
+        if (!_subs.TryGetValue(handle.Type, out var list))
+            return;
         for (int i = 0; i < list.Count; i++)
         {
             if (list[i].Id == handle.Id)
@@ -132,13 +134,17 @@ public sealed class HookRegistry
         // Priority descending (higher fires first), then tuple ascending,
         // then registration sequence ascending.
         int c = b.Registration.Priority.CompareTo(a.Registration.Priority);
-        if (c != 0) return c;
+        if (c != 0)
+            return c;
         c = a.Registration.OwnerCreatureId.CompareTo(b.Registration.OwnerCreatureId);
-        if (c != 0) return c;
+        if (c != 0)
+            return c;
         c = a.Registration.OwnerContentId.CompareTo(b.Registration.OwnerContentId);
-        if (c != 0) return c;
+        if (c != 0)
+            return c;
         c = a.Registration.SourcePosition.CompareTo(b.Registration.SourcePosition);
-        if (c != 0) return c;
+        if (c != 0)
+            return c;
         return a.Id.CompareTo(b.Id);
     }
 
@@ -146,6 +152,7 @@ public sealed class HookRegistry
     {
         public long Id { get; }
         public HookRegistration Registration { get; }
+
         public Entry(long id, HookRegistration registration)
         {
             Id = id;

@@ -87,7 +87,8 @@ public sealed unsafe class SpscRingBuffer
     /// </summary>
     public SpscRingBuffer(byte* basePtr, int capacity, bool initializeHeader)
     {
-        if (basePtr is null) throw new ArgumentNullException(nameof(basePtr));
+        if (basePtr is null)
+            throw new ArgumentNullException(nameof(basePtr));
         ValidateCapacity(capacity);
         _base = basePtr;
         _capacity = capacity;
@@ -108,7 +109,8 @@ public sealed unsafe class SpscRingBuffer
             if (observed != capacity)
             {
                 throw new InvalidOperationException(
-                    $"SpscRingBuffer header capacity mismatch: header={observed} expected={capacity}");
+                    $"SpscRingBuffer header capacity mismatch: header={observed} expected={capacity}"
+                );
             }
         }
         _cachedHead = 0;
@@ -147,14 +149,17 @@ public sealed unsafe class SpscRingBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryWrite(ReadOnlySpan<byte> src)
     {
-        if (src.IsEmpty) return true;
+        if (src.IsEmpty)
+            return true;
         int len = src.Length;
         if (len > _capacity)
         {
             // Defensive: a frame larger than the whole ring can never fit;
             // returning false would deadlock. Caller's contract violation.
             throw new ArgumentException(
-                $"Write of {len} bytes exceeds ring capacity {_capacity}", nameof(src));
+                $"Write of {len} bytes exceeds ring capacity {_capacity}",
+                nameof(src)
+            );
         }
 
         long tail = Volatile.Read(ref TailRef);
@@ -167,7 +172,8 @@ public sealed unsafe class SpscRingBuffer
             head = Volatile.Read(ref HeadRef);
             _cachedHead = head;
             free = _capacity - (int)(tail - head);
-            if (free < len) return false;
+            if (free < len)
+                return false;
         }
 
         int writeIdx = (int)(tail & _mask);
@@ -194,7 +200,8 @@ public sealed unsafe class SpscRingBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryRead(Span<byte> dest)
     {
-        if (dest.IsEmpty) return true;
+        if (dest.IsEmpty)
+            return true;
         int len = dest.Length;
 
         long head = Volatile.Read(ref HeadRef);
@@ -205,7 +212,8 @@ public sealed unsafe class SpscRingBuffer
             tail = Volatile.Read(ref TailRef);
             _cachedTail = tail;
             avail = (int)(tail - head);
-            if (avail < len) return false;
+            if (avail < len)
+                return false;
         }
 
         int readIdx = (int)(head & _mask);
@@ -231,7 +239,8 @@ public sealed unsafe class SpscRingBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool TryPeek(Span<byte> dest)
     {
-        if (dest.IsEmpty) return true;
+        if (dest.IsEmpty)
+            return true;
         int len = dest.Length;
 
         long head = Volatile.Read(ref HeadRef);
@@ -242,7 +251,8 @@ public sealed unsafe class SpscRingBuffer
             tail = Volatile.Read(ref TailRef);
             _cachedTail = tail;
             avail = (int)(tail - head);
-            if (avail < len) return false;
+            if (avail < len)
+                return false;
         }
 
         int readIdx = (int)(head & _mask);
@@ -259,15 +269,27 @@ public sealed unsafe class SpscRingBuffer
         return true;
     }
 
-    [SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "Returned by ref; cannot be readonly.")]
+    [SuppressMessage(
+        "Style",
+        "IDE0044:Add readonly modifier",
+        Justification = "Returned by ref; cannot be readonly."
+    )]
     private ref long HeadRef => ref *(long*)(_base + HeadOffset);
-    [SuppressMessage("Style", "IDE0044:Add readonly modifier", Justification = "Returned by ref; cannot be readonly.")]
+
+    [SuppressMessage(
+        "Style",
+        "IDE0044:Add readonly modifier",
+        Justification = "Returned by ref; cannot be readonly."
+    )]
     private ref long TailRef => ref *(long*)(_base + TailOffset);
 
     private static void ValidateCapacity(int capacity)
     {
-        if (capacity < 64) throw new ArgumentOutOfRangeException(nameof(capacity), "minimum 64");
-        if (capacity > (1 << 30)) throw new ArgumentOutOfRangeException(nameof(capacity), "maximum 1 GiB");
-        if ((capacity & (capacity - 1)) != 0) throw new ArgumentException("capacity must be a power of two", nameof(capacity));
+        if (capacity < 64)
+            throw new ArgumentOutOfRangeException(nameof(capacity), "minimum 64");
+        if (capacity > (1 << 30))
+            throw new ArgumentOutOfRangeException(nameof(capacity), "maximum 1 GiB");
+        if ((capacity & (capacity - 1)) != 0)
+            throw new ArgumentException("capacity must be a power of two", nameof(capacity));
     }
 }

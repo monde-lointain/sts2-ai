@@ -16,15 +16,20 @@ public sealed class BagOfPreparation : RelicModel
     /// <summary>Upstream <c>CardsVar(2)</c>.</summary>
     public const int ExtraCards = 2;
 
-    public BagOfPreparation() : base(CanonicalId, "Bag of Preparation", RelicRarity.Common) { }
+    public BagOfPreparation()
+        : base(CanonicalId, "Bag of Preparation", RelicRarity.Common) { }
 
     protected override void SubscribeHooks(HookRegistry hooks)
     {
         // Same as RingOfTheSnake — upstream uses ModifyHandDraw(player, count) on
         // round 1. See the note in RingOfTheSnake.SubscribeHooks for hook-choice.
-        Subscribe(hooks, HookType.ModifyHandDraw, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ExtraHandDrawAction(ExtraCards));
-        });
+        Subscribe(
+            hooks,
+            HookType.ModifyHandDraw,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new ExtraHandDrawAction(ExtraCards));
+            }
+        );
     }
 }

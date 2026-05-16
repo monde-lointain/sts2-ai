@@ -74,8 +74,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
     {
         if (bytes.Length != 12)
         {
-            throw new InvalidDataException(
-                $"Rng state blob must be 12 bytes (got {bytes.Length})");
+            throw new InvalidDataException($"Rng state blob must be 12 bytes (got {bytes.Length})");
         }
         ushort magic = BinaryPrimitives.ReadUInt16LittleEndian(bytes[..2]);
         if (magic != MagicRng)
@@ -98,16 +97,22 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
     {
         PlayerRngType[] types = Enum.GetValues<PlayerRngType>();
         int payload = 4 + 4 + types.Length * 8; // seed + count + per-entry
-        byte[] buf = new byte[4 + payload];     // + 4 bytes header (magic+schema)
+        byte[] buf = new byte[4 + payload]; // + 4 bytes header (magic+schema)
         int offset = 0;
-        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicPlayerSet); offset += 2;
-        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), SchemaVersion); offset += 2;
-        BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(offset, 4), set.Seed); offset += 4;
-        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), types.Length); offset += 4;
+        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicPlayerSet);
+        offset += 2;
+        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), SchemaVersion);
+        offset += 2;
+        BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(offset, 4), set.Seed);
+        offset += 4;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), types.Length);
+        offset += 4;
         foreach (PlayerRngType t in types)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), (int)t); offset += 4;
-            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), set.GetCounter(t)); offset += 4;
+            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), (int)t);
+            offset += 4;
+            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), set.GetCounter(t));
+            offset += 4;
         }
         return buf;
     }
@@ -118,7 +123,8 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         if (bytes.Length < 12)
         {
             throw new InvalidDataException(
-                $"PlayerRngSet blob too short for header: {bytes.Length}");
+                $"PlayerRngSet blob too short for header: {bytes.Length}"
+            );
         }
         uint seed = BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(4, 4));
         int count = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(8, 4));
@@ -130,7 +136,8 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         if (bytes.Length != expected)
         {
             throw new InvalidDataException(
-                $"PlayerRngSet blob length {bytes.Length} != expected {expected} for {count} entries");
+                $"PlayerRngSet blob length {bytes.Length} != expected {expected} for {count} entries"
+            );
         }
         var counters = new Dictionary<PlayerRngType, int>(count);
         for (int i = 0; i < count; i++)
@@ -141,7 +148,8 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
             if (!Enum.IsDefined(typeof(PlayerRngType), rawEnum))
             {
                 throw new InvalidDataException(
-                    $"PlayerRngSet unknown PlayerRngType value: {rawEnum}");
+                    $"PlayerRngSet unknown PlayerRngType value: {rawEnum}"
+                );
             }
             counters[(PlayerRngType)rawEnum] = counter;
         }
@@ -155,23 +163,31 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         RunRngType[] types = Enum.GetValues<RunRngType>();
         byte[] stringBytes = Encoding.UTF8.GetBytes(set.StringSeed);
         int payload =
-            4                       // stringSeedByteLength
-            + stringBytes.Length    // string bytes
-            + 4                     // seed
-            + 4                     // count
-            + types.Length * 8;     // per-entry
+            4 // stringSeedByteLength
+            + stringBytes.Length // string bytes
+            + 4 // seed
+            + 4 // count
+            + types.Length * 8; // per-entry
         byte[] buf = new byte[4 + payload];
         int offset = 0;
-        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicRunSet); offset += 2;
-        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), SchemaVersion); offset += 2;
-        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), stringBytes.Length); offset += 4;
-        stringBytes.CopyTo(buf.AsSpan(offset, stringBytes.Length)); offset += stringBytes.Length;
-        BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(offset, 4), set.Seed); offset += 4;
-        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), types.Length); offset += 4;
+        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), MagicRunSet);
+        offset += 2;
+        BinaryPrimitives.WriteUInt16LittleEndian(buf.AsSpan(offset, 2), SchemaVersion);
+        offset += 2;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), stringBytes.Length);
+        offset += 4;
+        stringBytes.CopyTo(buf.AsSpan(offset, stringBytes.Length));
+        offset += stringBytes.Length;
+        BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(offset, 4), set.Seed);
+        offset += 4;
+        BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), types.Length);
+        offset += 4;
         foreach (RunRngType t in types)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), (int)t); offset += 4;
-            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), set.GetCounter(t)); offset += 4;
+            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), (int)t);
+            offset += 4;
+            BinaryPrimitives.WriteInt32LittleEndian(buf.AsSpan(offset, 4), set.GetCounter(t));
+            offset += 4;
         }
         return buf;
     }
@@ -182,7 +198,8 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         if (bytes.Length < 8)
         {
             throw new InvalidDataException(
-                $"RunRngSet blob too short for header+stringLength: {bytes.Length}");
+                $"RunRngSet blob too short for header+stringLength: {bytes.Length}"
+            );
         }
         int stringLen = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(4, 4));
         if (stringLen < 0)
@@ -193,7 +210,8 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         if (bytes.Length < afterString + 8)
         {
             throw new InvalidDataException(
-                $"RunRngSet blob too short for string+seed+count: {bytes.Length}");
+                $"RunRngSet blob too short for string+seed+count: {bytes.Length}"
+            );
         }
         string stringSeed = Encoding.UTF8.GetString(bytes.Slice(8, stringLen));
         uint storedSeed = BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(afterString, 4));
@@ -206,14 +224,16 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
         if (bytes.Length != expected)
         {
             throw new InvalidDataException(
-                $"RunRngSet blob length {bytes.Length} != expected {expected} for {count} entries");
+                $"RunRngSet blob length {bytes.Length} != expected {expected} for {count} entries"
+            );
         }
         // Tamper-detection: rederive seed from the string and confirm.
         uint derivedSeed = (uint)StringHelpers.GetDeterministicHashCode(stringSeed);
         if (derivedSeed != storedSeed)
         {
             throw new InvalidDataException(
-                $"RunRngSet stored seed 0x{storedSeed:X8} does not match derived 0x{derivedSeed:X8}");
+                $"RunRngSet stored seed 0x{storedSeed:X8} does not match derived 0x{derivedSeed:X8}"
+            );
         }
         var counters = new Dictionary<RunRngType, int>(count);
         for (int i = 0; i < count; i++)
@@ -223,8 +243,7 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
             int counter = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(entryOffset + 4, 4));
             if (!Enum.IsDefined(typeof(RunRngType), rawEnum))
             {
-                throw new InvalidDataException(
-                    $"RunRngSet unknown RunRngType value: {rawEnum}");
+                throw new InvalidDataException($"RunRngSet unknown RunRngType value: {rawEnum}");
             }
             counters[(RunRngType)rawEnum] = counter;
         }
@@ -235,20 +254,19 @@ public sealed class RngStateSerializerV1 : IRngStateSerializer
     {
         if (bytes.Length < 4)
         {
-            throw new InvalidDataException(
-                $"Rng state blob too short for header: {bytes.Length}");
+            throw new InvalidDataException($"Rng state blob too short for header: {bytes.Length}");
         }
         ushort magic = BinaryPrimitives.ReadUInt16LittleEndian(bytes[..2]);
         if (magic != expectedMagic)
         {
             throw new InvalidDataException(
-                $"Rng state magic mismatch: expected 0x{expectedMagic:X4}, got 0x{magic:X4}");
+                $"Rng state magic mismatch: expected 0x{expectedMagic:X4}, got 0x{magic:X4}"
+            );
         }
         ushort schema = BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(2, 2));
         if (schema != SchemaVersion)
         {
-            throw new InvalidDataException(
-                $"Unsupported Rng state schema version: {schema}");
+            throw new InvalidDataException($"Unsupported Rng state schema version: {schema}");
         }
     }
 }

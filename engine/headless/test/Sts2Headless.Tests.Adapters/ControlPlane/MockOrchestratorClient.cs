@@ -48,7 +48,9 @@ internal sealed class MockOrchestratorClient : IDisposable
         if (lastEx is not null)
         {
             throw new InvalidOperationException(
-                $"MockOrchestratorClient: failed to connect to '{socketPath}' after retries.", lastEx);
+                $"MockOrchestratorClient: failed to connect to '{socketPath}' after retries.",
+                lastEx
+            );
         }
 
         _stream = new NetworkStream(_socket, ownsSocket: false);
@@ -63,10 +65,34 @@ internal sealed class MockOrchestratorClient : IDisposable
 
     public void Dispose()
     {
-        try { _writer.Dispose(); } catch { /* swallowed */ }
-        try { _reader.Dispose(); } catch { /* swallowed */ }
-        try { _stream.Dispose(); } catch { /* swallowed */ }
-        try { _socket.Dispose(); } catch { /* swallowed */ }
+        try
+        {
+            _writer.Dispose();
+        }
+        catch
+        { /* swallowed */
+        }
+        try
+        {
+            _reader.Dispose();
+        }
+        catch
+        { /* swallowed */
+        }
+        try
+        {
+            _stream.Dispose();
+        }
+        catch
+        { /* swallowed */
+        }
+        try
+        {
+            _socket.Dispose();
+        }
+        catch
+        { /* swallowed */
+        }
     }
 
     /// <summary>
@@ -99,20 +125,24 @@ internal sealed class MockOrchestratorClient : IDisposable
         if (response is null)
         {
             throw new InvalidOperationException(
-                $"MockOrchestratorClient: server closed the connection while awaiting response to method='{method}' id={id}.");
+                $"MockOrchestratorClient: server closed the connection while awaiting response to method='{method}' id={id}."
+            );
         }
 
         JsonDocument doc = JsonDocument.Parse(response);
         // Verify the response id matches.
-        if (doc.RootElement.TryGetProperty("id", out JsonElement idElem)
-            && idElem.ValueKind == JsonValueKind.Number)
+        if (
+            doc.RootElement.TryGetProperty("id", out JsonElement idElem)
+            && idElem.ValueKind == JsonValueKind.Number
+        )
         {
             int respId = idElem.GetInt32();
             if (respId != id)
             {
                 doc.Dispose();
                 throw new InvalidOperationException(
-                    $"MockOrchestratorClient: response id mismatch (sent {id}, got {respId}).");
+                    $"MockOrchestratorClient: response id mismatch (sent {id}, got {respId})."
+                );
             }
         }
         return doc;
@@ -129,7 +159,8 @@ internal sealed class MockOrchestratorClient : IDisposable
                 int code = err.GetProperty("code").GetInt32();
                 string msg = err.GetProperty("message").GetString() ?? "<no message>";
                 throw new InvalidOperationException(
-                    $"MockOrchestratorClient: method '{method}' returned error code={code} message='{msg}'.");
+                    $"MockOrchestratorClient: method '{method}' returned error code={code} message='{msg}'."
+                );
             }
             // Clone the result element so callers can use it after the doc is
             // disposed (doc is scope-bound here).

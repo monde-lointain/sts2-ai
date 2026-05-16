@@ -14,7 +14,8 @@ public sealed class HiddenDaggers : CardModel
     public const int Cards = 2;
     public const int Shivs = 2;
 
-    public HiddenDaggers() : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public HiddenDaggers()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

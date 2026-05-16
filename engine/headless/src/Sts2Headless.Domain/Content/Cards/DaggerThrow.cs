@@ -14,7 +14,8 @@ public sealed class DaggerThrow : CardModel
     public const int UpgradeDelta = 3;
     public int Damage => BaseDamage;
 
-    public DaggerThrow() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
+    public DaggerThrow()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

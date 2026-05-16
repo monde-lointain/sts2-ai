@@ -14,7 +14,8 @@ public sealed class Pounce : CardModel
     public const int UpgradeDelta = 6;
     public int Damage => BaseDamage;
 
-    public Pounce() : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Pounce()
+        : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

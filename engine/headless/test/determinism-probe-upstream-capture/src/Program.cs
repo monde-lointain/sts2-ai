@@ -81,12 +81,13 @@ public static class Program
     {
         string outDir = cli.BatchOutDir!;
         int[] seeds = cli.BatchSeeds ?? Enumerable.Range(42, 10).ToArray();
-        IReadOnlyList<string> encounters = cli.BatchEncounters
-            ?? EncounterCatalog.AllKnownIds();
+        IReadOnlyList<string> encounters = cli.BatchEncounters ?? EncounterCatalog.AllKnownIds();
 
         Directory.CreateDirectory(outDir);
         var driver = new UpstreamDriver();
-        int captured = 0, missing = 0, errored = 0;
+        int captured = 0,
+            missing = 0,
+            errored = 0;
         var sw = System.Diagnostics.Stopwatch.StartNew();
         foreach (string encId in encounters)
         {
@@ -98,11 +99,16 @@ public static class Program
                 string outPath = Path.Combine(encDir, $"{seed}.bin");
                 if (plan.Kind == EncounterCatalog.PlanKind.MissingUpstream)
                 {
-                    File.WriteAllText(outPath + ".missing", string.Join("\n",
-                        $"encounter={encId}",
-                        $"reason={plan.Reason}",
-                        $"monsters={string.Join(",", plan.MonsterIds)}",
-                        ""));
+                    File.WriteAllText(
+                        outPath + ".missing",
+                        string.Join(
+                            "\n",
+                            $"encounter={encId}",
+                            $"reason={plan.Reason}",
+                            $"monsters={string.Join(",", plan.MonsterIds)}",
+                            ""
+                        )
+                    );
                     File.WriteAllBytes(outPath, Array.Empty<byte>());
                     missing++;
                     continue;
@@ -118,17 +124,22 @@ public static class Program
                 catch (Exception ex)
                 {
                     errored++;
-                    File.WriteAllText(outPath + ".error",
-                        $"{ex.GetType().Name}: {(ex.InnerException ?? ex).Message}\n{ex}");
+                    File.WriteAllText(
+                        outPath + ".error",
+                        $"{ex.GetType().Name}: {(ex.InnerException ?? ex).Message}\n{ex}"
+                    );
                     File.WriteAllBytes(outPath, Array.Empty<byte>());
-                    Console.Error.WriteLine($"  ERROR {encId} seed={seed}: {ex.GetType().Name}: {(ex.InnerException ?? ex).Message}");
+                    Console.Error.WriteLine(
+                        $"  ERROR {encId} seed={seed}: {ex.GetType().Name}: {(ex.InnerException ?? ex).Message}"
+                    );
                 }
             }
         }
         sw.Stop();
         Console.Out.WriteLine(
-            $"upstream-capture: batch — captured={captured} missing={missing} errored={errored} " +
-            $"duration={sw.Elapsed.TotalSeconds:F1}s out={outDir}");
+            $"upstream-capture: batch — captured={captured} missing={missing} errored={errored} "
+                + $"duration={sw.Elapsed.TotalSeconds:F1}s out={outDir}"
+        );
         return errored > 0 ? 5 : 0;
     }
 
@@ -148,7 +159,9 @@ public static class Program
         }
         catch (ReflectionTypeLoadException ex)
         {
-            Console.Error.WriteLine($"GetTypes threw ReflectionTypeLoadException — partial load. {ex.LoaderExceptions.Length} loader exceptions; using ex.Types.");
+            Console.Error.WriteLine(
+                $"GetTypes threw ReflectionTypeLoadException — partial load. {ex.LoaderExceptions.Length} loader exceptions; using ex.Types."
+            );
             allTypes = ex.Types.Where(t => t is not null).ToArray()!;
             foreach (var le in ex.LoaderExceptions.Take(3))
             {
@@ -156,19 +169,30 @@ public static class Program
             }
         }
         Console.WriteLine($"types: {allTypes.Length}");
-        var namespaces = allTypes.Select(t => t.Namespace).Where(n => n is not null).Distinct().OrderBy(n => n).ToList();
+        var namespaces = allTypes
+            .Select(t => t.Namespace)
+            .Where(n => n is not null)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToList();
         Console.WriteLine($"namespaces: {namespaces.Count}");
-        foreach (var n in namespaces) Console.WriteLine($"  ns: {n}");
+        foreach (var n in namespaces)
+            Console.WriteLine($"  ns: {n}");
         Console.WriteLine("--- types whose name = 'Player':");
-        foreach (var t in allTypes.Where(t => t.Name == "Player").Take(5)) Console.WriteLine($"  {t.FullName}");
+        foreach (var t in allTypes.Where(t => t.Name == "Player").Take(5))
+            Console.WriteLine($"  {t.FullName}");
         Console.WriteLine("--- types whose name = 'CombatManager':");
-        foreach (var t in allTypes.Where(t => t.Name == "CombatManager").Take(5)) Console.WriteLine($"  {t.FullName}");
+        foreach (var t in allTypes.Where(t => t.Name == "CombatManager").Take(5))
+            Console.WriteLine($"  {t.FullName}");
         Console.WriteLine("--- types whose name = 'CombatState':");
-        foreach (var t in allTypes.Where(t => t.Name == "CombatState").Take(5)) Console.WriteLine($"  {t.FullName}");
+        foreach (var t in allTypes.Where(t => t.Name == "CombatState").Take(5))
+            Console.WriteLine($"  {t.FullName}");
         Console.WriteLine("--- types whose name = 'Silent':");
-        foreach (var t in allTypes.Where(t => t.Name == "Silent").Take(5)) Console.WriteLine($"  {t.FullName}");
+        foreach (var t in allTypes.Where(t => t.Name == "Silent").Take(5))
+            Console.WriteLine($"  {t.FullName}");
         Console.WriteLine("--- types whose name = 'CalcifiedCultist':");
-        foreach (var t in allTypes.Where(t => t.Name == "CalcifiedCultist").Take(5)) Console.WriteLine($"  {t.FullName}");
+        foreach (var t in allTypes.Where(t => t.Name == "CalcifiedCultist").Take(5))
+            Console.WriteLine($"  {t.FullName}");
         return 0;
     }
 
@@ -190,15 +214,22 @@ public static class Program
             // Write a sentinel "MISSING_UPSTREAM" file so the probe knows the
             // encounter cannot be upstream-compared and why.
             Directory.CreateDirectory(Path.GetDirectoryName(cli.OutputPath)!);
-            File.WriteAllText(cli.OutputPath + ".missing", string.Join("\n",
-                $"encounter={cli.EncounterId}",
-                $"reason={plan.Reason}",
-                $"monsters={string.Join(",", plan.MonsterIds)}",
-                ""));
+            File.WriteAllText(
+                cli.OutputPath + ".missing",
+                string.Join(
+                    "\n",
+                    $"encounter={cli.EncounterId}",
+                    $"reason={plan.Reason}",
+                    $"monsters={string.Join(",", plan.MonsterIds)}",
+                    ""
+                )
+            );
             // Also produce a zero-length .bin so callers consistently see a file.
             File.WriteAllBytes(cli.OutputPath, Array.Empty<byte>());
-            Console.Error.WriteLine($"upstream-capture: {cli.EncounterId}: MISSING_UPSTREAM ({plan.Reason})");
-            return 4;  // distinct exit code for missing upstream
+            Console.Error.WriteLine(
+                $"upstream-capture: {cli.EncounterId}: MISSING_UPSTREAM ({plan.Reason})"
+            );
+            return 4; // distinct exit code for missing upstream
         }
 
         // Drive upstream sts2.dll. Reflection-only so we don't need compile-time
@@ -209,7 +240,9 @@ public static class Program
 
         Directory.CreateDirectory(Path.GetDirectoryName(cli.OutputPath)!);
         File.WriteAllBytes(cli.OutputPath, canonicalBytes);
-        Console.Out.WriteLine($"upstream-capture: wrote {canonicalBytes.Length} bytes to {cli.OutputPath}");
+        Console.Out.WriteLine(
+            $"upstream-capture: wrote {canonicalBytes.Length} bytes to {cli.OutputPath}"
+        );
         return 0;
     }
 }
@@ -223,13 +256,14 @@ public sealed record CliArgs(
     bool Diagnose,
     string? BatchOutDir,
     int[]? BatchSeeds,
-    string[]? BatchEncounters)
+    string[]? BatchEncounters
+)
 {
     public const string Usage =
-        "Usage: upstream-capture --seed N --encounter ID --out PATH\n" +
-        "       upstream-capture --batch-out DIR [--seeds 42,43,...] [--encounters ID,ID,...]\n" +
-        "       upstream-capture --list-encounters\n" +
-        "       upstream-capture --diagnose";
+        "Usage: upstream-capture --seed N --encounter ID --out PATH\n"
+        + "       upstream-capture --batch-out DIR [--seeds 42,43,...] [--encounters ID,ID,...]\n"
+        + "       upstream-capture --list-encounters\n"
+        + "       upstream-capture --diagnose";
 
     public static CliArgs Parse(string[] args)
     {
@@ -247,21 +281,29 @@ public sealed record CliArgs(
             string flag = args[i];
             string Take()
             {
-                if (i + 1 >= args.Length) throw new ArgumentException($"missing value for {flag}.");
+                if (i + 1 >= args.Length)
+                    throw new ArgumentException($"missing value for {flag}.");
                 return args[++i];
             }
             switch (flag)
             {
                 case "--seed":
+                {
+                    string v = Take();
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
+                        )
+                    )
                     {
-                        string v = Take();
-                        if (!int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed))
-                        {
-                            throw new ArgumentException($"--seed: expected int, got '{v}'.");
-                        }
-                        seed = parsed;
-                        break;
+                        throw new ArgumentException($"--seed: expected int, got '{v}'.");
                     }
+                    seed = parsed;
+                    break;
+                }
                 case "--encounter":
                     encounter = Take();
                     break;
@@ -272,26 +314,33 @@ public sealed record CliArgs(
                     batchOutDir = Take();
                     break;
                 case "--seeds":
+                {
+                    string v = Take();
+                    var parts = v.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var parsed = new int[parts.Length];
+                    for (int k = 0; k < parts.Length; k++)
                     {
-                        string v = Take();
-                        var parts = v.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        var parsed = new int[parts.Length];
-                        for (int k = 0; k < parts.Length; k++)
+                        if (
+                            !int.TryParse(
+                                parts[k],
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out parsed[k]
+                            )
+                        )
                         {
-                            if (!int.TryParse(parts[k], NumberStyles.Integer, CultureInfo.InvariantCulture, out parsed[k]))
-                            {
-                                throw new ArgumentException($"--seeds: invalid int '{parts[k]}'.");
-                            }
+                            throw new ArgumentException($"--seeds: invalid int '{parts[k]}'.");
                         }
-                        batchSeeds = parsed;
-                        break;
                     }
+                    batchSeeds = parsed;
+                    break;
+                }
                 case "--encounters":
-                    {
-                        string v = Take();
-                        batchEncounters = v.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        break;
-                    }
+                {
+                    string v = Take();
+                    batchEncounters = v.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    break;
+                }
                 case "--list-encounters":
                     listEncounters = true;
                     break;
@@ -315,9 +364,19 @@ public sealed record CliArgs(
         }
         if (batchOutDir is not null)
         {
-            return new CliArgs(0, null, null, false, false, batchOutDir, batchSeeds, batchEncounters);
+            return new CliArgs(
+                0,
+                null,
+                null,
+                false,
+                false,
+                batchOutDir,
+                batchSeeds,
+                batchEncounters
+            );
         }
-        if (seed is null) throw new ArgumentException("--seed is required.");
+        if (seed is null)
+            throw new ArgumentException("--seed is required.");
         return new CliArgs(seed.Value, encounter, outputPath, false, false, null, null, null);
     }
 }

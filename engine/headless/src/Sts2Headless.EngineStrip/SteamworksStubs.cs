@@ -29,7 +29,8 @@ public static class SteamworksMarker
         StubRegistry.Record(
             StubCategory.Steamworks,
             nameof(SteamworksMarker),
-            nameof(IsInitialized));
+            nameof(IsInitialized)
+        );
         return false;
     }
 }

@@ -15,7 +15,8 @@ public sealed class GrandFinale : CardModel
     public const int UpgradeDelta = 15;
     public int Damage => BaseDamage;
 
-    public GrandFinale() : base(CanonicalId, 0, CardType.Attack, CardRarity.Rare, TargetType.AllEnemies) { }
+    public GrandFinale()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Rare, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

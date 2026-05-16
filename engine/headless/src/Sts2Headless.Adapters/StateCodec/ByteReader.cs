@@ -74,7 +74,8 @@ internal ref struct ByteReader
             0 => false,
             1 => true,
             _ => throw new StateCodecException(
-                $"ByteReader: invalid bool byte 0x{v:X2} at offset {_position - 1}."),
+                $"ByteReader: invalid bool byte 0x{v:X2} at offset {_position - 1}."
+            ),
         };
     }
 
@@ -96,7 +97,8 @@ internal ref struct ByteReader
         if (length < 0)
         {
             throw new StateCodecException(
-                $"ByteReader: negative length {length} for length-prefixed bytes.");
+                $"ByteReader: negative length {length} for length-prefixed bytes."
+            );
         }
         return ReadRawBytes(length).ToArray();
     }
@@ -107,7 +109,8 @@ internal ref struct ByteReader
         if (length < 0)
         {
             throw new StateCodecException(
-                $"ByteReader: negative length {length} for length-prefixed string.");
+                $"ByteReader: negative length {length} for length-prefixed string."
+            );
         }
         ReadOnlySpan<byte> bytes = ReadRawBytes(length);
         return Encoding.UTF8.GetString(bytes);
@@ -119,9 +122,10 @@ internal ref struct ByteReader
         if (wanted < 0 || (long)_position + wanted > _buffer.Length)
         {
             throw new StateCodecException(
-                $"ByteReader: unexpected EOF reading {field}: " +
-                $"wanted {wanted} bytes at offset {_position}, " +
-                $"buffer length {_buffer.Length}.");
+                $"ByteReader: unexpected EOF reading {field}: "
+                    + $"wanted {wanted} bytes at offset {_position}, "
+                    + $"buffer length {_buffer.Length}."
+            );
         }
     }
 }

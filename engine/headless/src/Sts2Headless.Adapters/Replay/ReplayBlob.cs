@@ -26,18 +26,26 @@ public sealed record ReplayEntry(
     CombatPhase Phase,
     ReplayActionType ActionType,
     byte[] ActionData,
-    byte[] PostHash)
+    byte[] PostHash
+)
 {
     /// <summary>Element-wise equality across the two byte arrays.</summary>
     public bool Equals(ReplayEntry? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (TurnNo != other.TurnNo) return false;
-        if (Phase != other.Phase) return false;
-        if (ActionType != other.ActionType) return false;
-        if (!ActionData.AsSpan().SequenceEqual(other.ActionData)) return false;
-        if (!PostHash.AsSpan().SequenceEqual(other.PostHash)) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (TurnNo != other.TurnNo)
+            return false;
+        if (Phase != other.Phase)
+            return false;
+        if (ActionType != other.ActionType)
+            return false;
+        if (!ActionData.AsSpan().SequenceEqual(other.ActionData))
+            return false;
+        if (!PostHash.AsSpan().SequenceEqual(other.PostHash))
+            return false;
         return true;
     }
 
@@ -48,8 +56,10 @@ public sealed record ReplayEntry(
         h.Add(TurnNo);
         h.Add(Phase);
         h.Add(ActionType);
-        for (int i = 0; i < ActionData.Length; i++) h.Add(ActionData[i]);
-        for (int i = 0; i < PostHash.Length; i++) h.Add(PostHash[i]);
+        for (int i = 0; i < ActionData.Length; i++)
+            h.Add(ActionData[i]);
+        for (int i = 0; i < PostHash.Length; i++)
+            h.Add(PostHash[i]);
         return h.ToHashCode();
     }
 }
@@ -76,4 +86,5 @@ public sealed record ReplayBlob(
     ManifestStamp ManifestStamp,
     uint InitialSeed,
     ImmutableList<ReplayEntry> Entries,
-    bool TrailerValidated);
+    bool TrailerValidated
+);

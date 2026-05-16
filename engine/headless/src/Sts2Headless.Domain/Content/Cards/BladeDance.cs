@@ -15,7 +15,8 @@ public sealed class BladeDance : CardModel
     public const int UpgradeDelta = 1;
     public int Shivs => BaseShivs;
 
-    public BladeDance() : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
+    public BladeDance()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -29,8 +29,17 @@ public class ConsoleHostSmokeTests
     /// <summary>Canonical Steam install dir on the Q1 build host.</summary>
     private static readonly string SteamSts2Dir = Path.Combine(
         Environment.GetEnvironmentVariable("HOME") ?? "",
-        "snap", "steam", "common", ".local", "share", "Steam",
-        "steamapps", "common", "Slay the Spire 2", "data_sts2_linuxbsd_x86_64");
+        "snap",
+        "steam",
+        "common",
+        ".local",
+        "share",
+        "Steam",
+        "steamapps",
+        "common",
+        "Slay the Spire 2",
+        "data_sts2_linuxbsd_x86_64"
+    );
 
     private static string Sts2DllPath => Path.Combine(SteamSts2Dir, "sts2.dll");
 
@@ -50,17 +59,23 @@ public class ConsoleHostSmokeTests
             // without doing the work. The skip reason is surfaced via
             // Console.Out so a human running `dotnet test -v n` sees it.
             Console.Out.WriteLine(
-                $"[skip] ConsoleHostSmokeTests: Steam install not found at '{Sts2DllPath}'.");
+                $"[skip] ConsoleHostSmokeTests: Steam install not found at '{Sts2DllPath}'."
+            );
             return;
         }
 
         string consoleHostProject = Path.Combine(
-            FixtureLocator.RepoRoot, "tools", "Sts2Q1ConsoleHost", "Sts2Q1ConsoleHost.csproj");
-        Assert.True(File.Exists(consoleHostProject),
-            $"console host project missing at '{consoleHostProject}'.");
+            FixtureLocator.RepoRoot,
+            "tools",
+            "Sts2Q1ConsoleHost",
+            "Sts2Q1ConsoleHost.csproj"
+        );
+        Assert.True(
+            File.Exists(consoleHostProject),
+            $"console host project missing at '{consoleHostProject}'."
+        );
 
-        string outPath = Path.Combine(Path.GetTempPath(),
-            $"p151a-smoke-{Guid.NewGuid():N}.jsonl");
+        string outPath = Path.Combine(Path.GetTempPath(), $"p151a-smoke-{Guid.NewGuid():N}.jsonl");
         try
         {
             var psi = new ProcessStartInfo("dotnet")
@@ -85,7 +100,8 @@ public class ConsoleHostSmokeTests
             psi.ArgumentList.Add("--out");
             psi.ArgumentList.Add(outPath);
 
-            using var process = Process.Start(psi)
+            using var process =
+                Process.Start(psi)
                 ?? throw new InvalidOperationException("Process.Start returned null.");
             string stdout = process.StandardOutput.ReadToEnd();
             string stderr = process.StandardError.ReadToEnd();
@@ -93,11 +109,14 @@ public class ConsoleHostSmokeTests
             {
                 process.Kill(entireProcessTree: true);
                 throw new InvalidOperationException(
-                    "Console host did not exit within 60s — load path may be hung.");
+                    "Console host did not exit within 60s — load path may be hung."
+                );
             }
 
-            Assert.True(process.ExitCode == 0,
-                $"Sts2Q1ConsoleHost exit={process.ExitCode}\nstdout:\n{stdout}\nstderr:\n{stderr}");
+            Assert.True(
+                process.ExitCode == 0,
+                $"Sts2Q1ConsoleHost exit={process.ExitCode}\nstdout:\n{stdout}\nstderr:\n{stderr}"
+            );
 
             // Find the upstream_bound line. `dotnet run` may emit
             // restore/build chatter ahead of our stdout when --no-build is
@@ -106,7 +125,8 @@ public class ConsoleHostSmokeTests
             foreach (string raw in stdout.Split('\n'))
             {
                 string line = raw.Trim();
-                if (line.Length == 0 || line[0] != '{') continue;
+                if (line.Length == 0 || line[0] != '{')
+                    continue;
                 if (line.Contains("\"event\":\"upstream_bound\"", StringComparison.Ordinal))
                 {
                     upstreamBoundLine = line;
@@ -120,10 +140,14 @@ public class ConsoleHostSmokeTests
             Assert.Equal("upstream_bound", root.GetProperty("event").GetString());
             Assert.Equal(Sts2DllPath, root.GetProperty("sts2_dll").GetString());
             Assert.Equal("sts2", root.GetProperty("assembly_name").GetString());
-            Assert.Equal("MegaCrit.Sts2.Core.Combat.CombatManager",
-                root.GetProperty("combat_manager_type").GetString());
-            Assert.Equal("MegaCrit.Sts2.Core.Entities.Players.Player",
-                root.GetProperty("player_type").GetString());
+            Assert.Equal(
+                "MegaCrit.Sts2.Core.Combat.CombatManager",
+                root.GetProperty("combat_manager_type").GetString()
+            );
+            Assert.Equal(
+                "MegaCrit.Sts2.Core.Entities.Players.Player",
+                root.GetProperty("player_type").GetString()
+            );
 
             // α opens (creates / truncates) the out file. δ populates it. So
             // we expect the file to exist (possibly empty) after α succeeds.
@@ -133,7 +157,13 @@ public class ConsoleHostSmokeTests
         {
             if (File.Exists(outPath))
             {
-                try { File.Delete(outPath); } catch { /* best-effort cleanup */ }
+                try
+                {
+                    File.Delete(outPath);
+                }
+                catch
+                { /* best-effort cleanup */
+                }
             }
         }
     }

@@ -39,13 +39,19 @@ public readonly struct StringName : IEquatable<StringName>
     }
 
     public static implicit operator StringName(string s) => new(s);
+
     public static implicit operator string(StringName n) => n.Value;
 
     public bool Equals(StringName other) => Value == other.Value;
+
     public override bool Equals(object? obj) => obj is StringName s && Equals(s);
+
     public override int GetHashCode() => Value.GetHashCode();
+
     public override string ToString() => Value;
+
     public static bool operator ==(StringName a, StringName b) => a.Equals(b);
+
     public static bool operator !=(StringName a, StringName b) => !a.Equals(b);
 }
 
@@ -72,7 +78,8 @@ public class GodotObject
             StubCategory.SceneTree,
             nameof(GodotObject),
             nameof(ToSignal),
-            $"signal={signalName.Value}");
+            $"signal={signalName.Value}"
+        );
         return new SignalAwaiter();
     }
 }
@@ -90,8 +97,11 @@ public class SignalAwaiter : INotifyCompletion
     }
 
     public bool IsCompleted => true;
+
     public SignalAwaiter GetAwaiter() => this;
+
     public object? GetResult() => null;
+
     public void OnCompleted(Action continuation) => continuation();
 }
 
@@ -120,13 +130,19 @@ public class SceneTree : MainLoop
         StubRegistry.Record(StubCategory.SceneTree, nameof(SceneTree), ".ctor");
     }
 
-    public SceneTreeTimer CreateTimer(double timeSec, bool processAlways = true, bool processInPhysics = false, bool ignoreTimeScale = false)
+    public SceneTreeTimer CreateTimer(
+        double timeSec,
+        bool processAlways = true,
+        bool processInPhysics = false,
+        bool ignoreTimeScale = false
+    )
     {
         StubRegistry.Record(
             StubCategory.SceneTree,
             nameof(SceneTree),
             nameof(CreateTimer),
-            $"sec={timeSec}");
+            $"sec={timeSec}"
+        );
         return new SceneTreeTimer();
     }
 

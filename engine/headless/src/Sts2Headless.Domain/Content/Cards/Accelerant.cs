@@ -16,7 +16,8 @@ public sealed class Accelerant : CardModel
     public const int UpgradeDelta = 1;
     public int Amount => BaseAmount;
 
-    public Accelerant() : base(CanonicalId, 1, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public Accelerant()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

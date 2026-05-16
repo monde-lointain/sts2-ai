@@ -19,6 +19,7 @@ public sealed class StrikeSilent : CardModel
 
     /// <summary>Base damage; per-instance upgrade lives on CardInstance.</summary>
     public const int BaseDamage = 6;
+
     /// <summary>Upgrade delta — upstream OnUpgrade body.</summary>
     public const int UpgradeDelta = 3;
 
@@ -26,8 +27,7 @@ public sealed class StrikeSilent : CardModel
     public int Damage => BaseDamage;
 
     public StrikeSilent()
-        : base(CanonicalId, cost: 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy) { }
 
     protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Strike);
 

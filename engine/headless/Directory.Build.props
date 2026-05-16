@@ -21,9 +21,11 @@
 
   <!-- Make stylecop.json visible to the analyzer. -->
   <ItemGroup>
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json"
-                     Link="stylecop.json"
-                     Visible="false" />
+    <AdditionalFiles
+      Include="$(MSBuildThisFileDirectory)stylecop.json"
+      Link="stylecop.json"
+      Visible="false"
+    />
   </ItemGroup>
 
   <!-- Analyzer packs. PrivateAssets=all so they're build-time only and

@@ -14,7 +14,8 @@ public sealed class UpMySleeve : CardModel
     public const int UpgradeDelta = 1;
     public int Cards => BaseCards;
 
-    public UpMySleeve() : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public UpMySleeve()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

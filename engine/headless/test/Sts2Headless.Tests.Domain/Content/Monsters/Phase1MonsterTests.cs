@@ -63,7 +63,13 @@ public class Phase1MonsterTests
     // FossilStalker opens with LATCH (Attack 12 — upstream's initial state).
     [InlineData(typeof(FossilStalker), "FossilStalker", 51, 53, "attack:12")]
     [InlineData(typeof(FrogKnight), "FrogKnight", 191, 191, "attack:15")]
-    public void Monster_canonical_hp_and_intent(System.Type t, string expectedId, int minHp, int maxHp, string expectedFirstIntent)
+    public void Monster_canonical_hp_and_intent(
+        System.Type t,
+        string expectedId,
+        int minHp,
+        int maxHp,
+        string expectedFirstIntent
+    )
     {
         MonsterModel m = (MonsterModel)System.Activator.CreateInstance(t)!;
         Assert.Equal(expectedId, m.Id);

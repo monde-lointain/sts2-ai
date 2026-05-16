@@ -27,13 +27,16 @@ public sealed record Q4Manifest(
     IReadOnlyList<string> Relics,
     IReadOnlyList<string> Powers,
     IReadOnlyList<string> Monsters,
-    IReadOnlyList<string> Potions)
+    IReadOnlyList<string> Potions
+)
 {
     /// <summary>An empty manifest — all five buckets empty. Useful for vacuous tests.</summary>
-    public static Q4Manifest Empty { get; } = new(
-        Array.Empty<string>(),
-        Array.Empty<string>(),
-        Array.Empty<string>(),
-        Array.Empty<string>(),
-        Array.Empty<string>());
+    public static Q4Manifest Empty { get; } =
+        new(
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            Array.Empty<string>(),
+            Array.Empty<string>()
+        );
 }

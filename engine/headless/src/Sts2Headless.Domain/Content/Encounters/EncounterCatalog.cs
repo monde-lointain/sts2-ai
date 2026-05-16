@@ -16,6 +16,4 @@ namespace Sts2Headless.Domain.Content.Encounters;
 /// encounter is registered but not coverage-gated.
 /// </para>
 /// </summary>
-public class EncounterCatalog : ContentTable<string, IEncounterModel>
-{
-}
+public class EncounterCatalog : ContentTable<string, IEncounterModel> { }

@@ -20,7 +20,8 @@ public class RelicModelTests
     {
         public int FireCount { get; private set; }
 
-        public FakeRelic() : base("fake_relic", "Fake Relic", RelicRarity.Starter) { }
+        public FakeRelic()
+            : base("fake_relic", "Fake Relic", RelicRarity.Starter) { }
 
         protected override void SubscribeHooks(HookRegistry hooks)
         {
@@ -28,8 +29,8 @@ public class RelicModelTests
         }
     }
 
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     [Fact]
     public void Construction_assigns_canonical_properties()
@@ -110,6 +111,7 @@ public class RelicModelTests
 
     private sealed class BadRelic : RelicModel
     {
-        public BadRelic(string id, string name) : base(id, name, RelicRarity.Common) { }
+        public BadRelic(string id, string name)
+            : base(id, name, RelicRarity.Common) { }
     }
 }

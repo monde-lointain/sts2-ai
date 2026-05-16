@@ -40,7 +40,13 @@ public sealed unsafe class SharedMemorySegment : IDisposable
     private byte* _basePtr;
     private int _disposed;
 
-    private SharedMemorySegment(MemoryMappedFile mmf, MemoryMappedViewAccessor view, byte* basePtr, string? ownedPath, int size)
+    private SharedMemorySegment(
+        MemoryMappedFile mmf,
+        MemoryMappedViewAccessor view,
+        byte* basePtr,
+        string? ownedPath,
+        int size
+    )
     {
         _mmf = mmf;
         _view = view;
@@ -57,7 +63,8 @@ public sealed unsafe class SharedMemorySegment : IDisposable
     {
         get
         {
-            if (System.Threading.Volatile.Read(ref _disposed) != 0) throw new ObjectDisposedException(nameof(SharedMemorySegment));
+            if (System.Threading.Volatile.Read(ref _disposed) != 0)
+                throw new ObjectDisposedException(nameof(SharedMemorySegment));
             return _basePtr;
         }
     }
@@ -70,20 +77,39 @@ public sealed unsafe class SharedMemorySegment : IDisposable
     public static SharedMemorySegment CreateOwner(string path, int totalSize)
     {
         ArgumentNullException.ThrowIfNull(path);
-        if (totalSize <= 0) throw new ArgumentOutOfRangeException(nameof(totalSize));
+        if (totalSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(totalSize));
 
         // Clean up stale file from a prior crash. Ignore failures — the
         // CreateFromFile call will fail loudly if there's a real problem.
-        try { File.Delete(path); } catch { /* best effort */ }
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        { /* best effort */
+        }
 
         // Pre-create at the right size so the mmap call can map the whole thing.
-        using (var fs = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite))
+        using (
+            var fs = new FileStream(
+                path,
+                FileMode.CreateNew,
+                FileAccess.ReadWrite,
+                FileShare.ReadWrite
+            )
+        )
         {
             fs.SetLength(totalSize);
         }
 
         var mmf = MemoryMappedFile.CreateFromFile(
-            path, FileMode.Open, mapName: null, totalSize, MemoryMappedFileAccess.ReadWrite);
+            path,
+            FileMode.Open,
+            mapName: null,
+            totalSize,
+            MemoryMappedFileAccess.ReadWrite
+        );
         var view = mmf.CreateViewAccessor(0, totalSize, MemoryMappedFileAccess.ReadWrite);
         byte* ptr = null;
         view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
@@ -97,14 +123,20 @@ public sealed unsafe class SharedMemorySegment : IDisposable
     public static SharedMemorySegment OpenExisting(string path, int totalSize)
     {
         ArgumentNullException.ThrowIfNull(path);
-        if (totalSize <= 0) throw new ArgumentOutOfRangeException(nameof(totalSize));
+        if (totalSize <= 0)
+            throw new ArgumentOutOfRangeException(nameof(totalSize));
         if (!File.Exists(path))
         {
             throw new FileNotFoundException($"Shared-memory region not found at {path}", path);
         }
 
         var mmf = MemoryMappedFile.CreateFromFile(
-            path, FileMode.Open, mapName: null, totalSize, MemoryMappedFileAccess.ReadWrite);
+            path,
+            FileMode.Open,
+            mapName: null,
+            totalSize,
+            MemoryMappedFileAccess.ReadWrite
+        );
         var view = mmf.CreateViewAccessor(0, totalSize, MemoryMappedFileAccess.ReadWrite);
         byte* ptr = null;
         view.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
@@ -113,17 +145,26 @@ public sealed unsafe class SharedMemorySegment : IDisposable
 
     public void Dispose()
     {
-        if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        if (System.Threading.Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
         try
         {
             _view.SafeMemoryMappedViewHandle.ReleasePointer();
         }
-        catch { /* best effort */ }
+        catch
+        { /* best effort */
+        }
         _view.Dispose();
         _mmf.Dispose();
         if (_ownedPath is not null)
         {
-            try { File.Delete(_ownedPath); } catch { /* best effort */ }
+            try
+            {
+                File.Delete(_ownedPath);
+            }
+            catch
+            { /* best effort */
+            }
         }
         _basePtr = null;
     }

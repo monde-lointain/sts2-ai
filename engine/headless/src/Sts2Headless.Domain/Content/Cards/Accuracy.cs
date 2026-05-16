@@ -15,7 +15,8 @@ public sealed class Accuracy : CardModel
     public const int UpgradeDelta = 2;
     public int Amount => BaseAmount;
 
-    public Accuracy() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public Accuracy()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

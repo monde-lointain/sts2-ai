@@ -29,15 +29,17 @@ namespace Sts2Headless.Tests.Adapters.HookProtocol;
 [SupportedOSPlatform("linux")]
 public class PosixSemaphoreTests
 {
-    private static string UniqueName([System.Runtime.CompilerServices.CallerMemberName] string member = "")
-        => $"q1-test-{member}-{Guid.NewGuid():N}";
+    private static string UniqueName(
+        [System.Runtime.CompilerServices.CallerMemberName] string member = ""
+    ) => $"q1-test-{member}-{Guid.NewGuid():N}";
 
     private static bool OnLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
     [Fact]
     public void Release_then_Wait_returns_immediately()
     {
-        if (!OnLinux) return; // skip on non-Linux harness
+        if (!OnLinux)
+            return; // skip on non-Linux harness
         string name = UniqueName();
         PosixSemaphore.Unlink(name);
         using var sem = PosixSemaphore.Create(name);
@@ -48,7 +50,8 @@ public class PosixSemaphoreTests
     [Fact]
     public void Wait_with_zero_timeout_returns_false_when_unsignaled()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string name = UniqueName();
         PosixSemaphore.Unlink(name);
         using var sem = PosixSemaphore.Create(name);
@@ -59,7 +62,8 @@ public class PosixSemaphoreTests
     [Fact]
     public async Task Wait_with_timeout_returns_true_after_release()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string name = UniqueName();
         PosixSemaphore.Unlink(name);
         using var sem = PosixSemaphore.Create(name);
@@ -76,7 +80,8 @@ public class PosixSemaphoreTests
     [Fact]
     public void Open_after_Create_resolves_same_semaphore()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string name = UniqueName();
         PosixSemaphore.Unlink(name);
         using var owner = PosixSemaphore.Create(name);
@@ -89,10 +94,13 @@ public class PosixSemaphoreTests
     [Fact]
     public void Owner_Dispose_unlinks_so_recreate_succeeds()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string name = UniqueName();
         PosixSemaphore.Unlink(name);
-        using (var sem = PosixSemaphore.Create(name)) { /* drop */ }
+        using (var sem = PosixSemaphore.Create(name))
+        { /* drop */
+        }
         // After owner Dispose, name is unlinked; we can Create again with same name.
         using var sem2 = PosixSemaphore.Create(name);
     }
@@ -100,7 +108,8 @@ public class PosixSemaphoreTests
     [Fact]
     public void Unlink_is_idempotent_on_missing_name()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string name = UniqueName();
         // Just shouldn't throw.
         PosixSemaphore.Unlink(name);
@@ -110,7 +119,8 @@ public class PosixSemaphoreTests
     [Fact]
     public void Bidirectional_wakeup_within_low_microsecond_budget()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string a = UniqueName() + "-a";
         string b = UniqueName() + "-b";
         PosixSemaphore.Unlink(a);
@@ -162,7 +172,13 @@ public class PosixSemaphoreTests
         finally
         {
             stop.Cancel();
-            try { peer.GetAwaiter().GetResult(); } catch { /* ok */ }
+            try
+            {
+                peer.GetAwaiter().GetResult();
+            }
+            catch
+            { /* ok */
+            }
         }
     }
 }

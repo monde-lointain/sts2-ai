@@ -17,7 +17,8 @@ namespace Sts2Headless.Domain.Content;
 public sealed record CoverageResult(
     IReadOnlyList<string> Missing,
     IReadOnlyList<string> Extra,
-    int OkCount)
+    int OkCount
+)
 {
     /// <summary>
     /// True when no ids are missing. <b>Extras do not fail the gate</b> by design — see
@@ -26,10 +27,8 @@ public sealed record CoverageResult(
     public bool IsGreen => Missing.Count == 0;
 
     /// <summary>An empty (vacuously green) result.</summary>
-    public static CoverageResult Empty { get; } = new(
-        Array.Empty<string>(),
-        Array.Empty<string>(),
-        0);
+    public static CoverageResult Empty { get; } =
+        new(Array.Empty<string>(), Array.Empty<string>(), 0);
 }
 
 /// <summary>
@@ -41,9 +40,9 @@ public sealed record AggregateCoverageResult(
     CoverageResult Relics,
     CoverageResult Powers,
     CoverageResult Monsters,
-    CoverageResult Potions)
+    CoverageResult Potions
+)
 {
     public bool IsGreen =>
-        Cards.IsGreen && Relics.IsGreen && Powers.IsGreen &&
-        Monsters.IsGreen && Potions.IsGreen;
+        Cards.IsGreen && Relics.IsGreen && Powers.IsGreen && Monsters.IsGreen && Potions.IsGreen;
 }

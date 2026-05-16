@@ -53,7 +53,8 @@ public sealed record Creature(
     int Block,
     ImmutableList<PowerInstance> Powers,
     MonsterIntent? Intent,
-    bool IsPlayer)
+    bool IsPlayer
+)
 {
     /// <summary>True iff <see cref="CurrentHp"/> &gt; 0.</summary>
     public bool IsAlive => CurrentHp > 0;
@@ -71,16 +72,24 @@ public sealed record Creature(
     /// </summary>
     public bool Equals(Creature? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (Id != other.Id || Name != other.Name) return false;
-        if (CurrentHp != other.CurrentHp || MaxHp != other.MaxHp || Block != other.Block) return false;
-        if (IsPlayer != other.IsPlayer) return false;
-        if (!Equals(Intent, other.Intent)) return false;
-        if (Powers.Count != other.Powers.Count) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (Id != other.Id || Name != other.Name)
+            return false;
+        if (CurrentHp != other.CurrentHp || MaxHp != other.MaxHp || Block != other.Block)
+            return false;
+        if (IsPlayer != other.IsPlayer)
+            return false;
+        if (!Equals(Intent, other.Intent))
+            return false;
+        if (Powers.Count != other.Powers.Count)
+            return false;
         for (int i = 0; i < Powers.Count; i++)
         {
-            if (!Powers[i].Equals(other.Powers[i])) return false;
+            if (!Powers[i].Equals(other.Powers[i]))
+                return false;
         }
         return true;
     }
@@ -96,7 +105,8 @@ public sealed record Creature(
         h.Add(Block);
         h.Add(IsPlayer);
         h.Add(Intent);
-        for (int i = 0; i < Powers.Count; i++) h.Add(Powers[i]);
+        for (int i = 0; i < Powers.Count; i++)
+            h.Add(Powers[i]);
         return h.ToHashCode();
     }
 }

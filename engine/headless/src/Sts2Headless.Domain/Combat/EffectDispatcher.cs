@@ -43,7 +43,8 @@ public static class EffectDispatcher
     public readonly record struct DispatchContext(
         uint PlayerId,
         uint? PrimaryTargetId,
-        uint SourceCreatureId);
+        uint SourceCreatureId
+    );
 
     /// <summary>
     /// Apply a single action to <paramref name="ctx"/>. Recognizes the S5
@@ -59,142 +60,181 @@ public static class EffectDispatcher
         switch (action)
         {
             case DealDamageAction dmg:
-                {
-                    uint? target = ResolveTarget(dmg.Target, dispatch);
-                    if (target is null) return;
-                    int modified = DamageModifier.Modify(ctx.State, dispatch.SourceCreatureId, target.Value, dmg.Amount);
-                    ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
-                    break;
-                }
+            {
+                uint? target = ResolveTarget(dmg.Target, dispatch);
+                if (target is null)
+                    return;
+                int modified = DamageModifier.Modify(
+                    ctx.State,
+                    dispatch.SourceCreatureId,
+                    target.Value,
+                    dmg.Amount
+                );
+                ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
+                break;
+            }
 
             case GainBlockAction blk:
                 ctx.GainBlock(dispatch.PlayerId, blk.Amount);
                 break;
 
             case ApplyPowerAction pwr:
-                {
-                    uint? target = ResolveTarget(pwr.Target, dispatch);
-                    if (target is null) return;
-                    ctx.ApplyPower(target.Value, pwr.PowerId, pwr.Amount, dispatch.SourceCreatureId);
-                    break;
-                }
+            {
+                uint? target = ResolveTarget(pwr.Target, dispatch);
+                if (target is null)
+                    return;
+                ctx.ApplyPower(target.Value, pwr.PowerId, pwr.Amount, dispatch.SourceCreatureId);
+                break;
+            }
 
             case ApplyPowerToAllEnemiesAction allPwr:
+            {
+                // Snapshot enemy ids to avoid mid-iteration list mutation, then
+                // apply to every living enemy in spawn order. Matches upstream's
+                // PowerCmd.Apply(HittableEnemies, ...) shape.
+                var enemyIds = new List<uint>(ctx.State.Enemies.Count);
+                foreach (Creature e in ctx.State.Enemies)
                 {
-                    // Snapshot enemy ids to avoid mid-iteration list mutation, then
-                    // apply to every living enemy in spawn order. Matches upstream's
-                    // PowerCmd.Apply(HittableEnemies, ...) shape.
-                    var enemyIds = new List<uint>(ctx.State.Enemies.Count);
-                    foreach (Creature e in ctx.State.Enemies)
-                    {
-                        if (!e.IsDead) enemyIds.Add(e.Id);
-                    }
-                    foreach (uint eid in enemyIds)
-                    {
-                        ctx.ApplyPower(eid, allPwr.PowerId, allPwr.Amount, dispatch.SourceCreatureId);
-                    }
-                    break;
+                    if (!e.IsDead)
+                        enemyIds.Add(e.Id);
                 }
+                foreach (uint eid in enemyIds)
+                {
+                    ctx.ApplyPower(eid, allPwr.PowerId, allPwr.Amount, dispatch.SourceCreatureId);
+                }
+                break;
+            }
 
             case DealDamageToAllEnemiesAction allDmg:
+            {
+                // Snapshot enemy ids; deal damage in spawn order. Each target's
+                // damage goes through the modifier pipeline independently so
+                // per-target Vulnerable applies per enemy.
+                var enemyIds = new List<uint>(ctx.State.Enemies.Count);
+                foreach (Creature e in ctx.State.Enemies)
                 {
-                    // Snapshot enemy ids; deal damage in spawn order. Each target's
-                    // damage goes through the modifier pipeline independently so
-                    // per-target Vulnerable applies per enemy.
-                    var enemyIds = new List<uint>(ctx.State.Enemies.Count);
-                    foreach (Creature e in ctx.State.Enemies)
-                    {
-                        if (!e.IsDead) enemyIds.Add(e.Id);
-                    }
-                    foreach (uint eid in enemyIds)
-                    {
-                        int modified = DamageModifier.Modify(ctx.State, dispatch.SourceCreatureId, eid, allDmg.Amount);
-                        ctx.DealDamage(eid, modified, dispatch.SourceCreatureId);
-                    }
-                    break;
+                    if (!e.IsDead)
+                        enemyIds.Add(e.Id);
                 }
+                foreach (uint eid in enemyIds)
+                {
+                    int modified = DamageModifier.Modify(
+                        ctx.State,
+                        dispatch.SourceCreatureId,
+                        eid,
+                        allDmg.Amount
+                    );
+                    ctx.DealDamage(eid, modified, dispatch.SourceCreatureId);
+                }
+                break;
+            }
 
             case ConditionalGainBlockAction condBlk:
+            {
+                // Orichalcum-shaped: gain block only if player has zero block.
+                if (ctx.State.Player.Block == 0)
                 {
-                    // Orichalcum-shaped: gain block only if player has zero block.
-                    if (ctx.State.Player.Block == 0)
-                    {
-                        ctx.GainBlock(dispatch.PlayerId, condBlk.Amount);
-                    }
-                    break;
+                    ctx.GainBlock(dispatch.PlayerId, condBlk.Amount);
                 }
+                break;
+            }
 
             case XCostDamageAction xDmg:
+            {
+                // Skewer: damage_per_hit, with hit_count = LastSpentEnergy.
+                int hits = ctx.State.LastSpentEnergy;
+                if (hits <= 0)
+                    return;
+                uint? target = ResolveTarget(xDmg.Target, dispatch);
+                if (target is null)
+                    return;
+                for (int i = 0; i < hits; i++)
                 {
-                    // Skewer: damage_per_hit, with hit_count = LastSpentEnergy.
-                    int hits = ctx.State.LastSpentEnergy;
-                    if (hits <= 0) return;
-                    uint? target = ResolveTarget(xDmg.Target, dispatch);
-                    if (target is null) return;
-                    for (int i = 0; i < hits; i++)
-                    {
-                        // Re-evaluate damage per hit so per-hit modifiers (which
-                        // depend on live state) apply correctly. Mirrors the
-                        // engine's existing per-hit attack loop.
-                        Creature? freshTarget = ctx.State.FindEnemy(target.Value);
-                        if (freshTarget is null || freshTarget.IsDead) break;
-                        int modified = DamageModifier.Modify(ctx.State, dispatch.SourceCreatureId, target.Value, xDmg.DamagePerHit);
-                        ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
-                    }
-                    break;
+                    // Re-evaluate damage per hit so per-hit modifiers (which
+                    // depend on live state) apply correctly. Mirrors the
+                    // engine's existing per-hit attack loop.
+                    Creature? freshTarget = ctx.State.FindEnemy(target.Value);
+                    if (freshTarget is null || freshTarget.IsDead)
+                        break;
+                    int modified = DamageModifier.Modify(
+                        ctx.State,
+                        dispatch.SourceCreatureId,
+                        target.Value,
+                        xDmg.DamagePerHit
+                    );
+                    ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
                 }
+                break;
+            }
 
             case XCostApplyPowerAction xPwr:
-                {
-                    // Malaise: applies SignMultiplier * (X + Bonus) stacks of
-                    // PowerId to Target. X is LastSpentEnergy.
-                    int x = ctx.State.LastSpentEnergy;
-                    int total = (x + xPwr.Bonus) * xPwr.SignMultiplier;
-                    if (total == 0) return;
-                    uint? target = ResolveTarget(xPwr.Target, dispatch);
-                    if (target is null) return;
-                    ctx.ApplyPower(target.Value, xPwr.PowerId, total, dispatch.SourceCreatureId);
-                    break;
-                }
+            {
+                // Malaise: applies SignMultiplier * (X + Bonus) stacks of
+                // PowerId to Target. X is LastSpentEnergy.
+                int x = ctx.State.LastSpentEnergy;
+                int total = (x + xPwr.Bonus) * xPwr.SignMultiplier;
+                if (total == 0)
+                    return;
+                uint? target = ResolveTarget(xPwr.Target, dispatch);
+                if (target is null)
+                    return;
+                ctx.ApplyPower(target.Value, xPwr.PowerId, total, dispatch.SourceCreatureId);
+                break;
+            }
 
             case CalcDamageFromShivExhaustAction shivDmg:
-                {
-                    // KnifeTrap: damage scales with the count of Shiv-tagged
-                    // cards in the player's exhaust pile (ExhaustedShivCount).
-                    int raw = shivDmg.BasePerShiv * ctx.State.ExhaustedShivCount;
-                    if (raw <= 0) return;
-                    uint? target = ResolveTarget(shivDmg.Target, dispatch);
-                    if (target is null) return;
-                    int modified = DamageModifier.Modify(ctx.State, dispatch.SourceCreatureId, target.Value, raw);
-                    ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
-                    break;
-                }
+            {
+                // KnifeTrap: damage scales with the count of Shiv-tagged
+                // cards in the player's exhaust pile (ExhaustedShivCount).
+                int raw = shivDmg.BasePerShiv * ctx.State.ExhaustedShivCount;
+                if (raw <= 0)
+                    return;
+                uint? target = ResolveTarget(shivDmg.Target, dispatch);
+                if (target is null)
+                    return;
+                int modified = DamageModifier.Modify(
+                    ctx.State,
+                    dispatch.SourceCreatureId,
+                    target.Value,
+                    raw
+                );
+                ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
+                break;
+            }
 
             case CalcDamageAction calcDmg:
-                {
-                    // Stream-B-T4: resolve the formula multiplier against the live
-                    // CombatState aggregate, then route through the standard
-                    // damage pipeline (Strength / Vulnerable / Weak modifiers).
-                    uint? target = ResolveTarget(calcDmg.Target, dispatch);
-                    if (target is null) return;
-                    int multiplier = ResolveCalcMultiplier(ctx.State, calcDmg.MultiplierKey);
-                    int raw = calcDmg.BaseDamage * multiplier;
-                    if (raw <= 0) return;
-                    int modified = DamageModifier.Modify(ctx.State, dispatch.SourceCreatureId, target.Value, raw);
-                    ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
-                    break;
-                }
+            {
+                // Stream-B-T4: resolve the formula multiplier against the live
+                // CombatState aggregate, then route through the standard
+                // damage pipeline (Strength / Vulnerable / Weak modifiers).
+                uint? target = ResolveTarget(calcDmg.Target, dispatch);
+                if (target is null)
+                    return;
+                int multiplier = ResolveCalcMultiplier(ctx.State, calcDmg.MultiplierKey);
+                int raw = calcDmg.BaseDamage * multiplier;
+                if (raw <= 0)
+                    return;
+                int modified = DamageModifier.Modify(
+                    ctx.State,
+                    dispatch.SourceCreatureId,
+                    target.Value,
+                    raw
+                );
+                ctx.DealDamage(target.Value, modified, dispatch.SourceCreatureId);
+                break;
+            }
 
             case CalcBlockAction calcBlk:
-                {
-                    // Stream-B-T4: block scales with a CombatState aggregate
-                    // (Mirage: total Poison stacks across living enemies).
-                    int gained = calcBlk.BaseBlock
-                        + ResolveCalcMultiplier(ctx.State, calcBlk.MultiplierKey);
-                    if (gained <= 0) return;
-                    ctx.GainBlock(dispatch.PlayerId, gained);
-                    break;
-                }
+            {
+                // Stream-B-T4: block scales with a CombatState aggregate
+                // (Mirage: total Poison stacks across living enemies).
+                int gained =
+                    calcBlk.BaseBlock + ResolveCalcMultiplier(ctx.State, calcBlk.MultiplierKey);
+                if (gained <= 0)
+                    return;
+                ctx.GainBlock(dispatch.PlayerId, gained);
+                break;
+            }
 
             case DrawCardsAction draw:
                 ctx.DrawCards(draw.Count);
@@ -253,7 +293,8 @@ public static class EffectDispatcher
     /// </summary>
     private static int ResolveCalcMultiplier(CombatState state, string key)
     {
-        if (string.IsNullOrEmpty(key)) return 0;
+        if (string.IsNullOrEmpty(key))
+            return 0;
         switch (key)
         {
             case "attacks_played_this_turn":
@@ -264,27 +305,27 @@ public static class EffectDispatcher
                 // Murder: damage = base × cards drawn this combat.
                 return state.CardsDrawnThisCombat;
             case "poison_total_on_enemies":
+            {
+                // Mirage: block = base + sum(Poison.Stacks for living enemies).
+                int total = 0;
+                for (int i = 0; i < state.Enemies.Count; i++)
                 {
-                    // Mirage: block = base + sum(Poison.Stacks for living enemies).
-                    int total = 0;
-                    for (int i = 0; i < state.Enemies.Count; i++)
+                    Creature e = state.Enemies[i];
+                    if (e.IsDead)
+                        continue;
+                    for (int j = 0; j < e.Powers.Count; j++)
                     {
-                        Creature e = state.Enemies[i];
-                        if (e.IsDead) continue;
-                        for (int j = 0; j < e.Powers.Count; j++)
+                        PowerInstance p = e.Powers[j];
+                        if (p.ModelId == Sts2Headless.Domain.Content.Powers.PowerIds.Poison)
                         {
-                            PowerInstance p = e.Powers[j];
-                            if (p.ModelId == Sts2Headless.Domain.Content.Powers.PowerIds.Poison)
-                            {
-                                total += p.Stacks;
-                            }
+                            total += p.Stacks;
                         }
                     }
-                    return total;
                 }
+                return total;
+            }
             default:
                 return 0;
         }
     }
-
 }

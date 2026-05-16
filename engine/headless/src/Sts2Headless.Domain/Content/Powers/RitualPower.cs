@@ -20,7 +20,8 @@ public sealed class RitualPower : PowerModel
 {
     private bool _wasJustAppliedByEnemy;
 
-    public RitualPower() : base(PowerIds.Ritual, PowerType.Buff, PowerStackType.Counter) { }
+    public RitualPower()
+        : base(PowerIds.Ritual, PowerType.Buff, PowerStackType.Counter) { }
 
     /// <summary>
     /// Equivalent of upstream's <c>AfterApplied</c> override that sets

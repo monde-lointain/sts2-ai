@@ -47,12 +47,13 @@ public class ManifestStampCodecTests
         Assert.Equal(2, enc[0]);
         Assert.Equal((byte)'A', enc[1]);
         Assert.Equal((byte)'B', enc[2]);
-        Assert.Equal((byte)3, enc[3]);    // u16 LSB
-        Assert.Equal((byte)0, enc[4]);    // u16 MSB
+        Assert.Equal((byte)3, enc[3]); // u16 LSB
+        Assert.Equal((byte)0, enc[4]); // u16 MSB
         Assert.Equal((byte)'C', enc[5]);
         Assert.Equal((byte)'D', enc[6]);
         Assert.Equal((byte)'E', enc[7]);
-        for (int i = 8; i < 8 + 32; i++) Assert.Equal((byte)0, enc[i]);
+        for (int i = 8; i < 8 + 32; i++)
+            Assert.Equal((byte)0, enc[i]);
         Assert.Equal(8 + 32, enc.Length);
     }
 
@@ -78,7 +79,8 @@ public class ManifestStampCodecTests
     {
         string huge = new string('x', 256);
         Assert.Throws<ArgumentException>(() =>
-            ManifestStampCodec.Encode(new ManifestStamp(huge, "", ZeroHash)));
+            ManifestStampCodec.Encode(new ManifestStamp(huge, "", ZeroHash))
+        );
     }
 
     [Fact]
@@ -86,6 +88,7 @@ public class ManifestStampCodecTests
     {
         byte[] wrong = new byte[31];
         Assert.Throws<ArgumentException>(() =>
-            ManifestStampCodec.Encode(new ManifestStamp("", "", wrong)));
+            ManifestStampCodec.Encode(new ManifestStamp("", "", wrong))
+        );
     }
 }

@@ -20,18 +20,28 @@ public sealed class TerminateAndServerTests : IDisposable
 
     public TerminateAndServerTests()
     {
-        _socketPath = Path.Combine(
-            Path.GetTempPath(),
-            $"sts2-headless-t6-{Guid.NewGuid():N}.sock");
+        _socketPath = Path.Combine(Path.GetTempPath(), $"sts2-headless-t6-{Guid.NewGuid():N}.sock");
     }
 
     public void Dispose()
     {
-        try { _server?.Stop(); } catch { /* swallowed */ }
+        try
+        {
+            _server?.Stop();
+        }
+        catch
+        { /* swallowed */
+        }
         _server?.Dispose();
         if (File.Exists(_socketPath))
         {
-            try { File.Delete(_socketPath); } catch { /* swallowed */ }
+            try
+            {
+                File.Delete(_socketPath);
+            }
+            catch
+            { /* swallowed */
+            }
         }
     }
 
@@ -75,12 +85,15 @@ public sealed class TerminateAndServerTests : IDisposable
         // Wait for the background shutdown to complete (up to 2s).
         for (int i = 0; i < 40; i++)
         {
-            if (!_server.IsRunning) break;
+            if (!_server.IsRunning)
+                break;
             await Task.Delay(50);
         }
         Assert.False(_server.IsRunning, "Server should have stopped after terminate.");
-        Assert.False(File.Exists(_socketPath),
-            $"Socket file at {_socketPath} should be removed after terminate.");
+        Assert.False(
+            File.Exists(_socketPath),
+            $"Socket file at {_socketPath} should be removed after terminate."
+        );
     }
 
     [Fact]
@@ -100,7 +113,8 @@ public sealed class TerminateAndServerTests : IDisposable
         Assert.False(string.IsNullOrEmpty(blob));
 
         // Second client: load_state with that blob.
-        string loadReq = $$"""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"{{blob}}"},"id":2}""";
+        string loadReq =
+            $$"""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"{{blob}}"},"id":2}""";
         string loadResp = await SendOneAsync(loadReq);
         using (JsonDocument doc = JsonDocument.Parse(loadResp))
         {
@@ -111,7 +125,10 @@ public sealed class TerminateAndServerTests : IDisposable
         string saveResp2 = await SendOneAsync("""{"jsonrpc":"2.0","method":"save_state","id":3}""");
         using (JsonDocument doc = JsonDocument.Parse(saveResp2))
         {
-            string blob2 = doc.RootElement.GetProperty("result").GetProperty("state_blob").GetString()!;
+            string blob2 = doc
+                .RootElement.GetProperty("result")
+                .GetProperty("state_blob")
+                .GetString()!;
             Assert.Equal(blob, blob2);
         }
     }
@@ -180,7 +197,8 @@ public sealed class TerminateAndServerTests : IDisposable
             }
             catch (SocketException)
             {
-                if (attempt == MaxAttempts - 1) throw;
+                if (attempt == MaxAttempts - 1)
+                    throw;
                 await Task.Delay(100);
             }
         }

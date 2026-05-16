@@ -10,7 +10,8 @@ public sealed class AscendersBane : CardModel
 {
     public const string CanonicalId = "AscendersBane";
 
-    public AscendersBane() : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
+    public AscendersBane()
+        : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

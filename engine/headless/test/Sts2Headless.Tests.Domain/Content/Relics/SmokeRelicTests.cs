@@ -18,8 +18,8 @@ namespace Sts2Headless.Tests.Domain.Content.Relics;
 /// </summary>
 public class SmokeRelicTests
 {
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     /// <summary>
     /// Install <paramref name="relic"/>, fire <paramref name="hookType"/>, drain the
@@ -53,7 +53,10 @@ public class SmokeRelicTests
     [Fact]
     public void RingOfTheSnake_OnBeforeHandDraw_enqueues_extra_2_cards()
     {
-        IReadOnlyList<IAction> actions = FireAndCollect(new RingOfTheSnake(), HookType.ModifyHandDraw);
+        IReadOnlyList<IAction> actions = FireAndCollect(
+            new RingOfTheSnake(),
+            HookType.ModifyHandDraw
+        );
         ExtraHandDrawAction extra = Assert.IsType<ExtraHandDrawAction>(actions.Single());
         Assert.Equal(2, extra.Extra);
     }
@@ -115,7 +118,10 @@ public class SmokeRelicTests
     [Fact]
     public void BagOfPreparation_OnBeforeHandDraw_enqueues_extra_2_cards()
     {
-        IReadOnlyList<IAction> actions = FireAndCollect(new BagOfPreparation(), HookType.ModifyHandDraw);
+        IReadOnlyList<IAction> actions = FireAndCollect(
+            new BagOfPreparation(),
+            HookType.ModifyHandDraw
+        );
         ExtraHandDrawAction extra = Assert.IsType<ExtraHandDrawAction>(actions.Single());
         Assert.Equal(2, extra.Extra);
     }
@@ -135,7 +141,10 @@ public class SmokeRelicTests
     [Fact]
     public void BloodVial_OnPlayerTurnStartLate_enqueues_heal_2()
     {
-        IReadOnlyList<IAction> actions = FireAndCollect(new BloodVial(), HookType.AfterPlayerTurnStartLate);
+        IReadOnlyList<IAction> actions = FireAndCollect(
+            new BloodVial(),
+            HookType.AfterPlayerTurnStartLate
+        );
         HealAction h = Assert.IsType<HealAction>(actions.Single());
         Assert.Equal(2, h.Amount);
     }

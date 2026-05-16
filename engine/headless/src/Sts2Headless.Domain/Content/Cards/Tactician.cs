@@ -14,7 +14,8 @@ public sealed class Tactician : CardModel
     public const int UpgradeDelta = 1;
     public int EnergyGain => BaseEnergy;
 
-    public Tactician() : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public Tactician()
+        : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

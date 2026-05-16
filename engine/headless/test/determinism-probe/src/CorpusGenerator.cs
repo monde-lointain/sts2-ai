@@ -73,13 +73,16 @@ public static class CorpusGenerator
         // === Structural per encounter ====================================
         foreach (string enc in encounterIds)
         {
-            entries.Add(new CorpusEntry(
-                Id: $"structural-{enc}",
-                Mode: CorpusEntry.ModeStructural,
-                Seed: BaseSeed,
-                Encounter: enc,
-                Relics: SmokeRelics,
-                Script: EmptyScript));
+            entries.Add(
+                new CorpusEntry(
+                    Id: $"structural-{enc}",
+                    Mode: CorpusEntry.ModeStructural,
+                    Seed: BaseSeed,
+                    Encounter: enc,
+                    Relics: SmokeRelics,
+                    Script: EmptyScript
+                )
+            );
         }
 
         // === Initial-state: 10 seeds × 22 encounters =====================
@@ -88,13 +91,16 @@ public static class CorpusGenerator
             uint seed = BaseSeed + (uint)seedIdx;
             foreach (string enc in encounterIds)
             {
-                entries.Add(new CorpusEntry(
-                    Id: $"initial-{enc}-seed{seed}",
-                    Mode: CorpusEntry.ModeInitialState,
-                    Seed: seed,
-                    Encounter: enc,
-                    Relics: SmokeRelics,
-                    Script: EmptyScript));
+                entries.Add(
+                    new CorpusEntry(
+                        Id: $"initial-{enc}-seed{seed}",
+                        Mode: CorpusEntry.ModeInitialState,
+                        Seed: seed,
+                        Encounter: enc,
+                        Relics: SmokeRelics,
+                        Script: EmptyScript
+                    )
+                );
             }
         }
 
@@ -102,13 +108,16 @@ public static class CorpusGenerator
         for (int seedIdx = 0; seedIdx < SmokeSeedCount; seedIdx++)
         {
             uint seed = BaseSeed + (uint)seedIdx;
-            entries.Add(new CorpusEntry(
-                Id: $"perstep-smoke-seed{seed}",
-                Mode: CorpusEntry.ModePerStep,
-                Seed: seed,
-                Encounter: SmokeEncounterCliId,
-                Relics: SmokeRelics,
-                Script: StandardEndTurnScript));
+            entries.Add(
+                new CorpusEntry(
+                    Id: $"perstep-smoke-seed{seed}",
+                    Mode: CorpusEntry.ModePerStep,
+                    Seed: seed,
+                    Encounter: SmokeEncounterCliId,
+                    Relics: SmokeRelics,
+                    Script: StandardEndTurnScript
+                )
+            );
         }
 
         // === Per-step Stream-B-T5: 1 entry per non-smoke encounter ========
@@ -133,8 +142,10 @@ public static class CorpusGenerator
         foreach (string enc in encounterIds)
         {
             // Skip the smoke encounter — already covered above with 50 seeds.
-            if (string.Equals(enc, SmokeEncounterCliId, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(enc, "CultistsNormal", StringComparison.OrdinalIgnoreCase))
+            if (
+                string.Equals(enc, SmokeEncounterCliId, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(enc, "CultistsNormal", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 continue;
             }
@@ -142,26 +153,29 @@ public static class CorpusGenerator
             {
                 continue;
             }
-            entries.Add(new CorpusEntry(
-                Id: $"perstep-{enc}-seed{BaseSeed}",
-                Mode: CorpusEntry.ModePerStep,
-                Seed: BaseSeed,
-                Encounter: enc,
-                Relics: SmokeRelics,
-                Script: ExtendedEndTurnScript));
+            entries.Add(
+                new CorpusEntry(
+                    Id: $"perstep-{enc}-seed{BaseSeed}",
+                    Mode: CorpusEntry.ModePerStep,
+                    Seed: BaseSeed,
+                    Encounter: enc,
+                    Relics: SmokeRelics,
+                    Script: ExtendedEndTurnScript
+                )
+            );
             nonSmokePerStepCount++;
         }
 
         return new Corpus(
             Version: Corpus.CurrentVersion,
-            Description:
-                $"Q1 Phase-1 determinism corpus. " +
-                $"{entries.Count} entries: " +
-                $"{encounterIds.Count} structural + " +
-                $"{InitialStateSeedCount}×{encounterIds.Count} initial-state + " +
-                $"{SmokeSeedCount} per-step-smoke + " +
-                $"{nonSmokePerStepCount} per-step-non-smoke (Stream-B-T5 HARD GATE).",
-            Entries: entries);
+            Description: $"Q1 Phase-1 determinism corpus. "
+                + $"{entries.Count} entries: "
+                + $"{encounterIds.Count} structural + "
+                + $"{InitialStateSeedCount}×{encounterIds.Count} initial-state + "
+                + $"{SmokeSeedCount} per-step-smoke + "
+                + $"{nonSmokePerStepCount} per-step-non-smoke (Stream-B-T5 HARD GATE).",
+            Entries: entries
+        );
     }
 
     /// <summary>The smoke encounter is included in this list as the first entry.</summary>

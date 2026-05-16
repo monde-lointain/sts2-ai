@@ -50,12 +50,15 @@ public sealed class JsonLineLoggerTests
         var clock = new LogicalClock(initialTicks: 7L);
         var sw = new StringWriter();
         var logger = new JsonLineLogger(clock, sw);
-        logger.Log("evt", new Dictionary<string, object?>
-        {
-            ["ts"] = 99999,  // should be IGNORED — envelope wins
-            ["event"] = "spoofed", // should be IGNORED
-            ["real"] = "value",
-        });
+        logger.Log(
+            "evt",
+            new Dictionary<string, object?>
+            {
+                ["ts"] = 99999, // should be IGNORED — envelope wins
+                ["event"] = "spoofed", // should be IGNORED
+                ["real"] = "value",
+            }
+        );
 
         using JsonDocument doc = JsonDocument.Parse(sw.ToString().TrimEnd());
         Assert.Equal(7L, doc.RootElement.GetProperty("ts").GetInt64());
@@ -113,10 +116,14 @@ public sealed class JsonLineLoggerTests
         var sw = new StringWriter();
         var logger = new JsonLineLogger(clock, sw);
 
-        Parallel.For(0, 32, i =>
-        {
-            logger.Log($"e", new Dictionary<string, object?> { ["i"] = i });
-        });
+        Parallel.For(
+            0,
+            32,
+            i =>
+            {
+                logger.Log($"e", new Dictionary<string, object?> { ["i"] = i });
+            }
+        );
 
         var lines = sw.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
         Assert.Equal(32, lines.Length);

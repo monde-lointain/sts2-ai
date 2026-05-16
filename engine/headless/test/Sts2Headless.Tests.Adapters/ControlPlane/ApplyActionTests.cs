@@ -24,16 +24,21 @@ public sealed class ApplyActionTests
         ControlPlaneRpcHandlers.Register(d, session);
 
         // Pick the first attack card in hand and its first enemy as target.
-        CardInstance? attackCard = session.Context.State.HandPile.Cards
-            .FirstOrDefault(c => c.ModelId == "StrikeSilent");
+        CardInstance? attackCard = session.Context.State.HandPile.Cards.FirstOrDefault(c =>
+            c.ModelId == "StrikeSilent"
+        );
         Assert.NotNull(attackCard);
         var enemy = session.Context.State.Enemies.First(e => e.IsAlive);
 
         int prevHp = enemy.CurrentHp;
         string preHash = ControlPlaneRpcHandlers.HashCurrentState(session);
 
-        string req = "{\"jsonrpc\":\"2.0\",\"method\":\"apply_action\",\"params\":{\"action\":{\"type\":\"play_card\",\"card_instance_id\":"
-            + attackCard.InstanceId + ",\"target_enemy_id\":" + enemy.Id + "}},\"id\":1}";
+        string req =
+            "{\"jsonrpc\":\"2.0\",\"method\":\"apply_action\",\"params\":{\"action\":{\"type\":\"play_card\",\"card_instance_id\":"
+            + attackCard.InstanceId
+            + ",\"target_enemy_id\":"
+            + enemy.Id
+            + "}},\"id\":1}";
         string resp = d.Handle(req);
         using JsonDocument doc = JsonDocument.Parse(resp);
         JsonElement result = doc.RootElement.GetProperty("result");
@@ -57,7 +62,9 @@ public sealed class ApplyActionTests
 
         Assert.Equal(CombatPhase.PlayerActing, session.Context.State.Phase);
 
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.True(doc.RootElement.GetProperty("result").GetProperty("ok").GetBoolean());
 
@@ -76,18 +83,27 @@ public sealed class ApplyActionTests
         session.Context.SetState(session.Context.State with { Energy = 0 });
 
         // Try to play a 1-cost Strike.
-        CardInstance? strike = session.Context.State.HandPile.Cards
-            .FirstOrDefault(c => c.ModelId == "StrikeSilent");
+        CardInstance? strike = session.Context.State.HandPile.Cards.FirstOrDefault(c =>
+            c.ModelId == "StrikeSilent"
+        );
         Assert.NotNull(strike);
         var enemy = session.Context.State.Enemies.First(e => e.IsAlive);
 
-        string req = "{\"jsonrpc\":\"2.0\",\"method\":\"apply_action\",\"params\":{\"action\":{\"type\":\"play_card\",\"card_instance_id\":"
-            + strike.InstanceId + ",\"target_enemy_id\":" + enemy.Id + "}},\"id\":1}";
+        string req =
+            "{\"jsonrpc\":\"2.0\",\"method\":\"apply_action\",\"params\":{\"action\":{\"type\":\"play_card\",\"card_instance_id\":"
+            + strike.InstanceId
+            + ",\"target_enemy_id\":"
+            + enemy.Id
+            + "}},\"id\":1}";
         string resp = d.Handle(req);
         using JsonDocument doc = JsonDocument.Parse(resp);
         JsonElement err = doc.RootElement.GetProperty("error");
         Assert.Equal(-32602, err.GetProperty("code").GetInt32());
-        Assert.Contains("energy", err.GetProperty("message").GetString()!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "energy",
+            err.GetProperty("message").GetString()!,
+            StringComparison.OrdinalIgnoreCase
+        );
     }
 
     [Fact]
@@ -98,7 +114,8 @@ public sealed class ApplyActionTests
         ControlPlaneRpcHandlers.Register(d, session);
 
         // No card with instance_id=999999 exists in hand.
-        string req = """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"play_card","card_instance_id":999999,"target_enemy_id":1}},"id":1}""";
+        string req =
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"play_card","card_instance_id":999999,"target_enemy_id":1}},"id":1}""";
         string resp = d.Handle(req);
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.Equal(-32602, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
@@ -123,7 +140,9 @@ public sealed class ApplyActionTests
         var d = new JsonRpcDispatcher();
         ControlPlaneRpcHandlers.Register(d, session);
 
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"nonsense"}},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"nonsense"}},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         JsonElement err = doc.RootElement.GetProperty("error");
         Assert.Equal(-32602, err.GetProperty("code").GetInt32());
@@ -138,11 +157,15 @@ public sealed class ApplyActionTests
         ControlPlaneRpcHandlers.Register(d, session);
 
         // End the player turn first; engine now sits at EnemyTurnStart.
-        d.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}""");
+        d.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}"""
+        );
         Assert.NotEqual(CombatPhase.PlayerActing, session.Context.State.Phase);
 
         // Now another end_turn is illegal.
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.Equal(-32602, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
     }
@@ -158,8 +181,12 @@ public sealed class ApplyActionTests
         ControlPlaneRpcHandlers.Register(da, a);
         ControlPlaneRpcHandlers.Register(db, b);
 
-        string respA = da.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}""");
-        string respB = db.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}""");
+        string respA = da.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}"""
+        );
+        string respB = db.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}"""
+        );
 
         using JsonDocument docA = JsonDocument.Parse(respA);
         using JsonDocument docB = JsonDocument.Parse(respB);

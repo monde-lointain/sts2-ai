@@ -40,7 +40,9 @@ public sealed class SetSeedAndStepTests
         RunRngSet originalRunRng = session.RunRng;
         Assert.Equal("seed-42", originalRunRng.StringSeed);
 
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"set_seed","params":{"seed":1234},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"set_seed","params":{"seed":1234},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.True(doc.RootElement.GetProperty("result").GetProperty("ok").GetBoolean());
         Assert.NotSame(originalRunRng, session.RunRng);
@@ -66,7 +68,9 @@ public sealed class SetSeedAndStepTests
         var d = new JsonRpcDispatcher();
         ControlPlaneRpcHandlers.Register(d, session);
 
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"set_seed","params":{"seed":-1},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"set_seed","params":{"seed":-1},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.Equal(-32602, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
     }
@@ -94,15 +98,21 @@ public sealed class SetSeedAndStepTests
         ControlPlaneRpcHandlers.Register(db, b);
 
         // Reseed b to a different seed.
-        string reseed = db.Handle("""{"jsonrpc":"2.0","method":"set_seed","params":{"seed":7777},"id":1}""");
+        string reseed = db.Handle(
+            """{"jsonrpc":"2.0","method":"set_seed","params":{"seed":7777},"id":1}"""
+        );
         using (JsonDocument doc = JsonDocument.Parse(reseed))
         {
             Assert.True(doc.RootElement.GetProperty("result").GetProperty("ok").GetBoolean());
         }
 
         // End turn on both — engine drives through enemy turn + new player turn.
-        string a1 = da.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}""");
-        string b1 = db.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}""");
+        string a1 = da.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}"""
+        );
+        string b1 = db.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":2}"""
+        );
 
         // Now step to next decision (turn 2 ready). The draw on turn 2 will
         // reshuffle the empty draw pile from discard, consuming RNG, so seeds
@@ -147,7 +157,8 @@ public sealed class SetSeedAndStepTests
         bool hasEndTurn = false;
         foreach (JsonElement a in actions.EnumerateArray())
         {
-            if (a.GetProperty("type").GetString() == "end_turn") hasEndTurn = true;
+            if (a.GetProperty("type").GetString() == "end_turn")
+                hasEndTurn = true;
         }
         Assert.True(hasEndTurn);
 
@@ -165,7 +176,9 @@ public sealed class SetSeedAndStepTests
         ControlPlaneRpcHandlers.Register(d, session);
 
         // End turn — engine pushes to EnemyTurnStart.
-        d.Handle("""{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}""");
+        d.Handle(
+            """{"jsonrpc":"2.0","method":"apply_action","params":{"action":{"type":"end_turn"}},"id":1}"""
+        );
         // The smoke EndPlayerTurn transitions to EnemyTurnStart; our
         // step_until_decision should drive through enemy turn back to
         // PlayerActing on turn 2.
@@ -173,8 +186,10 @@ public sealed class SetSeedAndStepTests
         using JsonDocument doc = JsonDocument.Parse(resp);
         JsonElement result = doc.RootElement.GetProperty("result");
         string phase = result.GetProperty("phase").GetString()!;
-        Assert.True(phase == "PlayerActing" || phase == "CombatEnd",
-            $"Expected PlayerActing or CombatEnd, got {phase}");
+        Assert.True(
+            phase == "PlayerActing" || phase == "CombatEnd",
+            $"Expected PlayerActing or CombatEnd, got {phase}"
+        );
         // Should now be turn 2 if we landed in PlayerActing.
         if (phase == "PlayerActing")
         {
@@ -196,7 +211,8 @@ public sealed class SetSeedAndStepTests
         bool sawPlayCard = false;
         foreach (JsonElement a in actions.EnumerateArray())
         {
-            if (a.GetProperty("type").GetString() != "play_card") continue;
+            if (a.GetProperty("type").GetString() != "play_card")
+                continue;
             sawPlayCard = true;
             Assert.Equal(JsonValueKind.Number, a.GetProperty("card_instance_id").ValueKind);
             // target_enemy_id is optional — present only for targeted cards.

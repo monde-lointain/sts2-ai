@@ -16,7 +16,8 @@ public sealed class PiercingWail : CardModel
     public const int UpgradeDelta = 2;
     public int StrengthLoss => BaseStrengthLoss;
 
-    public PiercingWail() : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.AllEnemies) { }
+    public PiercingWail()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

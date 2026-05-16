@@ -43,7 +43,10 @@ public class EncounterFixtureTests
     [InlineData("KaiserCrabBoss", 2)]
     [InlineData("CeremonialBeastBoss", 1)]
     [InlineData("LouseProgenitorNormal", 1)]
-    public void Encounter_spawn_list_resolves_against_monster_catalog(string encounterId, int expectedMonsterCount)
+    public void Encounter_spawn_list_resolves_against_monster_catalog(
+        string encounterId,
+        int expectedMonsterCount
+    )
     {
         EncounterCatalog encounters = Phase1Content.BuildEncounterCatalog();
         MonsterCatalog monsters = Phase1Content.BuildMonsterCatalog();
@@ -53,8 +56,10 @@ public class EncounterFixtureTests
         Assert.Equal(expectedMonsterCount, enc.MonsterIds.Count);
         foreach (string monsterId in enc.MonsterIds)
         {
-            Assert.True(monsters.Contains(monsterId),
-                $"Encounter '{encounterId}' references monster '{monsterId}' not in catalog.");
+            Assert.True(
+                monsters.Contains(monsterId),
+                $"Encounter '{encounterId}' references monster '{monsterId}' not in catalog."
+            );
         }
     }
 

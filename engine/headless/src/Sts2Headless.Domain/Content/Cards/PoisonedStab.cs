@@ -18,7 +18,8 @@ public sealed class PoisonedStab : CardModel
     public int Damage => BaseDamage;
     public int Poison => BasePoison;
 
-    public PoisonedStab() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
+    public PoisonedStab()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

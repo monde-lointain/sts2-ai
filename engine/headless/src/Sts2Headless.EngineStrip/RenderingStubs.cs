@@ -38,15 +38,23 @@ public readonly struct Vector2 : IEquatable<Vector2>
     public static Vector2 One => new(1f, 1f);
 
     public static Vector2 operator *(Vector2 v, float s) => new(v.X * s, v.Y * s);
+
     public static Vector2 operator *(float s, Vector2 v) => v * s;
+
     public static Vector2 operator +(Vector2 a, Vector2 b) => new(a.X + b.X, a.Y + b.Y);
+
     public static Vector2 operator -(Vector2 a, Vector2 b) => new(a.X - b.X, a.Y - b.Y);
 
     public bool Equals(Vector2 other) => X == other.X && Y == other.Y;
+
     public override bool Equals(object? obj) => obj is Vector2 v && Equals(v);
+
     public override int GetHashCode() => HashCode.Combine(X, Y);
+
     public override string ToString() => $"({X}, {Y})";
+
     public static bool operator ==(Vector2 a, Vector2 b) => a.Equals(b);
+
     public static bool operator !=(Vector2 a, Vector2 b) => !a.Equals(b);
 }
 

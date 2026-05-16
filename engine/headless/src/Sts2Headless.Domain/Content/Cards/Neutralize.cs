@@ -22,8 +22,7 @@ public sealed class Neutralize : CardModel
     public int Weak => BaseWeak;
 
     public Neutralize()
-        : base(CanonicalId, cost: 0, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
-    { }
+        : base(CanonicalId, cost: 0, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

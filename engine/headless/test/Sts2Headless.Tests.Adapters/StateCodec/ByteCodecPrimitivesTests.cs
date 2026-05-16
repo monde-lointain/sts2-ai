@@ -184,18 +184,44 @@ public class ByteCodecPrimitivesTests
     // these helpers do the call eagerly and report whether the expected throw fired.
     private static StateCodecException? CatchOnReadU32(byte[] data)
     {
-        try { ByteReader r = new(data); _ = r.ReadU32(); return null; }
-        catch (StateCodecException ex) { return ex; }
+        try
+        {
+            ByteReader r = new(data);
+            _ = r.ReadU32();
+            return null;
+        }
+        catch (StateCodecException ex)
+        {
+            return ex;
+        }
     }
+
     private static StateCodecException? CatchOnReadString(byte[] data)
     {
-        try { ByteReader r = new(data); _ = r.ReadLengthPrefixedString(); return null; }
-        catch (StateCodecException ex) { return ex; }
+        try
+        {
+            ByteReader r = new(data);
+            _ = r.ReadLengthPrefixedString();
+            return null;
+        }
+        catch (StateCodecException ex)
+        {
+            return ex;
+        }
     }
+
     private static StateCodecException? CatchOnReadBytes(byte[] data)
     {
-        try { ByteReader r = new(data); _ = r.ReadLengthPrefixedBytes(); return null; }
-        catch (StateCodecException ex) { return ex; }
+        try
+        {
+            ByteReader r = new(data);
+            _ = r.ReadLengthPrefixedBytes();
+            return null;
+        }
+        catch (StateCodecException ex)
+        {
+            return ex;
+        }
     }
 
     [Fact]

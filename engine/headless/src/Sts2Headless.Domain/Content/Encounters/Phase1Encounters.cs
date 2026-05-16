@@ -18,13 +18,20 @@ namespace Sts2Headless.Domain.Content.Encounters;
 public sealed class ChompersNormal : EncounterModel
 {
     public const string CanonicalId = "ChompersNormal";
-    public ChompersNormal() : base(CanonicalId, new[] { Chomper.CanonicalId, Chomper.CanonicalId }) { }
+
+    public ChompersNormal()
+        : base(CanonicalId, new[] { Chomper.CanonicalId, Chomper.CanonicalId }) { }
 }
 
 public sealed class ExoskeletonsNormal : EncounterModel
 {
     public const string CanonicalId = "ExoskeletonsNormal";
-    public ExoskeletonsNormal() : base(CanonicalId, new[] { Exoskeleton.CanonicalId, Exoskeleton.CanonicalId, Exoskeleton.CanonicalId }) { }
+
+    public ExoskeletonsNormal()
+        : base(
+            CanonicalId,
+            new[] { Exoskeleton.CanonicalId, Exoskeleton.CanonicalId, Exoskeleton.CanonicalId }
+        ) { }
 }
 
 // B.1-final-T2a: deleted JawWormSolo (STS1-only monster JawWorm, no STS2 analogue).
@@ -41,43 +48,60 @@ public sealed class ExoskeletonsNormal : EncounterModel
 public sealed class SmallSlimes : EncounterModel
 {
     public const string CanonicalId = "SmallSlimes";
-    public SmallSlimes() : base(CanonicalId, new[] { AcidSlimeS.CanonicalId, SpikeSlimeS.CanonicalId }) { }
+
+    public SmallSlimes()
+        : base(CanonicalId, new[] { AcidSlimeS.CanonicalId, SpikeSlimeS.CanonicalId }) { }
 }
 
 public sealed class MediumSlimes : EncounterModel
 {
     public const string CanonicalId = "MediumSlimes";
-    public MediumSlimes() : base(CanonicalId, new[] { AcidSlimeM.CanonicalId, SpikeSlimeM.CanonicalId }) { }
+
+    public MediumSlimes()
+        : base(CanonicalId, new[] { AcidSlimeM.CanonicalId, SpikeSlimeM.CanonicalId }) { }
 }
 
 public sealed class BowlbugsTrio : EncounterModel
 {
     public const string CanonicalId = "BowlbugsTrio";
-    public BowlbugsTrio() : base(CanonicalId, new[] { BowlbugRock.CanonicalId, BowlbugNectar.CanonicalId, BowlbugSilk.CanonicalId }) { }
+
+    public BowlbugsTrio()
+        : base(
+            CanonicalId,
+            new[] { BowlbugRock.CanonicalId, BowlbugNectar.CanonicalId, BowlbugSilk.CanonicalId }
+        ) { }
 }
 
 public sealed class FuzzyWurmCrawlerSolo : EncounterModel
 {
     public const string CanonicalId = "FuzzyWurmCrawlerSolo";
-    public FuzzyWurmCrawlerSolo() : base(CanonicalId, new[] { FuzzyWurmCrawler.CanonicalId }) { }
+
+    public FuzzyWurmCrawlerSolo()
+        : base(CanonicalId, new[] { FuzzyWurmCrawler.CanonicalId }) { }
 }
 
 public sealed class FossilStalkerElite : EncounterModel
 {
     public const string CanonicalId = "FossilStalkerElite";
-    public FossilStalkerElite() : base(CanonicalId, new[] { FossilStalker.CanonicalId }) { }
+
+    public FossilStalkerElite()
+        : base(CanonicalId, new[] { FossilStalker.CanonicalId }) { }
 }
 
 public sealed class FrogKnightElite : EncounterModel
 {
     public const string CanonicalId = "FrogKnightElite";
-    public FrogKnightElite() : base(CanonicalId, new[] { FrogKnight.CanonicalId }) { }
+
+    public FrogKnightElite()
+        : base(CanonicalId, new[] { FrogKnight.CanonicalId }) { }
 }
 
 public sealed class LagavulinElite : EncounterModel
 {
     public const string CanonicalId = "LagavulinElite";
-    public LagavulinElite() : base(CanonicalId, new[] { LagavulinMatriarch.CanonicalId }) { }
+
+    public LagavulinElite()
+        : base(CanonicalId, new[] { LagavulinMatriarch.CanonicalId }) { }
 }
 
 // B.1-final-T2a: deleted SentryTrio (STS1-only monster Sentry, no STS2 analogue).
@@ -85,19 +109,25 @@ public sealed class LagavulinElite : EncounterModel
 public sealed class HauntedShipSolo : EncounterModel
 {
     public const string CanonicalId = "HauntedShipSolo";
-    public HauntedShipSolo() : base(CanonicalId, new[] { HauntedShip.CanonicalId }) { }
+
+    public HauntedShipSolo()
+        : base(CanonicalId, new[] { HauntedShip.CanonicalId }) { }
 }
 
 public sealed class LivingFogSolo : EncounterModel
 {
     public const string CanonicalId = "LivingFogSolo";
-    public LivingFogSolo() : base(CanonicalId, new[] { LivingFog.CanonicalId }) { }
+
+    public LivingFogSolo()
+        : base(CanonicalId, new[] { LivingFog.CanonicalId }) { }
 }
 
 public sealed class GremlinMercNormal : EncounterModel
 {
     public const string CanonicalId = "GremlinMercNormal";
-    public GremlinMercNormal() : base(CanonicalId, new[] { GremlinMerc.CanonicalId, GremlinMerc.CanonicalId }) { }
+
+    public GremlinMercNormal()
+        : base(CanonicalId, new[] { GremlinMerc.CanonicalId, GremlinMerc.CanonicalId }) { }
 }
 
 // B.1-final-T2a: deleted SnakePlantSolo / FungalBossEncounter / CenturyGuardBoss
@@ -109,7 +139,9 @@ public sealed class GremlinMercNormal : EncounterModel
 public sealed class KaiserCrabBoss : EncounterModel
 {
     public const string CanonicalId = "KaiserCrabBoss";
-    public KaiserCrabBoss() : base(CanonicalId, new[] { Crusher.CanonicalId, Rocket.CanonicalId }) { }
+
+    public KaiserCrabBoss()
+        : base(CanonicalId, new[] { Crusher.CanonicalId, Rocket.CanonicalId }) { }
 }
 
 // B.1-final-T2c: LouseProgenitorNormal — upstream encounter spawning a single
@@ -118,13 +150,17 @@ public sealed class KaiserCrabBoss : EncounterModel
 public sealed class LouseProgenitorNormal : EncounterModel
 {
     public const string CanonicalId = "LouseProgenitorNormal";
-    public LouseProgenitorNormal() : base(CanonicalId, new[] { LouseProgenitor.CanonicalId }) { }
+
+    public LouseProgenitorNormal()
+        : base(CanonicalId, new[] { LouseProgenitor.CanonicalId }) { }
 }
 
 public sealed class CeremonialBeastBoss : EncounterModel
 {
     public const string CanonicalId = "CeremonialBeastBoss";
-    public CeremonialBeastBoss() : base(CanonicalId, new[] { CeremonialBeast.CanonicalId }) { }
+
+    public CeremonialBeastBoss()
+        : base(CanonicalId, new[] { CeremonialBeast.CanonicalId }) { }
 }
 
 /// <summary>

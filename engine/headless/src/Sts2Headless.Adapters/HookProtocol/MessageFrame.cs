@@ -81,9 +81,15 @@ public readonly struct MessageHeader : IEquatable<MessageHeader>
     public int PayloadLength { get; }
     public ulong CorrelationId { get; }
 
-    public MessageHeader(MessageType type, ushort schemaVersion, int payloadLength, ulong correlationId)
+    public MessageHeader(
+        MessageType type,
+        ushort schemaVersion,
+        int payloadLength,
+        ulong correlationId
+    )
     {
-        if (payloadLength < 0) throw new ArgumentOutOfRangeException(nameof(payloadLength));
+        if (payloadLength < 0)
+            throw new ArgumentOutOfRangeException(nameof(payloadLength));
         Type = type;
         SchemaVersion = schemaVersion;
         PayloadLength = payloadLength;
@@ -97,11 +103,13 @@ public readonly struct MessageHeader : IEquatable<MessageHeader>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int WireFrameSize(int payloadLength)
     {
-        if (payloadLength < 0) throw new ArgumentOutOfRangeException(nameof(payloadLength));
+        if (payloadLength < 0)
+            throw new ArgumentOutOfRangeException(nameof(payloadLength));
         long total = (long)HeaderSize + payloadLength;
         // Round up to multiple of WireAlignment.
         long aligned = (total + WireAlignment - 1) & ~((long)WireAlignment - 1);
-        if (aligned > int.MaxValue) throw new ArgumentOutOfRangeException(nameof(payloadLength), "frame size overflow");
+        if (aligned > int.MaxValue)
+            throw new ArgumentOutOfRangeException(nameof(payloadLength), "frame size overflow");
         return (int)aligned;
     }
 
@@ -112,7 +120,8 @@ public readonly struct MessageHeader : IEquatable<MessageHeader>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Encode(Span<byte> dest)
     {
-        if (dest.Length < HeaderSize) throw new ArgumentException("dest too small", nameof(dest));
+        if (dest.Length < HeaderSize)
+            throw new ArgumentException("dest too small", nameof(dest));
         dest[0] = (byte)Type;
         dest[1] = 0; // reserved
         BinaryPrimitives.WriteUInt16LittleEndian(dest.Slice(2, 2), SchemaVersion);
@@ -128,13 +137,20 @@ public readonly struct MessageHeader : IEquatable<MessageHeader>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static MessageHeader Decode(ReadOnlySpan<byte> src)
     {
-        if (src.Length < HeaderSize) throw new ArgumentException("src too small", nameof(src));
+        if (src.Length < HeaderSize)
+            throw new ArgumentException("src too small", nameof(src));
         byte type = src[0];
         byte reserved = src[1];
-        if (reserved != 0) throw new FormatException($"MessageHeader reserved byte must be 0; observed 0x{reserved:X2}");
+        if (reserved != 0)
+            throw new FormatException(
+                $"MessageHeader reserved byte must be 0; observed 0x{reserved:X2}"
+            );
         ushort schema = BinaryPrimitives.ReadUInt16LittleEndian(src.Slice(2, 2));
         uint length = BinaryPrimitives.ReadUInt32LittleEndian(src.Slice(4, 4));
-        if (length > MaxPayloadLength) throw new FormatException($"MessageHeader payload length {length} exceeds int.MaxValue");
+        if (length > MaxPayloadLength)
+            throw new FormatException(
+                $"MessageHeader payload length {length} exceeds int.MaxValue"
+            );
         ulong corr = BinaryPrimitives.ReadUInt64LittleEndian(src.Slice(8, 8));
         return new MessageHeader((MessageType)type, schema, (int)length, corr);
     }
@@ -144,9 +160,14 @@ public readonly struct MessageHeader : IEquatable<MessageHeader>
         && SchemaVersion == other.SchemaVersion
         && PayloadLength == other.PayloadLength
         && CorrelationId == other.CorrelationId;
+
     public override bool Equals(object? obj) => obj is MessageHeader h && Equals(h);
-    public override int GetHashCode() => HashCode.Combine((byte)Type, SchemaVersion, PayloadLength, CorrelationId);
+
+    public override int GetHashCode() =>
+        HashCode.Combine((byte)Type, SchemaVersion, PayloadLength, CorrelationId);
+
     public static bool operator ==(MessageHeader a, MessageHeader b) => a.Equals(b);
+
     public static bool operator !=(MessageHeader a, MessageHeader b) => !a.Equals(b);
 }
 
@@ -168,10 +189,13 @@ public static class MessageFrame
         if (payload.Length != header.PayloadLength)
         {
             throw new ArgumentException(
-                $"payload length {payload.Length} != header.PayloadLength {header.PayloadLength}", nameof(payload));
+                $"payload length {payload.Length} != header.PayloadLength {header.PayloadLength}",
+                nameof(payload)
+            );
         }
         int wire = header.WireSize;
-        if (dest.Length < wire) throw new ArgumentException("dest too small", nameof(dest));
+        if (dest.Length < wire)
+            throw new ArgumentException("dest too small", nameof(dest));
         header.Encode(dest);
         payload.CopyTo(dest.Slice(MessageHeader.HeaderSize, payload.Length));
         // Zero the alignment padding so debug-tooling sees clean bytes.

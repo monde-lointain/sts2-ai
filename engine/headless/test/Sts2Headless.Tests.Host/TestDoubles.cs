@@ -8,7 +8,8 @@ namespace Sts2Headless.Tests.Host;
 /// </summary>
 public sealed class CapturingLogger : IStructuredLogger
 {
-    public List<(string Event, IReadOnlyDictionary<string, object?> Payload)> Entries { get; } = new();
+    public List<(string Event, IReadOnlyDictionary<string, object?> Payload)> Entries { get; } =
+        new();
 
     public void Log(string eventType, IReadOnlyDictionary<string, object?> payload)
     {
@@ -28,7 +29,8 @@ public sealed class InMemoryMetrics : IMetricsRegistry
 
     public void IncrementCounter(string name, long delta)
     {
-        if (delta == 0L) return;
+        if (delta == 0L)
+            return;
         Counters[name] = Counters.TryGetValue(name, out long current) ? current + delta : delta;
     }
 
@@ -41,7 +43,8 @@ public sealed class InMemoryMetrics : IMetricsRegistry
     {
         if (Gauges.TryGetValue(name, out double current))
         {
-            if (value > current) Gauges[name] = value;
+            if (value > current)
+                Gauges[name] = value;
         }
         else
         {

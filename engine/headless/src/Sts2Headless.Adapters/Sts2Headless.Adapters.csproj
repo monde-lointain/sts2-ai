@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <!--
       S9 HookProtocol uses unsafe pointers for cache-line-aligned ring-buffer
@@ -14,5 +13,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Sts2Headless.Domain\Sts2Headless.Domain.csproj" />
   </ItemGroup>
-
 </Project>

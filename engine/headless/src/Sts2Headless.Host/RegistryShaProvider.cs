@@ -36,7 +36,9 @@ public static class RegistryShaProvider
         if (!File.Exists(path))
         {
             throw new FileNotFoundException(
-                $"RegistryShaProvider: registry file not found at '{path}'.", path);
+                $"RegistryShaProvider: registry file not found at '{path}'.",
+                path
+            );
         }
         byte[] bytes = File.ReadAllBytes(path);
         return SHA256.HashData(bytes);

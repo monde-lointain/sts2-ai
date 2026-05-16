@@ -31,11 +31,14 @@ public sealed class JsonRpcDispatcherTests
     public void Registered_method_invoked_and_result_returned()
     {
         var d = new JsonRpcDispatcher();
-        d.Register("echo", (JsonElement? p) =>
-        {
-            string text = p!.Value.GetProperty("text").GetString()!;
-            return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { echoed = text }));
-        });
+        d.Register(
+            "echo",
+            (JsonElement? p) =>
+            {
+                string text = p!.Value.GetProperty("text").GetString()!;
+                return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { echoed = text }));
+            }
+        );
 
         string req = """{"jsonrpc":"2.0","method":"echo","params":{"text":"hi"},"id":1}""";
         string resp = d.Handle(req);
@@ -50,7 +53,10 @@ public sealed class JsonRpcDispatcherTests
     public void Method_without_params_is_supported()
     {
         var d = new JsonRpcDispatcher();
-        d.Register("ping", _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { pong = true })));
+        d.Register(
+            "ping",
+            _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { pong = true }))
+        );
         string req = """{"jsonrpc":"2.0","method":"ping","id":42}""";
         string resp = d.Handle(req);
         using JsonDocument doc = JsonDocument.Parse(resp);
@@ -87,14 +93,21 @@ public sealed class JsonRpcDispatcherTests
     public void Invalid_params_handler_returns_minus32602()
     {
         var d = new JsonRpcDispatcher();
-        d.Register("must_have_x", p =>
-        {
-            if (p is null || p.Value.ValueKind != JsonValueKind.Object || !p.Value.TryGetProperty("x", out _))
+        d.Register(
+            "must_have_x",
+            p =>
             {
-                return JsonRpcResult.Error(-32602, "missing required param 'x'");
+                if (
+                    p is null
+                    || p.Value.ValueKind != JsonValueKind.Object
+                    || !p.Value.TryGetProperty("x", out _)
+                )
+                {
+                    return JsonRpcResult.Error(-32602, "missing required param 'x'");
+                }
+                return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }));
             }
-            return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }));
-        });
+        );
 
         string req = """{"jsonrpc":"2.0","method":"must_have_x","params":{},"id":3}""";
         string resp = d.Handle(req);
@@ -134,7 +147,10 @@ public sealed class JsonRpcDispatcherTests
     public void Response_is_one_line_with_no_embedded_newline()
     {
         var d = new JsonRpcDispatcher();
-        d.Register("ok", _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true })));
+        d.Register(
+            "ok",
+            _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }))
+        );
         string resp = d.Handle("""{"jsonrpc":"2.0","method":"ok","id":1}""");
         Assert.DoesNotContain('\n', resp);
         Assert.DoesNotContain('\r', resp);
@@ -145,8 +161,9 @@ public sealed class JsonRpcDispatcherTests
     {
         var d = new JsonRpcDispatcher();
         d.Register("a", _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { })));
-        Assert.Throws<InvalidOperationException>(
-            () => d.Register("a", _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { }))));
+        Assert.Throws<InvalidOperationException>(() =>
+            d.Register("a", _ => JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { })))
+        );
     }
 
     [Fact]
@@ -158,11 +175,14 @@ public sealed class JsonRpcDispatcherTests
         // response line, with id=null. Simpler than carving out a null path.
         var d = new JsonRpcDispatcher();
         bool called = false;
-        d.Register("notify", _ =>
-        {
-            called = true;
-            return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }));
-        });
+        d.Register(
+            "notify",
+            _ =>
+            {
+                called = true;
+                return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }));
+            }
+        );
         string req = """{"jsonrpc":"2.0","method":"notify","id":null}""";
         string resp = d.Handle(req);
         Assert.True(called);
@@ -175,11 +195,14 @@ public sealed class JsonRpcDispatcherTests
     {
         var d = new JsonRpcDispatcher();
         int counter = 0;
-        d.Register("inc", _ =>
-        {
-            counter++;
-            return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { value = counter }));
-        });
+        d.Register(
+            "inc",
+            _ =>
+            {
+                counter++;
+                return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { value = counter }));
+            }
+        );
         for (int i = 1; i <= 5; i++)
         {
             string resp = d.Handle($$$"""{"jsonrpc":"2.0","method":"inc","id":{{{i}}}}""");

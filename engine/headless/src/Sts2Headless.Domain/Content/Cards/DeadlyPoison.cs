@@ -19,8 +19,7 @@ public sealed class DeadlyPoison : CardModel
     public int Poison => BasePoison;
 
     public DeadlyPoison()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.AnyEnemy)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

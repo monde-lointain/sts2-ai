@@ -14,7 +14,8 @@ public sealed class WellLaidPlans : CardModel
     public const int UpgradeDelta = 1;
     public int RetainAmount => BaseRetain;
 
-    public WellLaidPlans() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public WellLaidPlans()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -68,10 +68,12 @@ public class StateBlobFixtureGenerator
                 EncounterId: slot.EncounterId,
                 Role: slot.Role,
                 ExpectedCanonicalHashHex: CanonicalHash.Sha256Hex(blob),
-                BlobBytes: blob.Length);
+                BlobBytes: blob.Length
+            );
             File.WriteAllText(
                 Path.Combine(fixtureDir, "metadata.json"),
-                StateBlobFixtureRecipe.SerializeMetadata(meta) + "\n");
+                StateBlobFixtureRecipe.SerializeMetadata(meta) + "\n"
+            );
         }
     }
 }

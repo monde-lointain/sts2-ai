@@ -1,6 +1,6 @@
+using System.Collections.Generic;
 using Sts2Headless.Domain.Content.Cards.Effects;
 using Sts2Headless.Domain.Content.Models;
-using System.Collections.Generic;
 using ExecutionContext = Sts2Headless.Domain.Actions.ExecutionContext;
 
 namespace Sts2Headless.Domain.Content.Cards;
@@ -13,7 +13,8 @@ public sealed class Shiv : CardModel
     public const string CanonicalId = "Shiv";
     public const int Damage = 4;
 
-    public Shiv() : base(CanonicalId, 0, CardType.Attack, CardRarity.Token, TargetType.AnyEnemy) { }
+    public Shiv()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Token, TargetType.AnyEnemy) { }
 
     protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Shiv);
 

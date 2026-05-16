@@ -21,16 +21,20 @@ public sealed class UnixSocketServerTests : IDisposable
     {
         // Each test gets a unique socket path under /tmp so parallel test
         // runs don't collide.
-        _socketPath = Path.Combine(
-            Path.GetTempPath(),
-            $"sts2-headless-t1-{Guid.NewGuid():N}.sock");
+        _socketPath = Path.Combine(Path.GetTempPath(), $"sts2-headless-t1-{Guid.NewGuid():N}.sock");
     }
 
     public void Dispose()
     {
         if (File.Exists(_socketPath))
         {
-            try { File.Delete(_socketPath); } catch { /* best-effort */ }
+            try
+            {
+                File.Delete(_socketPath);
+            }
+            catch
+            { /* best-effort */
+            }
         }
     }
 
@@ -42,8 +46,10 @@ public sealed class UnixSocketServerTests : IDisposable
         try
         {
             // Socket file should exist after Start.
-            Assert.True(File.Exists(_socketPath),
-                $"Expected socket file at {_socketPath} after Start.");
+            Assert.True(
+                File.Exists(_socketPath),
+                $"Expected socket file at {_socketPath} after Start."
+            );
         }
         finally
         {
@@ -58,8 +64,10 @@ public sealed class UnixSocketServerTests : IDisposable
         server.Start();
         Assert.True(File.Exists(_socketPath));
         server.Stop();
-        Assert.False(File.Exists(_socketPath),
-            $"Expected socket file at {_socketPath} to be removed after Stop.");
+        Assert.False(
+            File.Exists(_socketPath),
+            $"Expected socket file at {_socketPath} to be removed after Stop."
+        );
         server.Dispose();
     }
 
@@ -212,7 +220,8 @@ public sealed class UnixSocketServerTests : IDisposable
             }
             catch (SocketException)
             {
-                if (attempt == MaxAttempts - 1) throw;
+                if (attempt == MaxAttempts - 1)
+                    throw;
                 await Task.Delay(100);
             }
         }
@@ -245,7 +254,8 @@ public sealed class UnixSocketServerTests : IDisposable
         while (!ct.IsCancellationRequested)
         {
             string? line = r.ReadLine();
-            if (line is null) return; // EOF / client closed
+            if (line is null)
+                return; // EOF / client closed
             w.WriteLine(line);
         }
     }

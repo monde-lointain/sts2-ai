@@ -74,8 +74,9 @@ public class ContentTableTests
         ContentTable<string, Model> table = NewTable();
         table.Register("strike", new Model("strike", "Strike"));
 
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-            () => table.Register("strike", new Model("strike", "Strike (duplicate)")));
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            table.Register("strike", new Model("strike", "Strike (duplicate)"))
+        );
         Assert.Contains("strike", ex.Message);
     }
 
@@ -83,16 +84,14 @@ public class ContentTableTests
     public void Register_null_id_throws()
     {
         ContentTable<string, Model> table = NewTable();
-        Assert.Throws<ArgumentNullException>(
-            () => table.Register(null!, new Model("x", "X")));
+        Assert.Throws<ArgumentNullException>(() => table.Register(null!, new Model("x", "X")));
     }
 
     [Fact]
     public void Register_null_model_throws()
     {
         ContentTable<string, Model> table = NewTable();
-        Assert.Throws<ArgumentNullException>(
-            () => table.Register("x", null!));
+        Assert.Throws<ArgumentNullException>(() => table.Register("x", null!));
     }
 
     [Fact]
@@ -141,9 +140,7 @@ public class ContentTableTests
         table.Register("b", new Model("b", "B"));
 
         Assert.Equal(new[] { "c", "a", "b" }, table.EnumerateIds().ToArray());
-        Assert.Equal(
-            table.Enumerate().Select(m => m.Id).ToArray(),
-            table.EnumerateIds().ToArray());
+        Assert.Equal(table.Enumerate().Select(m => m.Id).ToArray(), table.EnumerateIds().ToArray());
     }
 
     [Fact]
@@ -178,7 +175,8 @@ public class ContentTableTests
 
         Assert.Equal(
             a.Enumerate().Select(m => m.Id).ToArray(),
-            b.Enumerate().Select(m => m.Id).ToArray());
+            b.Enumerate().Select(m => m.Id).ToArray()
+        );
     }
 
     [Fact]

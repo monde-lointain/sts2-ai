@@ -15,7 +15,8 @@ public sealed record ProbeRecord(
     [property: JsonPropertyName("player_hp")] int PlayerHp,
     [property: JsonPropertyName("energy")] int Energy,
     [property: JsonPropertyName("enemy_count")] int EnemyCount,
-    [property: JsonPropertyName("hash")] string Hash)
+    [property: JsonPropertyName("hash")] string Hash
+)
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -32,12 +33,14 @@ public sealed record ProbeRecord(
         foreach (string line in File.ReadAllLines(path))
         {
             string trimmed = line.Trim();
-            if (trimmed.Length == 0) continue;
+            if (trimmed.Length == 0)
+                continue;
             ProbeRecord? r = JsonSerializer.Deserialize<ProbeRecord>(trimmed, Options);
             if (r is null)
             {
                 throw new InvalidDataException(
-                    $"ProbeRecord.ReadFile: failed to parse line in {path}: <<<{trimmed}>>>");
+                    $"ProbeRecord.ReadFile: failed to parse line in {path}: <<<{trimmed}>>>"
+                );
             }
             list.Add(r);
         }

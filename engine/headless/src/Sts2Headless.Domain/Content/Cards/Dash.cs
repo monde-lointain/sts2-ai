@@ -17,7 +17,8 @@ public sealed class Dash : CardModel
     public int Damage => BaseDamage;
     public int Block => BaseBlock;
 
-    public Dash() : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Dash()
+        : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

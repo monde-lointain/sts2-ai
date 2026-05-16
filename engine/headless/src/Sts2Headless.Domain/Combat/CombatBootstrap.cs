@@ -13,4 +13,5 @@ public sealed record CombatBootstrap(
     RelicCatalog Relics,
     PowerCatalog Powers,
     MonsterCatalog Monsters,
-    EncounterCatalog Encounters);
+    EncounterCatalog Encounters
+);

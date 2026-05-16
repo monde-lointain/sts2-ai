@@ -14,7 +14,8 @@ public sealed class InfiniteBlades : CardModel
     public const string CanonicalId = "InfiniteBlades";
     public const int Amount = 1;
 
-    public InfiniteBlades() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public InfiniteBlades()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

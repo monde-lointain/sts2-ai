@@ -6,12 +6,18 @@ public sealed class CliArgsTests
 {
     private static readonly string[] MinimalValid = new[]
     {
-        "--seed", "42",
-        "--character", "silent",
-        "--deck", "starter",
-        "--relics", "ring_of_the_snake",
-        "--encounter", "cultists_normal",
-        "--ascension", "0",
+        "--seed",
+        "42",
+        "--character",
+        "silent",
+        "--deck",
+        "starter",
+        "--relics",
+        "ring_of_the_snake",
+        "--encounter",
+        "cultists_normal",
+        "--ascension",
+        "0",
     };
 
     [Fact]
@@ -32,12 +38,19 @@ public sealed class CliArgsTests
     [Fact]
     public void Parses_all_optional_flags()
     {
-        var extended = MinimalValid.Concat(new[]
-        {
-            "--metrics-port", "9090",
-            "--script", "/tmp/script.txt",
-            "--out", "/tmp/state.bin",
-        }).ToArray();
+        var extended = MinimalValid
+            .Concat(
+                new[]
+                {
+                    "--metrics-port",
+                    "9090",
+                    "--script",
+                    "/tmp/script.txt",
+                    "--out",
+                    "/tmp/state.bin",
+                }
+            )
+            .ToArray();
         CliArgs args = CliArgs.Parse(extended);
         Assert.Equal(9090, args.MetricsPort);
         Assert.Equal("/tmp/script.txt", args.ScriptPath);

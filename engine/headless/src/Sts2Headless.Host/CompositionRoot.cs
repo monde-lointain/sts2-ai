@@ -57,7 +57,8 @@ public static class CompositionRoot
         RelicCatalog Relics,
         PowerCatalog Powers,
         MonsterCatalog Monsters,
-        EncounterCatalog Encounters);
+        EncounterCatalog Encounters
+    );
 
     /// <summary>
     /// Build the module graph and bootstrap combat. Throws
@@ -133,14 +134,31 @@ public static class CompositionRoot
             // Phase 1 supports A0 only; the smoke content has no ascension
             // modifiers wired (S12 introduces them).
             throw new CompositionException(
-                $"--ascension {args.Ascension} unsupported (Phase 1 supports A0 only).");
+                $"--ascension {args.Ascension} unsupported (Phase 1 supports A0 only)."
+            );
         }
 
         var bootstrap = new CombatBootstrap(cards, relics, powers, monsters, encounters);
         var playerSpec = new PlayerSpec(RelicIds: relicIds, Deck: deck);
-        CombatContext ctx = CombatEngine.StartCombat(encounter, bootstrap, playerSpec, runRng, clock);
+        CombatContext ctx = CombatEngine.StartCombat(
+            encounter,
+            bootstrap,
+            playerSpec,
+            runRng,
+            clock
+        );
 
-        return new CompositionRootBundle(ctx, clock, rng, runRng, cards, relics, powers, monsters, encounters);
+        return new CompositionRootBundle(
+            ctx,
+            clock,
+            rng,
+            runRng,
+            cards,
+            relics,
+            powers,
+            monsters,
+            encounters
+        );
     }
 
     // === Resolvers ========================================================
@@ -170,8 +188,9 @@ public static class CompositionRoot
             }
         }
         throw new CompositionException(
-            $"--encounter '{cliToken}': unknown encounter id (must match one of " +
-            $"{string.Join(", ", encounters.EnumerateIds())}).");
+            $"--encounter '{cliToken}': unknown encounter id (must match one of "
+                + $"{string.Join(", ", encounters.EnumerateIds())})."
+        );
     }
 
     /// <summary>
@@ -185,7 +204,10 @@ public static class CompositionRoot
     /// Resolve a list of CLI relic tokens to canonical ids registered in
     /// <paramref name="relics"/>. Preserves the user's priority order.
     /// </summary>
-    private static IReadOnlyList<string> ResolveRelics(IReadOnlyList<string> cliTokens, RelicCatalog relics)
+    private static IReadOnlyList<string> ResolveRelics(
+        IReadOnlyList<string> cliTokens,
+        RelicCatalog relics
+    )
     {
         var resolved = new List<string>(cliTokens.Count);
         foreach (string token in cliTokens)
@@ -200,8 +222,7 @@ public static class CompositionRoot
                 // Stream-B-T2 additions: A0-pool extensions.
                 "bag_of_marbles" => BagOfMarbles.CanonicalId,
                 "bronze_scales" => BronzeScales.CanonicalId,
-                _ => throw new CompositionException(
-                    $"--relics: unknown relic id '{token}'."),
+                _ => throw new CompositionException($"--relics: unknown relic id '{token}'."),
             };
             // Guard against the unlikely case that the catalog hasn't registered the id.
             _ = relics.Get(canonical);
@@ -227,12 +248,14 @@ public static class CompositionRoot
         if (normalisedChar != "silent")
         {
             throw new CompositionException(
-                $"--character '{character}': unsupported (Phase 1 supports 'silent' only).");
+                $"--character '{character}': unsupported (Phase 1 supports 'silent' only)."
+            );
         }
         if (normalisedDeck != "starter")
         {
             throw new CompositionException(
-                $"--deck '{deck}': unsupported (Phase 1 supports 'starter' only).");
+                $"--deck '{deck}': unsupported (Phase 1 supports 'starter' only)."
+            );
         }
 
         var list = new List<CardInstance>(12);
@@ -255,7 +278,8 @@ public static class CompositionRoot
     /// don't need to mirror the catalogs' PascalCase canonical ids. This keeps
     /// the CLI surface stable even if the upstream renames a canonical id.
     /// </summary>
-    private static string NormaliseToken(string raw) => raw?.Trim().ToLowerInvariant() ?? string.Empty;
+    private static string NormaliseToken(string raw) =>
+        raw?.Trim().ToLowerInvariant() ?? string.Empty;
 }
 
 /// <summary>
@@ -266,6 +290,9 @@ public static class CompositionRoot
 /// </summary>
 public sealed class CompositionException : Exception
 {
-    public CompositionException(string message) : base(message) { }
-    public CompositionException(string message, Exception inner) : base(message, inner) { }
+    public CompositionException(string message)
+        : base(message) { }
+
+    public CompositionException(string message, Exception inner)
+        : base(message, inner) { }
 }

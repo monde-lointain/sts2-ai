@@ -52,7 +52,8 @@ public readonly record struct StubHit(
     string Type,
     string Member,
     string ArgsFingerprint,
-    long Counter);
+    long Counter
+);
 
 /// <summary>
 /// Disposable scope opened by <see cref="StubRegistry.Capture"/>. While active on the
@@ -118,7 +119,8 @@ public static class StubRegistry
         StubCategory category,
         string type,
         string member,
-        string argsFingerprint = "")
+        string argsFingerprint = ""
+    )
     {
         var counter = Interlocked.Increment(ref s_counter);
         var hit = new StubHit(category, type, member, argsFingerprint, counter);
@@ -186,15 +188,15 @@ public static class StubRegistry
     /// Naming the surface in the message lets the next stage's agent add it in-scope
     /// without re-deriving where the gap is (per R4 mitigation in the plan).
     /// </summary>
-    public static string FormatNotStubbed(StubCategory category, string type, string member)
-        => $"Sts2Headless.EngineStrip: surface `{type}.{member}` was not stubbed; "
-           + $"add it to the {category} category.";
+    public static string FormatNotStubbed(StubCategory category, string type, string member) =>
+        $"Sts2Headless.EngineStrip: surface `{type}.{member}` was not stubbed; "
+        + $"add it to the {category} category.";
 
     /// <summary>
     /// Throw the standard "not stubbed" exception. Stubs call this in branches that hit
     /// an un-stubbed member of an otherwise-covered category.
     /// </summary>
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ThrowNotStubbed(StubCategory category, string type, string member)
-        => throw new NotImplementedException(FormatNotStubbed(category, type, member));
+    public static void ThrowNotStubbed(StubCategory category, string type, string member) =>
+        throw new NotImplementedException(FormatNotStubbed(category, type, member));
 }

@@ -85,7 +85,8 @@ public abstract class RelicModel : IRelicModel
         if (_activeRegistry is not null)
         {
             throw new System.InvalidOperationException(
-                $"Relic '{Id}' is already attached; call OnRemoved before re-adding.");
+                $"Relic '{Id}' is already attached; call OnRemoved before re-adding."
+            );
         }
         _activeRegistry = ctx.Hooks;
         SubscribeHooks(ctx.Hooks);
@@ -123,11 +124,19 @@ public abstract class RelicModel : IRelicModel
     /// <see cref="HookRegistry.Subscribe"/> and records the handle for
     /// <see cref="OnRemoved"/> to release.
     /// </summary>
-    protected void Subscribe(HookRegistry hooks, HookType type, HookHandler handler, int priority = 0)
+    protected void Subscribe(
+        HookRegistry hooks,
+        HookType type,
+        HookHandler handler,
+        int priority = 0
+    )
     {
         System.ArgumentNullException.ThrowIfNull(hooks);
         System.ArgumentNullException.ThrowIfNull(handler);
-        HookSubscriptionHandle handle = hooks.Subscribe(type, new HookRegistration(handler, priority));
+        HookSubscriptionHandle handle = hooks.Subscribe(
+            type,
+            new HookRegistration(handler, priority)
+        );
         _handles.Add(handle);
     }
 }

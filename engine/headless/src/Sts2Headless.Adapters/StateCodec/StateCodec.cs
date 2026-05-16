@@ -63,7 +63,8 @@ public static class StateCodec
         RunRngSet runRng,
         PlayerRngSet playerRng,
         TokenMap tokens,
-        ManifestStamp stamp)
+        ManifestStamp stamp
+    )
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(runRng);
@@ -105,11 +106,17 @@ public static class StateCodec
     /// </summary>
     public static StateBlob Deserialize(ReadOnlySpan<byte> bytes)
     {
-        if (bytes.Length < 4 /* magic */ + 2 /* schema */ + 2 /* header_size */
-                          + StateCodecConstants.TrailerSizeBytes)
+        if (
+            bytes.Length
+            < 4 /* magic */
+                + 2 /* schema */
+                + 2 /* header_size */
+                + StateCodecConstants.TrailerSizeBytes
+        )
         {
             throw new StateCodecException(
-                $"StateCodec.Deserialize: blob too short ({bytes.Length} bytes) to contain header+trailer.");
+                $"StateCodec.Deserialize: blob too short ({bytes.Length} bytes) to contain header+trailer."
+            );
         }
 
         // Trailer first: split off the last 36 bytes, validate magic, verify SHA-256.
@@ -124,13 +131,15 @@ public static class StateCodec
         if (magic != StateCodecConstants.HeaderMagic)
         {
             throw new StateCodecException(
-                $"StateCodec.Deserialize: header magic mismatch — got 0x{magic:X8}, expected 0x{StateCodecConstants.HeaderMagic:X8}.");
+                $"StateCodec.Deserialize: header magic mismatch — got 0x{magic:X8}, expected 0x{StateCodecConstants.HeaderMagic:X8}."
+            );
         }
         ushort schema = r.ReadU16();
         if (schema != StateCodecConstants.SchemaVersion)
         {
             throw new StateCodecException(
-                $"StateCodec.Deserialize: unsupported schema version {schema}; this codec supports {StateCodecConstants.SchemaVersion}.");
+                $"StateCodec.Deserialize: unsupported schema version {schema}; this codec supports {StateCodecConstants.SchemaVersion}."
+            );
         }
         ushort headerSize = r.ReadU16();
         ManifestStamp stamp = ReadStamp(ref r, headerSize);
@@ -142,7 +151,8 @@ public static class StateCodec
             if (r.Remaining < 2)
             {
                 throw new StateCodecException(
-                    "StateCodec.Deserialize: ran out of bytes before section terminator.");
+                    "StateCodec.Deserialize: ran out of bytes before section terminator."
+                );
             }
             ushort id = r.ReadU16();
             if (id == StateCodecConstants.SectionTerminator)
@@ -153,7 +163,8 @@ public static class StateCodec
             if (size > int.MaxValue)
             {
                 throw new StateCodecException(
-                    $"StateCodec.Deserialize: section_size {size} exceeds int.MaxValue.");
+                    $"StateCodec.Deserialize: section_size {size} exceeds int.MaxValue."
+                );
             }
             ReadOnlySpan<byte> payload = r.ReadRawBytes((int)size);
             sections.Add(new StateSection((SectionId)id, payload.ToArray()));
@@ -164,7 +175,8 @@ public static class StateCodec
         if (!r.IsAtEnd)
         {
             throw new StateCodecException(
-                $"StateCodec.Deserialize: {r.Remaining} bytes of garbage between section terminator and trailer.");
+                $"StateCodec.Deserialize: {r.Remaining} bytes of garbage between section terminator and trailer."
+            );
         }
 
         return new StateBlob(schema, stamp, sections.ToImmutable(), TrailerValidated: true);
@@ -181,14 +193,16 @@ public static class StateCodec
         if (cs is null)
         {
             throw new StateCodecException(
-                "StateCodec.ToCombatState: blob is missing the CombatState section.");
+                "StateCodec.ToCombatState: blob is missing the CombatState section."
+            );
         }
         ByteReader r = new(cs);
         CombatState state = ReadCombatState(ref r);
         if (!r.IsAtEnd)
         {
             throw new StateCodecException(
-                $"StateCodec.ToCombatState: trailing garbage in CombatState section ({r.Remaining} bytes).");
+                $"StateCodec.ToCombatState: trailing garbage in CombatState section ({r.Remaining} bytes)."
+            );
         }
         return state;
     }
@@ -205,14 +219,16 @@ public static class StateCodec
         if (tb is null)
         {
             throw new StateCodecException(
-                "StateCodec.ToTokenMap: blob is missing the Tokens section.");
+                "StateCodec.ToTokenMap: blob is missing the Tokens section."
+            );
         }
         ByteReader r = new(tb);
         TokenMap map = ReadTokens(ref r);
         if (!r.IsAtEnd)
         {
             throw new StateCodecException(
-                $"StateCodec.ToTokenMap: trailing garbage in Tokens section ({r.Remaining} bytes).");
+                $"StateCodec.ToTokenMap: trailing garbage in Tokens section ({r.Remaining} bytes)."
+            );
         }
         return map;
     }
@@ -228,14 +244,16 @@ public static class StateCodec
         if (rb is null)
         {
             throw new StateCodecException(
-                "StateCodec.ToRngBundle: blob is missing the Rng section.");
+                "StateCodec.ToRngBundle: blob is missing the Rng section."
+            );
         }
         ByteReader r = new(rb);
         (RunRngSet runRng, PlayerRngSet playerRng) = ReadRngBundle(ref r);
         if (!r.IsAtEnd)
         {
             throw new StateCodecException(
-                $"StateCodec.ToRngBundle: trailing garbage in Rng section ({r.Remaining} bytes).");
+                $"StateCodec.ToRngBundle: trailing garbage in Rng section ({r.Remaining} bytes)."
+            );
         }
         return (runRng, playerRng);
     }
@@ -273,7 +291,9 @@ public static class StateCodec
         if (gitShaBytes.Length > byte.MaxValue)
         {
             throw new ArgumentException(
-                $"ManifestStamp.GitSha exceeds 255 UTF-8 bytes ({gitShaBytes.Length}).", nameof(stamp));
+                $"ManifestStamp.GitSha exceeds 255 UTF-8 bytes ({gitShaBytes.Length}).",
+                nameof(stamp)
+            );
         }
         stampBody.WriteU8((byte)gitShaBytes.Length);
         stampBody.WriteRawBytes(gitShaBytes);
@@ -282,7 +302,9 @@ public static class StateCodec
         if (buildIdBytes.Length > ushort.MaxValue)
         {
             throw new ArgumentException(
-                $"ManifestStamp.BuildId exceeds 65535 UTF-8 bytes ({buildIdBytes.Length}).", nameof(stamp));
+                $"ManifestStamp.BuildId exceeds 65535 UTF-8 bytes ({buildIdBytes.Length}).",
+                nameof(stamp)
+            );
         }
         stampBody.WriteU16((ushort)buildIdBytes.Length);
         stampBody.WriteRawBytes(buildIdBytes);
@@ -291,7 +313,8 @@ public static class StateCodec
         {
             throw new ArgumentException(
                 $"ManifestStamp.ContentHash must be {StateCodecConstants.Sha256ByteLength} bytes (got {stamp.ContentHash.Length}).",
-                nameof(stamp));
+                nameof(stamp)
+            );
         }
         stampBody.WriteRawBytes(stamp.ContentHash);
 
@@ -299,7 +322,8 @@ public static class StateCodec
         if (body.Length > ushort.MaxValue)
         {
             throw new InvalidOperationException(
-                $"ManifestStamp body exceeds 65535 bytes ({body.Length}).");
+                $"ManifestStamp body exceeds 65535 bytes ({body.Length})."
+            );
         }
         w.WriteU16((ushort)body.Length);
         w.WriteRawBytes(body);
@@ -573,12 +597,24 @@ public static class StateCodec
         int exhaustedShivCount = r.ReadI32();
 
         return new CombatState(
-            turnCounter, phase, player, enemies.ToImmutable(),
-            energy, baseEnergy, handDraw,
-            draw, hand, discard, exhaust,
-            playerRng, monsterRng,
-            attacksPlayedThisTurn, cardsDrawnThisCombat,
-            lastSpentEnergy, exhaustedShivCount);
+            turnCounter,
+            phase,
+            player,
+            enemies.ToImmutable(),
+            energy,
+            baseEnergy,
+            handDraw,
+            draw,
+            hand,
+            discard,
+            exhaust,
+            playerRng,
+            monsterRng,
+            attacksPlayedThisTurn,
+            cardsDrawnThisCombat,
+            lastSpentEnergy,
+            exhaustedShivCount
+        );
     }
 
     private static Creature ReadCreature(ref ByteReader r)
@@ -606,12 +642,22 @@ public static class StateCodec
             0 => null,
             1 => ReadMonsterIntent(ref r),
             _ => throw new StateCodecException(
-                $"Creature: invalid intent-present byte 0x{intentPresent:X2}."),
+                $"Creature: invalid intent-present byte 0x{intentPresent:X2}."
+            ),
         };
 
         bool isPlayer = r.ReadBool();
 
-        return new Creature(id, name, currentHp, maxHp, block, powers.ToImmutable(), intent, isPlayer);
+        return new Creature(
+            id,
+            name,
+            currentHp,
+            maxHp,
+            block,
+            powers.ToImmutable(),
+            intent,
+            isPlayer
+        );
     }
 
     private static PowerInstance ReadPowerInstance(ref ByteReader r)
@@ -671,7 +717,8 @@ public static class StateCodec
             0 => null,
             1 => r.ReadI32(),
             _ => throw new StateCodecException(
-                $"CardInstance: invalid override-present byte 0x{overridePresent:X2}."),
+                $"CardInstance: invalid override-present byte 0x{overridePresent:X2}."
+            ),
         };
         return new CardInstance(instanceId, modelId, upgrade, costOverride);
     }
@@ -697,7 +744,8 @@ public static class StateCodec
         if (consumed != headerSize)
         {
             throw new StateCodecException(
-                $"ManifestStamp: declared header_size {headerSize} != actual {consumed} bytes consumed.");
+                $"ManifestStamp: declared header_size {headerSize} != actual {consumed} bytes consumed."
+            );
         }
         return new ManifestStamp(gitShaStr, buildIdStr, contentHash);
     }
@@ -710,12 +758,15 @@ public static class StateCodec
         if (runPresent != 1)
         {
             throw new StateCodecException(
-                $"RngSection: expected run_blob_present=1, got {runPresent} (Phase-1 always carries both).");
+                $"RngSection: expected run_blob_present=1, got {runPresent} (Phase-1 always carries both)."
+            );
         }
         uint runLen = r.ReadU32();
         if (runLen > int.MaxValue)
         {
-            throw new StateCodecException($"RngSection: run_blob_len {runLen} exceeds int.MaxValue.");
+            throw new StateCodecException(
+                $"RngSection: run_blob_len {runLen} exceeds int.MaxValue."
+            );
         }
         ReadOnlySpan<byte> runBytes = r.ReadRawBytes((int)runLen);
         RunRngSet runRng;
@@ -725,19 +776,25 @@ public static class StateCodec
         }
         catch (InvalidDataException ex)
         {
-            throw new StateCodecException("RngSection: M5 RunRngSet decoder rejected the blob.", ex);
+            throw new StateCodecException(
+                "RngSection: M5 RunRngSet decoder rejected the blob.",
+                ex
+            );
         }
 
         byte playerPresent = r.ReadU8();
         if (playerPresent != 1)
         {
             throw new StateCodecException(
-                $"RngSection: expected player_blob_present=1, got {playerPresent} (Phase-1 always carries both).");
+                $"RngSection: expected player_blob_present=1, got {playerPresent} (Phase-1 always carries both)."
+            );
         }
         uint playerLen = r.ReadU32();
         if (playerLen > int.MaxValue)
         {
-            throw new StateCodecException($"RngSection: player_blob_len {playerLen} exceeds int.MaxValue.");
+            throw new StateCodecException(
+                $"RngSection: player_blob_len {playerLen} exceeds int.MaxValue."
+            );
         }
         ReadOnlySpan<byte> playerBytes = r.ReadRawBytes((int)playerLen);
         PlayerRngSet playerRng;
@@ -747,7 +804,10 @@ public static class StateCodec
         }
         catch (InvalidDataException ex)
         {
-            throw new StateCodecException("RngSection: M5 PlayerRngSet decoder rejected the blob.", ex);
+            throw new StateCodecException(
+                "RngSection: M5 PlayerRngSet decoder rejected the blob.",
+                ex
+            );
         }
 
         return (runRng, playerRng);
@@ -769,7 +829,8 @@ public static class StateCodec
             if (assigned != id)
             {
                 throw new StateCodecException(
-                    $"TokensSection: token '{tok}' deserialized with id {id} but reconstruction assigned {assigned}.");
+                    $"TokensSection: token '{tok}' deserialized with id {id} but reconstruction assigned {assigned}."
+                );
             }
         }
         return map;
@@ -780,13 +841,15 @@ public static class StateCodec
         if (trailer.Length != StateCodecConstants.TrailerSizeBytes)
         {
             throw new StateCodecException(
-                $"StateCodec: trailer length {trailer.Length} != expected {StateCodecConstants.TrailerSizeBytes}.");
+                $"StateCodec: trailer length {trailer.Length} != expected {StateCodecConstants.TrailerSizeBytes}."
+            );
         }
         uint trailerMagic = BinaryPrimitives.ReadUInt32LittleEndian(trailer[..4]);
         if (trailerMagic != StateCodecConstants.TrailerMagic)
         {
             throw new StateCodecException(
-                $"StateCodec: trailer magic mismatch — got 0x{trailerMagic:X8}, expected 0x{StateCodecConstants.TrailerMagic:X8}.");
+                $"StateCodec: trailer magic mismatch — got 0x{trailerMagic:X8}, expected 0x{StateCodecConstants.TrailerMagic:X8}."
+            );
         }
         ReadOnlySpan<byte> recordedHash = trailer.Slice(4, StateCodecConstants.Sha256ByteLength);
         Span<byte> computed = stackalloc byte[StateCodecConstants.Sha256ByteLength];
@@ -794,7 +857,8 @@ public static class StateCodec
         if (!recordedHash.SequenceEqual(computed))
         {
             throw new StateCodecException(
-                "StateCodec: trailer hash mismatch — tamper detected or blob corrupted.");
+                "StateCodec: trailer hash mismatch — tamper detected or blob corrupted."
+            );
         }
     }
 }

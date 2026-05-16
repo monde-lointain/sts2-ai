@@ -13,7 +13,8 @@ public sealed class Speedster : CardModel
     public const string CanonicalId = "Speedster";
     public const int Amount = 2;
 
-    public Speedster() : base(CanonicalId, 2, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public Speedster()
+        : base(CanonicalId, 2, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

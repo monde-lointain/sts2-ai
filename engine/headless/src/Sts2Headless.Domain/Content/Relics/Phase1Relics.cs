@@ -17,7 +17,9 @@ public sealed class Akabeko : RelicModel
 {
     public const string CanonicalId = "Akabeko";
     public const int VigorAmount = 8;
-    public Akabeko() : base(CanonicalId, "Akabeko", RelicRarity.Uncommon) { }
+
+    public Akabeko()
+        : base(CanonicalId, "Akabeko", RelicRarity.Uncommon) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>Akabeko.AfterSideTurnStart</c>: on the
@@ -32,11 +34,20 @@ public sealed class Akabeko : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerAction(
-                PowerIds.Vigor, VigorAmount, Target: null /* self */));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerAction(
+                        PowerIds.Vigor,
+                        VigorAmount,
+                        Target: null /* self */
+                    )
+                );
+            }
+        );
     }
 }
 
@@ -44,7 +55,9 @@ public sealed class BagOfMarbles : RelicModel
 {
     public const string CanonicalId = "BagOfMarbles";
     public const int VulnerableStacks = 1;
-    public BagOfMarbles() : base(CanonicalId, "Bag of Marbles", RelicRarity.Common) { }
+
+    public BagOfMarbles()
+        : base(CanonicalId, "Bag of Marbles", RelicRarity.Common) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>BagOfMarbles.BeforeSideTurnStart</c>: at the
@@ -55,11 +68,16 @@ public sealed class BagOfMarbles : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerToAllEnemiesAction(
-                PowerIds.Vulnerable, VulnerableStacks));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerToAllEnemiesAction(PowerIds.Vulnerable, VulnerableStacks)
+                );
+            }
+        );
     }
 }
 
@@ -67,7 +85,9 @@ public sealed class BronzeScales : RelicModel
 {
     public const string CanonicalId = "BronzeScales";
     public const int ThornsAmount = 3;
-    public BronzeScales() : base(CanonicalId, "Bronze Scales", RelicRarity.Common) { }
+
+    public BronzeScales()
+        : base(CanonicalId, "Bronze Scales", RelicRarity.Common) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>BronzeScales.AfterRoomEntered(CombatRoom)</c>:
@@ -77,11 +97,20 @@ public sealed class BronzeScales : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerAction(
-                PowerIds.Thorns, ThornsAmount, Target: null /* self */));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerAction(
+                        PowerIds.Thorns,
+                        ThornsAmount,
+                        Target: null /* self */
+                    )
+                );
+            }
+        );
     }
 }
 
@@ -89,20 +118,26 @@ public sealed class CentennialPuzzle : RelicModel
 {
     public const string CanonicalId = "CentennialPuzzle";
     public const int CardsDrawn = 3;
-    public CentennialPuzzle() : base(CanonicalId, "Centennial Puzzle", RelicRarity.Common) { }
+
+    public CentennialPuzzle()
+        : base(CanonicalId, "Centennial Puzzle", RelicRarity.Common) { }
 }
 
 public sealed class HappyFlower : RelicModel
 {
     public const string CanonicalId = "HappyFlower";
-    public HappyFlower() : base(CanonicalId, "Happy Flower", RelicRarity.Common) { }
+
+    public HappyFlower()
+        : base(CanonicalId, "Happy Flower", RelicRarity.Common) { }
 }
 
 public sealed class OddlySmoothStone : RelicModel
 {
     public const string CanonicalId = "OddlySmoothStone";
     public const int DexterityAmount = 1;
-    public OddlySmoothStone() : base(CanonicalId, "Oddly Smooth Stone", RelicRarity.Common) { }
+
+    public OddlySmoothStone()
+        : base(CanonicalId, "Oddly Smooth Stone", RelicRarity.Common) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>OddlySmoothStone.AfterRoomEntered</c>:
@@ -110,32 +145,43 @@ public sealed class OddlySmoothStone : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerAction(
-                PowerIds.Dexterity, DexterityAmount, Target: null));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerAction(PowerIds.Dexterity, DexterityAmount, Target: null)
+                );
+            }
+        );
     }
 }
 
 public sealed class RedSkull : RelicModel
 {
     public const string CanonicalId = "RedSkull";
-    public RedSkull() : base(CanonicalId, "Red Skull", RelicRarity.Common) { }
+
+    public RedSkull()
+        : base(CanonicalId, "Red Skull", RelicRarity.Common) { }
 }
 
 public sealed class Whetstone : RelicModel
 {
     public const string CanonicalId = "Whetstone";
     public const int CardsUpgraded = 2;
-    public Whetstone() : base(CanonicalId, "Whetstone", RelicRarity.Common) { }
+
+    public Whetstone()
+        : base(CanonicalId, "Whetstone", RelicRarity.Common) { }
 }
 
 public sealed class DataDisk : RelicModel
 {
     public const string CanonicalId = "DataDisk";
     public const int FocusAmount = 1;
-    public DataDisk() : base(CanonicalId, "Data Disk", RelicRarity.Common) { }
+
+    public DataDisk()
+        : base(CanonicalId, "Data Disk", RelicRarity.Common) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>DataDisk.AfterRoomEntered</c>: apply
@@ -143,11 +189,16 @@ public sealed class DataDisk : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerAction(
-                PowerIds.Focus, FocusAmount, Target: null));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerAction(PowerIds.Focus, FocusAmount, Target: null)
+                );
+            }
+        );
     }
 }
 
@@ -155,20 +206,26 @@ public sealed class MealTicket : RelicModel
 {
     public const string CanonicalId = "MealTicket";
     public const int HealAmount = 15;
-    public MealTicket() : base(CanonicalId, "Meal Ticket", RelicRarity.Common) { }
+
+    public MealTicket()
+        : base(CanonicalId, "Meal Ticket", RelicRarity.Common) { }
 }
 
 public sealed class PenNib : RelicModel
 {
     public const string CanonicalId = "PenNib";
-    public PenNib() : base(CanonicalId, "Pen Nib", RelicRarity.Uncommon) { }
+
+    public PenNib()
+        : base(CanonicalId, "Pen Nib", RelicRarity.Uncommon) { }
 }
 
 public sealed class Pantograph : RelicModel
 {
     public const string CanonicalId = "Pantograph";
     public const int HealAmount = 25;
-    public Pantograph() : base(CanonicalId, "Pantograph", RelicRarity.Uncommon) { }
+
+    public Pantograph()
+        : base(CanonicalId, "Pantograph", RelicRarity.Uncommon) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>Pantograph.AfterRoomEntered</c>: on boss-
@@ -177,10 +234,14 @@ public sealed class Pantograph : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new HealAction(HealAmount));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new HealAction(HealAmount));
+            }
+        );
     }
 }
 
@@ -188,7 +249,9 @@ public sealed class MercuryHourglass : RelicModel
 {
     public const string CanonicalId = "MercuryHourglass";
     public const int DamageToAll = 3;
-    public MercuryHourglass() : base(CanonicalId, "Mercury Hourglass", RelicRarity.Uncommon) { }
+
+    public MercuryHourglass()
+        : base(CanonicalId, "Mercury Hourglass", RelicRarity.Uncommon) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>MercuryHourglass.AfterPlayerTurnStart</c>:
@@ -196,107 +259,141 @@ public sealed class MercuryHourglass : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.AfterPlayerTurnStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new DealDamageToAllEnemiesAction(DamageToAll));
-        });
+        Subscribe(
+            hooks,
+            HookType.AfterPlayerTurnStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new DealDamageToAllEnemiesAction(DamageToAll));
+            }
+        );
     }
 }
 
 public sealed class PaperPhrog : RelicModel
 {
     public const string CanonicalId = "PaperPhrog";
-    public PaperPhrog() : base(CanonicalId, "Paper Phrog", RelicRarity.Uncommon) { }
+
+    public PaperPhrog()
+        : base(CanonicalId, "Paper Phrog", RelicRarity.Uncommon) { }
 }
 
 public sealed class GamblingChip : RelicModel
 {
     public const string CanonicalId = "GamblingChip";
-    public GamblingChip() : base(CanonicalId, "Gambling Chip", RelicRarity.Rare) { }
+
+    public GamblingChip()
+        : base(CanonicalId, "Gambling Chip", RelicRarity.Rare) { }
 }
 
 public sealed class Mango : RelicModel
 {
     public const string CanonicalId = "Mango";
     public const int MaxHpAmount = 14;
-    public Mango() : base(CanonicalId, "Mango", RelicRarity.Rare) { }
+
+    public Mango()
+        : base(CanonicalId, "Mango", RelicRarity.Rare) { }
 }
 
 public sealed class Pocketwatch : RelicModel
 {
     public const string CanonicalId = "Pocketwatch";
     public const int CardsDrawn = 3;
-    public Pocketwatch() : base(CanonicalId, "Pocketwatch", RelicRarity.Rare) { }
+
+    public Pocketwatch()
+        : base(CanonicalId, "Pocketwatch", RelicRarity.Rare) { }
 }
 
 public sealed class Shovel : RelicModel
 {
     public const string CanonicalId = "Shovel";
-    public Shovel() : base(CanonicalId, "Shovel", RelicRarity.Rare) { }
+
+    public Shovel()
+        : base(CanonicalId, "Shovel", RelicRarity.Rare) { }
 }
 
 public sealed class ArtOfWar : RelicModel
 {
     public const string CanonicalId = "ArtOfWar";
     public const int EnergyAmount = 1;
-    public ArtOfWar() : base(CanonicalId, "Art of War", RelicRarity.Rare) { }
+
+    public ArtOfWar()
+        : base(CanonicalId, "Art of War", RelicRarity.Rare) { }
 }
 
 public sealed class Bellows : RelicModel
 {
     public const string CanonicalId = "Bellows";
-    public Bellows() : base(CanonicalId, "Bellows", RelicRarity.Rare) { }
+
+    public Bellows()
+        : base(CanonicalId, "Bellows", RelicRarity.Rare) { }
 }
 
 public sealed class Bookmark : RelicModel
 {
     public const string CanonicalId = "Bookmark";
-    public Bookmark() : base(CanonicalId, "Bookmark", RelicRarity.Rare) { }
+
+    public Bookmark()
+        : base(CanonicalId, "Bookmark", RelicRarity.Rare) { }
 }
 
 public sealed class MeatOnTheBone : RelicModel
 {
     public const string CanonicalId = "MeatOnTheBone";
     public const int HealAmount = 12;
-    public MeatOnTheBone() : base(CanonicalId, "Meat on the Bone", RelicRarity.Rare) { }
+
+    public MeatOnTheBone()
+        : base(CanonicalId, "Meat on the Bone", RelicRarity.Rare) { }
 }
 
 public sealed class BeautifulBracelet : RelicModel
 {
     public const string CanonicalId = "BeautifulBracelet";
     public const int CardsDrawn = 2;
-    public BeautifulBracelet() : base(CanonicalId, "Beautiful Bracelet", RelicRarity.Ancient) { }
+
+    public BeautifulBracelet()
+        : base(CanonicalId, "Beautiful Bracelet", RelicRarity.Ancient) { }
 }
 
 public sealed class BiiigHug : RelicModel
 {
     public const string CanonicalId = "BiiigHug";
-    public BiiigHug() : base(CanonicalId, "Biiig Hug", RelicRarity.Ancient) { }
+
+    public BiiigHug()
+        : base(CanonicalId, "Biiig Hug", RelicRarity.Ancient) { }
 }
 
 public sealed class CallingBell : RelicModel
 {
     public const string CanonicalId = "CallingBell";
-    public CallingBell() : base(CanonicalId, "Calling Bell", RelicRarity.Ancient) { }
+
+    public CallingBell()
+        : base(CanonicalId, "Calling Bell", RelicRarity.Ancient) { }
 }
 
 public sealed class Ectoplasm : RelicModel
 {
     public const string CanonicalId = "Ectoplasm";
     public const int EnergyAmount = 1;
-    public Ectoplasm() : base(CanonicalId, "Ectoplasm", RelicRarity.Ancient) { }
+
+    public Ectoplasm()
+        : base(CanonicalId, "Ectoplasm", RelicRarity.Ancient) { }
 }
 
 public sealed class Cauldron : RelicModel
 {
     public const string CanonicalId = "Cauldron";
-    public Cauldron() : base(CanonicalId, "Cauldron", RelicRarity.Shop) { }
+
+    public Cauldron()
+        : base(CanonicalId, "Cauldron", RelicRarity.Shop) { }
 }
 
 public sealed class DollysMirror : RelicModel
 {
     public const string CanonicalId = "DollysMirror";
-    public DollysMirror() : base(CanonicalId, "Dolly's Mirror", RelicRarity.Shop) { }
+
+    public DollysMirror()
+        : base(CanonicalId, "Dolly's Mirror", RelicRarity.Shop) { }
 }
 
 public sealed class LeesWaffle : RelicModel
@@ -304,13 +401,17 @@ public sealed class LeesWaffle : RelicModel
     public const string CanonicalId = "LeesWaffle";
     public const int HealAmount = 7;
     public const int MaxHpAmount = 7;
-    public LeesWaffle() : base(CanonicalId, "Lee's Waffle", RelicRarity.Shop) { }
+
+    public LeesWaffle()
+        : base(CanonicalId, "Lee's Waffle", RelicRarity.Shop) { }
 }
 
 public sealed class TheBoot : RelicModel
 {
     public const string CanonicalId = "TheBoot";
-    public TheBoot() : base(CanonicalId, "The Boot", RelicRarity.Event) { }
+
+    public TheBoot()
+        : base(CanonicalId, "The Boot", RelicRarity.Event) { }
 }
 
 // === Silent-specific starter / drop relics ===
@@ -319,67 +420,87 @@ public sealed class SneckosEye : RelicModel
 {
     public const string CanonicalId = "SneckosEye";
     public const int CardsDrawn = 2;
-    public SneckosEye() : base(CanonicalId, "Snecko's Eye", RelicRarity.Rare) { }
+
+    public SneckosEye()
+        : base(CanonicalId, "Snecko's Eye", RelicRarity.Rare) { }
 }
 
 public sealed class SnakeSkull : RelicModel
 {
     public const string CanonicalId = "SnakeSkull";
     public const int PoisonOnDiscardAmount = 1;
-    public SnakeSkull() : base(CanonicalId, "Snake Skull", RelicRarity.Rare) { }
+
+    public SnakeSkull()
+        : base(CanonicalId, "Snake Skull", RelicRarity.Rare) { }
 }
 
 public sealed class NinjaScroll : RelicModel
 {
     public const string CanonicalId = "NinjaScroll";
     public const int Shivs = 3;
-    public NinjaScroll() : base(CanonicalId, "Ninja Scroll", RelicRarity.Common) { }
+
+    public NinjaScroll()
+        : base(CanonicalId, "Ninja Scroll", RelicRarity.Common) { }
 }
 
 public sealed class PaintedFan : RelicModel
 {
     public const string CanonicalId = "PaintedFan";
-    public PaintedFan() : base(CanonicalId, "Painted Fan", RelicRarity.Common) { }
+
+    public PaintedFan()
+        : base(CanonicalId, "Painted Fan", RelicRarity.Common) { }
 }
 
 public sealed class TwistedFunnel : RelicModel
 {
     public const string CanonicalId = "TwistedFunnel";
     public const int PoisonOnTurnStart = 3;
-    public TwistedFunnel() : base(CanonicalId, "Twisted Funnel", RelicRarity.Rare) { }
+
+    public TwistedFunnel()
+        : base(CanonicalId, "Twisted Funnel", RelicRarity.Rare) { }
 }
 
 public sealed class WristBlade : RelicModel
 {
     public const string CanonicalId = "WristBlade";
     public const int DamageBonus = 4;
-    public WristBlade() : base(CanonicalId, "Wrist Blade", RelicRarity.Uncommon) { }
+
+    public WristBlade()
+        : base(CanonicalId, "Wrist Blade", RelicRarity.Uncommon) { }
 }
 
 public sealed class Tingsha : RelicModel
 {
     public const string CanonicalId = "Tingsha";
     public const int DamagePerDiscard = 3;
-    public Tingsha() : base(CanonicalId, "Tingsha", RelicRarity.Uncommon) { }
+
+    public Tingsha()
+        : base(CanonicalId, "Tingsha", RelicRarity.Uncommon) { }
 }
 
 public sealed class TheTotem : RelicModel
 {
     public const string CanonicalId = "TheTotem";
-    public TheTotem() : base(CanonicalId, "The Totem", RelicRarity.Uncommon) { }
+
+    public TheTotem()
+        : base(CanonicalId, "The Totem", RelicRarity.Uncommon) { }
 }
 
 public sealed class TornCard : RelicModel
 {
     public const string CanonicalId = "TornCard";
-    public TornCard() : base(CanonicalId, "Torn Card", RelicRarity.Rare) { }
+
+    public TornCard()
+        : base(CanonicalId, "Torn Card", RelicRarity.Rare) { }
 }
 
 public sealed class HoveringKite : RelicModel
 {
     public const string CanonicalId = "HoveringKite";
     public const int EnergyOnDiscard = 1;
-    public HoveringKite() : base(CanonicalId, "Hovering Kite", RelicRarity.Rare) { }
+
+    public HoveringKite()
+        : base(CanonicalId, "Hovering Kite", RelicRarity.Rare) { }
 }
 
 // === Generic uncommon/rare ===
@@ -388,41 +509,53 @@ public sealed class CeramicFish : RelicModel
 {
     public const string CanonicalId = "CeramicFish";
     public const int Gold = 9;
-    public CeramicFish() : base(CanonicalId, "Ceramic Fish", RelicRarity.Common) { }
+
+    public CeramicFish()
+        : base(CanonicalId, "Ceramic Fish", RelicRarity.Common) { }
 }
 
 public sealed class Strawberry : RelicModel
 {
     public const string CanonicalId = "Strawberry";
     public const int MaxHpAmount = 7;
-    public Strawberry() : base(CanonicalId, "Strawberry", RelicRarity.Common) { }
+
+    public Strawberry()
+        : base(CanonicalId, "Strawberry", RelicRarity.Common) { }
 }
 
 public sealed class Pear : RelicModel
 {
     public const string CanonicalId = "Pear";
     public const int MaxHpAmount = 10;
-    public Pear() : base(CanonicalId, "Pear", RelicRarity.Common) { }
+
+    public Pear()
+        : base(CanonicalId, "Pear", RelicRarity.Common) { }
 }
 
 public sealed class Anchovy : RelicModel
 {
     public const string CanonicalId = "Anchovy";
     public const int MaxHpAmount = 8;
-    public Anchovy() : base(CanonicalId, "Anchovy", RelicRarity.Common) { }
+
+    public Anchovy()
+        : base(CanonicalId, "Anchovy", RelicRarity.Common) { }
 }
 
 public sealed class Lantern : RelicModel
 {
     public const string CanonicalId = "Lantern";
     public const int EnergyAmount = 1;
-    public Lantern() : base(CanonicalId, "Lantern", RelicRarity.Uncommon) { }
+
+    public Lantern()
+        : base(CanonicalId, "Lantern", RelicRarity.Uncommon) { }
 }
 
 public sealed class Cookbook : RelicModel
 {
     public const string CanonicalId = "Cookbook";
-    public Cookbook() : base(CanonicalId, "Cookbook", RelicRarity.Common) { }
+
+    public Cookbook()
+        : base(CanonicalId, "Cookbook", RelicRarity.Common) { }
 }
 
 public sealed class GremlinHorn : RelicModel
@@ -430,35 +563,45 @@ public sealed class GremlinHorn : RelicModel
     public const string CanonicalId = "GremlinHorn";
     public const int EnergyOnKill = 1;
     public const int CardOnKill = 1;
-    public GremlinHorn() : base(CanonicalId, "Gremlin Horn", RelicRarity.Uncommon) { }
+
+    public GremlinHorn()
+        : base(CanonicalId, "Gremlin Horn", RelicRarity.Uncommon) { }
 }
 
 public sealed class HornCleat : RelicModel
 {
     public const string CanonicalId = "HornCleat";
     public const int BlockOnTurn2 = 14;
-    public HornCleat() : base(CanonicalId, "Horn Cleat", RelicRarity.Uncommon) { }
+
+    public HornCleat()
+        : base(CanonicalId, "Horn Cleat", RelicRarity.Uncommon) { }
 }
 
 public sealed class LetterOpener : RelicModel
 {
     public const string CanonicalId = "LetterOpener";
     public const int DamageOnThirdSkill = 5;
-    public LetterOpener() : base(CanonicalId, "Letter Opener", RelicRarity.Uncommon) { }
+
+    public LetterOpener()
+        : base(CanonicalId, "Letter Opener", RelicRarity.Uncommon) { }
 }
 
 public sealed class OrnamentalFan : RelicModel
 {
     public const string CanonicalId = "OrnamentalFan";
     public const int BlockOnThirdAttack = 4;
-    public OrnamentalFan() : base(CanonicalId, "Ornamental Fan", RelicRarity.Uncommon) { }
+
+    public OrnamentalFan()
+        : base(CanonicalId, "Ornamental Fan", RelicRarity.Uncommon) { }
 }
 
 public sealed class Orichalcum : RelicModel
 {
     public const string CanonicalId = "Orichalcum";
     public const int BlockOnTurnEndIfZero = 6;
-    public Orichalcum() : base(CanonicalId, "Orichalcum", RelicRarity.Uncommon) { }
+
+    public Orichalcum()
+        : base(CanonicalId, "Orichalcum", RelicRarity.Uncommon) { }
 
     /// <summary>
     /// Verbatim port of upstream <c>Orichalcum.BeforeTurnEnd</c>: if the player
@@ -467,10 +610,14 @@ public sealed class Orichalcum : RelicModel
     /// </summary>
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeTurnEnd, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ConditionalGainBlockAction(BlockOnTurnEndIfZero));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeTurnEnd,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new ConditionalGainBlockAction(BlockOnTurnEndIfZero));
+            }
+        );
     }
 }
 
@@ -478,19 +625,25 @@ public sealed class Kunai : RelicModel
 {
     public const string CanonicalId = "Kunai";
     public const int DexterityAmount = 1;
-    public Kunai() : base(CanonicalId, "Kunai", RelicRarity.Uncommon) { }
+
+    public Kunai()
+        : base(CanonicalId, "Kunai", RelicRarity.Uncommon) { }
 }
 
 public sealed class Shuriken : RelicModel
 {
     public const string CanonicalId = "Shuriken";
     public const int StrengthAmount = 1;
-    public Shuriken() : base(CanonicalId, "Shuriken", RelicRarity.Uncommon) { }
+
+    public Shuriken()
+        : base(CanonicalId, "Shuriken", RelicRarity.Uncommon) { }
 }
 
 public sealed class ToyOrnithopter : RelicModel
 {
     public const string CanonicalId = "ToyOrnithopter";
     public const int HealPerPotion = 5;
-    public ToyOrnithopter() : base(CanonicalId, "Toy Ornithopter", RelicRarity.Uncommon) { }
+
+    public ToyOrnithopter()
+        : base(CanonicalId, "Toy Ornithopter", RelicRarity.Uncommon) { }
 }

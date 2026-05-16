@@ -36,15 +36,20 @@ public sealed class CalcifiedCultist : MonsterModel
     /// <summary>Upstream IncantationAmount — 2 stacks of Ritual.</summary>
     public const int IncantationRitualStacks = 2;
 
-    public CalcifiedCultist() : base(
-        id: CanonicalId,
-        minInitialHp: MinHp,
-        maxInitialHp: MaxHp,
-        moves: new MonsterMove[]
-        {
-            new(IncantationMoveId, Intent.Buff(), FollowUpMoveId: DarkStrikeMoveId),
-            new(DarkStrikeMoveId, Intent.Attack(DarkStrikeDamage), FollowUpMoveId: DarkStrikeMoveId),
-        },
-        initialMoveId: IncantationMoveId)
-    { }
+    public CalcifiedCultist()
+        : base(
+            id: CanonicalId,
+            minInitialHp: MinHp,
+            maxInitialHp: MaxHp,
+            moves: new MonsterMove[]
+            {
+                new(IncantationMoveId, Intent.Buff(), FollowUpMoveId: DarkStrikeMoveId),
+                new(
+                    DarkStrikeMoveId,
+                    Intent.Attack(DarkStrikeDamage),
+                    FollowUpMoveId: DarkStrikeMoveId
+                ),
+            },
+            initialMoveId: IncantationMoveId
+        ) { }
 }

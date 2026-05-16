@@ -14,12 +14,9 @@ public sealed class CultistsNormal : EncounterModel
 {
     public const string CanonicalId = "CultistsNormal";
 
-    public CultistsNormal() : base(
-        id: CanonicalId,
-        monsterIds: new[]
-        {
-            CalcifiedCultist.CanonicalId,
-            DampCultist.CanonicalId,
-        })
-    { }
+    public CultistsNormal()
+        : base(
+            id: CanonicalId,
+            monsterIds: new[] { CalcifiedCultist.CanonicalId, DampCultist.CanonicalId }
+        ) { }
 }

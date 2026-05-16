@@ -40,7 +40,8 @@ public sealed record StateBlob(
     ushort SchemaVersion,
     ManifestStamp Stamp,
     ImmutableList<StateSection> Sections,
-    bool TrailerValidated)
+    bool TrailerValidated
+)
 {
     /// <summary>Convenience accessor for the Rng section bytes (or null if absent).</summary>
     public byte[]? RngBytes => FindSection(SectionId.Rng)?.Bytes;
@@ -55,7 +56,8 @@ public sealed record StateBlob(
     {
         for (int i = 0; i < Sections.Count; i++)
         {
-            if (Sections[i].Id == id) return Sections[i];
+            if (Sections[i].Id == id)
+                return Sections[i];
         }
         return null;
     }

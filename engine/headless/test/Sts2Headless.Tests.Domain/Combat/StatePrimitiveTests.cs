@@ -17,7 +17,12 @@ public sealed class StatePrimitiveTests
     [Fact]
     public void CardInstance_With_Roundtrip_Preserves_Fields()
     {
-        var card = new CardInstance(InstanceId: 1u, ModelId: "StrikeSilent", UpgradeLevel: 0, CostOverride: null);
+        var card = new CardInstance(
+            InstanceId: 1u,
+            ModelId: "StrikeSilent",
+            UpgradeLevel: 0,
+            CostOverride: null
+        );
         var upgraded = card with { UpgradeLevel = 1 };
 
         Assert.Equal(1u, upgraded.InstanceId);
@@ -60,7 +65,12 @@ public sealed class StatePrimitiveTests
     [Fact]
     public void PowerInstance_With_Roundtrip_Preserves_Fields()
     {
-        var p = new PowerInstance(ModelId: "PoisonPower", Stacks: 3, SourceCreatureId: 5u, JustApplied: true);
+        var p = new PowerInstance(
+            ModelId: "PoisonPower",
+            Stacks: 3,
+            SourceCreatureId: 5u,
+            JustApplied: true
+        );
         var ticked = p with { Stacks = 2, JustApplied = false };
 
         Assert.Equal("PoisonPower", ticked.ModelId);
@@ -87,7 +97,8 @@ public sealed class StatePrimitiveTests
             Kind: MonsterIntentKind.Attack,
             DamagePerHit: 9,
             HitCount: 1,
-            AppliesPowers: ImmutableList<MonsterIntentPower>.Empty);
+            AppliesPowers: ImmutableList<MonsterIntentPower>.Empty
+        );
 
         var debuff = intent with
         {
@@ -145,7 +156,8 @@ public sealed class StatePrimitiveTests
             Block: 0,
             Powers: ImmutableList<PowerInstance>.Empty,
             Intent: null,
-            IsPlayer: true);
+            IsPlayer: true
+        );
 
         var damaged = c with { CurrentHp = 65 };
 
@@ -160,8 +172,20 @@ public sealed class StatePrimitiveTests
     [Fact]
     public void Creature_Add_Power_Returns_New_Instance()
     {
-        var c = new Creature(1u, "Player", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
-        var withPower = c with { Powers = c.Powers.Add(new PowerInstance("StrengthPower", 1, 1u, false)) };
+        var c = new Creature(
+            1u,
+            "Player",
+            70,
+            70,
+            0,
+            ImmutableList<PowerInstance>.Empty,
+            null,
+            true
+        );
+        var withPower = c with
+        {
+            Powers = c.Powers.Add(new PowerInstance("StrengthPower", 1, 1u, false)),
+        };
 
         Assert.Empty(c.Powers);
         Assert.Single(withPower.Powers);
@@ -171,22 +195,58 @@ public sealed class StatePrimitiveTests
     [Fact]
     public void Creature_IsAlive_True_When_Hp_Positive()
     {
-        var c = new Creature(1u, "Cultist", 38, 38, 0, ImmutableList<PowerInstance>.Empty, null, false);
+        var c = new Creature(
+            1u,
+            "Cultist",
+            38,
+            38,
+            0,
+            ImmutableList<PowerInstance>.Empty,
+            null,
+            false
+        );
         Assert.True(c.IsAlive);
     }
 
     [Fact]
     public void Creature_IsAlive_False_When_Hp_Zero_Or_Negative()
     {
-        var c = new Creature(1u, "Cultist", 0, 38, 0, ImmutableList<PowerInstance>.Empty, null, false);
+        var c = new Creature(
+            1u,
+            "Cultist",
+            0,
+            38,
+            0,
+            ImmutableList<PowerInstance>.Empty,
+            null,
+            false
+        );
         Assert.False(c.IsAlive);
     }
 
     [Fact]
     public void Creature_Records_Equal_When_Fields_Equal()
     {
-        var a = new Creature(1u, "Player", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
-        var b = new Creature(1u, "Player", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
+        var a = new Creature(
+            1u,
+            "Player",
+            70,
+            70,
+            0,
+            ImmutableList<PowerInstance>.Empty,
+            null,
+            true
+        );
+        var b = new Creature(
+            1u,
+            "Player",
+            70,
+            70,
+            0,
+            ImmutableList<PowerInstance>.Empty,
+            null,
+            true
+        );
         Assert.Equal(a, b);
     }
 }

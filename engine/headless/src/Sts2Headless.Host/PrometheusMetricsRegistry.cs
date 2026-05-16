@@ -45,6 +45,7 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     private readonly Dictionary<string, double> _floatCounters = new();
     private readonly Dictionary<string, double> _gauges = new();
     private readonly Dictionary<string, MetricDescriptor> _descriptors = new();
+
     // Labeled counter series, keyed by (familyName, labelName, labelValue).
     private readonly Dictionary<LabelKey, long> _labeledCounters = new();
     private readonly Dictionary<string, HistogramState> _histograms = new();
@@ -58,10 +59,22 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     public PrometheusMetricsRegistry()
     {
         Register(MetricNames.CombatsTotal, MetricKind.Counter, "Combats started by the host.");
-        Register(MetricNames.TurnsTotal, MetricKind.Counter, "Total turns played across all combats.");
+        Register(
+            MetricNames.TurnsTotal,
+            MetricKind.Counter,
+            "Total turns played across all combats."
+        );
         Register(MetricNames.ActionsTotal, MetricKind.Counter, "Total player actions applied.");
-        Register(MetricNames.GcPausesMsSum, MetricKind.Gauge, "Cumulative GC pause time in milliseconds.");
-        Register(MetricNames.ActionQueueDepthMax, MetricKind.Gauge, "High-water mark of action-queue depth.");
+        Register(
+            MetricNames.GcPausesMsSum,
+            MetricKind.Gauge,
+            "Cumulative GC pause time in milliseconds."
+        );
+        Register(
+            MetricNames.ActionQueueDepthMax,
+            MetricKind.Gauge,
+            "High-water mark of action-queue depth."
+        );
     }
 
     /// <summary>Register a metric family. Idempotent on the same (name, kind) pair.</summary>
@@ -75,7 +88,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
                 if (existing.Kind != kind)
                 {
                     throw new InvalidOperationException(
-                        $"PrometheusMetricsRegistry: metric '{name}' already registered as {existing.Kind}.");
+                        $"PrometheusMetricsRegistry: metric '{name}' already registered as {existing.Kind}."
+                    );
                 }
                 return;
             }
@@ -107,14 +121,19 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         ArgumentNullException.ThrowIfNull(upperBounds);
         if (upperBounds.Count == 0)
         {
-            throw new ArgumentException("Histogram buckets must be non-empty.", nameof(upperBounds));
+            throw new ArgumentException(
+                "Histogram buckets must be non-empty.",
+                nameof(upperBounds)
+            );
         }
         for (int i = 1; i < upperBounds.Count; i++)
         {
             if (!(upperBounds[i] > upperBounds[i - 1]))
             {
                 throw new ArgumentException(
-                    "Histogram buckets must be strictly ascending.", nameof(upperBounds));
+                    "Histogram buckets must be strictly ascending.",
+                    nameof(upperBounds)
+                );
             }
         }
         lock (_lock)
@@ -124,7 +143,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
                 if (existing.Kind != MetricKind.Histogram)
                 {
                     throw new InvalidOperationException(
-                        $"PrometheusMetricsRegistry: metric '{name}' already registered as {existing.Kind}.");
+                        $"PrometheusMetricsRegistry: metric '{name}' already registered as {existing.Kind}."
+                    );
                 }
                 return;
             }
@@ -136,7 +156,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     public void IncrementCounter(string name, long delta)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        if (delta == 0L) return;
+        if (delta == 0L)
+            return;
         lock (_lock)
         {
             EnsureDescriptor(name, MetricKind.Counter);
@@ -151,11 +172,14 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     public void IncrementCounterFloat(string name, double delta)
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
-        if (delta == 0d) return;
+        if (delta == 0d)
+            return;
         lock (_lock)
         {
             EnsureDescriptor(name, MetricKind.FloatCounter);
-            _floatCounters[name] = _floatCounters.TryGetValue(name, out double c) ? c + delta : delta;
+            _floatCounters[name] = _floatCounters.TryGetValue(name, out double c)
+                ? c + delta
+                : delta;
         }
     }
 
@@ -164,17 +188,25 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     /// Currently supports a single label key per call (sufficient for the
     /// D5-spec GC metrics, which all use <c>gen ∈ {0,1,2}</c>).
     /// </summary>
-    public void IncrementLabeledCounter(string name, string labelName, string labelValue, long delta)
+    public void IncrementLabeledCounter(
+        string name,
+        string labelName,
+        string labelValue,
+        long delta
+    )
     {
         ArgumentException.ThrowIfNullOrEmpty(name);
         ArgumentException.ThrowIfNullOrEmpty(labelName);
         ArgumentException.ThrowIfNullOrEmpty(labelValue);
-        if (delta == 0L) return;
+        if (delta == 0L)
+            return;
         lock (_lock)
         {
             EnsureDescriptor(name, MetricKind.Counter);
             var key = new LabelKey(name, labelName, labelValue);
-            _labeledCounters[key] = _labeledCounters.TryGetValue(key, out long c) ? c + delta : delta;
+            _labeledCounters[key] = _labeledCounters.TryGetValue(key, out long c)
+                ? c + delta
+                : delta;
         }
     }
 
@@ -187,7 +219,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
             if (!_histograms.TryGetValue(name, out HistogramState? state))
             {
                 throw new InvalidOperationException(
-                    $"PrometheusMetricsRegistry: histogram '{name}' is not registered.");
+                    $"PrometheusMetricsRegistry: histogram '{name}' is not registered."
+                );
             }
             state.Observe(value);
         }
@@ -211,7 +244,8 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
             EnsureDescriptor(name, MetricKind.Gauge);
             if (_gauges.TryGetValue(name, out double current))
             {
-                if (value > current) _gauges[name] = value;
+                if (value > current)
+                    _gauges[name] = value;
             }
             else
             {
@@ -226,7 +260,12 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         lock (_lock)
         {
             // Render in name-sorted order so the output is stable across calls.
-            foreach (KeyValuePair<string, MetricDescriptor> kv in _descriptors.OrderBy(k => k.Key, StringComparer.Ordinal))
+            foreach (
+                KeyValuePair<string, MetricDescriptor> kv in _descriptors.OrderBy(
+                    k => k.Key,
+                    StringComparer.Ordinal
+                )
+            )
             {
                 MetricDescriptor d = kv.Value;
                 sb.Append("# HELP ").Append(d.Name).Append(' ').AppendLine(d.Help);
@@ -256,14 +295,20 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         long v = _counters.GetValueOrDefault(name, 0L);
         sb.Append(name).Append(' ').AppendLine(v.ToString(CultureInfo.InvariantCulture));
         // Labeled series, sorted by (label-name, label-value) for stable output.
-        foreach (KeyValuePair<LabelKey, long> kv in _labeledCounters
-                     .Where(kv => kv.Key.Family == name)
-                     .OrderBy(kv => kv.Key.LabelName, StringComparer.Ordinal)
-                     .ThenBy(kv => kv.Key.LabelValue, StringComparer.Ordinal))
+        foreach (
+            KeyValuePair<LabelKey, long> kv in _labeledCounters
+                .Where(kv => kv.Key.Family == name)
+                .OrderBy(kv => kv.Key.LabelName, StringComparer.Ordinal)
+                .ThenBy(kv => kv.Key.LabelValue, StringComparer.Ordinal)
+        )
         {
-            sb.Append(name).Append('{')
-              .Append(kv.Key.LabelName).Append("=\"").Append(kv.Key.LabelValue).Append("\"} ")
-              .AppendLine(kv.Value.ToString(CultureInfo.InvariantCulture));
+            sb.Append(name)
+                .Append('{')
+                .Append(kv.Key.LabelName)
+                .Append("=\"")
+                .Append(kv.Key.LabelValue)
+                .Append("\"} ")
+                .AppendLine(kv.Value.ToString(CultureInfo.InvariantCulture));
         }
     }
 
@@ -290,17 +335,22 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         for (int i = 0; i < state.UpperBounds.Length; i++)
         {
             cumulative += state.BucketCounts[i];
-            sb.Append(name).Append("_bucket{le=\"")
-              .Append(FormatBucketBound(state.UpperBounds[i]))
-              .Append("\"} ").AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
+            sb.Append(name)
+                .Append("_bucket{le=\"")
+                .Append(FormatBucketBound(state.UpperBounds[i]))
+                .Append("\"} ")
+                .AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
         }
         cumulative += state.BucketCounts[^1]; // +Inf bucket count (last slot reserved for overflow)
-        sb.Append(name).Append("_bucket{le=\"+Inf\"} ")
-          .AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
-        sb.Append(name).Append("_sum ")
-          .AppendLine(state.Sum.ToString("R", CultureInfo.InvariantCulture));
-        sb.Append(name).Append("_count ")
-          .AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
+        sb.Append(name)
+            .Append("_bucket{le=\"+Inf\"} ")
+            .AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
+        sb.Append(name)
+            .Append("_sum ")
+            .AppendLine(state.Sum.ToString("R", CultureInfo.InvariantCulture));
+        sb.Append(name)
+            .Append("_count ")
+            .AppendLine(cumulative.ToString(CultureInfo.InvariantCulture));
     }
 
     private static string FormatBucketBound(double bound)
@@ -313,34 +363,45 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
         return bound.ToString("R", CultureInfo.InvariantCulture);
     }
 
-    private static string TypeText(MetricKind kind) => kind switch
-    {
-        MetricKind.Counter => "counter",
-        MetricKind.FloatCounter => "counter",
-        MetricKind.Gauge => "gauge",
-        MetricKind.Histogram => "histogram",
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
-    };
+    private static string TypeText(MetricKind kind) =>
+        kind switch
+        {
+            MetricKind.Counter => "counter",
+            MetricKind.FloatCounter => "counter",
+            MetricKind.Gauge => "gauge",
+            MetricKind.Histogram => "histogram",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null),
+        };
 
     private void EnsureDescriptor(string name, MetricKind kind)
     {
         if (!_descriptors.TryGetValue(name, out var existing))
         {
             _descriptors[name] = new MetricDescriptor(name, kind, name);
-            if (kind == MetricKind.Counter) _counters.TryAdd(name, 0L);
-            else if (kind == MetricKind.FloatCounter) _floatCounters.TryAdd(name, 0d);
-            else if (kind == MetricKind.Gauge) _gauges.TryAdd(name, 0d);
+            if (kind == MetricKind.Counter)
+                _counters.TryAdd(name, 0L);
+            else if (kind == MetricKind.FloatCounter)
+                _floatCounters.TryAdd(name, 0d);
+            else if (kind == MetricKind.Gauge)
+                _gauges.TryAdd(name, 0d);
             return;
         }
         if (existing.Kind != kind)
         {
             throw new InvalidOperationException(
-                $"PrometheusMetricsRegistry: metric '{name}' is {existing.Kind}, cannot use as {kind}.");
+                $"PrometheusMetricsRegistry: metric '{name}' is {existing.Kind}, cannot use as {kind}."
+            );
         }
     }
 
     /// <summary>Counter / float-counter / gauge / histogram discriminator. Float-counter renders as Prometheus type <c>counter</c>.</summary>
-    public enum MetricKind { Counter, FloatCounter, Gauge, Histogram }
+    public enum MetricKind
+    {
+        Counter,
+        FloatCounter,
+        Gauge,
+        Histogram,
+    }
 
     private sealed record MetricDescriptor(string Name, MetricKind Kind, string Help);
 
@@ -351,6 +412,7 @@ public sealed class PrometheusMetricsRegistry : IMetricsRegistry
     private sealed class HistogramState
     {
         public double[] UpperBounds { get; }
+
         // BucketCounts.Length == UpperBounds.Length + 1; the trailing slot is +Inf-overflow.
         public long[] BucketCounts { get; }
         public double Sum { get; private set; }

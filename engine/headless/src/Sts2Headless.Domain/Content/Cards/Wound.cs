@@ -10,7 +10,8 @@ public sealed class Wound : CardModel
 {
     public const string CanonicalId = "Wound";
 
-    public Wound() : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
+    public Wound()
+        : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

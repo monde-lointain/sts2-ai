@@ -14,7 +14,8 @@ public sealed class Expertise : CardModel
     public const int UpgradeDelta = 1;
     public int Cards => BaseCards;
 
-    public Expertise() : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public Expertise()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -20,14 +20,24 @@ public sealed class Vajra : RelicModel
     /// <summary>Strength granted at combat start — upstream <c>PowerVar&lt;StrengthPower&gt;(1m)</c>.</summary>
     public const int StrengthAtStart = 1;
 
-    public Vajra() : base(CanonicalId, "Vajra", RelicRarity.Common) { }
+    public Vajra()
+        : base(CanonicalId, "Vajra", RelicRarity.Common) { }
 
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.BeforeCombatStart, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new ApplyPowerAction(
-                PowerIds.Strength, StrengthAtStart, Target: null /* self */));
-        });
+        Subscribe(
+            hooks,
+            HookType.BeforeCombatStart,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(
+                    new ApplyPowerAction(
+                        PowerIds.Strength,
+                        StrengthAtStart,
+                        Target: null /* self */
+                    )
+                );
+            }
+        );
     }
 }

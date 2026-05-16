@@ -14,7 +14,8 @@ public sealed class Predator : CardModel
     public const int UpgradeDelta = 5;
     public int Damage => BaseDamage;
 
-    public Predator() : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Predator()
+        : base(CanonicalId, 2, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

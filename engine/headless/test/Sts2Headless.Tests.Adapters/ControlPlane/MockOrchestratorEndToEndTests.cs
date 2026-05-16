@@ -62,18 +62,28 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
 
     public MockOrchestratorEndToEndTests()
     {
-        _socketPath = Path.Combine(
-            Path.GetTempPath(),
-            $"sts2-headless-t7-{Guid.NewGuid():N}.sock");
+        _socketPath = Path.Combine(Path.GetTempPath(), $"sts2-headless-t7-{Guid.NewGuid():N}.sock");
     }
 
     public void Dispose()
     {
-        try { _server?.Stop(); } catch { /* swallowed */ }
+        try
+        {
+            _server?.Stop();
+        }
+        catch
+        { /* swallowed */
+        }
         _server?.Dispose();
         if (File.Exists(_socketPath))
         {
-            try { File.Delete(_socketPath); } catch { /* swallowed */ }
+            try
+            {
+                File.Delete(_socketPath);
+            }
+            catch
+            { /* swallowed */
+            }
         }
     }
 
@@ -104,22 +114,28 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
         Assert.Equal("PlayerActing", step1.GetProperty("phase").GetString());
 
         // 4. apply_action(end_turn) — engine moves to EnemyTurnStart.
-        JsonElement apply1 = client.CallExpectResult("apply_action",
-            new { action = new { type = "end_turn" } });
+        JsonElement apply1 = client.CallExpectResult(
+            "apply_action",
+            new { action = new { type = "end_turn" } }
+        );
         Assert.True(apply1.GetProperty("ok").GetBoolean());
 
         // 5. step_until_decision — engine drives through enemy turn and
         //    starts player turn 2, returning at PlayerActing.
         JsonElement step2 = client.CallExpectResult("step_until_decision");
         string phaseAfterStep2 = step2.GetProperty("phase").GetString()!;
-        Assert.True(phaseAfterStep2 is "PlayerActing" or "CombatEnd",
-            $"Expected PlayerActing or CombatEnd, got {phaseAfterStep2}.");
+        Assert.True(
+            phaseAfterStep2 is "PlayerActing" or "CombatEnd",
+            $"Expected PlayerActing or CombatEnd, got {phaseAfterStep2}."
+        );
 
         // 6. apply_action(end_turn) — only if still in PlayerActing.
         if (phaseAfterStep2 == "PlayerActing")
         {
-            JsonElement apply2 = client.CallExpectResult("apply_action",
-                new { action = new { type = "end_turn" } });
+            JsonElement apply2 = client.CallExpectResult(
+                "apply_action",
+                new { action = new { type = "end_turn" } }
+            );
             Assert.True(apply2.GetProperty("ok").GetBoolean());
         }
 
@@ -143,7 +159,8 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
         {
             Assert.Fail(
                 $"First-run: pin the golden hash by replacing GoldenFinalHash with:\n"
-                + $"    \"{finalHash}\"");
+                    + $"    \"{finalHash}\""
+            );
         }
         Assert.Equal(GoldenFinalHash, finalHash);
     }
@@ -155,9 +172,13 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
         // produce the same final hash. Proves M4 deterministic round-trip
         // at the Q11 / Q12 contract level.
         string socketPathA = Path.Combine(
-            Path.GetTempPath(), $"sts2-headless-t7-a-{Guid.NewGuid():N}.sock");
+            Path.GetTempPath(),
+            $"sts2-headless-t7-a-{Guid.NewGuid():N}.sock"
+        );
         string socketPathB = Path.Combine(
-            Path.GetTempPath(), $"sts2-headless-t7-b-{Guid.NewGuid():N}.sock");
+            Path.GetTempPath(),
+            $"sts2-headless-t7-b-{Guid.NewGuid():N}.sock"
+        );
 
         ControlPlaneSession sessionA = SessionFactory.BootSmokeSession(seed: 42u);
         ControlPlaneSession sessionB = SessionFactory.BootSmokeSession(seed: 42u);
@@ -177,8 +198,22 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
         {
             serverA.Stop();
             serverB.Stop();
-            if (File.Exists(socketPathA)) try { File.Delete(socketPathA); } catch { /* swallowed */ }
-            if (File.Exists(socketPathB)) try { File.Delete(socketPathB); } catch { /* swallowed */ }
+            if (File.Exists(socketPathA))
+                try
+                {
+                    File.Delete(socketPathA);
+                }
+                catch
+                { /* swallowed */
+                }
+            if (File.Exists(socketPathB))
+                try
+                {
+                    File.Delete(socketPathB);
+                }
+                catch
+                { /* swallowed */
+                }
         }
 
         static string RunSequence(string path)

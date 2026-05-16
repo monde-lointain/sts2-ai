@@ -16,7 +16,12 @@ public class IActionTests
     {
         public List<string> Log { get; } = new();
         public string Label { get; }
-        public RecordingAction(string label) { Label = label; }
+
+        public RecordingAction(string label)
+        {
+            Label = label;
+        }
+
         public void Execute(ExecutionContext ctx) => Log.Add(Label);
     }
 
@@ -54,7 +59,12 @@ public class IActionTests
     private sealed class CapturingAction : IAction
     {
         private readonly System.Action<ExecutionContext> _fn;
-        public CapturingAction(System.Action<ExecutionContext> fn) { _fn = fn; }
+
+        public CapturingAction(System.Action<ExecutionContext> fn)
+        {
+            _fn = fn;
+        }
+
         public void Execute(ExecutionContext ctx) => _fn(ctx);
     }
 }

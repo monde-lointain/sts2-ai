@@ -65,7 +65,11 @@ public class Phase1RelicTests
     [InlineData(typeof(Kunai), "Kunai", RelicRarity.Uncommon)]
     [InlineData(typeof(Shuriken), "Shuriken", RelicRarity.Uncommon)]
     [InlineData(typeof(ToyOrnithopter), "ToyOrnithopter", RelicRarity.Uncommon)]
-    public void Relic_canonical_metadata(System.Type t, string expectedId, RelicRarity expectedRarity)
+    public void Relic_canonical_metadata(
+        System.Type t,
+        string expectedId,
+        RelicRarity expectedRarity
+    )
     {
         RelicModel r = (RelicModel)System.Activator.CreateInstance(t)!;
         Assert.Equal(expectedId, r.Id);

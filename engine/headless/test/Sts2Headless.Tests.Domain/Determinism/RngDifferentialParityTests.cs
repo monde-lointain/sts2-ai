@@ -43,11 +43,21 @@ public class RngDifferentialParityTests
 
     private static readonly string[] Names =
     {
-        "Rewards", "Shops", "Transformations",
-        "UpFront", "Shuffle", "UnknownMapPoint",
-        "CombatCardGeneration", "CombatPotionGeneration", "CombatCardSelection",
-        "CombatEnergyCosts", "CombatTargets", "MonsterAi", "Niche",
-        "CombatOrbs", "TreasureRoomRelics",
+        "Rewards",
+        "Shops",
+        "Transformations",
+        "UpFront",
+        "Shuffle",
+        "UnknownMapPoint",
+        "CombatCardGeneration",
+        "CombatPotionGeneration",
+        "CombatCardSelection",
+        "CombatEnergyCosts",
+        "CombatTargets",
+        "MonsterAi",
+        "Niche",
+        "CombatOrbs",
+        "TreasureRoomRelics",
     };
 
     private static string CorpusDir()
@@ -84,17 +94,23 @@ public class RngDifferentialParityTests
             int firstDiff = -1;
             for (int i = 0; i < expected.Length; i++)
             {
-                if (expected[i] != produced[i]) { firstDiff = i; break; }
+                if (expected[i] != produced[i])
+                {
+                    firstDiff = i;
+                    break;
+                }
             }
             Assert.Fail(
-                $"seed={seed} first byte divergence at offset {firstDiff}: " +
-                $"expected=0x{expected[firstDiff]:X2} produced=0x{produced[firstDiff]:X2}");
+                $"seed={seed} first byte divergence at offset {firstDiff}: "
+                    + $"expected=0x{expected[firstDiff]:X2} produced=0x{produced[firstDiff]:X2}"
+            );
         }
     }
 
     public static IEnumerable<object[]> AllSeeds()
     {
-        for (uint s = 0; s < SeedCount; s++) yield return new object[] { s };
+        for (uint s = 0; s < SeedCount; s++)
+            yield return new object[] { s };
     }
 
     private static byte[] GenerateProducedBytesForSeed(uint seed)
@@ -105,62 +121,74 @@ public class RngDifferentialParityTests
         // NextBool
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write((byte)(rng.NextBool() ? 1 : 0));
+            for (int i = 0; i < N; i++)
+                w.Write((byte)(rng.NextBool() ? 1 : 0));
         }
         // NextInt(maxExclusive)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextInt(1000));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextInt(1000));
         }
         // NextInt(min,max)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextInt(-50, 50));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextInt(-50, 50));
         }
         // NextUnsignedInt(maxExclusive)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextUnsignedInt(1000u));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextUnsignedInt(1000u));
         }
         // NextUnsignedInt(min,max)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextUnsignedInt(10u, 1_000_000u));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextUnsignedInt(10u, 1_000_000u));
         }
         // NextFloat(max)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextFloat(10f));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextFloat(10f));
         }
         // NextFloat(min,max)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextFloat(-3.5f, 7.25f));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextFloat(-3.5f, 7.25f));
         }
         // NextDouble()
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextDouble());
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextDouble());
         }
         // NextDouble(min,max)
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < N; i++) w.Write(rng.NextDouble(-1.0, 1.0));
+            for (int i = 0; i < N; i++)
+                w.Write(rng.NextDouble(-1.0, 1.0));
         }
         // NextGaussianFloat
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianFloat(0.5f, 0.2f, 0f, 1f));
+            for (int i = 0; i < GaussN; i++)
+                w.Write(rng.NextGaussianFloat(0.5f, 0.2f, 0f, 1f));
         }
         // NextGaussianDouble
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianDouble(0.5, 0.2, 0.0, 1.0));
+            for (int i = 0; i < GaussN; i++)
+                w.Write(rng.NextGaussianDouble(0.5, 0.2, 0.0, 1.0));
         }
         // NextGaussianInt
         {
             var rng = new Rng(seed);
-            for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianInt(50, 10, 0, 100));
+            for (int i = 0; i < GaussN; i++)
+                w.Write(rng.NextGaussianInt(50, 10, 0, 100));
         }
         // NextItem on fixed array
         {
@@ -178,9 +206,11 @@ public class RngDifferentialParityTests
             for (int p = 0; p < ShufflePermutations; p++)
             {
                 var list = new List<int>(ShuffleSize);
-                for (int i = 0; i < ShuffleSize; i++) list.Add(i);
+                for (int i = 0; i < ShuffleSize; i++)
+                    list.Add(i);
                 rng.Shuffle(list);
-                foreach (int v in list) w.Write(v);
+                foreach (int v in list)
+                    w.Write(v);
             }
         }
         // FastForwardCounter
@@ -195,7 +225,8 @@ public class RngDifferentialParityTests
         {
             var rng = new Rng(seed, name);
             w.Write(rng.Seed);
-            for (int i = 0; i < NameSeedSamples; i++) w.Write(rng.NextInt(1000));
+            for (int i = 0; i < NameSeedSamples; i++)
+                w.Write(rng.NextInt(1000));
         }
 
         w.Flush();

@@ -16,12 +16,14 @@ namespace Sts2Headless.Domain.Content.Cards;
 public sealed class KnifeTrap : CardModel
 {
     public const string CanonicalId = "KnifeTrap";
+
     /// <summary>Approximation of a Shiv's contribution to KnifeTrap's burst —
     /// 1 damage per Shiv (upstream Shiv = 4 dmg, but Q1's gate just needs the
     /// counter to be live; metadata-only when no Shivs exist).</summary>
     public const int DamagePerShiv = 4;
 
-    public KnifeTrap() : base(CanonicalId, 2, CardType.Skill, CardRarity.Rare, TargetType.AnyEnemy) { }
+    public KnifeTrap()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Rare, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

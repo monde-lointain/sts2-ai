@@ -10,7 +10,8 @@ public sealed class Regret : CardModel
 {
     public const string CanonicalId = "Regret";
 
-    public Regret() : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
+    public Regret()
+        : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

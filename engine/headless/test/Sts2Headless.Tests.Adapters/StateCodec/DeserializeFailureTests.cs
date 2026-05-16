@@ -17,7 +17,8 @@ public class DeserializeFailureTests
     private static ManifestStamp BuildStamp()
     {
         byte[] contentHash = new byte[32];
-        for (int i = 0; i < 32; i++) contentHash[i] = (byte)i;
+        for (int i = 0; i < 32; i++)
+            contentHash[i] = (byte)i;
         return new ManifestStamp("abc123def", "build-XYZ-001", contentHash);
     }
 
@@ -25,7 +26,16 @@ public class DeserializeFailureTests
         new CombatState(
             TurnCounter: 0,
             Phase: CombatPhase.CombatStart,
-            Player: new Creature(0, "Silent", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, IsPlayer: true),
+            Player: new Creature(
+                0,
+                "Silent",
+                70,
+                70,
+                0,
+                ImmutableList<PowerInstance>.Empty,
+                null,
+                IsPlayer: true
+            ),
             Enemies: ImmutableList<Creature>.Empty,
             Energy: 3,
             BaseEnergyPerTurn: 3,
@@ -35,20 +45,27 @@ public class DeserializeFailureTests
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: 0,
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
 
     private static byte[] SerializeMinimal()
     {
         return global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            BuildMinimalState(), new RunRngSet("s"), new PlayerRngSet(1u), new TokenMap(), BuildStamp());
+            BuildMinimalState(),
+            new RunRngSet("s"),
+            new PlayerRngSet(1u),
+            new TokenMap(),
+            BuildStamp()
+        );
     }
 
     [Fact]
     public void Deserialize_throws_on_blob_too_short()
     {
         byte[] tiny = new byte[10];
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(tiny));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(tiny)
+        );
         Assert.Contains("too short", ex.Message);
     }
 
@@ -58,8 +75,9 @@ public class DeserializeFailureTests
         byte[] blob = SerializeMinimal();
         blob[0] ^= 0xFF; // corrupt magic
         // First trailer hash will fail; check message captures hash mismatch.
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob)
+        );
         Assert.Contains("hash mismatch", ex.Message);
     }
 
@@ -82,7 +100,8 @@ public class DeserializeFailureTests
         ByteWriter stampBody = new();
         stampBody.WriteU8(0);
         stampBody.WriteU16(0);
-        for (int i = 0; i < 32; i++) stampBody.WriteU8(0);
+        for (int i = 0; i < 32; i++)
+            stampBody.WriteU8(0);
         byte[] sb = stampBody.ToArray();
         w.WriteU16((ushort)sb.Length);
         w.WriteRawBytes(sb);
@@ -96,15 +115,14 @@ public class DeserializeFailureTests
         full.WriteU32(StateCodecConstants.TrailerMagic);
         full.WriteRawBytes(sha);
 
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray()));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray())
+        );
         // Error message must mention BOTH the rejected schema (1) and the
         // current schema (so an operator reading a log line knows where
         // the gap is).
         Assert.Contains("unsupported schema version 1", ex.Message);
-        Assert.Contains(
-            $"this codec supports {StateCodecConstants.SchemaVersion}",
-            ex.Message);
+        Assert.Contains($"this codec supports {StateCodecConstants.SchemaVersion}", ex.Message);
         Assert.Equal(3, StateCodecConstants.SchemaVersion);
     }
 
@@ -120,7 +138,8 @@ public class DeserializeFailureTests
         ByteWriter stampBody = new();
         stampBody.WriteU8(0);
         stampBody.WriteU16(0);
-        for (int i = 0; i < 32; i++) stampBody.WriteU8(0);
+        for (int i = 0; i < 32; i++)
+            stampBody.WriteU8(0);
         byte[] sb = stampBody.ToArray();
         w.WriteU16((ushort)sb.Length);
         w.WriteRawBytes(sb);
@@ -137,8 +156,9 @@ public class DeserializeFailureTests
         full.WriteU32(StateCodecConstants.TrailerMagic);
         full.WriteRawBytes(sha);
 
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray()));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray())
+        );
         Assert.Contains("unsupported schema version", ex.Message);
     }
 
@@ -149,8 +169,9 @@ public class DeserializeFailureTests
         // Flip a byte in the middle of the body (not in trailer).
         int mid = blob.Length / 2;
         blob[mid] ^= 0x01;
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob)
+        );
         Assert.Contains("hash mismatch", ex.Message);
     }
 
@@ -160,8 +181,9 @@ public class DeserializeFailureTests
         byte[] blob = SerializeMinimal();
         // Trailer is the last 36 bytes; tamper the last byte (inside the SHA).
         blob[blob.Length - 1] ^= 0x01;
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob)
+        );
         Assert.Contains("hash mismatch", ex.Message);
     }
 
@@ -171,8 +193,9 @@ public class DeserializeFailureTests
         byte[] blob = SerializeMinimal();
         int trailerStart = blob.Length - StateCodecConstants.TrailerSizeBytes;
         blob[trailerStart] ^= 0xFF; // corrupt trailer magic
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob)
+        );
         Assert.Contains("magic mismatch", ex.Message);
     }
 
@@ -186,7 +209,8 @@ public class DeserializeFailureTests
         ByteWriter stampBody = new();
         stampBody.WriteU8(0);
         stampBody.WriteU16(0);
-        for (int i = 0; i < 32; i++) stampBody.WriteU8(0);
+        for (int i = 0; i < 32; i++)
+            stampBody.WriteU8(0);
         byte[] sb = stampBody.ToArray();
         w.WriteU16((ushort)sb.Length);
         w.WriteRawBytes(sb);
@@ -204,8 +228,9 @@ public class DeserializeFailureTests
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         Assert.Empty(decoded.Sections);
 
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded)
+        );
         Assert.Contains("missing the CombatState section", ex.Message);
     }
 
@@ -219,7 +244,8 @@ public class DeserializeFailureTests
         ByteWriter stampBody = new();
         stampBody.WriteU8(0);
         stampBody.WriteU16(0);
-        for (int i = 0; i < 32; i++) stampBody.WriteU8(0);
+        for (int i = 0; i < 32; i++)
+            stampBody.WriteU8(0);
         byte[] sb = stampBody.ToArray();
         w.WriteU16((ushort)sb.Length);
         w.WriteRawBytes(sb);
@@ -235,8 +261,9 @@ public class DeserializeFailureTests
         full.WriteU32(StateCodecConstants.TrailerMagic);
         full.WriteRawBytes(sha);
 
-        var ex = Assert.Throws<StateCodecException>(
-            () => global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray()));
+        var ex = Assert.Throws<StateCodecException>(() =>
+            global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(full.ToArray())
+        );
         Assert.Contains("garbage", ex.Message);
     }
 
@@ -245,7 +272,12 @@ public class DeserializeFailureTests
     {
         ManifestStamp stamp = BuildStamp();
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            BuildMinimalState(), new RunRngSet("seed"), new PlayerRngSet(1u), new TokenMap(), stamp);
+            BuildMinimalState(),
+            new RunRngSet("seed"),
+            new PlayerRngSet(1u),
+            new TokenMap(),
+            stamp
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         Assert.Equal(stamp.GitSha, decoded.Stamp.GitSha);
         Assert.Equal(stamp.BuildId, decoded.Stamp.BuildId);
@@ -258,9 +290,16 @@ public class DeserializeFailureTests
     {
         CombatState state = BuildMinimalState();
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            state, new RunRngSet("seed"), new PlayerRngSet(1u), new TokenMap(), BuildStamp());
+            state,
+            new RunRngSet("seed"),
+            new PlayerRngSet(1u),
+            new TokenMap(),
+            BuildStamp()
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
-        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
         Assert.True(state.Equals(recovered));
     }
 }

@@ -55,7 +55,8 @@ public class ContentTable<TId, TModel>
         if (_byId.ContainsKey(id))
         {
             throw new InvalidOperationException(
-                $"Duplicate content registration: id '{id}' is already registered.");
+                $"Duplicate content registration: id '{id}' is already registered."
+            );
         }
 
         _byId.Add(id, model);

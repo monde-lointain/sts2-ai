@@ -34,4 +34,5 @@ public sealed record PowerInstance(
     string ModelId,
     int Stacks,
     uint SourceCreatureId,
-    bool JustApplied);
+    bool JustApplied
+);

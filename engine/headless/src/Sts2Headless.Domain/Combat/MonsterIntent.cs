@@ -65,7 +65,8 @@ public sealed record MonsterIntent(
     int DamagePerHit,
     int HitCount,
     ImmutableList<MonsterIntentPower> AppliesPowers,
-    string MoveId = "")
+    string MoveId = ""
+)
 {
     /// <summary>"No intent resolved yet" sentinel — Kind=Unknown, no damage, no powers.</summary>
     public static MonsterIntent None { get; } =
@@ -77,15 +78,22 @@ public sealed record MonsterIntent(
     /// </summary>
     public bool Equals(MonsterIntent? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (Kind != other.Kind) return false;
-        if (DamagePerHit != other.DamagePerHit || HitCount != other.HitCount) return false;
-        if (!string.Equals(MoveId, other.MoveId, System.StringComparison.Ordinal)) return false;
-        if (AppliesPowers.Count != other.AppliesPowers.Count) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (Kind != other.Kind)
+            return false;
+        if (DamagePerHit != other.DamagePerHit || HitCount != other.HitCount)
+            return false;
+        if (!string.Equals(MoveId, other.MoveId, System.StringComparison.Ordinal))
+            return false;
+        if (AppliesPowers.Count != other.AppliesPowers.Count)
+            return false;
         for (int i = 0; i < AppliesPowers.Count; i++)
         {
-            if (!AppliesPowers[i].Equals(other.AppliesPowers[i])) return false;
+            if (!AppliesPowers[i].Equals(other.AppliesPowers[i]))
+                return false;
         }
         return true;
     }
@@ -98,7 +106,8 @@ public sealed record MonsterIntent(
         h.Add(DamagePerHit);
         h.Add(HitCount);
         h.Add(MoveId);
-        for (int i = 0; i < AppliesPowers.Count; i++) h.Add(AppliesPowers[i]);
+        for (int i = 0; i < AppliesPowers.Count; i++)
+            h.Add(AppliesPowers[i]);
         return h.ToHashCode();
     }
 
@@ -117,19 +126,54 @@ public sealed record MonsterIntent(
     /// tracking (Stream-B-T3). See the constructor's <c>MoveId</c> remarks
     /// for rationale.
     /// </summary>
-    public static MonsterIntent FromContentIntent(Intent source, string moveId) => source.Kind switch
-    {
-        // Honor the catalog-layer Intent.HitCount; default to 1 for legacy single-hit
-        // intents that pre-date the Stream-B-T3 HitCount addition.
-        IntentKind.Attack => new(MonsterIntentKind.Attack, source.Value,
-            source.HitCount > 0 ? source.HitCount : 1,
-            ImmutableList<MonsterIntentPower>.Empty, moveId),
-        IntentKind.Buff => new(MonsterIntentKind.Buff, 0, 0, ImmutableList<MonsterIntentPower>.Empty, moveId),
-        IntentKind.Debuff => new(MonsterIntentKind.Debuff, 0, 0, ImmutableList<MonsterIntentPower>.Empty, moveId),
-        IntentKind.Defend => new(MonsterIntentKind.Defend, 0, 0, ImmutableList<MonsterIntentPower>.Empty, moveId),
-        IntentKind.Sleep => new(MonsterIntentKind.Sleep, 0, 0, ImmutableList<MonsterIntentPower>.Empty, moveId),
-        // Status (card pollution) — coarse "Buff-shaped" for now; engine ignores it.
-        IntentKind.Status => new(MonsterIntentKind.Buff, 0, 0, ImmutableList<MonsterIntentPower>.Empty, moveId),
-        _ => None,
-    };
+    public static MonsterIntent FromContentIntent(Intent source, string moveId) =>
+        source.Kind switch
+        {
+            // Honor the catalog-layer Intent.HitCount; default to 1 for legacy single-hit
+            // intents that pre-date the Stream-B-T3 HitCount addition.
+            IntentKind.Attack => new(
+                MonsterIntentKind.Attack,
+                source.Value,
+                source.HitCount > 0 ? source.HitCount : 1,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            IntentKind.Buff => new(
+                MonsterIntentKind.Buff,
+                0,
+                0,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            IntentKind.Debuff => new(
+                MonsterIntentKind.Debuff,
+                0,
+                0,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            IntentKind.Defend => new(
+                MonsterIntentKind.Defend,
+                0,
+                0,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            IntentKind.Sleep => new(
+                MonsterIntentKind.Sleep,
+                0,
+                0,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            // Status (card pollution) — coarse "Buff-shaped" for now; engine ignores it.
+            IntentKind.Status => new(
+                MonsterIntentKind.Buff,
+                0,
+                0,
+                ImmutableList<MonsterIntentPower>.Empty,
+                moveId
+            ),
+            _ => None,
+        };
 }

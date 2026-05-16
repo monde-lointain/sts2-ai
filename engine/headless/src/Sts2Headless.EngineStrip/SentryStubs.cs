@@ -57,13 +57,27 @@ public static class SentrySdk
 {
     public static SentryId CaptureMessage(string message, SentryLevel level = SentryLevel.Info)
     {
-        StubRegistry.Record(StubCategory.Sentry, nameof(SentrySdk), nameof(CaptureMessage), $"level={level}");
+        StubRegistry.Record(
+            StubCategory.Sentry,
+            nameof(SentrySdk),
+            nameof(CaptureMessage),
+            $"level={level}"
+        );
         return SentryId.Empty;
     }
 
-    public static SentryId CaptureMessage(string message, Action<Scope> configureScope, SentryLevel level = SentryLevel.Info)
+    public static SentryId CaptureMessage(
+        string message,
+        Action<Scope> configureScope,
+        SentryLevel level = SentryLevel.Info
+    )
     {
-        StubRegistry.Record(StubCategory.Sentry, nameof(SentrySdk), nameof(CaptureMessage), $"level={level},scoped");
+        StubRegistry.Record(
+            StubCategory.Sentry,
+            nameof(SentrySdk),
+            nameof(CaptureMessage),
+            $"level={level},scoped"
+        );
         // Invoke the scope-config delegate so it doesn't go cold — its side effects on the
         // scope are recorded by the Scope stub. This mirrors real Sentry's behavior of
         // invoking the configurator before send.
@@ -79,7 +93,12 @@ public static class SentrySdk
 
     public static SentryId CaptureException(Exception exception, Action<Scope> configureScope)
     {
-        StubRegistry.Record(StubCategory.Sentry, nameof(SentrySdk), nameof(CaptureException), "scoped");
+        StubRegistry.Record(
+            StubCategory.Sentry,
+            nameof(SentrySdk),
+            nameof(CaptureException),
+            "scoped"
+        );
         configureScope?.Invoke(new Scope());
         return SentryId.Empty;
     }
@@ -89,8 +108,12 @@ public static class SentrySdk
 public readonly struct SentryId : IEquatable<SentryId>
 {
     public static SentryId Empty => default;
+
     public bool Equals(SentryId other) => true;
+
     public override bool Equals(object? obj) => obj is SentryId;
+
     public override int GetHashCode() => 0;
+
     public override string ToString() => "00000000-0000-0000-0000-000000000000";
 }

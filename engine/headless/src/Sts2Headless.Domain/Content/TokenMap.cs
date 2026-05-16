@@ -62,7 +62,8 @@ public class TokenMap
         if ((uint)id >= (uint)_tokenById.Count)
         {
             throw new KeyNotFoundException(
-                $"No token registered for id {id} (token map has {_tokenById.Count} entries).");
+                $"No token registered for id {id} (token map has {_tokenById.Count} entries)."
+            );
         }
         return _tokenById[id];
     }

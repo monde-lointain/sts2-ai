@@ -14,7 +14,8 @@ public sealed class Flechettes : CardModel
     public const int UpgradeDelta = 2;
     public int Damage => BaseDamage;
 
-    public Flechettes() : base(CanonicalId, 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Flechettes()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

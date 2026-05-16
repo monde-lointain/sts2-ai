@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <!--
     One shot corpus generator for the M5 Determinism Kernel HARD GATE.
 
@@ -45,8 +44,9 @@
       machines that have the upstream tree checked out at the canonical
       location; in CI we either pre-generate the corpus or skip regeneration.
     -->
-    <Compile Include="$([System.Environment]::GetEnvironmentVariable('HOME'))/development/projects/godot/sts2/src/Core/Random/Rng.cs"
-             Link="Upstream/Rng.cs" />
+    <Compile
+      Include="$([System.Environment]::GetEnvironmentVariable('HOME'))/development/projects/godot/sts2/src/Core/Random/Rng.cs"
+      Link="Upstream/Rng.cs"
+    />
   </ItemGroup>
-
 </Project>

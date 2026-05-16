@@ -70,23 +70,44 @@ internal static class Program
     private static readonly string[] Names =
     {
         // PlayerRngType names (in upstream enum-declaration order)
-        "Rewards", "Shops", "Transformations",
+        "Rewards",
+        "Shops",
+        "Transformations",
         // RunRngType names (in upstream enum-declaration order)
-        "UpFront", "Shuffle", "UnknownMapPoint",
-        "CombatCardGeneration", "CombatPotionGeneration", "CombatCardSelection",
-        "CombatEnergyCosts", "CombatTargets", "MonsterAi", "Niche",
-        "CombatOrbs", "TreasureRoomRelics",
+        "UpFront",
+        "Shuffle",
+        "UnknownMapPoint",
+        "CombatCardGeneration",
+        "CombatPotionGeneration",
+        "CombatCardSelection",
+        "CombatEnergyCosts",
+        "CombatTargets",
+        "MonsterAi",
+        "Niche",
+        "CombatOrbs",
+        "TreasureRoomRelics",
     };
 
     private static int Main(string[] args)
     {
-        string outDir = args.Length > 0
-            ? args[0]
-            : Path.GetFullPath(Path.Combine(
-                AppContext.BaseDirectory,
-                "..", "..", "..", "..", "..",
-                "test", "Sts2Headless.Tests.Domain",
-                "Fixtures", "Determinism", "rng-corpus"));
+        string outDir =
+            args.Length > 0
+                ? args[0]
+                : Path.GetFullPath(
+                    Path.Combine(
+                        AppContext.BaseDirectory,
+                        "..",
+                        "..",
+                        "..",
+                        "..",
+                        "..",
+                        "test",
+                        "Sts2Headless.Tests.Domain",
+                        "Fixtures",
+                        "Determinism",
+                        "rng-corpus"
+                    )
+                );
 
         Directory.CreateDirectory(outDir);
 
@@ -99,62 +120,74 @@ internal static class Program
             // NextBool — fresh Rng per primitive so seed/counter starts clean.
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write((byte)(rng.NextBool() ? 1 : 0));
+                for (int i = 0; i < N; i++)
+                    w.Write((byte)(rng.NextBool() ? 1 : 0));
             }
             // NextInt(maxExclusive)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextInt(1000));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextInt(1000));
             }
             // NextInt(min,max)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextInt(-50, 50));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextInt(-50, 50));
             }
             // NextUnsignedInt(maxExclusive)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextUnsignedInt(1000u));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextUnsignedInt(1000u));
             }
             // NextUnsignedInt(min,max)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextUnsignedInt(10u, 1_000_000u));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextUnsignedInt(10u, 1_000_000u));
             }
             // NextFloat(max)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextFloat(10f));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextFloat(10f));
             }
             // NextFloat(min,max)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextFloat(-3.5f, 7.25f));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextFloat(-3.5f, 7.25f));
             }
             // NextDouble()
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextDouble());
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextDouble());
             }
             // NextDouble(min,max)
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < N; i++) w.Write(rng.NextDouble(-1.0, 1.0));
+                for (int i = 0; i < N; i++)
+                    w.Write(rng.NextDouble(-1.0, 1.0));
             }
             // NextGaussianFloat
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianFloat(0.5f, 0.2f, 0f, 1f));
+                for (int i = 0; i < GaussN; i++)
+                    w.Write(rng.NextGaussianFloat(0.5f, 0.2f, 0f, 1f));
             }
             // NextGaussianDouble
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianDouble(0.5, 0.2, 0.0, 1.0));
+                for (int i = 0; i < GaussN; i++)
+                    w.Write(rng.NextGaussianDouble(0.5, 0.2, 0.0, 1.0));
             }
             // NextGaussianInt
             {
                 var rng = new Rng(seed);
-                for (int i = 0; i < GaussN; i++) w.Write(rng.NextGaussianInt(50, 10, 0, 100));
+                for (int i = 0; i < GaussN; i++)
+                    w.Write(rng.NextGaussianInt(50, 10, 0, 100));
             }
             // NextItem on fixed array
             {
@@ -174,16 +207,18 @@ internal static class Program
                 for (int p = 0; p < ShufflePermutations; p++)
                 {
                     var list = new List<int>(ShuffleSize);
-                    for (int i = 0; i < ShuffleSize; i++) list.Add(i);
+                    for (int i = 0; i < ShuffleSize; i++)
+                        list.Add(i);
                     rng.Shuffle(list);
-                    foreach (int v in list) w.Write(v);
+                    foreach (int v in list)
+                        w.Write(v);
                 }
             }
             // FastForwardCounter
             {
                 var rng = new Rng(seed);
                 rng.FastForwardCounter(FastForwardSteps);
-                w.Write(rng.Counter);          // expect FastForwardSteps
+                w.Write(rng.Counter); // expect FastForwardSteps
                 w.Write(rng.NextInt(1_000_000)); // first call after ffwd
             }
             // Name-seeded ctor
@@ -191,7 +226,8 @@ internal static class Program
             {
                 var rng = new Rng(seed, name);
                 w.Write(rng.Seed);
-                for (int i = 0; i < NameSeedSamples; i++) w.Write(rng.NextInt(1000));
+                for (int i = 0; i < NameSeedSamples; i++)
+                    w.Write(rng.NextInt(1000));
             }
         }
 
@@ -210,7 +246,8 @@ internal static class Program
             mw.WriteLine($"FastForwardSteps: {FastForwardSteps}");
             mw.WriteLine($"NameSeedSamples: {NameSeedSamples}");
             mw.WriteLine("Names (in emit order):");
-            foreach (string n in Names) mw.WriteLine($"  - {n}");
+            foreach (string n in Names)
+                mw.WriteLine($"  - {n}");
             mw.WriteLine();
             mw.WriteLine("Section order per seed file:");
             mw.WriteLine("  NextBool x N (1 byte each)");
@@ -228,7 +265,9 @@ internal static class Program
             mw.WriteLine("  NextItem on int[0..9] x NextItemN (4 LE each)");
             mw.WriteLine("  Shuffle(int[0..9]) x ShufflePermutations (ShuffleSize * 4 LE each)");
             mw.WriteLine("  FastForwardCounter(100): Counter (4 LE) + NextInt(1_000_000) (4 LE)");
-            mw.WriteLine("  Name-seeded ctor for each Name: Seed (4 LE) + NextInt(1000) x NameSeedSamples (4 LE)");
+            mw.WriteLine(
+                "  Name-seeded ctor for each Name: Seed (4 LE) + NextInt(1000) x NameSeedSamples (4 LE)"
+            );
         }
 
         Console.WriteLine($"Wrote {SeedCount} seed files and manifest to: {outDir}");

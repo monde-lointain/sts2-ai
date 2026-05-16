@@ -10,4 +10,5 @@ public sealed record PlayerSpec(
     int InitialHp = CombatEngine.BaseMaxHpSilent,
     int MaxHp = CombatEngine.BaseMaxHpSilent,
     int BaseEnergyPerTurn = CombatEngine.BaseEnergyPerTurnSilent,
-    int BaseHandDrawCount = CombatEngine.BaseHandDrawCount);
+    int BaseHandDrawCount = CombatEngine.BaseHandDrawCount
+);

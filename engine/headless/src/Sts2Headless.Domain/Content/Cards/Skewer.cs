@@ -18,13 +18,16 @@ namespace Sts2Headless.Domain.Content.Cards;
 public sealed class Skewer : CardModel
 {
     public const string CanonicalId = "Skewer";
+
     /// <summary>Upstream <c>DamageVar(8m)</c>.</summary>
     public const int BaseDamage = 8;
+
     /// <summary>Upstream upgrade delta.</summary>
     public const int UpgradeDelta = 3;
     public int Damage => BaseDamage;
 
-    public Skewer() : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Skewer()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     /// <inheritdoc />
     public override bool IsXCost => true;

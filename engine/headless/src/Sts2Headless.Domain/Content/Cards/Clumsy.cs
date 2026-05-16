@@ -10,7 +10,8 @@ public sealed class Clumsy : CardModel
 {
     public const string CanonicalId = "Clumsy";
 
-    public Clumsy() : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
+    public Clumsy()
+        : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

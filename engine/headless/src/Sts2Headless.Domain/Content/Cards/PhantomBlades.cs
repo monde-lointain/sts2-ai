@@ -15,7 +15,8 @@ public sealed class PhantomBlades : CardModel
     public const int UpgradeDelta = 3;
     public int Amount => BaseAmount;
 
-    public PhantomBlades() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public PhantomBlades()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

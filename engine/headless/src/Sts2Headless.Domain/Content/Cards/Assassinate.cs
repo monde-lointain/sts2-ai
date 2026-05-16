@@ -19,7 +19,8 @@ public sealed class Assassinate : CardModel
     public int Damage => BaseDamage;
     public int Vulnerable => BaseVuln;
 
-    public Assassinate() : base(CanonicalId, 0, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
+    public Assassinate()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

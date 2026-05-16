@@ -15,7 +15,8 @@ public sealed class BulletTime : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseEnergyCost;
 
-    public BulletTime() : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public BulletTime()
+        : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

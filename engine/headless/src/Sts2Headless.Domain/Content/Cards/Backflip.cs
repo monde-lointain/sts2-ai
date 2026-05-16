@@ -19,8 +19,7 @@ public sealed class Backflip : CardModel
     public int Cards => BaseCards;
 
     public Backflip()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.Self)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

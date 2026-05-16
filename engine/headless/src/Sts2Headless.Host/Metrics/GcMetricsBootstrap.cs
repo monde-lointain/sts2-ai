@@ -19,18 +19,22 @@ public static class GcMetricsBootstrap
         registry.Register(
             GcMetricNames.GcGenCollectionsTotal,
             PrometheusMetricsRegistry.MetricKind.Counter,
-            "GC collections per generation (cumulative). Computed from GC.CollectionCount deltas.");
+            "GC collections per generation (cumulative). Computed from GC.CollectionCount deltas."
+        );
         registry.Register(
             GcMetricNames.GcAllocatedBytesTotal,
             PrometheusMetricsRegistry.MetricKind.Counter,
-            "Bytes allocated on managed heap (cumulative, from GC.GetTotalAllocatedBytes(precise=false)).");
+            "Bytes allocated on managed heap (cumulative, from GC.GetTotalAllocatedBytes(precise=false))."
+        );
         registry.RegisterHistogram(
             GcMetricNames.GcPauseMicroseconds,
             GcMetricNames.GcPauseBuckets,
-            "Per-collection GC pause wall-clock (from GC.GetTotalPauseDuration() deltas).");
+            "Per-collection GC pause wall-clock (from GC.GetTotalPauseDuration() deltas)."
+        );
         registry.Register(
             GcMetricNames.GcTimeSeconds,
             PrometheusMetricsRegistry.MetricKind.FloatCounter,
-            "Cumulative GC pause time in seconds (project-lead R7 metric).");
+            "Cumulative GC pause time in seconds (project-lead R7 metric)."
+        );
     }
 }

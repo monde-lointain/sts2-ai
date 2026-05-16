@@ -22,8 +22,8 @@ namespace Sts2Headless.Tests.Domain.Content.Relics;
 /// </summary>
 public sealed class Phase1RelicBehaviorTests
 {
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     private static IReadOnlyList<IAction> FireAndCollect(RelicModel relic, HookType hookType)
     {
@@ -42,7 +42,10 @@ public sealed class Phase1RelicBehaviorTests
     [Fact]
     public void BronzeScales_OnBeforeCombatStart_enqueues_3_thorns_to_self()
     {
-        IReadOnlyList<IAction> actions = FireAndCollect(new BronzeScales(), HookType.BeforeCombatStart);
+        IReadOnlyList<IAction> actions = FireAndCollect(
+            new BronzeScales(),
+            HookType.BeforeCombatStart
+        );
         Assert.Single(actions);
         ApplyPowerAction p = Assert.IsType<ApplyPowerAction>(actions[0]);
         Assert.Equal(PowerIds.Thorns, p.PowerId);
@@ -55,7 +58,10 @@ public sealed class Phase1RelicBehaviorTests
     [Fact]
     public void BagOfMarbles_OnBeforeCombatStart_fans_1_vulnerable_to_all_enemies()
     {
-        IReadOnlyList<IAction> actions = FireAndCollect(new BagOfMarbles(), HookType.BeforeCombatStart);
+        IReadOnlyList<IAction> actions = FireAndCollect(
+            new BagOfMarbles(),
+            HookType.BeforeCombatStart
+        );
         Assert.Single(actions);
         ApplyPowerToAllEnemiesAction p = Assert.IsType<ApplyPowerToAllEnemiesAction>(actions[0]);
         Assert.Equal(PowerIds.Vulnerable, p.PowerId);
@@ -89,7 +95,8 @@ public sealed class Phase1RelicBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { BagOfMarbles.CanonicalId }, Deck: deck),
             new RunRngSet("seed-42"),
-            new LogicalClock());
+            new LogicalClock()
+        );
 
         Assert.Equal(2, ctx.State.Enemies.Count);
         foreach (Creature e in ctx.State.Enemies)
@@ -97,9 +104,16 @@ public sealed class Phase1RelicBehaviorTests
             bool hasVuln = false;
             foreach (PowerInstance p in e.Powers)
             {
-                if (p.ModelId == PowerIds.Vulnerable && p.Stacks == 1) { hasVuln = true; break; }
+                if (p.ModelId == PowerIds.Vulnerable && p.Stacks == 1)
+                {
+                    hasVuln = true;
+                    break;
+                }
             }
-            Assert.True(hasVuln, $"Enemy {e.Id} ({e.Name}) must have 1 Vulnerable after BagOfMarbles fan-out.");
+            Assert.True(
+                hasVuln,
+                $"Enemy {e.Id} ({e.Name}) must have 1 Vulnerable after BagOfMarbles fan-out."
+            );
         }
     }
 
@@ -123,15 +137,22 @@ public sealed class Phase1RelicBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { BronzeScales.CanonicalId }, Deck: deck),
             new RunRngSet("seed-42"),
-            new LogicalClock());
+            new LogicalClock()
+        );
 
         bool hasThorns = false;
         foreach (PowerInstance p in ctx.State.Player.Powers)
         {
             if (p.ModelId == PowerIds.Thorns && p.Stacks == BronzeScales.ThornsAmount)
-            { hasThorns = true; break; }
+            {
+                hasThorns = true;
+                break;
+            }
         }
-        Assert.True(hasThorns, $"Player must have {BronzeScales.ThornsAmount} Thorns after BronzeScales hook.");
+        Assert.True(
+            hasThorns,
+            $"Player must have {BronzeScales.ThornsAmount} Thorns after BronzeScales hook."
+        );
     }
 
     // ===== B.1-gamma-T4: ports of deferred SubscribeHooks =====
@@ -157,14 +178,16 @@ public sealed class Phase1RelicBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { relicId }, Deck: deck),
             new RunRngSet(deckSeed),
-            new LogicalClock());
+            new LogicalClock()
+        );
     }
 
     private static int PowerStacks(Creature c, string powerId)
     {
         foreach (PowerInstance p in c.Powers)
         {
-            if (p.ModelId == powerId) return p.Stacks;
+            if (p.ModelId == powerId)
+                return p.Stacks;
         }
         return 0;
     }
@@ -180,16 +203,17 @@ public sealed class Phase1RelicBehaviorTests
     public void OddlySmoothStone_stamps_Dexterity_on_combat_start()
     {
         CombatContext ctx = StartBasicCombatWith(OddlySmoothStone.CanonicalId);
-        Assert.Equal(OddlySmoothStone.DexterityAmount,
-            PowerStacks(ctx.State.Player, PowerIds.Dexterity));
+        Assert.Equal(
+            OddlySmoothStone.DexterityAmount,
+            PowerStacks(ctx.State.Player, PowerIds.Dexterity)
+        );
     }
 
     [Fact]
     public void DataDisk_stamps_Focus_on_combat_start()
     {
         CombatContext ctx = StartBasicCombatWith(DataDisk.CanonicalId);
-        Assert.Equal(DataDisk.FocusAmount,
-            PowerStacks(ctx.State.Player, PowerIds.Focus));
+        Assert.Equal(DataDisk.FocusAmount, PowerStacks(ctx.State.Player, PowerIds.Focus));
     }
 
     [Fact]
@@ -217,9 +241,11 @@ public sealed class Phase1RelicBehaviorTests
                 RelicIds: new[] { Pantograph.CanonicalId },
                 Deck: deck,
                 InitialHp: 30,
-                MaxHp: 70),
+                MaxHp: 70
+            ),
             new RunRngSet("seed-pant"),
-            new LogicalClock());
+            new LogicalClock()
+        );
         // 30 + 25 heal = 55 (capped at 70).
         Assert.Equal(55, ctx.State.Player.CurrentHp);
     }
@@ -245,7 +271,8 @@ public sealed class Phase1RelicBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { MercuryHourglass.CanonicalId }, Deck: deck),
             new RunRngSet("seed-mh"),
-            new LogicalClock());
+            new LogicalClock()
+        );
         // Both Chompers should have taken 3 damage.
         foreach (Creature e in ctx.State.Enemies)
         {
@@ -290,9 +317,12 @@ public sealed class Phase1RelicBehaviorTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { Orichalcum.CanonicalId }, Deck: deck),
             new RunRngSet("seed-ori-block"),
-            new LogicalClock());
+            new LogicalClock()
+        );
         // Play a Defend to gain some block (5 base).
-        uint defendId = ctx.State.HandPile.Cards.First(c => c.ModelId == DefendSilent.CanonicalId).InstanceId;
+        uint defendId = ctx
+            .State.HandPile.Cards.First(c => c.ModelId == DefendSilent.CanonicalId)
+            .InstanceId;
         CombatEngine.PlayerPlayCard(ctx, defendId, null);
         int blockBeforeEnd = ctx.State.Player.Block;
         Assert.True(blockBeforeEnd > 0, "Player should have block after a Defend.");

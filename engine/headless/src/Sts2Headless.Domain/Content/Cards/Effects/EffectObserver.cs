@@ -50,7 +50,8 @@ public static class EffectObserver
         if (_log is not null)
         {
             throw new InvalidOperationException(
-                "EffectObserver is already attached on this thread; nested attach is not supported.");
+                "EffectObserver is already attached on this thread; nested attach is not supported."
+            );
         }
         log = new List<IAction>();
         _log = log;

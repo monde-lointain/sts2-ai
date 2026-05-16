@@ -17,7 +17,8 @@ public sealed class BouncingFlask : CardModel
     public const int UpgradeDelta = 1;
     public int Repeat => BaseRepeat;
 
-    public BouncingFlask() : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.RandomEnemy) { }
+    public BouncingFlask()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.RandomEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

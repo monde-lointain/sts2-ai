@@ -103,7 +103,8 @@ public sealed record CardPile(ImmutableList<CardInstance> Cards)
         if (index < 0)
         {
             throw new InvalidOperationException(
-                $"CardPile.Remove: no card with InstanceId={instanceId}.");
+                $"CardPile.Remove: no card with InstanceId={instanceId}."
+            );
         }
         return new(Cards.RemoveAt(index));
     }
@@ -136,7 +137,8 @@ public sealed record CardPile(ImmutableList<CardInstance> Cards)
     public CardPile Shuffle(IRngSource rng)
     {
         System.ArgumentNullException.ThrowIfNull(rng);
-        if (Cards.IsEmpty) return this;
+        if (Cards.IsEmpty)
+            return this;
         List<CardInstance> scratch = new(Cards);
         rng.Shuffle(scratch);
         return new(ImmutableList.CreateRange(scratch));
@@ -150,12 +152,16 @@ public sealed record CardPile(ImmutableList<CardInstance> Cards)
     /// </summary>
     public bool Equals(CardPile? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (Cards.Count != other.Cards.Count) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (Cards.Count != other.Cards.Count)
+            return false;
         for (int i = 0; i < Cards.Count; i++)
         {
-            if (!Cards[i].Equals(other.Cards[i])) return false;
+            if (!Cards[i].Equals(other.Cards[i]))
+                return false;
         }
         return true;
     }

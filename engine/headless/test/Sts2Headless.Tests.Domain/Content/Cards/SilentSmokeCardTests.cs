@@ -47,8 +47,8 @@ public class SilentSmokeCardTests
         }
     }
 
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     // ===== StrikeSilent (upstream: src/Core/Models/Cards/StrikeSilent.cs) =====
 

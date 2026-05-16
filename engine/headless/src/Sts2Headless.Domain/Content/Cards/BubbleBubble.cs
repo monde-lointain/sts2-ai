@@ -15,7 +15,8 @@ public sealed class BubbleBubble : CardModel
     public const int UpgradeDelta = 3;
     public int Poison => BasePoison;
 
-    public BubbleBubble() : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public BubbleBubble()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -20,7 +20,10 @@ public sealed class LogicalClock : IClock
         if (initialTicks < 0L)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(initialTicks), initialTicks, "initial tick count must be non-negative.");
+                nameof(initialTicks),
+                initialTicks,
+                "initial tick count must be non-negative."
+            );
         }
         _ticks = initialTicks;
     }
@@ -37,7 +40,10 @@ public sealed class LogicalClock : IClock
         if (delta < 0)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(delta), delta, "clock cannot be advanced by a negative delta.");
+                nameof(delta),
+                delta,
+                "clock cannot be advanced by a negative delta."
+            );
         }
         _ticks += delta;
     }

@@ -21,8 +21,7 @@ public sealed class DodgeAndRoll : CardModel
     public int Block => BaseBlock;
 
     public DodgeAndRoll()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.Self)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

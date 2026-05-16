@@ -32,6 +32,7 @@ public sealed class CombatContext : ICombatContext
 
     /// <inheritdoc />
     public IRngSource Rng { get; }
+
     /// <inheritdoc />
     public RunRngSet RunRng { get; }
     public IClock Clock { get; }
@@ -66,7 +67,8 @@ public sealed class CombatContext : ICombatContext
         RelicCatalog relics,
         PowerCatalog powers,
         MonsterCatalog monsters,
-        EncounterCatalog encounters)
+        EncounterCatalog encounters
+    )
     {
         ArgumentNullException.ThrowIfNull(initialState);
         ArgumentNullException.ThrowIfNull(runRng);
@@ -102,12 +104,17 @@ public sealed class CombatContext : ICombatContext
     // relic subscriptions per phase.
     internal Sts2Headless.Domain.Actions.HookRegistry? HookRegistryHandle { get; private set; }
     internal Sts2Headless.Domain.Actions.ActionQueue? ActionQueueHandle { get; private set; }
-    internal Sts2Headless.Domain.Actions.ExecutionContext? ExecutionContextHandle { get; private set; }
+    internal Sts2Headless.Domain.Actions.ExecutionContext? ExecutionContextHandle
+    {
+        get;
+        private set;
+    }
 
     internal void AttachHookPlumbing(
         Sts2Headless.Domain.Actions.HookRegistry hooks,
         Sts2Headless.Domain.Actions.ActionQueue queue,
-        Sts2Headless.Domain.Actions.ExecutionContext execCtx)
+        Sts2Headless.Domain.Actions.ExecutionContext execCtx
+    )
     {
         HookRegistryHandle = hooks;
         ActionQueueHandle = queue;
@@ -116,7 +123,8 @@ public sealed class CombatContext : ICombatContext
 
     public void DealDamage(uint targetId, int amount, uint sourceId)
     {
-        if (amount <= 0) return;
+        if (amount <= 0)
+            return;
         Creature target = ResolveTarget(targetId);
 
         // Block absorbs first; overflow hits HP.
@@ -131,7 +139,8 @@ public sealed class CombatContext : ICombatContext
 
     public void GainBlock(uint targetId, int amount)
     {
-        if (amount <= 0) return;
+        if (amount <= 0)
+            return;
         Creature target = ResolveTarget(targetId);
         var updated = target with { Block = target.Block + amount };
         _state = WriteCreature(updated);
@@ -161,9 +170,8 @@ public sealed class CombatContext : ICombatContext
         if (existingIndex >= 0)
         {
             PowerInstance existing = target.Powers[existingIndex];
-            int newStacks = model.StackType == PowerStackType.Counter
-                ? existing.Stacks + stacks
-                : stacks;
+            int newStacks =
+                model.StackType == PowerStackType.Counter ? existing.Stacks + stacks : stacks;
             var replaced = existing with
             {
                 Stacks = newStacks,
@@ -178,7 +186,8 @@ public sealed class CombatContext : ICombatContext
                 ModelId: powerId,
                 Stacks: stacks,
                 SourceCreatureId: sourceId,
-                JustApplied: true);
+                JustApplied: true
+            );
             newPowers = target.Powers.Add(fresh);
         }
         var updated = target with { Powers = newPowers };
@@ -187,7 +196,8 @@ public sealed class CombatContext : ICombatContext
 
     public void Heal(uint targetId, int amount)
     {
-        if (amount <= 0) return;
+        if (amount <= 0)
+            return;
         Creature target = ResolveTarget(targetId);
         int newHp = Math.Min(target.MaxHp, target.CurrentHp + amount);
         var updated = target with { CurrentHp = newHp };
@@ -196,7 +206,8 @@ public sealed class CombatContext : ICombatContext
 
     public void DrawCards(int count)
     {
-        if (count <= 0) return;
+        if (count <= 0)
+            return;
         CombatState s = _state;
         int drawnThisCall = 0;
 
@@ -215,11 +226,7 @@ public sealed class CombatContext : ICombatContext
             }
 
             var (remaining, drawn) = s.DrawPile.DrawTop();
-            s = s with
-            {
-                DrawPile = remaining,
-                HandPile = s.HandPile.Add(drawn),
-            };
+            s = s with { DrawPile = remaining, HandPile = s.HandPile.Add(drawn) };
             drawnThisCall++;
         }
         // Stream-B-T4: maintain the cumulative cards-drawn-this-combat counter
@@ -233,7 +240,8 @@ public sealed class CombatContext : ICombatContext
 
     public void DiscardHand()
     {
-        if (_state.HandPile.IsEmpty) return;
+        if (_state.HandPile.IsEmpty)
+            return;
         // Move every hand card to the discard in order.
         CombatState s = _state;
         var hand = s.HandPile;
@@ -242,16 +250,13 @@ public sealed class CombatContext : ICombatContext
         {
             discard = discard.Add(hand.Cards[i]);
         }
-        _state = s with
-        {
-            HandPile = CardPile.Empty,
-            DiscardPile = discard,
-        };
+        _state = s with { HandPile = CardPile.Empty, DiscardPile = discard };
     }
 
     public void ModifyHandDrawSize(int delta)
     {
-        if (delta == 0) return;
+        if (delta == 0)
+            return;
         _state = _state with { HandDrawSize = Math.Max(0, _state.HandDrawSize + delta) };
     }
 
@@ -271,13 +276,15 @@ public sealed class CombatContext : ICombatContext
     /// </summary>
     private Creature ResolveTarget(uint targetId)
     {
-        if (_state.Player.Id == targetId) return _state.Player;
+        if (_state.Player.Id == targetId)
+            return _state.Player;
         Creature? enemy = _state.FindEnemy(targetId);
         if (enemy is null)
         {
             throw new InvalidOperationException(
-                $"CombatContext: no creature with id={targetId} (player={_state.Player.Id}, " +
-                $"enemies={string.Join(",", _state.Enemies.Select(e => e.Id))}).");
+                $"CombatContext: no creature with id={targetId} (player={_state.Player.Id}, "
+                    + $"enemies={string.Join(",", _state.Enemies.Select(e => e.Id))})."
+            );
         }
         return enemy;
     }
@@ -288,8 +295,6 @@ public sealed class CombatContext : ICombatContext
     /// </summary>
     private CombatState WriteCreature(Creature updated)
     {
-        return updated.IsPlayer
-            ? _state.WithPlayer(updated)
-            : _state.WithEnemy(updated);
+        return updated.IsPlayer ? _state.WithPlayer(updated) : _state.WithEnemy(updated);
     }
 }

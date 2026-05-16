@@ -47,7 +47,9 @@ public class ReplayActionCodecTests
     [Fact]
     public void Decode_rejects_short_PlayCard_payload()
     {
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.PlayCard, new byte[3]));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.PlayCard, new byte[3])
+        );
     }
 
     [Fact]
@@ -55,7 +57,9 @@ public class ReplayActionCodecTests
     {
         byte[] tooLongNoTarget = new byte[9];
         tooLongNoTarget[4] = 0;
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.PlayCard, tooLongNoTarget));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.PlayCard, tooLongNoTarget)
+        );
     }
 
     [Fact]
@@ -63,7 +67,9 @@ public class ReplayActionCodecTests
     {
         byte[] hasTargetButShort = new byte[5];
         hasTargetButShort[4] = 1;
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.PlayCard, hasTargetButShort));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.PlayCard, hasTargetButShort)
+        );
     }
 
     [Fact]
@@ -71,24 +77,32 @@ public class ReplayActionCodecTests
     {
         byte[] badFlag = new byte[5];
         badFlag[4] = 0xFF;
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.PlayCard, badFlag));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.PlayCard, badFlag)
+        );
     }
 
     [Fact]
     public void Decode_rejects_EndTurn_with_payload()
     {
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.EndTurn, new byte[] { 0x00 }));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.EndTurn, new byte[] { 0x00 })
+        );
     }
 
     [Fact]
     public void Decode_rejects_EnemyMove_as_PlayerAction()
     {
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode(ReplayActionType.EnemyMove, ReadOnlySpan<byte>.Empty));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode(ReplayActionType.EnemyMove, ReadOnlySpan<byte>.Empty)
+        );
     }
 
     [Fact]
     public void Decode_rejects_unknown_action_type()
     {
-        Assert.Throws<ReplayException>(() => ReplayActionCodec.Decode((ReplayActionType)0xEE, ReadOnlySpan<byte>.Empty));
+        Assert.Throws<ReplayException>(() =>
+            ReplayActionCodec.Decode((ReplayActionType)0xEE, ReadOnlySpan<byte>.Empty)
+        );
     }
 }

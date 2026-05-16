@@ -43,15 +43,25 @@ public sealed class GracefulShutdownTests
     [Fact]
     public void MainLoop_observes_token_and_exits_with_Cancelled_outcome()
     {
-        var bundle = CompositionRoot.Build(CliArgs.Parse(new[]
-        {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
-        }));
+        var bundle = CompositionRoot.Build(
+            CliArgs.Parse(
+                new[]
+                {
+                    "--seed",
+                    "42",
+                    "--character",
+                    "silent",
+                    "--deck",
+                    "starter",
+                    "--relics",
+                    "ring_of_the_snake",
+                    "--encounter",
+                    "cultists_normal",
+                    "--ascension",
+                    "0",
+                }
+            )
+        );
         var script = Enumerable.Repeat("end_turn", 1000);
         var provider = new FileScriptedActionProvider(script, bundle.Cards);
         var logger = new CapturingLogger();
@@ -61,7 +71,14 @@ public sealed class GracefulShutdownTests
         // Pre-trigger so the loop's first cancellation check trips.
         gs.Trigger("test");
 
-        var result = MainLoop.Run(bundle.Context, bundle.Cards, provider, logger, metrics, gs.Token);
+        var result = MainLoop.Run(
+            bundle.Context,
+            bundle.Cards,
+            provider,
+            logger,
+            metrics,
+            gs.Token
+        );
         Assert.Equal(MainLoop.LoopOutcome.Cancelled, result.Outcome);
         Assert.Contains(logger.Entries, e => e.Event == "shutdown");
     }

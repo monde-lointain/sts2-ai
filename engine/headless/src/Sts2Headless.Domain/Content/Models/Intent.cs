@@ -17,6 +17,7 @@ public enum IntentKind
     Stun,
     Unknown,
     DeathBlow,
+
     /// <summary>
     /// Monster intends to add status cards to the player's discard pile (e.g.,
     /// Chomper's SCREECH adds 3 Dazed). Stream-B-T3 adds the intent kind so
@@ -50,8 +51,7 @@ public readonly record struct Intent(IntentKind Kind, int Value, int HitCount = 
     /// Convenience for multi-attack intents (n hits at <paramref name="damage"/> each).
     /// Upstream: <c>MultiAttackIntent(damage, repeats)</c>.
     /// </summary>
-    public static Intent MultiAttack(int damage, int hits) =>
-        new(IntentKind.Attack, damage, hits);
+    public static Intent MultiAttack(int damage, int hits) => new(IntentKind.Attack, damage, hits);
 
     /// <summary>Convenience for buff intents (no numeric payload).</summary>
     public static Intent Buff() => new(IntentKind.Buff, 0, 0);

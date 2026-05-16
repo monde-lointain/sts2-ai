@@ -15,7 +15,8 @@ public sealed class EscapePlan : CardModel
     public const int UpgradeDelta = 2;
     public int Block => BaseBlock;
 
-    public EscapePlan() : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public EscapePlan()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

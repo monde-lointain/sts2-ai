@@ -15,7 +15,8 @@ public sealed class Envenom : CardModel
     public const int UpgradeDelta = 1;
     public int Amount => BaseAmount;
 
-    public Envenom() : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public Envenom()
+        : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

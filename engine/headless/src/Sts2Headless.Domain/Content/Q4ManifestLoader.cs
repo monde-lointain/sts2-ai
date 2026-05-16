@@ -35,7 +35,11 @@ public static class Q4ManifestLoader
 
     private static readonly HashSet<string> KnownRootKeys = new(StringComparer.Ordinal)
     {
-        CardsKey, RelicsKey, PowersKey, MonstersKey, PotionsKey,
+        CardsKey,
+        RelicsKey,
+        PowersKey,
+        MonstersKey,
+        PotionsKey,
     };
 
     /// <summary>
@@ -63,7 +67,8 @@ public static class Q4ManifestLoader
             if (root.ValueKind != JsonValueKind.Object)
             {
                 throw new Q4ManifestFormatException(
-                    $"Q4 manifest root must be a JSON object, got {root.ValueKind}.");
+                    $"Q4 manifest root must be a JSON object, got {root.ValueKind}."
+                );
             }
 
             // Reject unknown keys at the root — catches typos that would otherwise let
@@ -74,8 +79,9 @@ public static class Q4ManifestLoader
                 if (!KnownRootKeys.Contains(prop.Name))
                 {
                     throw new Q4ManifestFormatException(
-                        $"Unknown key in Q4 manifest root: '{prop.Name}'. " +
-                        $"Allowed: cards, relics, powers, monsters, potions.");
+                        $"Unknown key in Q4 manifest root: '{prop.Name}'. "
+                            + $"Allowed: cards, relics, powers, monsters, potions."
+                    );
                 }
             }
 
@@ -84,7 +90,8 @@ public static class Q4ManifestLoader
                 ReadStringArray(root, RelicsKey),
                 ReadStringArray(root, PowersKey),
                 ReadStringArray(root, MonstersKey),
-                ReadStringArray(root, PotionsKey));
+                ReadStringArray(root, PotionsKey)
+            );
         }
     }
 
@@ -92,13 +99,13 @@ public static class Q4ManifestLoader
     {
         if (!root.TryGetProperty(key, out JsonElement element))
         {
-            throw new Q4ManifestFormatException(
-                $"Q4 manifest is missing required key '{key}'.");
+            throw new Q4ManifestFormatException($"Q4 manifest is missing required key '{key}'.");
         }
         if (element.ValueKind != JsonValueKind.Array)
         {
             throw new Q4ManifestFormatException(
-                $"Q4 manifest key '{key}' must be an array, got {element.ValueKind}.");
+                $"Q4 manifest key '{key}' must be an array, got {element.ValueKind}."
+            );
         }
         // Preserve declaration order — System.Text.Json's JsonElement array iteration is
         // documented index-ordered, which matches what the coverage gate expects.
@@ -109,7 +116,8 @@ public static class Q4ManifestLoader
             if (entry.ValueKind != JsonValueKind.String)
             {
                 throw new Q4ManifestFormatException(
-                    $"Q4 manifest key '{key}' entry [{index}] must be a string, got {entry.ValueKind}.");
+                    $"Q4 manifest key '{key}' entry [{index}] must be a string, got {entry.ValueKind}."
+                );
             }
             string? value = entry.GetString();
             if (value is null)
@@ -117,7 +125,8 @@ public static class Q4ManifestLoader
                 // System.Text.Json shouldn't return null for a JSON string, but defend
                 // against the path so callers see a typed error instead of an NRE.
                 throw new Q4ManifestFormatException(
-                    $"Q4 manifest key '{key}' entry [{index}] is null.");
+                    $"Q4 manifest key '{key}' entry [{index}] is null."
+                );
             }
             ids.Add(value);
             index++;
@@ -133,6 +142,9 @@ public static class Q4ManifestLoader
 /// </summary>
 public sealed class Q4ManifestFormatException : Exception
 {
-    public Q4ManifestFormatException(string message) : base(message) { }
-    public Q4ManifestFormatException(string message, Exception inner) : base(message, inner) { }
+    public Q4ManifestFormatException(string message)
+        : base(message) { }
+
+    public Q4ManifestFormatException(string message, Exception inner)
+        : base(message, inner) { }
 }

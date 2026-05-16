@@ -42,5 +42,10 @@ public readonly struct JsonRpcResult
 
     /// <summary>Error with the given code and message.</summary>
     public static JsonRpcResult Error(int code, string message) =>
-        new(isOk: false, resultValue: default, errorCode: code, errorMessage: message ?? string.Empty);
+        new(
+            isOk: false,
+            resultValue: default,
+            errorCode: code,
+            errorMessage: message ?? string.Empty
+        );
 }

@@ -17,13 +17,15 @@ public sealed class Murder : CardModel
 {
     public const string CanonicalId = "Murder";
     public const string MultiplierKey = "cards_drawn_this_combat";
+
     /// <summary>Per-card-drawn damage — upstream <c>CalculationBaseVar(1)</c>.</summary>
     public const int BaseDamagePerDraw = 1;
     public const int BaseCost = 3;
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public Murder() : base(CanonicalId, 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
+    public Murder()
+        : base(CanonicalId, 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

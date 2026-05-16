@@ -57,7 +57,10 @@ public class RenderingStubsTests
 
         Assert.NotNull(tween);
         Assert.Contains(capture.Hits, h => h.Type == nameof(Node) && h.Member == ".ctor");
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Node) && h.Member == nameof(Node.CreateTween));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Node) && h.Member == nameof(Node.CreateTween)
+        );
     }
 
     [Fact]
@@ -94,15 +97,34 @@ public class AnimationStubsTests
 
         var node = new Node();
         var tween = node.CreateTween();
-        var prop = tween.Parallel().TweenProperty(node, "scale", Vector2.One * 1f, 0.10000000149011612);
-        var result = prop.From(Vector2.Zero).SetEase(Tween.EaseType.Out).SetTrans(Tween.TransitionType.Cubic);
+        var prop = tween
+            .Parallel()
+            .TweenProperty(node, "scale", Vector2.One * 1f, 0.10000000149011612);
+        var result = prop.From(Vector2.Zero)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Cubic);
 
         Assert.NotNull(result);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Tween) && h.Member == nameof(Tween.Parallel));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Tween) && h.Member == nameof(Tween.TweenProperty));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.From));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.SetEase));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.SetTrans));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Tween) && h.Member == nameof(Tween.Parallel)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Tween) && h.Member == nameof(Tween.TweenProperty)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.From)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.SetEase)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(PropertyTweener) && h.Member == nameof(PropertyTweener.SetTrans)
+        );
         Assert.Contains(StubCategory.Animation, capture.Categories);
     }
 
@@ -125,7 +147,10 @@ public class AnimationStubsTests
         using var capture = StubRegistry.Capture();
         var ap = new AnimationPlayer();
         Assert.NotNull(ap);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(AnimationPlayer) && h.Member == ".ctor");
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(AnimationPlayer) && h.Member == ".ctor"
+        );
         Assert.Contains(StubCategory.Animation, capture.Categories);
     }
 }

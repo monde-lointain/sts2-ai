@@ -21,8 +21,14 @@ public class SentryStubsTests
         scope.SetTag("k", "v");
         scope.SetExtra("k2", 42);
 
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetTag));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetExtra));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetTag)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetExtra)
+        );
         Assert.Contains(StubCategory.Sentry, capture.Categories);
     }
 
@@ -31,12 +37,26 @@ public class SentryStubsTests
     {
         using var capture = StubRegistry.Capture();
         bool configured = false;
-        var id = SentrySdk.CaptureMessage("boom", s => { configured = true; s.SetTag("env", "test"); }, SentryLevel.Error);
+        var id = SentrySdk.CaptureMessage(
+            "boom",
+            s =>
+            {
+                configured = true;
+                s.SetTag("env", "test");
+            },
+            SentryLevel.Error
+        );
 
         Assert.Equal(SentryId.Empty, id);
         Assert.True(configured);
-        Assert.Contains(capture.Hits, h => h.Type == nameof(SentrySdk) && h.Member == nameof(SentrySdk.CaptureMessage));
-        Assert.Contains(capture.Hits, h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetTag));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(SentrySdk) && h.Member == nameof(SentrySdk.CaptureMessage)
+        );
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(Scope) && h.Member == nameof(Scope.SetTag)
+        );
     }
 
     [Fact]
@@ -61,7 +81,12 @@ public class SteamworksStubsTests
     {
         using var capture = StubRegistry.Capture();
         Assert.False(SteamworksMarker.IsInitialized());
-        Assert.Contains(capture.Hits, h => h.Type == nameof(SteamworksMarker) && h.Member == nameof(SteamworksMarker.IsInitialized));
+        Assert.Contains(
+            capture.Hits,
+            h =>
+                h.Type == nameof(SteamworksMarker)
+                && h.Member == nameof(SteamworksMarker.IsInitialized)
+        );
         Assert.Contains(StubCategory.Steamworks, capture.Categories);
     }
 }
@@ -76,7 +101,10 @@ public class VorticeStubsTests
     {
         using var capture = StubRegistry.Capture();
         Assert.False(VorticeMarker.IsAvailable());
-        Assert.Contains(capture.Hits, h => h.Type == nameof(VorticeMarker) && h.Member == nameof(VorticeMarker.IsAvailable));
+        Assert.Contains(
+            capture.Hits,
+            h => h.Type == nameof(VorticeMarker) && h.Member == nameof(VorticeMarker.IsAvailable)
+        );
         Assert.Contains(StubCategory.Vortice, capture.Categories);
     }
 }
@@ -99,8 +127,14 @@ public class HarmonyStubsTests
 
         Assert.NotNull(patched);
         Assert.Empty(patched);
-        Assert.Contains(capture.Hits, hh => hh.Type == nameof(Harmony) && hh.Member == nameof(Harmony.PatchAll));
-        Assert.Contains(capture.Hits, hh => hh.Type == nameof(Harmony) && hh.Member == nameof(Harmony.GetAllPatchedMethods));
+        Assert.Contains(
+            capture.Hits,
+            hh => hh.Type == nameof(Harmony) && hh.Member == nameof(Harmony.PatchAll)
+        );
+        Assert.Contains(
+            capture.Hits,
+            hh => hh.Type == nameof(Harmony) && hh.Member == nameof(Harmony.GetAllPatchedMethods)
+        );
         Assert.Contains(StubCategory.Harmony, capture.Categories);
     }
 }

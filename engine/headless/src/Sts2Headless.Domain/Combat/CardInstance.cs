@@ -40,4 +40,5 @@ public sealed record CardInstance(
     uint InstanceId,
     string ModelId,
     int UpgradeLevel,
-    int? CostOverride);
+    int? CostOverride
+);

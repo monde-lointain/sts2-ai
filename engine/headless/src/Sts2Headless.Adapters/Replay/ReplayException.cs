@@ -9,6 +9,9 @@ namespace Sts2Headless.Adapters.Replay;
 /// </summary>
 public sealed class ReplayException : Exception
 {
-    public ReplayException(string message) : base(message) { }
-    public ReplayException(string message, Exception inner) : base(message, inner) { }
+    public ReplayException(string message)
+        : base(message) { }
+
+    public ReplayException(string message, Exception inner)
+        : base(message, inner) { }
 }

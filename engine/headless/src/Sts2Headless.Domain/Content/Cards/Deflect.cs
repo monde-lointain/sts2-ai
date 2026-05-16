@@ -14,7 +14,8 @@ public sealed class Deflect : CardModel
     public const int UpgradeDelta = 3;
     public int Block => BaseBlock;
 
-    public Deflect() : base(CanonicalId, 0, CardType.Skill, CardRarity.Common, TargetType.Self) { }
+    public Deflect()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

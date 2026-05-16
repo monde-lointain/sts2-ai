@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!--
@@ -22,5 +21,4 @@
     -->
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
-
 </Project>

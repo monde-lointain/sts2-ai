@@ -44,7 +44,8 @@ public static class EncounterCatalog
         IReadOnlyList<string> MonsterIds,
         IReadOnlyList<string?> Slots,
         PlanKind Kind,
-        string? Reason);
+        string? Reason
+    );
 
     /// <summary>
     /// The Phase-1 encounter ids per Q1's <c>phase1-corpus.json</c>. Order
@@ -92,43 +93,50 @@ public static class EncounterCatalog
                 new[] { "CalcifiedCultist", "DampCultist" },
                 new string?[] { null, null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "ChompersNormal" => new EncounterPlan(
                 id,
                 new[] { "Chomper", "Chomper" },
                 new string?[] { null, null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "ExoskeletonsNormal" => new EncounterPlan(
                 id,
                 new[] { "Exoskeleton", "Exoskeleton", "Exoskeleton" },
                 new string?[] { null, null, null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "BowlbugsTrio" => new EncounterPlan(
                 id,
                 new[] { "BowlbugRock", "BowlbugNectar", "BowlbugSilk" },
                 new string?[] { null, null, null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "FuzzyWurmCrawlerSolo" => new EncounterPlan(
                 id,
                 new[] { "FuzzyWurmCrawler" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "FossilStalkerElite" => new EncounterPlan(
                 id,
                 new[] { "FossilStalker" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "FrogKnightElite" => new EncounterPlan(
                 id,
                 new[] { "FrogKnight" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             // Q1 and upstream both use "LagavulinMatriarch" as the monster class
             // (B.1-final-T1 renamed Q1's class from "Lagavulin" → "LagavulinMatriarch").
             "LagavulinElite" => new EncounterPlan(
@@ -136,25 +144,29 @@ public static class EncounterCatalog
                 new[] { "LagavulinMatriarch" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "HauntedShipSolo" => new EncounterPlan(
                 id,
                 new[] { "HauntedShip" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "LivingFogSolo" => new EncounterPlan(
                 id,
                 new[] { "LivingFog" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "GremlinMercNormal" => new EncounterPlan(
                 id,
                 new[] { "GremlinMerc", "GremlinMerc" },
                 new string?[] { null, null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             // B.1-final-T2b: KaiserCrabBoss reshaped to upstream's two-monster
             // spawn (Crusher + Rocket). Q1 monster classes ported from upstream
             // (Phase1Monsters.cs:Crusher / Rocket).
@@ -163,13 +175,15 @@ public static class EncounterCatalog
                 new[] { "Crusher", "Rocket" },
                 new string?[] { "crusher", "rocket" },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             "CeremonialBeastBoss" => new EncounterPlan(
                 id,
                 new[] { "CeremonialBeast" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             // B.1-final-T2c: LouseProgenitorNormal added — upstream encounter
             // with single LouseProgenitor spawn (Q1 monster class already exists
             // from γ).
@@ -178,7 +192,8 @@ public static class EncounterCatalog
                 new[] { "LouseProgenitor" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null),
+                null
+            ),
             // SmallSlimes / MediumSlimes preserved as DEFER (architectural blocker —
             // requires per-encounter Rng plumbing, deferred to B.1-ε).
             "SmallSlimes" => new EncounterPlan(
@@ -186,15 +201,18 @@ public static class EncounterCatalog
                 new[] { "AcidSlimeS", "SpikeSlimeS" },
                 new string?[] { null, null },
                 PlanKind.MissingUpstream,
-                "DEFER: SmallSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextItem for spawn variant selection). Deferred to B.1-ε."),
+                "DEFER: SmallSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextItem for spawn variant selection). Deferred to B.1-ε."
+            ),
             "MediumSlimes" => new EncounterPlan(
                 id,
                 new[] { "AcidSlimeM", "SpikeSlimeM" },
                 new string?[] { null, null },
                 PlanKind.MissingUpstream,
-                "DEFER: MediumSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextBool for spawn variant selection). Deferred to B.1-ε."),
+                "DEFER: MediumSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextBool for spawn variant selection). Deferred to B.1-ε."
+            ),
             _ => throw new System.ArgumentException(
-                $"unknown encounter id '{id}'; --list-encounters to enumerate."),
+                $"unknown encounter id '{id}'; --list-encounters to enumerate."
+            ),
         };
     }
 
@@ -203,13 +221,18 @@ public static class EncounterCatalog
     /// </summary>
     public static (int comparable, int missing) Tally(IEnumerable<string> ids)
     {
-        int c = 0, m = 0;
+        int c = 0,
+            m = 0;
         foreach (string id in ids)
         {
             switch (Resolve(id).Kind)
             {
-                case PlanKind.UpstreamComparable: c++; break;
-                case PlanKind.MissingUpstream: m++; break;
+                case PlanKind.UpstreamComparable:
+                    c++;
+                    break;
+                case PlanKind.MissingUpstream:
+                    m++;
+                    break;
             }
         }
         return (c, m);

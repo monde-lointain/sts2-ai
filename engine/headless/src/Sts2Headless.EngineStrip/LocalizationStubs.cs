@@ -36,7 +36,8 @@ public static class TranslationServer
             StubCategory.Localization,
             nameof(TranslationServer),
             nameof(Translate),
-            $"key={message.Value}");
+            $"key={message.Value}"
+        );
         return message.Value;
     }
 
@@ -47,7 +48,8 @@ public static class TranslationServer
             StubCategory.Localization,
             nameof(TranslationServer),
             nameof(Translate),
-            $"key={message.Value},ctx={context.Value}");
+            $"key={message.Value},ctx={context.Value}"
+        );
         return message.Value;
     }
 
@@ -57,13 +59,18 @@ public static class TranslationServer
             StubCategory.Localization,
             nameof(TranslationServer),
             nameof(SetLocale),
-            $"locale={locale}");
+            $"locale={locale}"
+        );
         s_locale = locale ?? "en";
     }
 
     public static string GetLocale()
     {
-        StubRegistry.Record(StubCategory.Localization, nameof(TranslationServer), nameof(GetLocale));
+        StubRegistry.Record(
+            StubCategory.Localization,
+            nameof(TranslationServer),
+            nameof(GetLocale)
+        );
         return s_locale;
     }
 }

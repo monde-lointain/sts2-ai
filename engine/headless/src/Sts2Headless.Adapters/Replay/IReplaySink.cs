@@ -38,7 +38,8 @@ public interface IReplaySink : IDisposable
         PlayerAction action,
         RunRngSet runRng,
         PlayerRngSet playerRng,
-        TokenMap tokens);
+        TokenMap tokens
+    );
 
     /// <summary>
     /// Flush pending entries, write the trailer, and close the underlying

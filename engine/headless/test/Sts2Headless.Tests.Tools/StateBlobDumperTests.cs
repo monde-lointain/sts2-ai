@@ -21,12 +21,15 @@ public class StateBlobDumperTests
     [Theory]
     [MemberData(nameof(AllSlots))]
     public void Run_decodes_each_fixture_to_envelope_plus_sections_plus_hash(
-        string dirName, StateBlobFixtureRecipe.Slot slot)
+        string dirName,
+        StateBlobFixtureRecipe.Slot slot
+    )
     {
-        Assert.Equal(dirName, slot.DirName);   // parameter-pair sanity, also satisfies xUnit1026.
+        Assert.Equal(dirName, slot.DirName); // parameter-pair sanity, also satisfies xUnit1026.
         string blobPath = Path.Combine(
             FixtureLocator.StateBlobFixtureDir(slot.DirName),
-            "state.blob");
+            "state.blob"
+        );
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
 
@@ -50,8 +53,14 @@ public class StateBlobDumperTests
         Assert.Equal(blobPath, envelope.GetProperty("path").GetString());
 
         JsonElement stamp = envelope.GetProperty("manifest_stamp");
-        Assert.Equal(StateBlobFixtureRecipe.FixtureGitSha, stamp.GetProperty("git_sha").GetString());
-        Assert.Equal(StateBlobFixtureRecipe.FixtureBuildId, stamp.GetProperty("build_id").GetString());
+        Assert.Equal(
+            StateBlobFixtureRecipe.FixtureGitSha,
+            stamp.GetProperty("git_sha").GetString()
+        );
+        Assert.Equal(
+            StateBlobFixtureRecipe.FixtureBuildId,
+            stamp.GetProperty("build_id").GetString()
+        );
         // content_hash_hex is 64-char lowercase
         string contentHashHex = stamp.GetProperty("content_hash_hex").GetString()!;
         Assert.Equal(64, contentHashHex.Length);
@@ -69,12 +78,14 @@ public class StateBlobDumperTests
         JsonElement hashLine = lines[4].RootElement;
         Assert.Equal("canonical-hash", hashLine.GetProperty("kind").GetString());
         string emittedHash = hashLine.GetProperty("sha256_hex").GetString()!;
-        var metaJson = File.ReadAllText(Path.Combine(
-            FixtureLocator.StateBlobFixtureDir(slot.DirName), "metadata.json"));
+        var metaJson = File.ReadAllText(
+            Path.Combine(FixtureLocator.StateBlobFixtureDir(slot.DirName), "metadata.json")
+        );
         StateBlobFixtureRecipe.Metadata meta = StateBlobFixtureRecipe.ParseMetadata(metaJson);
         Assert.Equal(meta.ExpectedCanonicalHashHex, emittedHash);
 
-        foreach (JsonDocument d in lines) d.Dispose();
+        foreach (JsonDocument d in lines)
+            d.Dispose();
     }
 
     [Fact]
@@ -82,7 +93,8 @@ public class StateBlobDumperTests
     {
         string blobPath = Path.Combine(
             FixtureLocator.StateBlobFixtureDir(StateBlobFixtureRecipe.AllSlots[0].DirName),
-            "state.blob");
+            "state.blob"
+        );
         int fileSize = (int)new FileInfo(blobPath).Length;
 
         using var stdout = new StringWriter();
@@ -93,7 +105,8 @@ public class StateBlobDumperTests
         JsonElement envelope = lines[0].RootElement;
         Assert.Equal(fileSize, envelope.GetProperty("blob_bytes").GetInt32());
         Assert.Equal(3, envelope.GetProperty("section_count").GetInt32());
-        foreach (JsonDocument d in lines) d.Dispose();
+        foreach (JsonDocument d in lines)
+            d.Dispose();
     }
 
     [Fact]
@@ -103,7 +116,8 @@ public class StateBlobDumperTests
         // spawn powers, so the pretty-print has more substance.
         string blobPath = Path.Combine(
             FixtureLocator.StateBlobFixtureDir("04-kaiser-crab-boss-seed42"),
-            "state.blob");
+            "state.blob"
+        );
         using var stdout = new StringWriter();
         using var stderr = new StringWriter();
         Assert.Equal(Program.ExitOk, Program.Run(new[] { blobPath }, stdout, stderr));
@@ -134,7 +148,8 @@ public class StateBlobDumperTests
         JsonElement player = combat.GetProperty("player");
         Assert.True(player.GetProperty("is_player").GetBoolean());
         Assert.Equal(70, player.GetProperty("current_hp").GetInt32());
-        foreach (JsonDocument d in lines) d.Dispose();
+        foreach (JsonDocument d in lines)
+            d.Dispose();
     }
 
     [Fact]
@@ -169,11 +184,14 @@ public class StateBlobDumperTests
         // returns the decode exit code.
         string sourcePath = Path.Combine(
             FixtureLocator.StateBlobFixtureDir(StateBlobFixtureRecipe.AllSlots[0].DirName),
-            "state.blob");
+            "state.blob"
+        );
         byte[] bytes = File.ReadAllBytes(sourcePath);
         bytes[bytes.Length / 2] ^= 0xFF;
-        string corruptPath = Path.Combine(Path.GetTempPath(),
-            $"sts2-state-blob-dumper-corrupt-{Guid.NewGuid():N}.blob");
+        string corruptPath = Path.Combine(
+            Path.GetTempPath(),
+            $"sts2-state-blob-dumper-corrupt-{Guid.NewGuid():N}.blob"
+        );
         try
         {
             File.WriteAllBytes(corruptPath, bytes);
@@ -187,7 +205,8 @@ public class StateBlobDumperTests
         }
         finally
         {
-            if (File.Exists(corruptPath)) File.Delete(corruptPath);
+            if (File.Exists(corruptPath))
+                File.Delete(corruptPath);
         }
     }
 
@@ -196,7 +215,8 @@ public class StateBlobDumperTests
         var result = new List<JsonDocument>();
         foreach (string raw in text.Split('\n'))
         {
-            if (string.IsNullOrWhiteSpace(raw)) continue;
+            if (string.IsNullOrWhiteSpace(raw))
+                continue;
             result.Add(JsonDocument.Parse(raw));
         }
         return result;

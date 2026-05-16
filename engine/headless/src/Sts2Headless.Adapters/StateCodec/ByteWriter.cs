@@ -130,7 +130,8 @@ internal sealed class ByteWriter
         if (newCap > int.MaxValue)
         {
             throw new InvalidOperationException(
-                $"ByteWriter capacity overflow: required {required} bytes.");
+                $"ByteWriter capacity overflow: required {required} bytes."
+            );
         }
         byte[] grown = new byte[newCap];
         Array.Copy(_buffer, grown, _position);

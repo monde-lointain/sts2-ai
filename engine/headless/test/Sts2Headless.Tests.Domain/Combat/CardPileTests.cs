@@ -11,8 +11,8 @@ namespace Sts2Headless.Tests.Domain.Combat;
 /// </summary>
 public sealed class CardPileTests
 {
-    private static CardInstance Make(uint id, string model = "StrikeSilent")
-        => new(id, model, UpgradeLevel: 0, CostOverride: null);
+    private static CardInstance Make(uint id, string model = "StrikeSilent") =>
+        new(id, model, UpgradeLevel: 0, CostOverride: null);
 
     [Fact]
     public void Empty_Pile_Has_Zero_Cards()
@@ -87,11 +87,13 @@ public sealed class CardPileTests
         Assert.Equal(5, shuffled1.Count);
         Assert.Equal(
             shuffled1.Cards.Select(c => c.InstanceId),
-            shuffled2.Cards.Select(c => c.InstanceId));
+            shuffled2.Cards.Select(c => c.InstanceId)
+        );
         // Sanity: shuffled order is some permutation of original ids
         Assert.Equal(
             new[] { 1u, 2u, 3u, 4u, 5u }.OrderBy(x => x),
-            shuffled1.Cards.Select(c => c.InstanceId).OrderBy(x => x));
+            shuffled1.Cards.Select(c => c.InstanceId).OrderBy(x => x)
+        );
     }
 
     [Fact]

@@ -80,8 +80,10 @@ public sealed class UpstreamInitialStateComparer
     {
         /// <summary>Q1's byte recipe matched the upstream golden byte-for-byte.</summary>
         Pass,
+
         /// <summary>Bytes differ. <see cref="EntryResult.Q1Bytes"/> + Golden + DiffSummary populated.</summary>
         Diverged,
+
         /// <summary>
         /// Encounter is tagged MissingUpstream in
         /// <c>test/determinism-probe-upstream-capture/src/EncounterCatalog.cs</c>.
@@ -89,6 +91,7 @@ public sealed class UpstreamInitialStateComparer
         /// "Q1 invented encounters that don't exist in upstream STS2".
         /// </summary>
         Skipped,
+
         /// <summary>Q1's construction threw, or the golden file is missing.</summary>
         Error,
     }
@@ -101,7 +104,8 @@ public sealed class UpstreamInitialStateComparer
         byte[]? Q1Bytes,
         byte[]? GoldenBytes,
         string? DiffSummary,
-        string? ErrorMessage);
+        string? ErrorMessage
+    );
 
     /// <summary>
     /// Run the comparison for one (encounter, seed) tuple. Returns the outcome,
@@ -116,17 +120,27 @@ public sealed class UpstreamInitialStateComparer
         string missingPath = goldenPath + ".missing";
         if (File.Exists(missingPath))
         {
-            return new EntryResult(encounterId, seed, EntryOutcome.Skipped,
-                Q1Bytes: null, GoldenBytes: null,
+            return new EntryResult(
+                encounterId,
+                seed,
+                EntryOutcome.Skipped,
+                Q1Bytes: null,
+                GoldenBytes: null,
                 DiffSummary: File.ReadAllText(missingPath),
-                ErrorMessage: null);
+                ErrorMessage: null
+            );
         }
         if (!File.Exists(goldenPath))
         {
-            return new EntryResult(encounterId, seed, EntryOutcome.Error,
-                Q1Bytes: null, GoldenBytes: null,
+            return new EntryResult(
+                encounterId,
+                seed,
+                EntryOutcome.Error,
+                Q1Bytes: null,
+                GoldenBytes: null,
                 DiffSummary: null,
-                ErrorMessage: $"golden missing: {goldenPath}");
+                ErrorMessage: $"golden missing: {goldenPath}"
+            );
         }
 
         byte[] golden = File.ReadAllBytes(goldenPath);
@@ -137,23 +151,38 @@ public sealed class UpstreamInitialStateComparer
         }
         catch (Exception ex)
         {
-            return new EntryResult(encounterId, seed, EntryOutcome.Error,
-                Q1Bytes: null, GoldenBytes: golden,
+            return new EntryResult(
+                encounterId,
+                seed,
+                EntryOutcome.Error,
+                Q1Bytes: null,
+                GoldenBytes: golden,
                 DiffSummary: null,
-                ErrorMessage: $"Q1 construction threw: {ex.GetType().Name}: {(ex.InnerException ?? ex).Message}");
+                ErrorMessage: $"Q1 construction threw: {ex.GetType().Name}: {(ex.InnerException ?? ex).Message}"
+            );
         }
 
         if (q1Bytes.Length == golden.Length && q1Bytes.AsSpan().SequenceEqual(golden))
         {
-            return new EntryResult(encounterId, seed, EntryOutcome.Pass,
-                Q1Bytes: q1Bytes, GoldenBytes: golden,
+            return new EntryResult(
+                encounterId,
+                seed,
+                EntryOutcome.Pass,
+                Q1Bytes: q1Bytes,
+                GoldenBytes: golden,
                 DiffSummary: null,
-                ErrorMessage: null);
+                ErrorMessage: null
+            );
         }
-        return new EntryResult(encounterId, seed, EntryOutcome.Diverged,
-            Q1Bytes: q1Bytes, GoldenBytes: golden,
+        return new EntryResult(
+            encounterId,
+            seed,
+            EntryOutcome.Diverged,
+            Q1Bytes: q1Bytes,
+            GoldenBytes: golden,
             DiffSummary: BuildDiffSummary(q1Bytes, golden),
-            ErrorMessage: null);
+            ErrorMessage: null
+        );
     }
 
     /// <summary>
@@ -182,7 +211,7 @@ public sealed class UpstreamInitialStateComparer
         // MonsterModel.RollUniqueInitialHp(rng, takenHps) so same-type spawns
         // get distinct HP values when the envelope allows it.
         var enemies = ImmutableList.CreateBuilder<Creature>();
-        uint nextEnemyId = 1u;  // CombatEngine.FirstEnemyId
+        uint nextEnemyId = 1u; // CombatEngine.FirstEnemyId
         foreach (string monsterId in encounter.MonsterIds)
         {
             var monsterModel = (MonsterModel)_monsters.Get(monsterId);
@@ -195,27 +224,34 @@ public sealed class UpstreamInitialStateComparer
                 }
             }
             int hp = monsterModel.RollUniqueInitialHp(runRng.Niche, takenHps);
-            enemies.Add(new Creature(
-                Id: nextEnemyId,
-                Name: monsterId,
-                CurrentHp: hp,
-                MaxHp: hp,
-                Block: 0,
-                Powers: ImmutableList<PowerInstance>.Empty,
-                Intent: MonsterIntent.FromContentIntent(monsterModel.InitialIntent, monsterModel.InitialMoveId),
-                IsPlayer: false));
+            enemies.Add(
+                new Creature(
+                    Id: nextEnemyId,
+                    Name: monsterId,
+                    CurrentHp: hp,
+                    MaxHp: hp,
+                    Block: 0,
+                    Powers: ImmutableList<PowerInstance>.Empty,
+                    Intent: MonsterIntent.FromContentIntent(
+                        monsterModel.InitialIntent,
+                        monsterModel.InitialMoveId
+                    ),
+                    IsPlayer: false
+                )
+            );
             nextEnemyId++;
         }
 
         var player = new Creature(
-            Id: 0u,                         // CombatEngine.PlayerId
+            Id: 0u, // CombatEngine.PlayerId
             Name: "Silent",
-            CurrentHp: 70,                  // CombatEngine.BaseMaxHpSilent
+            CurrentHp: 70, // CombatEngine.BaseMaxHpSilent
             MaxHp: 70,
             Block: 0,
             Powers: ImmutableList<PowerInstance>.Empty,
             Intent: null,
-            IsPlayer: true);
+            IsPlayer: true
+        );
 
         // Shuffle the deck into the draw pile (matches CombatEngine.StartCombat
         // lines ~158-163 post-T2: routes through .Shuffle bucket).
@@ -231,8 +267,8 @@ public sealed class UpstreamInitialStateComparer
             Player: player,
             Enemies: enemies.ToImmutable(),
             Energy: 0,
-            BaseEnergyPerTurn: 3,            // CombatEngine.BaseEnergyPerTurnSilent
-            HandDrawSize: 5,                 // CombatEngine.BaseHandDrawCount
+            BaseEnergyPerTurn: 3, // CombatEngine.BaseEnergyPerTurnSilent
+            HandDrawSize: 5, // CombatEngine.BaseHandDrawCount
             DrawPile: drawPile,
             HandPile: CardPile.Empty,
             DiscardPile: CardPile.Empty,
@@ -241,7 +277,8 @@ public sealed class UpstreamInitialStateComparer
             // reshuffle path consumes from .Shuffle (matches CombatEngine
             // post-T2).
             PlayerRngCounter: runRng.GetCounter(RunRngType.Shuffle),
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
 
         return SerializeSmokeBytes(initial);
     }
@@ -260,7 +297,8 @@ public sealed class UpstreamInitialStateComparer
             }
         }
         throw new InvalidOperationException(
-            $"encounter '{id}' not registered in Phase1Content.BuildEncounterCatalog().");
+            $"encounter '{id}' not registered in Phase1Content.BuildEncounterCatalog()."
+        );
     }
 
     /// <summary>
@@ -342,9 +380,9 @@ public sealed class UpstreamInitialStateComparer
 
     private static void WriteEmptyCreature(BinaryWriter bw)
     {
-        bw.Write(0);   // CurrentHp
-        bw.Write(0);   // Block
-        bw.Write(0);   // Powers.Count
+        bw.Write(0); // CurrentHp
+        bw.Write(0); // Block
+        bw.Write(0); // Powers.Count
     }
 
     /// <summary>
@@ -389,7 +427,8 @@ public sealed class UpstreamInitialStateComparer
         int diffs = 0;
         for (int offset = 0; offset < n && diffs < 12; offset += 4)
         {
-            if (offset + 4 > n) break;
+            if (offset + 4 > n)
+                break;
             int q1Val = BitConverter.ToInt32(q1, offset);
             int gVal = BitConverter.ToInt32(golden, offset);
             if (q1Val != gVal)
@@ -401,7 +440,9 @@ public sealed class UpstreamInitialStateComparer
         }
         if (diffs == 0 && q1.Length != golden.Length)
         {
-            sb.AppendLine("  (per-field i32 check passed for common prefix; size mismatch is the divergence)");
+            sb.AppendLine(
+                "  (per-field i32 check passed for common prefix; size mismatch is the divergence)"
+            );
         }
 
         // Trailing-fields decode using actual q1 layout (Energy + 4 pile counts
@@ -410,7 +451,8 @@ public sealed class UpstreamInitialStateComparer
         {
             int tail = q1.Length - 20;
             int gTail = golden.Length - 20;
-            if (gTail < 0) gTail = 0;
+            if (gTail < 0)
+                gTail = 0;
             DecodeTrailing(sb, "q1.tail", q1, tail);
             if (golden.Length == q1.Length)
             {
@@ -428,14 +470,22 @@ public sealed class UpstreamInitialStateComparer
     /// Decode the trailing 5 i32 fields (Energy + 4 pile counts) of a smoke-spec
     /// byte stream into the provided <see cref="StringBuilder"/>.
     /// </summary>
-    private static void DecodeTrailing(StringBuilder sb, string label, byte[] bytes, int trailingStart)
+    private static void DecodeTrailing(
+        StringBuilder sb,
+        string label,
+        byte[] bytes,
+        int trailingStart
+    )
     {
-        if (trailingStart < 0 || trailingStart + 20 > bytes.Length) return;
+        if (trailingStart < 0 || trailingStart + 20 > bytes.Length)
+            return;
         int energy = BitConverter.ToInt32(bytes, trailingStart);
         int draw = BitConverter.ToInt32(bytes, trailingStart + 4);
         int hand = BitConverter.ToInt32(bytes, trailingStart + 8);
         int disc = BitConverter.ToInt32(bytes, trailingStart + 12);
         int exh = BitConverter.ToInt32(bytes, trailingStart + 16);
-        sb.AppendLine($"  {label}: Energy={energy} Draw={draw} Hand={hand} Discard={disc} Exhaust={exh}");
+        sb.AppendLine(
+            $"  {label}: Energy={energy} Draw={draw} Hand={hand} Discard={disc} Exhaust={exh}"
+        );
     }
 }

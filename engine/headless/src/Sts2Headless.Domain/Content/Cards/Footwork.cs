@@ -15,7 +15,8 @@ public sealed class Footwork : CardModel
     public const int UpgradeDelta = 1;
     public int Dexterity => BaseDex;
 
-    public Footwork() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public Footwork()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

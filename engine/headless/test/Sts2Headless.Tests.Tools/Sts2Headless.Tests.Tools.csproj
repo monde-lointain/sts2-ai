@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -36,5 +35,4 @@
     -->
     <ProjectReference Include="..\..\tools\Sts2Q1ConsoleHost\Sts2Q1ConsoleHost.csproj" />
   </ItemGroup>
-
 </Project>

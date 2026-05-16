@@ -24,8 +24,13 @@ public class FixtureByteSizeEvidence
         foreach (StateCodecFixture f in StateCodecFixtures.GenerateAll())
         {
             byte[] bytes = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-                f.State, f.RunRng, f.PlayerRng, f.Tokens, f.Stamp);
-            _out.WriteLine($"{f.Name,-46} {bytes.Length,6} bytes");
+                f.State,
+                f.RunRng,
+                f.PlayerRng,
+                f.Tokens,
+                f.Stamp
+            );
+            _out.WriteLine($"{f.Name, -46} {bytes.Length, 6} bytes");
         }
     }
 }

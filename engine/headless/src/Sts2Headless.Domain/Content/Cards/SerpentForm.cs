@@ -15,7 +15,8 @@ public sealed class SerpentForm : CardModel
     public const int UpgradeDelta = 2;
     public int Amount => BaseAmount;
 
-    public SerpentForm() : base(CanonicalId, 3, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public SerpentForm()
+        : base(CanonicalId, 3, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

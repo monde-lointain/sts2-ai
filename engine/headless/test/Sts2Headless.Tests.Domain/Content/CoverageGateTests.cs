@@ -13,6 +13,7 @@ namespace Sts2Headless.Tests.Domain.Content;
 public class CoverageGateTests
 {
     private sealed record FakeCard(string Id) : ICardModel;
+
     private sealed record FakeRelic(string Id) : IRelicModel;
 
     [Fact]
@@ -35,11 +36,12 @@ public class CoverageGateTests
         CardCatalog catalog = new();
         catalog.Register("a", new FakeCard("a"));
         Q4Manifest manifest = new(
-            Cards:    new[] { "a", "b" },
-            Relics:   Array.Empty<string>(),
-            Powers:   Array.Empty<string>(),
+            Cards: new[] { "a", "b" },
+            Relics: Array.Empty<string>(),
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
         CoverageResult result = CoverageGate.ComputeForCards(manifest, catalog);
 
@@ -56,11 +58,12 @@ public class CoverageGateTests
         catalog.Register("a", new FakeCard("a"));
         catalog.Register("b", new FakeCard("b"));
         Q4Manifest manifest = new(
-            Cards:    new[] { "a" },
-            Relics:   Array.Empty<string>(),
-            Powers:   Array.Empty<string>(),
+            Cards: new[] { "a" },
+            Relics: Array.Empty<string>(),
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
         CoverageResult result = CoverageGate.ComputeForCards(manifest, catalog);
 
@@ -77,11 +80,12 @@ public class CoverageGateTests
         // are stable between runs. (Manifest order is the order ids appear in the JSON.)
         CardCatalog catalog = new();
         Q4Manifest manifest = new(
-            Cards:    new[] { "zeta", "alpha", "mu" },
-            Relics:   Array.Empty<string>(),
-            Powers:   Array.Empty<string>(),
+            Cards: new[] { "zeta", "alpha", "mu" },
+            Relics: Array.Empty<string>(),
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
         CoverageResult result = CoverageGate.ComputeForCards(manifest, catalog);
 
@@ -108,11 +112,12 @@ public class CoverageGateTests
         RelicCatalog catalog = new();
         catalog.Register("burning_blood", new FakeRelic("burning_blood"));
         Q4Manifest manifest = new(
-            Cards:    Array.Empty<string>(),
-            Relics:   new[] { "burning_blood", "ring_of_the_snake" },
-            Powers:   Array.Empty<string>(),
+            Cards: Array.Empty<string>(),
+            Relics: new[] { "burning_blood", "ring_of_the_snake" },
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
         CoverageResult result = CoverageGate.ComputeForRelics(manifest, catalog);
 
@@ -132,7 +137,13 @@ public class CoverageGateTests
         Q4Manifest manifest = Q4Manifest.Empty;
 
         AggregateCoverageResult result = CoverageGate.ComputeAll(
-            manifest, cards, relics, powers, monsters, potions);
+            manifest,
+            cards,
+            relics,
+            powers,
+            monsters,
+            potions
+        );
 
         Assert.True(result.IsGreen);
         Assert.True(result.Cards.IsGreen);
@@ -152,14 +163,21 @@ public class CoverageGateTests
         PotionCatalog potions = new();
         // Manifest demands a card that the catalog doesn't have — one red bucket among five.
         Q4Manifest manifest = new(
-            Cards:    new[] { "strike" },
-            Relics:   Array.Empty<string>(),
-            Powers:   Array.Empty<string>(),
+            Cards: new[] { "strike" },
+            Relics: Array.Empty<string>(),
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
         AggregateCoverageResult result = CoverageGate.ComputeAll(
-            manifest, cards, relics, powers, monsters, potions);
+            manifest,
+            cards,
+            relics,
+            powers,
+            monsters,
+            potions
+        );
 
         Assert.False(result.IsGreen);
         Assert.False(result.Cards.IsGreen);
@@ -178,7 +196,13 @@ public class CoverageGateTests
         Q4Manifest manifest = Q4Manifest.Empty;
 
         AggregateCoverageResult result = CoverageGate.ComputeAll(
-            manifest, cards, relics, powers, monsters, potions);
+            manifest,
+            cards,
+            relics,
+            powers,
+            monsters,
+            potions
+        );
 
         Assert.True(result.IsGreen);
         Assert.Equal(new[] { "extra_card" }, result.Cards.Extra);
@@ -192,14 +216,16 @@ public class CoverageGateTests
         CardCatalog catalog = new();
         catalog.Register("a", new FakeCard("a"));
         Q4Manifest manifest = new(
-            Cards:    new[] { "a", "a" },
-            Relics:   Array.Empty<string>(),
-            Powers:   Array.Empty<string>(),
+            Cards: new[] { "a", "a" },
+            Relics: Array.Empty<string>(),
+            Powers: Array.Empty<string>(),
             Monsters: Array.Empty<string>(),
-            Potions:  Array.Empty<string>());
+            Potions: Array.Empty<string>()
+        );
 
-        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(
-            () => CoverageGate.ComputeForCards(manifest, catalog));
+        InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            CoverageGate.ComputeForCards(manifest, catalog)
+        );
         Assert.Contains("duplicate", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

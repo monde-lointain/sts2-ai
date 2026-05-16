@@ -19,8 +19,7 @@ public sealed class DefendSilent : CardModel
     public int Block => BaseBlock;
 
     public DefendSilent()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Basic, TargetType.Self)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Basic, TargetType.Self) { }
 
     protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Defend);
 

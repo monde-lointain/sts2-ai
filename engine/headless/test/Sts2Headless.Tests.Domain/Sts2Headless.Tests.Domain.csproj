@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -25,5 +24,4 @@
       <Link>Fixtures\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </None>
   </ItemGroup>
-
 </Project>

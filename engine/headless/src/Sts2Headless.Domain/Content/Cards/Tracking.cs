@@ -15,7 +15,8 @@ public sealed class Tracking : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public Tracking() : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public Tracking()
+        : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -43,14 +43,18 @@ public abstract class EncounterModel : IEncounterModel
         if (ids.Count == 0)
         {
             throw new System.ArgumentException(
-                $"EncounterModel '{id}': MonsterIds must be non-empty.", nameof(monsterIds));
+                $"EncounterModel '{id}': MonsterIds must be non-empty.",
+                nameof(monsterIds)
+            );
         }
         foreach (string monsterId in ids)
         {
             if (string.IsNullOrWhiteSpace(monsterId))
             {
                 throw new System.ArgumentException(
-                    $"EncounterModel '{id}': empty monster id in spawn list.", nameof(monsterIds));
+                    $"EncounterModel '{id}': empty monster id in spawn list.",
+                    nameof(monsterIds)
+                );
             }
         }
         Id = id;

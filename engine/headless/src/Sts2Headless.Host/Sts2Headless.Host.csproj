@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
@@ -9,5 +8,4 @@
     <ProjectReference Include="..\Sts2Headless.Adapters\Sts2Headless.Adapters.csproj" />
     <ProjectReference Include="..\Sts2Headless.EngineStrip\Sts2Headless.EngineStrip.csproj" />
   </ItemGroup>
-
 </Project>

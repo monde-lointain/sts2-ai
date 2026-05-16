@@ -22,7 +22,8 @@ public class IRngStateSerializerTests
     {
         var ser = NewSerializer();
         var rng = new Rng(seed: 12345u);
-        for (int i = 0; i < 17; i++) _ = rng.NextInt(1000);
+        for (int i = 0; i < 17; i++)
+            _ = rng.NextInt(1000);
 
         byte[] state = ser.SerializeRng(rng);
         Rng restored = ser.DeserializeRng(state);
@@ -42,7 +43,8 @@ public class IRngStateSerializerTests
     {
         var ser = NewSerializer();
         var rng = new Rng(seed: 999u);
-        for (int i = 0; i < 25; i++) _ = rng.NextBool();
+        for (int i = 0; i < 25; i++)
+            _ = rng.NextBool();
 
         byte[] a = ser.SerializeRng(rng);
         Rng restored = ser.DeserializeRng(a);
@@ -69,9 +71,12 @@ public class IRngStateSerializerTests
         var ser = NewSerializer();
         var set = new PlayerRngSet(seed: 7u);
         // Advance each subsystem a different number of times.
-        for (int i = 0; i < 3; i++) _ = set.Rewards.NextInt(1000);
-        for (int i = 0; i < 11; i++) _ = set.Shops.NextInt(1000);
-        for (int i = 0; i < 19; i++) _ = set.Transformations.NextInt(1000);
+        for (int i = 0; i < 3; i++)
+            _ = set.Rewards.NextInt(1000);
+        for (int i = 0; i < 11; i++)
+            _ = set.Shops.NextInt(1000);
+        for (int i = 0; i < 19; i++)
+            _ = set.Transformations.NextInt(1000);
 
         byte[] state = ser.SerializePlayerRngSet(set);
         PlayerRngSet restored = ser.DeserializePlayerRngSet(state);
@@ -86,7 +91,10 @@ public class IRngStateSerializerTests
         {
             Assert.Equal(set.Rewards.NextInt(1_000_000), restored.Rewards.NextInt(1_000_000));
             Assert.Equal(set.Shops.NextInt(1_000_000), restored.Shops.NextInt(1_000_000));
-            Assert.Equal(set.Transformations.NextInt(1_000_000), restored.Transformations.NextInt(1_000_000));
+            Assert.Equal(
+                set.Transformations.NextInt(1_000_000),
+                restored.Transformations.NextInt(1_000_000)
+            );
         }
     }
 
@@ -95,7 +103,8 @@ public class IRngStateSerializerTests
     {
         var ser = NewSerializer();
         var set = new PlayerRngSet(seed: 31337u);
-        for (int i = 0; i < 5; i++) _ = set.Shops.NextDouble();
+        for (int i = 0; i < 5; i++)
+            _ = set.Shops.NextDouble();
 
         byte[] a = ser.SerializePlayerRngSet(set);
         var restored = ser.DeserializePlayerRngSet(a);
@@ -110,10 +119,14 @@ public class IRngStateSerializerTests
     {
         var ser = NewSerializer();
         var set = new RunRngSet(stringSeed: "ABCDEF");
-        for (int i = 0; i < 4; i++) _ = set.UpFront.NextInt(1000);
-        for (int i = 0; i < 13; i++) _ = set.Shuffle.NextInt(1000);
-        for (int i = 0; i < 7; i++) _ = set.MonsterAi.NextInt(1000);
-        for (int i = 0; i < 21; i++) _ = set.CombatCardGeneration.NextInt(1000);
+        for (int i = 0; i < 4; i++)
+            _ = set.UpFront.NextInt(1000);
+        for (int i = 0; i < 13; i++)
+            _ = set.Shuffle.NextInt(1000);
+        for (int i = 0; i < 7; i++)
+            _ = set.MonsterAi.NextInt(1000);
+        for (int i = 0; i < 21; i++)
+            _ = set.CombatCardGeneration.NextInt(1000);
 
         byte[] state = ser.SerializeRunRngSet(set);
         RunRngSet restored = ser.DeserializeRunRngSet(state);
@@ -139,7 +152,8 @@ public class IRngStateSerializerTests
     {
         var ser = NewSerializer();
         var set = new RunRngSet(stringSeed: "round-trip-me");
-        for (int i = 0; i < 9; i++) _ = set.TreasureRoomRelics.NextFloat();
+        for (int i = 0; i < 9; i++)
+            _ = set.TreasureRoomRelics.NextFloat();
 
         byte[] a = ser.SerializeRunRngSet(set);
         var restored = ser.DeserializeRunRngSet(a);

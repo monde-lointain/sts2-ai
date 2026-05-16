@@ -16,7 +16,8 @@ public sealed class NoxiousFumes : CardModel
     public const int UpgradeDelta = 1;
     public int PoisonPerTurn => BasePoison;
 
-    public NoxiousFumes() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public NoxiousFumes()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

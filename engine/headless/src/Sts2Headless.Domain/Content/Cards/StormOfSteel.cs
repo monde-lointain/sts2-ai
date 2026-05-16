@@ -12,7 +12,8 @@ public sealed class StormOfSteel : CardModel
 {
     public const string CanonicalId = "StormOfSteel";
 
-    public StormOfSteel() : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public StormOfSteel()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

@@ -32,15 +32,20 @@ public sealed class DampCultist : MonsterModel
     /// <summary>Upstream IncantationAmount — 5 stacks of Ritual.</summary>
     public const int IncantationRitualStacks = 5;
 
-    public DampCultist() : base(
-        id: CanonicalId,
-        minInitialHp: MinHp,
-        maxInitialHp: MaxHp,
-        moves: new MonsterMove[]
-        {
-            new(IncantationMoveId, Intent.Buff(), FollowUpMoveId: DarkStrikeMoveId),
-            new(DarkStrikeMoveId, Intent.Attack(DarkStrikeDamage), FollowUpMoveId: DarkStrikeMoveId),
-        },
-        initialMoveId: IncantationMoveId)
-    { }
+    public DampCultist()
+        : base(
+            id: CanonicalId,
+            minInitialHp: MinHp,
+            maxInitialHp: MaxHp,
+            moves: new MonsterMove[]
+            {
+                new(IncantationMoveId, Intent.Buff(), FollowUpMoveId: DarkStrikeMoveId),
+                new(
+                    DarkStrikeMoveId,
+                    Intent.Attack(DarkStrikeDamage),
+                    FollowUpMoveId: DarkStrikeMoveId
+                ),
+            },
+            initialMoveId: IncantationMoveId
+        ) { }
 }

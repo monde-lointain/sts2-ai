@@ -80,8 +80,14 @@ public sealed class ReplayRecorder : IReplaySink
             throw new InvalidOperationException("ReplayRecorder.Open: already opened.");
         }
         // FileStream with FileMode.Create truncates any existing file.
-        FileStream fs = new(path, FileMode.Create, FileAccess.Write, FileShare.Read,
-            bufferSize: 4096, useAsync: false);
+        FileStream fs = new(
+            path,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            useAsync: false
+        );
         OpenInternal(fs, ownsStream: true, stamp, initialSeed);
     }
 
@@ -116,12 +122,14 @@ public sealed class ReplayRecorder : IReplaySink
         // queue grow. The module spec calls for an oldest-drop policy on
         // pressure, but Phase-1 keeps it simple and lets the flush task fall
         // behind; the queue size is observable via metrics in a later stage.
-        _channel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
-        {
-            SingleReader = true,
-            SingleWriter = false,
-            AllowSynchronousContinuations = false,
-        });
+        _channel = Channel.CreateUnbounded<byte[]>(
+            new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                AllowSynchronousContinuations = false,
+            }
+        );
         _flushTask = Task.Run(FlushLoopAsync);
 
         _isOpen = true;
@@ -138,7 +146,8 @@ public sealed class ReplayRecorder : IReplaySink
         PlayerAction action,
         RunRngSet runRng,
         PlayerRngSet playerRng,
-        TokenMap tokens)
+        TokenMap tokens
+    )
     {
         ArgumentNullException.ThrowIfNull(postState);
         ArgumentNullException.ThrowIfNull(action);
@@ -146,7 +155,8 @@ public sealed class ReplayRecorder : IReplaySink
         ArgumentNullException.ThrowIfNull(playerRng);
         ArgumentNullException.ThrowIfNull(tokens);
 
-        Channel<byte[]> channel = _channel
+        Channel<byte[]> channel =
+            _channel
             ?? throw new InvalidOperationException("ReplayRecorder.AppendStep: not opened.");
         if (_isClosed)
         {
@@ -166,7 +176,8 @@ public sealed class ReplayRecorder : IReplaySink
             postState.Phase,
             actionType,
             actionData,
-            postHash);
+            postHash
+        );
 
         // Enqueue. Unbounded channel — TryWrite always succeeds while the
         // channel is open. Channel.Writer.Complete() in Close prevents
@@ -174,7 +185,8 @@ public sealed class ReplayRecorder : IReplaySink
         if (!channel.Writer.TryWrite(entry))
         {
             throw new InvalidOperationException(
-                "ReplayRecorder.AppendStep: channel rejected write (already completed?).");
+                "ReplayRecorder.AppendStep: channel rejected write (already completed?)."
+            );
         }
     }
 
@@ -278,8 +290,13 @@ public sealed class ReplayRecorder : IReplaySink
     private static byte[] BuildHeaderBytes(ManifestStamp stamp, uint initialSeed)
     {
         byte[] stampBytes = ManifestStampCodec.Encode(stamp);
-        int totalLen = 4 /* magic */ + 2 /* schema */ + 4 /* manifest_size */
-                     + stampBytes.Length + 4 /* initial_seed */;
+        int totalLen =
+            4 /* magic */
+            + 2 /* schema */
+            + 4 /* manifest_size */
+            + stampBytes.Length
+            + 4 /* initial_seed */
+        ;
         byte[] buf = new byte[totalLen];
         int pos = 0;
         BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(pos, 4), ReplayConstants.HeaderMagic);
@@ -303,8 +320,12 @@ public sealed class ReplayRecorder : IReplaySink
     /// </code>
     /// </summary>
     private static byte[] BuildEntryBytes(
-        uint turnNo, CombatPhase phase, ReplayActionType actionType,
-        byte[] actionData, byte[] postHash)
+        uint turnNo,
+        CombatPhase phase,
+        ReplayActionType actionType,
+        byte[] actionData,
+        byte[] postHash
+    )
     {
         if (turnNo == ReplayConstants.EntryTerminator)
         {
@@ -313,13 +334,15 @@ public sealed class ReplayRecorder : IReplaySink
             // surface format violations early.
             throw new ArgumentException(
                 $"ReplayRecorder.AppendStep: turn_no=0x{turnNo:X8} collides with EntryTerminator.",
-                nameof(turnNo));
+                nameof(turnNo)
+            );
         }
         if (postHash.Length != ReplayConstants.Sha256ByteLength)
         {
             throw new ArgumentException(
                 $"ReplayRecorder.AppendStep: post_hash must be {ReplayConstants.Sha256ByteLength} bytes (got {postHash.Length}).",
-                nameof(postHash));
+                nameof(postHash)
+            );
         }
 
         int totalLen = 4 + 1 + 1 + 4 + actionData.Length + ReplayConstants.Sha256ByteLength;
@@ -353,18 +376,26 @@ public sealed class ReplayRecorder : IReplaySink
         CombatState state,
         RunRngSet runRng,
         PlayerRngSet playerRng,
-        TokenMap tokens)
+        TokenMap tokens
+    )
     {
         // Stamp content is irrelevant to the CombatState section bytes — use
         // a fixed throwaway. We pick a zero content_hash + empty strings so
         // the serialize call's stamp validation passes.
         ManifestStamp throwaway = new("", "", new byte[ReplayConstants.Sha256ByteLength]);
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
-            state, runRng, playerRng, tokens, throwaway);
+            state,
+            runRng,
+            playerRng,
+            tokens,
+            throwaway
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
-        byte[]? csBytes = decoded.CombatStateBytes
+        byte[]? csBytes =
+            decoded.CombatStateBytes
             ?? throw new InvalidOperationException(
-                "ReplayRecorder.ComputePostHash: StateCodec produced no CombatState section.");
+                "ReplayRecorder.ComputePostHash: StateCodec produced no CombatState section."
+            );
         Span<byte> hash = stackalloc byte[ReplayConstants.Sha256ByteLength];
         SHA256.HashData(csBytes, hash);
         return hash.ToArray();

@@ -43,11 +43,13 @@ public class CultistsNormalTests
 
     private sealed class BadEncounter : EncounterModel
     {
-        public BadEncounter(string id) : base(id, new[] { "m" }) { }
+        public BadEncounter(string id)
+            : base(id, new[] { "m" }) { }
     }
 
     private sealed class EmptyEncounter : EncounterModel
     {
-        public EmptyEncounter() : base("e", System.Array.Empty<string>()) { }
+        public EmptyEncounter()
+            : base("e", System.Array.Empty<string>()) { }
     }
 }

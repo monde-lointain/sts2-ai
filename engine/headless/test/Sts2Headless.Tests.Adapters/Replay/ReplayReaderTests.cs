@@ -14,8 +14,7 @@ public class ReplayReaderTests
 {
     private static readonly byte[] ZeroHash = new byte[32];
 
-    private static ManifestStamp MakeStamp() =>
-        new("deadbeef", "Q1-Phase1-test", ZeroHash);
+    private static ManifestStamp MakeStamp() => new("deadbeef", "Q1-Phase1-test", ZeroHash);
 
     private static byte[] RecordSimple(out StateCodecFixture f)
     {
@@ -24,8 +23,20 @@ public class ReplayReaderTests
         ReplayRecorder rec = new();
         rec.OpenStream(ms, MakeStamp(), initialSeed: 42u);
         rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
-        rec.AppendStep(f.State, new PlayerAction.PlayCard(10u, 1u), f.RunRng, f.PlayerRng, f.Tokens);
-        rec.AppendStep(f.State, new PlayerAction.PlayCard(20u, null), f.RunRng, f.PlayerRng, f.Tokens);
+        rec.AppendStep(
+            f.State,
+            new PlayerAction.PlayCard(10u, 1u),
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens
+        );
+        rec.AppendStep(
+            f.State,
+            new PlayerAction.PlayCard(20u, null),
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens
+        );
         rec.Close();
         return ms.ToArray();
     }
@@ -70,13 +81,19 @@ public class ReplayReaderTests
 
         // Entry 1: PlayCard with target.
         Assert.Equal(ReplayActionType.PlayCard, blob.Entries[1].ActionType);
-        PlayerAction a1 = ReplayActionCodec.Decode(blob.Entries[1].ActionType, blob.Entries[1].ActionData);
+        PlayerAction a1 = ReplayActionCodec.Decode(
+            blob.Entries[1].ActionType,
+            blob.Entries[1].ActionData
+        );
         var pc1 = Assert.IsType<PlayerAction.PlayCard>(a1);
         Assert.Equal(10u, pc1.CardInstanceId);
         Assert.Equal(1u, pc1.TargetEnemyId);
 
         // Entry 2: PlayCard without target.
-        PlayerAction a2 = ReplayActionCodec.Decode(blob.Entries[2].ActionType, blob.Entries[2].ActionData);
+        PlayerAction a2 = ReplayActionCodec.Decode(
+            blob.Entries[2].ActionType,
+            blob.Entries[2].ActionData
+        );
         var pc2 = Assert.IsType<PlayerAction.PlayCard>(a2);
         Assert.Equal(20u, pc2.CardInstanceId);
         Assert.Null(pc2.TargetEnemyId);
@@ -123,7 +140,8 @@ public class ReplayReaderTests
         }
         finally
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+                File.Delete(path);
         }
     }
 }

@@ -17,13 +17,18 @@ public sealed class BloodVial : RelicModel
     /// <summary>Upstream <c>HealVar(2m)</c>.</summary>
     public const int HealAmount = 2;
 
-    public BloodVial() : base(CanonicalId, "Blood Vial", RelicRarity.Common) { }
+    public BloodVial()
+        : base(CanonicalId, "Blood Vial", RelicRarity.Common) { }
 
     protected override void SubscribeHooks(HookRegistry hooks)
     {
-        Subscribe(hooks, HookType.AfterPlayerTurnStartLate, ctx =>
-        {
-            ctx.Execution.Queue.Enqueue(new HealAction(HealAmount));
-        });
+        Subscribe(
+            hooks,
+            HookType.AfterPlayerTurnStartLate,
+            ctx =>
+            {
+                ctx.Execution.Queue.Enqueue(new HealAction(HealAmount));
+            }
+        );
     }
 }

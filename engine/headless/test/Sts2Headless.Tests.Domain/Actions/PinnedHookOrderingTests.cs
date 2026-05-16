@@ -25,7 +25,12 @@ public class PinnedHookOrderingTests
 {
     private static HookContext NewHookCtx()
     {
-        var ctx = new ExecutionContext(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+        var ctx = new ExecutionContext(
+            new LogicalClock(),
+            new Rng(0u),
+            new HookRegistry(),
+            new ActionQueue()
+        );
         return new HookContext(ctx);
     }
 
@@ -58,12 +63,30 @@ public class PinnedHookOrderingTests
         var reg = new HookRegistry();
         var log = new List<string>();
 
-        reg.Subscribe(HookType.AfterPlayerTurnStartEarly, new HookRegistration((_) => log.Add("A-Early")));
-        reg.Subscribe(HookType.AfterPlayerTurnStartEarly, new HookRegistration((_) => log.Add("B-Early")));
-        reg.Subscribe(HookType.AfterPlayerTurnStart, new HookRegistration((_) => log.Add("A-Normal")));
-        reg.Subscribe(HookType.AfterPlayerTurnStart, new HookRegistration((_) => log.Add("B-Normal")));
-        reg.Subscribe(HookType.AfterPlayerTurnStartLate, new HookRegistration((_) => log.Add("A-Late")));
-        reg.Subscribe(HookType.AfterPlayerTurnStartLate, new HookRegistration((_) => log.Add("B-Late")));
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStartEarly,
+            new HookRegistration((_) => log.Add("A-Early"))
+        );
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStartEarly,
+            new HookRegistration((_) => log.Add("B-Early"))
+        );
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStart,
+            new HookRegistration((_) => log.Add("A-Normal"))
+        );
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStart,
+            new HookRegistration((_) => log.Add("B-Normal"))
+        );
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStartLate,
+            new HookRegistration((_) => log.Add("A-Late"))
+        );
+        reg.Subscribe(
+            HookType.AfterPlayerTurnStartLate,
+            new HookRegistration((_) => log.Add("B-Late"))
+        );
 
         // Reproduce upstream's three sequential foreach passes.
         reg.Fire(HookType.AfterPlayerTurnStartEarly, NewHookCtx());
@@ -72,7 +95,8 @@ public class PinnedHookOrderingTests
 
         Assert.Equal(
             new[] { "A-Early", "B-Early", "A-Normal", "B-Normal", "A-Late", "B-Late" },
-            log);
+            log
+        );
     }
 
     /// <summary>
@@ -99,19 +123,35 @@ public class PinnedHookOrderingTests
         var reg = new HookRegistry();
         var log = new List<string>();
 
-        reg.Subscribe(HookType.AfterCardChangedPiles, new HookRegistration((_) => log.Add("A-ord")));
-        reg.Subscribe(HookType.AfterCardChangedPilesLate, new HookRegistration((_) => log.Add("A-late")));
-        reg.Subscribe(HookType.AfterCardChangedPiles, new HookRegistration((_) => log.Add("B-ord")));
-        reg.Subscribe(HookType.AfterCardChangedPilesLate, new HookRegistration((_) => log.Add("B-late")));
-        reg.Subscribe(HookType.AfterCardChangedPiles, new HookRegistration((_) => log.Add("C-ord")));
-        reg.Subscribe(HookType.AfterCardChangedPilesLate, new HookRegistration((_) => log.Add("C-late")));
+        reg.Subscribe(
+            HookType.AfterCardChangedPiles,
+            new HookRegistration((_) => log.Add("A-ord"))
+        );
+        reg.Subscribe(
+            HookType.AfterCardChangedPilesLate,
+            new HookRegistration((_) => log.Add("A-late"))
+        );
+        reg.Subscribe(
+            HookType.AfterCardChangedPiles,
+            new HookRegistration((_) => log.Add("B-ord"))
+        );
+        reg.Subscribe(
+            HookType.AfterCardChangedPilesLate,
+            new HookRegistration((_) => log.Add("B-late"))
+        );
+        reg.Subscribe(
+            HookType.AfterCardChangedPiles,
+            new HookRegistration((_) => log.Add("C-ord"))
+        );
+        reg.Subscribe(
+            HookType.AfterCardChangedPilesLate,
+            new HookRegistration((_) => log.Add("C-late"))
+        );
 
         reg.Fire(HookType.AfterCardChangedPiles, NewHookCtx());
         reg.Fire(HookType.AfterCardChangedPilesLate, NewHookCtx());
 
-        Assert.Equal(
-            new[] { "A-ord", "B-ord", "C-ord", "A-late", "B-late", "C-late" },
-            log);
+        Assert.Equal(new[] { "A-ord", "B-ord", "C-ord", "A-late", "B-late", "C-late" }, log);
     }
 
     /// <summary>
@@ -141,19 +181,29 @@ public class PinnedHookOrderingTests
         var reg = new HookRegistry();
         var log = new List<string>();
 
-        reg.Subscribe(HookType.BeforeCombatStart, new HookRegistration((_) => log.Add("low-ord"), priority: 0));
-        reg.Subscribe(HookType.BeforeCombatStartLate, new HookRegistration((_) => log.Add("high-late"), priority: 100));
-        reg.Subscribe(HookType.BeforeCombatStart, new HookRegistration((_) => log.Add("high-ord"), priority: 100));
-        reg.Subscribe(HookType.BeforeCombatStartLate, new HookRegistration((_) => log.Add("low-late"), priority: 0));
+        reg.Subscribe(
+            HookType.BeforeCombatStart,
+            new HookRegistration((_) => log.Add("low-ord"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.BeforeCombatStartLate,
+            new HookRegistration((_) => log.Add("high-late"), priority: 100)
+        );
+        reg.Subscribe(
+            HookType.BeforeCombatStart,
+            new HookRegistration((_) => log.Add("high-ord"), priority: 100)
+        );
+        reg.Subscribe(
+            HookType.BeforeCombatStartLate,
+            new HookRegistration((_) => log.Add("low-late"), priority: 0)
+        );
 
         reg.Fire(HookType.BeforeCombatStart, NewHookCtx());
         reg.Fire(HookType.BeforeCombatStartLate, NewHookCtx());
 
         // ordinary pass: high (priority 100) before low (priority 0).
         // late pass: high before low.
-        Assert.Equal(
-            new[] { "high-ord", "low-ord", "high-late", "low-late" },
-            log);
+        Assert.Equal(new[] { "high-ord", "low-ord", "high-late", "low-late" }, log);
     }
 
     /// <summary>
@@ -191,22 +241,25 @@ public class PinnedHookOrderingTests
 
         var followup = new LabelAction("FOLLOWUP", log);
 
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (_) => log.Add("ord-A")));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (h) => { log.Add("ord-B-enqueues"); h.Execution.Queue.Enqueue(followup); }));
-        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration(
-            (_) => log.Add("ord-C")));
-        reg.Subscribe(HookType.AfterCardPlayedLate, new HookRegistration(
-            (_) => log.Add("late-A")));
+        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((_) => log.Add("ord-A")));
+        reg.Subscribe(
+            HookType.AfterCardPlayed,
+            new HookRegistration(
+                (h) =>
+                {
+                    log.Add("ord-B-enqueues");
+                    h.Execution.Queue.Enqueue(followup);
+                }
+            )
+        );
+        reg.Subscribe(HookType.AfterCardPlayed, new HookRegistration((_) => log.Add("ord-C")));
+        reg.Subscribe(HookType.AfterCardPlayedLate, new HookRegistration((_) => log.Add("late-A")));
 
         reg.Fire(HookType.AfterCardPlayed, new HookContext(ctx));
         reg.Fire(HookType.AfterCardPlayedLate, new HookContext(ctx));
         queue.Drain(ctx);
 
-        Assert.Equal(
-            new[] { "ord-A", "ord-B-enqueues", "ord-C", "late-A", "FOLLOWUP" },
-            log);
+        Assert.Equal(new[] { "ord-A", "ord-B-enqueues", "ord-C", "late-A", "FOLLOWUP" }, log);
     }
 
     /// <summary>
@@ -241,10 +294,26 @@ public class PinnedHookOrderingTests
         decimal value = 5m;
 
         // Subscribe in interleaved order to verify the two-pass discipline.
-        reg.Subscribe(HookType.ModifyBlockMultiplicative,
-            new HookRegistration((_) => { log.Add("mul*2"); value *= 2m; }));
-        reg.Subscribe(HookType.ModifyBlockAdditive,
-            new HookRegistration((_) => { log.Add("add+3"); value += 3m; }));
+        reg.Subscribe(
+            HookType.ModifyBlockMultiplicative,
+            new HookRegistration(
+                (_) =>
+                {
+                    log.Add("mul*2");
+                    value *= 2m;
+                }
+            )
+        );
+        reg.Subscribe(
+            HookType.ModifyBlockAdditive,
+            new HookRegistration(
+                (_) =>
+                {
+                    log.Add("add+3");
+                    value += 3m;
+                }
+            )
+        );
 
         reg.Fire(HookType.ModifyBlockAdditive, NewHookCtx());
         reg.Fire(HookType.ModifyBlockMultiplicative, NewHookCtx());
@@ -294,20 +363,34 @@ public class PinnedHookOrderingTests
         var log = new List<string>();
 
         // Cross-pass interleaved subscriptions to verify pass discipline.
-        reg.Subscribe(HookType.BeforeTurnEndEarly,
-            new HookRegistration((_) => log.Add("E-lo-1"), priority: 0));
-        reg.Subscribe(HookType.BeforeTurnEndVeryEarly,
-            new HookRegistration((_) => log.Add("VE-hi-2"), priority: 10));
-        reg.Subscribe(HookType.BeforeTurnEnd,
-            new HookRegistration((_) => log.Add("N-only"), priority: 0));
-        reg.Subscribe(HookType.BeforeTurnEndVeryEarly,
-            new HookRegistration((_) => log.Add("VE-lo"), priority: 0));
-        reg.Subscribe(HookType.BeforeTurnEndVeryEarly,
-            new HookRegistration((_) => log.Add("VE-hi-1"), priority: 10));
-        reg.Subscribe(HookType.BeforeTurnEndEarly,
-            new HookRegistration((_) => log.Add("E-hi"), priority: 5));
-        reg.Subscribe(HookType.BeforeTurnEndEarly,
-            new HookRegistration((_) => log.Add("E-lo-2"), priority: 0));
+        reg.Subscribe(
+            HookType.BeforeTurnEndEarly,
+            new HookRegistration((_) => log.Add("E-lo-1"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEndVeryEarly,
+            new HookRegistration((_) => log.Add("VE-hi-2"), priority: 10)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEnd,
+            new HookRegistration((_) => log.Add("N-only"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEndVeryEarly,
+            new HookRegistration((_) => log.Add("VE-lo"), priority: 0)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEndVeryEarly,
+            new HookRegistration((_) => log.Add("VE-hi-1"), priority: 10)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEndEarly,
+            new HookRegistration((_) => log.Add("E-hi"), priority: 5)
+        );
+        reg.Subscribe(
+            HookType.BeforeTurnEndEarly,
+            new HookRegistration((_) => log.Add("E-lo-2"), priority: 0)
+        );
 
         // Reproduce upstream's three sequential foreach passes.
         reg.Fire(HookType.BeforeTurnEndVeryEarly, NewHookCtx());
@@ -317,18 +400,29 @@ public class PinnedHookOrderingTests
         Assert.Equal(
             new[]
             {
-                "VE-hi-2", "VE-hi-1", "VE-lo",  // VeryEarly: hi (regOrder: 2 then 1), then lo
-                "E-hi", "E-lo-1", "E-lo-2",    // Early: hi, then los in regOrder
-                "N-only"                        // Normal: single
+                "VE-hi-2",
+                "VE-hi-1",
+                "VE-lo", // VeryEarly: hi (regOrder: 2 then 1), then lo
+                "E-hi",
+                "E-lo-1",
+                "E-lo-2", // Early: hi, then los in regOrder
+                "N-only", // Normal: single
             },
-            log);
+            log
+        );
     }
 
     private sealed class LabelAction : IAction
     {
         private readonly string _label;
         private readonly List<string> _log;
-        public LabelAction(string label, List<string> log) { _label = label; _log = log; }
+
+        public LabelAction(string label, List<string> log)
+        {
+            _label = label;
+            _log = log;
+        }
+
         public void Execute(ExecutionContext ctx) => _log.Add(_label);
     }
 }

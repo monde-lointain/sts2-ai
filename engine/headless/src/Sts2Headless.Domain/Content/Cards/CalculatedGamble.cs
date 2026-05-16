@@ -12,7 +12,8 @@ public sealed class CalculatedGamble : CardModel
 {
     public const string CanonicalId = "CalculatedGamble";
 
-    public CalculatedGamble() : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public CalculatedGamble()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

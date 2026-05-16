@@ -15,7 +15,8 @@ public sealed class Haze : CardModel
     public const int UpgradeDelta = 2;
     public int Poison => BasePoison;
 
-    public Haze() : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.AllEnemies) { }
+    public Haze()
+        : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.AllEnemies) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

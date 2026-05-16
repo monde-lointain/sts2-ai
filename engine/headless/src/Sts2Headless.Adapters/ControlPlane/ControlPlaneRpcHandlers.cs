@@ -33,7 +33,8 @@ public static class ControlPlaneRpcHandlers
     public static void Register(
         JsonRpcDispatcher dispatcher,
         ControlPlaneSession session,
-        Action? terminate = null)
+        Action? terminate = null
+    )
     {
         ArgumentNullException.ThrowIfNull(dispatcher);
         ArgumentNullException.ThrowIfNull(session);
@@ -55,7 +56,8 @@ public static class ControlPlaneRpcHandlers
             session.RunRng,
             session.PlayerRng,
             session.Tokens,
-            session.Stamp);
+            session.Stamp
+        );
         string base64 = Convert.ToBase64String(blob);
         JsonElement result = JsonSerializer.SerializeToElement(new { state_blob = base64 });
         return JsonRpcResult.Ok(result);
@@ -65,12 +67,17 @@ public static class ControlPlaneRpcHandlers
 
     internal static JsonRpcResult HandleLoadState(ControlPlaneSession session, JsonElement? @params)
     {
-        if (@params is null || @params.Value.ValueKind != JsonValueKind.Object
+        if (
+            @params is null
+            || @params.Value.ValueKind != JsonValueKind.Object
             || !@params.Value.TryGetProperty("state_blob", out JsonElement blobElem)
-            || blobElem.ValueKind != JsonValueKind.String)
+            || blobElem.ValueKind != JsonValueKind.String
+        )
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                "load_state: missing or non-string 'state_blob' param");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                "load_state: missing or non-string 'state_blob' param"
+            );
         }
 
         string base64 = blobElem.GetString()!;
@@ -81,8 +88,10 @@ public static class ControlPlaneRpcHandlers
         }
         catch (FormatException ex)
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                $"load_state: state_blob is not valid base64: {ex.Message}");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                $"load_state: state_blob is not valid base64: {ex.Message}"
+            );
         }
 
         StateBlob decoded;
@@ -95,12 +104,16 @@ public static class ControlPlaneRpcHandlers
             decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(raw);
             state = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
             tokens = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(decoded);
-            (runRng, playerRng) = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToRngBundle(decoded);
+            (runRng, playerRng) = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToRngBundle(
+                decoded
+            );
         }
         catch (StateCodecException ex)
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                $"load_state: codec rejected blob: {ex.Message}");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                $"load_state: codec rejected blob: {ex.Message}"
+            );
         }
 
         session.ReplaceState(state);
@@ -112,12 +125,17 @@ public static class ControlPlaneRpcHandlers
 
     internal static JsonRpcResult HandleSetSeed(ControlPlaneSession session, JsonElement? @params)
     {
-        if (@params is null || @params.Value.ValueKind != JsonValueKind.Object
+        if (
+            @params is null
+            || @params.Value.ValueKind != JsonValueKind.Object
             || !@params.Value.TryGetProperty("seed", out JsonElement seedElem)
-            || seedElem.ValueKind != JsonValueKind.Number)
+            || seedElem.ValueKind != JsonValueKind.Number
+        )
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                "set_seed: missing or non-numeric 'seed' param");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                "set_seed: missing or non-numeric 'seed' param"
+            );
         }
 
         uint seed;
@@ -125,10 +143,16 @@ public static class ControlPlaneRpcHandlers
         {
             seed = seedElem.GetUInt32();
         }
-        catch (Exception ex) when (ex is FormatException || ex is OverflowException || ex is InvalidOperationException)
+        catch (Exception ex)
+            when (ex is FormatException
+                || ex is OverflowException
+                || ex is InvalidOperationException
+            )
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                $"set_seed: 'seed' must fit in a uint32 ({ex.Message})");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                $"set_seed: 'seed' must fit in a uint32 ({ex.Message})"
+            );
         }
 
         // B.1-alpha-T2 (RC-3): reseed by building a fresh RunRngSet via the
@@ -152,8 +176,10 @@ public static class ControlPlaneRpcHandlers
         const int MaxSteps = 64; // safety bound against runaway state machines
         for (int i = 0; i < MaxSteps; i++)
         {
-            if (ctx.State.Phase == CombatPhase.PlayerActing) break;
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.Phase == CombatPhase.PlayerActing)
+                break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             switch (ctx.State.Phase)
             {
@@ -169,25 +195,35 @@ public static class ControlPlaneRpcHandlers
                     // Mid-enemy-acting: drive to end via EnemyTurn re-entry is
                     // not supported; engine completes synchronously in
                     // EnemyTurn. Treat as bug if we land here.
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InternalError,
-                        "step_until_decision: unexpected phase EnemyActing (engine should never pause here).");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InternalError,
+                        "step_until_decision: unexpected phase EnemyActing (engine should never pause here)."
+                    );
                 case CombatPhase.PlayerTurnEnd:
                     // Engine pauses here only as a transient between EndPlayerTurn
                     // and EnemyTurn; the helper transitions to EnemyTurnStart.
                     // Should not normally be observed externally.
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InternalError,
-                        "step_until_decision: unexpected phase PlayerTurnEnd.");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InternalError,
+                        "step_until_decision: unexpected phase PlayerTurnEnd."
+                    );
                 case CombatPhase.PlayerTurnStart:
                     // Engine leaves PlayerTurnStart only via StartCombat / StartPlayerTurn;
                     // both transition directly to PlayerActing.
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InternalError,
-                        "step_until_decision: unexpected phase PlayerTurnStart.");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InternalError,
+                        "step_until_decision: unexpected phase PlayerTurnStart."
+                    );
                 case CombatPhase.CombatStart:
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InternalError,
-                        "step_until_decision: unexpected phase CombatStart (engine should never pause here).");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InternalError,
+                        "step_until_decision: unexpected phase CombatStart (engine should never pause here)."
+                    );
                 default:
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InternalError,
-                        $"step_until_decision: unhandled phase {ctx.State.Phase}.");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InternalError,
+                        $"step_until_decision: unhandled phase {ctx.State.Phase}."
+                    );
             }
         }
 
@@ -200,32 +236,46 @@ public static class ControlPlaneRpcHandlers
         }
         string postHash = HashCurrentState(session);
 
-        var result = JsonSerializer.SerializeToElement(new
-        {
-            post_hash = postHash,
-            legal_actions = legalArr,
-            phase = ctx.State.Phase.ToString(),
-        });
+        var result = JsonSerializer.SerializeToElement(
+            new
+            {
+                post_hash = postHash,
+                legal_actions = legalArr,
+                phase = ctx.State.Phase.ToString(),
+            }
+        );
         return JsonRpcResult.Ok(result);
     }
 
     // === apply_action =====================================================
 
-    internal static JsonRpcResult HandleApplyAction(ControlPlaneSession session, JsonElement? @params)
+    internal static JsonRpcResult HandleApplyAction(
+        ControlPlaneSession session,
+        JsonElement? @params
+    )
     {
-        if (@params is null || @params.Value.ValueKind != JsonValueKind.Object
+        if (
+            @params is null
+            || @params.Value.ValueKind != JsonValueKind.Object
             || !@params.Value.TryGetProperty("action", out JsonElement actionElem)
-            || actionElem.ValueKind != JsonValueKind.Object)
+            || actionElem.ValueKind != JsonValueKind.Object
+        )
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                "apply_action: missing or non-object 'action' param");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                "apply_action: missing or non-object 'action' param"
+            );
         }
 
-        if (!actionElem.TryGetProperty("type", out JsonElement typeElem)
-            || typeElem.ValueKind != JsonValueKind.String)
+        if (
+            !actionElem.TryGetProperty("type", out JsonElement typeElem)
+            || typeElem.ValueKind != JsonValueKind.String
+        )
         {
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                "apply_action: 'action.type' missing or non-string");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                "apply_action: 'action.type' missing or non-string"
+            );
         }
         string type = typeElem.GetString()!;
         CombatContext ctx = session.Context;
@@ -236,16 +286,22 @@ public static class ControlPlaneRpcHandlers
             {
                 case "play_card":
                 {
-                    if (!actionElem.TryGetProperty("card_instance_id", out JsonElement idElem)
-                        || idElem.ValueKind != JsonValueKind.Number)
+                    if (
+                        !actionElem.TryGetProperty("card_instance_id", out JsonElement idElem)
+                        || idElem.ValueKind != JsonValueKind.Number
+                    )
                     {
-                        return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                            "apply_action: play_card requires numeric 'card_instance_id'");
+                        return JsonRpcResult.Error(
+                            JsonRpcErrorCodes.InvalidParams,
+                            "apply_action: play_card requires numeric 'card_instance_id'"
+                        );
                     }
                     uint cardId = idElem.GetUInt32();
                     uint? targetId = null;
-                    if (actionElem.TryGetProperty("target_enemy_id", out JsonElement tgtElem)
-                        && tgtElem.ValueKind == JsonValueKind.Number)
+                    if (
+                        actionElem.TryGetProperty("target_enemy_id", out JsonElement tgtElem)
+                        && tgtElem.ValueKind == JsonValueKind.Number
+                    )
                     {
                         targetId = tgtElem.GetUInt32();
                     }
@@ -258,8 +314,10 @@ public static class ControlPlaneRpcHandlers
                     break;
                 }
                 default:
-                    return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                        $"apply_action: unknown action type '{type}'");
+                    return JsonRpcResult.Error(
+                        JsonRpcErrorCodes.InvalidParams,
+                        $"apply_action: unknown action type '{type}'"
+                    );
             }
         }
         catch (InvalidOperationException ex)
@@ -267,8 +325,10 @@ public static class ControlPlaneRpcHandlers
             // Engine raises this for illegal actions (insufficient energy,
             // wrong phase, unknown card id, etc.). Surface as application
             // error — invalid params from the orchestrator's perspective.
-            return JsonRpcResult.Error(JsonRpcErrorCodes.InvalidParams,
-                $"apply_action: rejected by engine: {ex.Message}");
+            return JsonRpcResult.Error(
+                JsonRpcErrorCodes.InvalidParams,
+                $"apply_action: rejected by engine: {ex.Message}"
+            );
         }
 
         string postHash = HashCurrentState(session);
@@ -293,7 +353,13 @@ public static class ControlPlaneRpcHandlers
             {
                 // Allow the response line to flush before shutting down.
                 Thread.Sleep(50);
-                try { terminate(); } catch { /* swallowed — best-effort shutdown */ }
+                try
+                {
+                    terminate();
+                }
+                catch
+                { /* swallowed — best-effort shutdown */
+                }
             });
         }
         return JsonRpcResult.Ok(JsonSerializer.SerializeToElement(new { ok = true }));
@@ -320,16 +386,13 @@ public static class ControlPlaneRpcHandlers
                         target_enemy_id = pc.TargetEnemyId.Value,
                     };
                 }
-                return new
-                {
-                    type = "play_card",
-                    card_instance_id = pc.CardInstanceId,
-                };
+                return new { type = "play_card", card_instance_id = pc.CardInstanceId };
             case PlayerAction.EndTurn:
                 return new { type = "end_turn" };
             default:
                 throw new InvalidOperationException(
-                    $"SerializeAction: unknown PlayerAction variant {action.GetType().Name}");
+                    $"SerializeAction: unknown PlayerAction variant {action.GetType().Name}"
+                );
         }
     }
 
@@ -345,7 +408,8 @@ public static class ControlPlaneRpcHandlers
             session.RunRng,
             session.PlayerRng,
             session.Tokens,
-            session.Stamp);
+            session.Stamp
+        );
         return CanonicalHash.Sha256Hex(blob);
     }
 }

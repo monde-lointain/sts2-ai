@@ -32,7 +32,10 @@ public static class FixtureLocator
             dir = Path.GetDirectoryName(dir);
         }
         throw new InvalidOperationException(
-            "Could not locate repo root from " + AppContext.BaseDirectory + "; " +
-            "sts2-headless.sln must be in some parent directory.");
+            "Could not locate repo root from "
+                + AppContext.BaseDirectory
+                + "; "
+                + "sts2-headless.sln must be in some parent directory."
+        );
     }
 }

@@ -15,7 +15,8 @@ public sealed class Backstab : CardModel
     public const int UpgradeDelta = 4;
     public int Damage => BaseDamage;
 
-    public Backstab() : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Backstab()
+        : base(CanonicalId, 0, CardType.Attack, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

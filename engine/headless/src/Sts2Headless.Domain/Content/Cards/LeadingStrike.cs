@@ -15,7 +15,8 @@ public sealed class LeadingStrike : CardModel
     public int Damage => BaseDamage;
     public const int Shivs = 2;
 
-    public LeadingStrike() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
+    public LeadingStrike()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

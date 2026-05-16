@@ -15,7 +15,8 @@ public sealed class FanOfKnives : CardModel
     public const int UpgradeDelta = 1;
     public int Shivs => BaseShivs;
 
-    public FanOfKnives() : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public FanOfKnives()
+        : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

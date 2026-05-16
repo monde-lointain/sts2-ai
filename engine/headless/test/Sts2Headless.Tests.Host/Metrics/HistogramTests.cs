@@ -16,9 +16,9 @@ public sealed class HistogramTests
         var r = new PrometheusMetricsRegistry();
         double[] buckets = { 10, 50, 100, 500 };
         r.RegisterHistogram("q1_lat_microseconds", buckets, "Latency in µs.");
-        r.ObserveHistogram("q1_lat_microseconds", 7);    // <= 10
-        r.ObserveHistogram("q1_lat_microseconds", 25);   // <= 50
-        r.ObserveHistogram("q1_lat_microseconds", 75);   // <= 100
+        r.ObserveHistogram("q1_lat_microseconds", 7); // <= 10
+        r.ObserveHistogram("q1_lat_microseconds", 25); // <= 50
+        r.ObserveHistogram("q1_lat_microseconds", 75); // <= 100
         r.ObserveHistogram("q1_lat_microseconds", 1000); // +Inf only
 
         string s = r.RenderPrometheus();
@@ -49,12 +49,15 @@ public sealed class HistogramTests
     public void Histogram_buckets_must_be_strictly_ascending()
     {
         var r = new PrometheusMetricsRegistry();
-        Assert.Throws<ArgumentException>(
-            () => r.RegisterHistogram("q1_bad", new double[] { 10, 10, 50 }, "Bad histogram."));
-        Assert.Throws<ArgumentException>(
-            () => r.RegisterHistogram("q1_bad", new double[] { 50, 10 }, "Bad histogram."));
-        Assert.Throws<ArgumentException>(
-            () => r.RegisterHistogram("q1_bad", Array.Empty<double>(), "Empty histogram."));
+        Assert.Throws<ArgumentException>(() =>
+            r.RegisterHistogram("q1_bad", new double[] { 10, 10, 50 }, "Bad histogram.")
+        );
+        Assert.Throws<ArgumentException>(() =>
+            r.RegisterHistogram("q1_bad", new double[] { 50, 10 }, "Bad histogram.")
+        );
+        Assert.Throws<ArgumentException>(() =>
+            r.RegisterHistogram("q1_bad", Array.Empty<double>(), "Empty histogram.")
+        );
     }
 
     [Fact]

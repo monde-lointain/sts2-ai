@@ -17,7 +17,8 @@ public class SectionWriterTests
     private static ManifestStamp BuildStamp()
     {
         byte[] contentHash = new byte[32];
-        for (int i = 0; i < 32; i++) contentHash[i] = (byte)i;
+        for (int i = 0; i < 32; i++)
+            contentHash[i] = (byte)i;
         return new ManifestStamp("abc123def", "build-XYZ-001", contentHash);
     }
 
@@ -25,7 +26,16 @@ public class SectionWriterTests
         new CombatState(
             TurnCounter: 0,
             Phase: CombatPhase.CombatStart,
-            Player: new Creature(0, "Silent", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, IsPlayer: true),
+            Player: new Creature(
+                0,
+                "Silent",
+                70,
+                70,
+                0,
+                ImmutableList<PowerInstance>.Empty,
+                null,
+                IsPlayer: true
+            ),
             Enemies: ImmutableList<Creature>.Empty,
             Energy: 3,
             BaseEnergyPerTurn: 3,
@@ -35,7 +45,8 @@ public class SectionWriterTests
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: 0,
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
 
     [Fact]
     public void Serialize_minimal_state_roundtrips()
@@ -47,7 +58,13 @@ public class SectionWriterTests
         tokens.GetOrAddId("StrikeSilent");
         tokens.GetOrAddId("DefendSilent");
 
-        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, tokens, BuildStamp());
+        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            tokens,
+            BuildStamp()
+        );
 
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         Assert.Equal(StateCodecConstants.SchemaVersion, decoded.SchemaVersion);
@@ -56,10 +73,14 @@ public class SectionWriterTests
         Assert.Equal("build-XYZ-001", decoded.Stamp.BuildId);
         Assert.Equal(BuildStamp().ContentHash, decoded.Stamp.ContentHash);
 
-        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
         Assert.Equal(state, recovered);
 
-        TokenMap recoveredTokens = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(decoded);
+        TokenMap recoveredTokens = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(
+            decoded
+        );
         Assert.Equal(2, recoveredTokens.Count);
         Assert.True(recoveredTokens.TryGetId("StrikeSilent", out int id1));
         Assert.Equal(0, id1);
@@ -70,15 +91,34 @@ public class SectionWriterTests
     [Fact]
     public void Serialize_state_with_enemies_and_powers_roundtrips()
     {
-        Creature player = new(0, "Silent", 70, 80, 5,
+        Creature player = new(
+            0,
+            "Silent",
+            70,
+            80,
+            5,
             ImmutableList.Create(new PowerInstance("StrengthPower", 2, 0u, false)),
-            null, IsPlayer: true);
-        Creature enemy = new(1, "CalcifiedCultist", 50, 50, 3,
+            null,
+            IsPlayer: true
+        );
+        Creature enemy = new(
+            1,
+            "CalcifiedCultist",
+            50,
+            50,
+            3,
             ImmutableList.Create(
                 new PowerInstance("RitualPower", 3, 1u, false),
-                new PowerInstance("PoisonPower", 7, 0u, true)),
-            new MonsterIntent(MonsterIntentKind.Attack, 6, 1, ImmutableList<MonsterIntentPower>.Empty),
-            IsPlayer: false);
+                new PowerInstance("PoisonPower", 7, 0u, true)
+            ),
+            new MonsterIntent(
+                MonsterIntentKind.Attack,
+                6,
+                1,
+                ImmutableList<MonsterIntentPower>.Empty
+            ),
+            IsPlayer: false
+        );
 
         CardInstance card1 = new(10u, "StrikeSilent", 0, null);
         CardInstance card2 = new(11u, "StrikeSilent", 1, null);
@@ -97,15 +137,24 @@ public class SectionWriterTests
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: 7,
-            MonsterRngCounter: 11);
+            MonsterRngCounter: 11
+        );
 
         RunRngSet runRng = new("seed");
         PlayerRngSet playerRng = new(123u);
         TokenMap tokens = new();
 
-        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, tokens, BuildStamp());
+        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            tokens,
+            BuildStamp()
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
-        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        CombatState recovered = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
         Assert.Equal(state, recovered);
     }
 
@@ -117,7 +166,13 @@ public class SectionWriterTests
         PlayerRngSet playerRng = new(0u);
         TokenMap tokens = new();
 
-        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, tokens, BuildStamp());
+        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            tokens,
+            BuildStamp()
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         TokenMap rec = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(decoded);
         Assert.Equal(0, rec.Count);
@@ -139,8 +194,20 @@ public class SectionWriterTests
         RunRngSet runRng = new("s");
         PlayerRngSet playerRng = new(1u);
 
-        byte[] blobA = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, a, BuildStamp());
-        byte[] blobB = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, b, BuildStamp());
+        byte[] blobA = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            a,
+            BuildStamp()
+        );
+        byte[] blobB = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            b,
+            BuildStamp()
+        );
         Assert.Equal(blobA, blobB);
     }
 
@@ -160,7 +227,13 @@ public class SectionWriterTests
         CombatState state = BuildMinimalState();
         TokenMap tokens = new();
 
-        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(state, runRng, playerRng, tokens, BuildStamp());
+        byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
+            state,
+            runRng,
+            playerRng,
+            tokens,
+            BuildStamp()
+        );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
         (RunRngSet recoveredRun, PlayerRngSet recoveredPlayer) =
             global::Sts2Headless.Adapters.StateCodec.StateCodec.ToRngBundle(decoded);

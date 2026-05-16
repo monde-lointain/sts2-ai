@@ -39,16 +39,15 @@ public class Rng : IRngSource
     }
 
     public Rng(uint seed, string name)
-        : this(seed + (uint)StringHelpers.GetDeterministicHashCode(name))
-    {
-    }
+        : this(seed + (uint)StringHelpers.GetDeterministicHashCode(name)) { }
 
     public void FastForwardCounter(int targetCount)
     {
         if (Counter > targetCount)
         {
             throw new InvalidOperationException(
-                $"Cannot fast-forward an Rng counter to a lower number (current = {Counter}, target = {targetCount})");
+                $"Cannot fast-forward an Rng counter to a lower number (current = {Counter}, target = {targetCount})"
+            );
         }
         while (Counter < targetCount)
         {
@@ -73,20 +72,26 @@ public class Rng : IRngSource
     {
         if (minInclusive >= maxExclusive)
         {
-            throw new ArgumentOutOfRangeException("minInclusive", "Minimum must be lower than maximum.");
+            throw new ArgumentOutOfRangeException(
+                "minInclusive",
+                "Minimum must be lower than maximum."
+            );
         }
         Counter++;
         return _random.Next(minInclusive, maxExclusive);
     }
 
-    public uint NextUnsignedInt(uint maxExclusive = uint.MaxValue)
-        => NextUnsignedInt(0u, maxExclusive);
+    public uint NextUnsignedInt(uint maxExclusive = uint.MaxValue) =>
+        NextUnsignedInt(0u, maxExclusive);
 
     public uint NextUnsignedInt(uint minInclusive, uint maxExclusive)
     {
         if (minInclusive >= maxExclusive)
         {
-            throw new ArgumentOutOfRangeException("minInclusive", "Minimum must be lower than maximum.");
+            throw new ArgumentOutOfRangeException(
+                "minInclusive",
+                "Minimum must be lower than maximum."
+            );
         }
         Counter++;
         double r = _random.NextDouble();
@@ -101,7 +106,10 @@ public class Rng : IRngSource
     {
         if (min > max)
         {
-            throw new ArgumentOutOfRangeException("min", "Minimum must not be higher than maximum.");
+            throw new ArgumentOutOfRangeException(
+                "min",
+                "Minimum must not be higher than maximum."
+            );
         }
         Counter++;
         return (float)(_random.NextDouble() * (double)(max - min) + (double)min);
@@ -117,20 +125,35 @@ public class Rng : IRngSource
     {
         if (min > max)
         {
-            throw new ArgumentOutOfRangeException("min", "Minimum must not be higher than maximum.");
+            throw new ArgumentOutOfRangeException(
+                "min",
+                "Minimum must not be higher than maximum."
+            );
         }
         Counter++;
         return _random.NextDouble() * (max - min) + min;
     }
 
-    public float NextGaussianFloat(float mean = 0f, float stdDev = 1f, float min = 0f, float max = 1f)
-        => (float)NextGaussianDouble(mean, stdDev, min, max);
+    public float NextGaussianFloat(
+        float mean = 0f,
+        float stdDev = 1f,
+        float min = 0f,
+        float max = 1f
+    ) => (float)NextGaussianDouble(mean, stdDev, min, max);
 
-    public double NextGaussianDouble(double mean = 0.0, double stdDev = 1.0, double min = 0.0, double max = 1.0)
+    public double NextGaussianDouble(
+        double mean = 0.0,
+        double stdDev = 1.0,
+        double min = 0.0,
+        double max = 1.0
+    )
     {
         if (min > max)
         {
-            throw new ArgumentOutOfRangeException("min", "Minimum must not be higher than maximum.");
+            throw new ArgumentOutOfRangeException(
+                "min",
+                "Minimum must not be higher than maximum."
+            );
         }
         Counter++;
         double result;
@@ -142,8 +165,7 @@ public class Rng : IRngSource
             double angle = Math.PI * 2.0 * n;
             double z = mag * Math.Cos(angle);
             result = mean + z * stdDev;
-        }
-        while (result < 0.0 || result > 1.0);
+        } while (result < 0.0 || result > 1.0);
         return result * (max - min) + min;
     }
 
@@ -161,8 +183,7 @@ public class Rng : IRngSource
             double z = Math.Sqrt(-2.0 * Math.Log(d)) * Math.Sin(Math.PI * 2.0 * n);
             double a = (double)mean + (double)stdDev * z;
             r = (int)Math.Round(a);
-        }
-        while (r < min || r > max);
+        } while (r < min || r > max);
         return r;
     }
 
@@ -178,10 +199,15 @@ public class Rng : IRngSource
         return source.ElementAt(index);
     }
 
-    public T? WeightedNextItem<T>(IEnumerable<T> items, Func<T?, float> weightFetcher)
-        => WeightedNextItem(NextFloat(), items, weightFetcher, default(T)!);
+    public T? WeightedNextItem<T>(IEnumerable<T> items, Func<T?, float> weightFetcher) =>
+        WeightedNextItem(NextFloat(), items, weightFetcher, default(T)!);
 
-    public static T WeightedNextItem<T>(float randInput, IEnumerable<T> items, Func<T, float> weightFetcher, T fallback)
+    public static T WeightedNextItem<T>(
+        float randInput,
+        IEnumerable<T> items,
+        Func<T, float> weightFetcher,
+        T fallback
+    )
     {
         float total = items.Sum(weightFetcher);
         float remaining = randInput * total;

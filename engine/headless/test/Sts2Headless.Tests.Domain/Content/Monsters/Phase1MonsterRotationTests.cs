@@ -21,9 +21,8 @@ namespace Sts2Headless.Tests.Domain.Content.Monsters;
 public sealed class Phase1MonsterRotationTests
 {
     /// <summary>Vanilla branch context — full HP, no powers.</summary>
-    private static MoveBranchContext FullHp(int hp = 100, int maxHp = 100)
-        => new(CurrentHp: hp, MaxHp: maxHp,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+    private static MoveBranchContext FullHp(int hp = 100, int maxHp = 100) =>
+        new(CurrentHp: hp, MaxHp: maxHp, HasPower: _ => false, GetPowerStacks: _ => 0);
 
     // ===== Chomper: CLAMP ↔ SCREECH =====
 
@@ -89,7 +88,8 @@ public sealed class Phase1MonsterRotationTests
             new CombatBootstrap(cards, relics, powers, monsters, encounters),
             new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck),
             new RunRngSet("seed-7"),
-            new LogicalClock());
+            new LogicalClock()
+        );
 
         // End the player turn and run enemy turn — both Chompers should CLAMP for 8x2.
         // Two chompers × 16 = 32 damage; player goes from 70 → 38.
@@ -113,13 +113,16 @@ public sealed class Phase1MonsterRotationTests
         Exoskeleton ex = new();
         Assert.Equal(Exoskeleton.SkitterMoveId, ex.InitialMoveId);
 
-        var ctx = new MoveBranchContext(20, 20,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+        var ctx = new MoveBranchContext(20, 20, HasPower: _ => false, GetPowerStacks: _ => 0);
         var rng = new RunRngSet("exo-seed-1");
-        Assert.Equal(Exoskeleton.MandiblesMoveId,
-            ex.AdvanceMoveId(Exoskeleton.SkitterMoveId, ctx, rng));
-        Assert.Equal(Exoskeleton.EnrageMoveId,
-            ex.AdvanceMoveId(Exoskeleton.MandiblesMoveId, ctx, rng));
+        Assert.Equal(
+            Exoskeleton.MandiblesMoveId,
+            ex.AdvanceMoveId(Exoskeleton.SkitterMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            Exoskeleton.EnrageMoveId,
+            ex.AdvanceMoveId(Exoskeleton.MandiblesMoveId, ctx, rng)
+        );
         // ENRAGE branches; both branches valid; reproducible for fixed seed.
         string after = ex.AdvanceMoveId(Exoskeleton.EnrageMoveId, ctx, rng);
         Assert.True(after == Exoskeleton.SkitterMoveId || after == Exoskeleton.MandiblesMoveId);
@@ -129,8 +132,7 @@ public sealed class Phase1MonsterRotationTests
     public void Exoskeleton_rng_branch_is_seed_deterministic()
     {
         Exoskeleton ex = new();
-        var ctx = new MoveBranchContext(20, 20,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+        var ctx = new MoveBranchContext(20, 20, HasPower: _ => false, GetPowerStacks: _ => 0);
         string a = ex.AdvanceMoveId(Exoskeleton.EnrageMoveId, ctx, new RunRngSet("exo-pin"));
         string b = ex.AdvanceMoveId(Exoskeleton.EnrageMoveId, ctx, new RunRngSet("exo-pin"));
         Assert.Equal(a, b);
@@ -143,15 +145,20 @@ public sealed class Phase1MonsterRotationTests
     {
         LouseProgenitor l = new();
         Assert.Equal(LouseProgenitor.WebCannonMoveId, l.InitialMoveId);
-        var ctx = new MoveBranchContext(134, 136,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+        var ctx = new MoveBranchContext(134, 136, HasPower: _ => false, GetPowerStacks: _ => 0);
         var rng = new RunRngSet("louse-seed");
-        Assert.Equal(LouseProgenitor.CurlAndGrowMoveId,
-            l.AdvanceMoveId(LouseProgenitor.WebCannonMoveId, ctx, rng));
-        Assert.Equal(LouseProgenitor.PounceMoveId,
-            l.AdvanceMoveId(LouseProgenitor.CurlAndGrowMoveId, ctx, rng));
-        Assert.Equal(LouseProgenitor.WebCannonMoveId,
-            l.AdvanceMoveId(LouseProgenitor.PounceMoveId, ctx, rng));
+        Assert.Equal(
+            LouseProgenitor.CurlAndGrowMoveId,
+            l.AdvanceMoveId(LouseProgenitor.WebCannonMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            LouseProgenitor.PounceMoveId,
+            l.AdvanceMoveId(LouseProgenitor.CurlAndGrowMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            LouseProgenitor.WebCannonMoveId,
+            l.AdvanceMoveId(LouseProgenitor.PounceMoveId, ctx, rng)
+        );
     }
 
     [Fact]
@@ -163,8 +170,10 @@ public sealed class Phase1MonsterRotationTests
         LouseProgenitor l = new();
         Assert.Contains(
             l.SpawnPowers,
-            p => p.PowerId == Sts2Headless.Domain.Content.Powers.PowerIds.CurlUp
-                && p.Stacks == LouseProgenitor.CurlBlock);
+            p =>
+                p.PowerId == Sts2Headless.Domain.Content.Powers.PowerIds.CurlUp
+                && p.Stacks == LouseProgenitor.CurlBlock
+        );
     }
 
     [Fact]
@@ -173,8 +182,10 @@ public sealed class Phase1MonsterRotationTests
         LagavulinMatriarch lag = new();
         Assert.Contains(
             lag.SpawnPowers,
-            p => p.PowerId == Sts2Headless.Domain.Content.Powers.PowerIds.Plated
-                && p.Stacks == LagavulinMatriarch.PlatingStacks);
+            p =>
+                p.PowerId == Sts2Headless.Domain.Content.Powers.PowerIds.Plated
+                && p.Stacks == LagavulinMatriarch.PlatingStacks
+        );
     }
 
     // ===== LagavulinMatriarch HP-threshold gate =====
@@ -187,15 +198,17 @@ public sealed class Phase1MonsterRotationTests
 
         var rng = new RunRngSet("lag-seed");
         // Above half: stays asleep.
-        var fullHp = new MoveBranchContext(222, 222,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
-        Assert.Equal(LagavulinMatriarch.SleepMoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.SleepMoveId, fullHp, rng));
+        var fullHp = new MoveBranchContext(222, 222, HasPower: _ => false, GetPowerStacks: _ => 0);
+        Assert.Equal(
+            LagavulinMatriarch.SleepMoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.SleepMoveId, fullHp, rng)
+        );
         // Below half: wakes to SLASH.
-        var lowHp = new MoveBranchContext(80, 222,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
-        Assert.Equal(LagavulinMatriarch.SlashMoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.SleepMoveId, lowHp, rng));
+        var lowHp = new MoveBranchContext(80, 222, HasPower: _ => false, GetPowerStacks: _ => 0);
+        Assert.Equal(
+            LagavulinMatriarch.SlashMoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.SleepMoveId, lowHp, rng)
+        );
     }
 
     [Fact]
@@ -203,16 +216,23 @@ public sealed class Phase1MonsterRotationTests
     {
         LagavulinMatriarch lag = new();
         var rng = new RunRngSet("lag-cycle");
-        var ctx = new MoveBranchContext(120, 222,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
-        Assert.Equal(LagavulinMatriarch.DisembowelMoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.SlashMoveId, ctx, rng));
-        Assert.Equal(LagavulinMatriarch.Slash2MoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.DisembowelMoveId, ctx, rng));
-        Assert.Equal(LagavulinMatriarch.SoulSiphonMoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.Slash2MoveId, ctx, rng));
-        Assert.Equal(LagavulinMatriarch.SlashMoveId,
-            lag.AdvanceMoveId(LagavulinMatriarch.SoulSiphonMoveId, ctx, rng));
+        var ctx = new MoveBranchContext(120, 222, HasPower: _ => false, GetPowerStacks: _ => 0);
+        Assert.Equal(
+            LagavulinMatriarch.DisembowelMoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.SlashMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            LagavulinMatriarch.Slash2MoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.DisembowelMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            LagavulinMatriarch.SoulSiphonMoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.Slash2MoveId, ctx, rng)
+        );
+        Assert.Equal(
+            LagavulinMatriarch.SlashMoveId,
+            lag.AdvanceMoveId(LagavulinMatriarch.SoulSiphonMoveId, ctx, rng)
+        );
     }
 
     // ===== FossilStalker RAND rotation =====
@@ -222,15 +242,15 @@ public sealed class Phase1MonsterRotationTests
     {
         FossilStalker fs = new();
         Assert.Equal(FossilStalker.LatchMoveId, fs.InitialMoveId);
-        var ctx = new MoveBranchContext(105, 110,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+        var ctx = new MoveBranchContext(105, 110, HasPower: _ => false, GetPowerStacks: _ => 0);
         // Across seeds, all three branches should be reachable.
         HashSet<string> seen = new();
         for (int i = 0; i < 200; i++)
         {
             var rng = new RunRngSet($"fs-{i}");
             seen.Add(fs.AdvanceMoveId(FossilStalker.LatchMoveId, ctx, rng));
-            if (seen.Count == 3) break;
+            if (seen.Count == 3)
+                break;
         }
         Assert.Contains(FossilStalker.TackleMoveId, seen);
         Assert.Contains(FossilStalker.LatchMoveId, seen);
@@ -244,12 +264,15 @@ public sealed class Phase1MonsterRotationTests
     {
         CeremonialBeast cb = new();
         Assert.Equal(CeremonialBeast.StampMoveId, cb.InitialMoveId);
-        var ctx = new MoveBranchContext(252, 252,
-            HasPower: _ => false, GetPowerStacks: _ => 0);
+        var ctx = new MoveBranchContext(252, 252, HasPower: _ => false, GetPowerStacks: _ => 0);
         var rng = new RunRngSet("cb-seed");
-        Assert.Equal(CeremonialBeast.PlowMoveId,
-            cb.AdvanceMoveId(CeremonialBeast.StampMoveId, ctx, rng));
-        Assert.Equal(CeremonialBeast.PlowMoveId,
-            cb.AdvanceMoveId(CeremonialBeast.PlowMoveId, ctx, rng));
+        Assert.Equal(
+            CeremonialBeast.PlowMoveId,
+            cb.AdvanceMoveId(CeremonialBeast.StampMoveId, ctx, rng)
+        );
+        Assert.Equal(
+            CeremonialBeast.PlowMoveId,
+            cb.AdvanceMoveId(CeremonialBeast.PlowMoveId, ctx, rng)
+        );
     }
 }

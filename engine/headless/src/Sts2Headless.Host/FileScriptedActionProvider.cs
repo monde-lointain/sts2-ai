@@ -55,9 +55,7 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
     /// legal-action translation can match by <c>CardModel.Id</c>.
     /// </summary>
     public FileScriptedActionProvider(string path, CardCatalog cards)
-        : this(ReadAllLines(path), cards)
-    {
-    }
+        : this(ReadAllLines(path), cards) { }
 
     /// <summary>Constructor for in-memory script content (used by tests).</summary>
     public FileScriptedActionProvider(IEnumerable<string> scriptLines, CardCatalog cards)
@@ -73,7 +71,8 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
     public PlayerAction? NextAction(CombatState state, ImmutableArray<PlayerAction> legal)
     {
         ArgumentNullException.ThrowIfNull(state);
-        if (_cursor >= _directives.Count) return null;
+        if (_cursor >= _directives.Count)
+            return null;
         ScriptDirective d = _directives[_cursor];
         _cursor++;
         return Resolve(d, state, legal);
@@ -81,65 +80,76 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
 
     // === Resolution ========================================================
 
-    private PlayerAction Resolve(ScriptDirective d, CombatState state, ImmutableArray<PlayerAction> legal)
+    private PlayerAction Resolve(
+        ScriptDirective d,
+        CombatState state,
+        ImmutableArray<PlayerAction> legal
+    )
     {
         switch (d.Kind)
         {
             case ScriptDirectiveKind.EndTurn:
+            {
+                var endTurn = legal.OfType<PlayerAction.EndTurn>().FirstOrDefault();
+                if (endTurn is null)
                 {
-                    var endTurn = legal.OfType<PlayerAction.EndTurn>().FirstOrDefault();
-                    if (endTurn is null)
-                    {
-                        throw new ScriptParseException(
-                            $"line {d.Line}: end_turn directive issued but EndTurn is not legal in phase {state.Phase}.");
-                    }
-                    return endTurn;
+                    throw new ScriptParseException(
+                        $"line {d.Line}: end_turn directive issued but EndTurn is not legal in phase {state.Phase}."
+                    );
                 }
+                return endTurn;
+            }
             case ScriptDirectiveKind.Play:
+            {
+                string cardId = d.CardModelId!;
+                if (!_cards.Contains(cardId))
                 {
-                    string cardId = d.CardModelId!;
-                    if (!_cards.Contains(cardId))
-                    {
-                        throw new ScriptParseException(
-                            $"line {d.Line}: unknown card model id '{cardId}'.");
-                    }
-                    // Find the legal PlayCard for THIS card model.
-                    var candidates = new List<PlayerAction.PlayCard>();
-                    foreach (PlayerAction a in legal)
-                    {
-                        if (a is PlayerAction.PlayCard pc)
-                        {
-                            CardInstance? inst = state.HandPile.Cards
-                                .FirstOrDefault(c => c.InstanceId == pc.CardInstanceId);
-                            if (inst is null) continue;
-                            if (inst.ModelId == cardId)
-                            {
-                                candidates.Add(pc);
-                            }
-                        }
-                    }
-                    if (candidates.Count == 0)
-                    {
-                        throw new ScriptParseException(
-                            $"line {d.Line}: no legal play for card '{cardId}' in current hand " +
-                            $"(hand: {string.Join(",", state.HandPile.Cards.Select(c => c.ModelId))}).");
-                    }
-                    // Pick a candidate. If target= specified, prefer the matching one.
-                    // Otherwise (or if no match), pick the first.
-                    if (d.TargetEnemyId.HasValue)
-                    {
-                        var matched = candidates
-                            .FirstOrDefault(pc => pc.TargetEnemyId == d.TargetEnemyId.Value);
-                        if (matched is null)
-                        {
-                            throw new ScriptParseException(
-                                $"line {d.Line}: card '{cardId}' target={d.TargetEnemyId.Value} not legal " +
-                                $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString() ?? "self"))}).");
-                        }
-                        return matched;
-                    }
-                    return candidates[0];
+                    throw new ScriptParseException(
+                        $"line {d.Line}: unknown card model id '{cardId}'."
+                    );
                 }
+                // Find the legal PlayCard for THIS card model.
+                var candidates = new List<PlayerAction.PlayCard>();
+                foreach (PlayerAction a in legal)
+                {
+                    if (a is PlayerAction.PlayCard pc)
+                    {
+                        CardInstance? inst = state.HandPile.Cards.FirstOrDefault(c =>
+                            c.InstanceId == pc.CardInstanceId
+                        );
+                        if (inst is null)
+                            continue;
+                        if (inst.ModelId == cardId)
+                        {
+                            candidates.Add(pc);
+                        }
+                    }
+                }
+                if (candidates.Count == 0)
+                {
+                    throw new ScriptParseException(
+                        $"line {d.Line}: no legal play for card '{cardId}' in current hand "
+                            + $"(hand: {string.Join(",", state.HandPile.Cards.Select(c => c.ModelId))})."
+                    );
+                }
+                // Pick a candidate. If target= specified, prefer the matching one.
+                // Otherwise (or if no match), pick the first.
+                if (d.TargetEnemyId.HasValue)
+                {
+                    var matched = candidates.FirstOrDefault(pc =>
+                        pc.TargetEnemyId == d.TargetEnemyId.Value
+                    );
+                    if (matched is null)
+                    {
+                        throw new ScriptParseException(
+                            $"line {d.Line}: card '{cardId}' target={d.TargetEnemyId.Value} not legal "
+                                + $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString() ?? "self"))})."
+                        );
+                    }
+                    return matched;
+                }
+                return candidates[0];
+            }
             default:
                 throw new ScriptParseException($"line {d.Line}: unknown directive kind {d.Kind}.");
         }
@@ -168,18 +178,23 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
         {
             n++;
             string line = rawLine.Trim();
-            if (line.Length == 0) continue;
-            if (line.StartsWith('#')) continue;
+            if (line.Length == 0)
+                continue;
+            if (line.StartsWith('#'))
+                continue;
 
             string[] tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (tokens.Length == 0) continue;
+            if (tokens.Length == 0)
+                continue;
 
             switch (tokens[0])
             {
                 case "end_turn":
                     if (tokens.Length != 1)
                     {
-                        throw new ScriptParseException($"line {n}: end_turn takes no arguments (got '{line}').");
+                        throw new ScriptParseException(
+                            $"line {n}: end_turn takes no arguments (got '{line}')."
+                        );
                     }
                     list.Add(new ScriptDirective(ScriptDirectiveKind.EndTurn, null, null, n));
                     break;
@@ -196,16 +211,26 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
                         if (kv.StartsWith("target=", StringComparison.Ordinal))
                         {
                             string value = kv["target=".Length..];
-                            if (!uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint tid))
+                            if (
+                                !uint.TryParse(
+                                    value,
+                                    NumberStyles.Integer,
+                                    CultureInfo.InvariantCulture,
+                                    out uint tid
+                                )
+                            )
                             {
                                 throw new ScriptParseException(
-                                    $"line {n}: target= expected unsigned integer, got '{value}'.");
+                                    $"line {n}: target= expected unsigned integer, got '{value}'."
+                                );
                             }
                             targetId = tid;
                         }
                         else
                         {
-                            throw new ScriptParseException($"line {n}: unknown play option '{kv}'.");
+                            throw new ScriptParseException(
+                                $"line {n}: unknown play option '{kv}'."
+                            );
                         }
                     }
                     list.Add(new ScriptDirective(ScriptDirectiveKind.Play, cardId, targetId, n));
@@ -217,13 +242,18 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
         return list;
     }
 
-    private enum ScriptDirectiveKind { Play, EndTurn }
+    private enum ScriptDirectiveKind
+    {
+        Play,
+        EndTurn,
+    }
 
     private sealed record ScriptDirective(
         ScriptDirectiveKind Kind,
         string? CardModelId,
         uint? TargetEnemyId,
-        int Line);
+        int Line
+    );
 }
 
 /// <summary>
@@ -232,6 +262,9 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
 /// </summary>
 public sealed class ScriptParseException : Exception
 {
-    public ScriptParseException(string message) : base(message) { }
-    public ScriptParseException(string message, Exception inner) : base(message, inner) { }
+    public ScriptParseException(string message)
+        : base(message) { }
+
+    public ScriptParseException(string message, Exception inner)
+        : base(message, inner) { }
 }

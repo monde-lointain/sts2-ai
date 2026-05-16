@@ -18,10 +18,7 @@ public static class VorticeMarker
 {
     public static bool IsAvailable()
     {
-        StubRegistry.Record(
-            StubCategory.Vortice,
-            nameof(VorticeMarker),
-            nameof(IsAvailable));
+        StubRegistry.Record(StubCategory.Vortice, nameof(VorticeMarker), nameof(IsAvailable));
         return false;
     }
 }

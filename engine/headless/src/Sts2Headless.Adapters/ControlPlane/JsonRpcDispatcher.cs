@@ -29,7 +29,8 @@ public sealed class JsonRpcDispatcher
         if (_handlers.ContainsKey(method))
         {
             throw new InvalidOperationException(
-                $"JsonRpcDispatcher: method '{method}' is already registered.");
+                $"JsonRpcDispatcher: method '{method}' is already registered."
+            );
         }
         _handlers[method] = handler;
     }
@@ -63,7 +64,11 @@ public sealed class JsonRpcDispatcher
             JsonElement root = parsed.RootElement;
             if (root.ValueKind != JsonValueKind.Object)
             {
-                return BuildErrorResponse(idElem: null, JsonRpcErrorCodes.InvalidRequest, "Invalid Request: not an object");
+                return BuildErrorResponse(
+                    idElem: null,
+                    JsonRpcErrorCodes.InvalidRequest,
+                    "Invalid Request: not an object"
+                );
             }
 
             // Extract id verbatim — must echo back what the caller sent
@@ -74,10 +79,16 @@ public sealed class JsonRpcDispatcher
                 : null;
 
             // Validate method.
-            if (!root.TryGetProperty("method", out JsonElement methodElem)
-                || methodElem.ValueKind != JsonValueKind.String)
+            if (
+                !root.TryGetProperty("method", out JsonElement methodElem)
+                || methodElem.ValueKind != JsonValueKind.String
+            )
             {
-                return BuildErrorResponse(idElem, JsonRpcErrorCodes.InvalidRequest, "Invalid Request: missing or non-string 'method'");
+                return BuildErrorResponse(
+                    idElem,
+                    JsonRpcErrorCodes.InvalidRequest,
+                    "Invalid Request: missing or non-string 'method'"
+                );
             }
             string method = methodElem.GetString()!;
 
@@ -91,7 +102,11 @@ public sealed class JsonRpcDispatcher
             // Find handler.
             if (!_handlers.TryGetValue(method, out Handler? handler))
             {
-                return BuildErrorResponse(idElem, JsonRpcErrorCodes.MethodNotFound, $"Method not found: '{method}'");
+                return BuildErrorResponse(
+                    idElem,
+                    JsonRpcErrorCodes.MethodNotFound,
+                    $"Method not found: '{method}'"
+                );
             }
 
             // Invoke.
@@ -102,7 +117,11 @@ public sealed class JsonRpcDispatcher
             }
             catch (Exception ex)
             {
-                return BuildErrorResponse(idElem, JsonRpcErrorCodes.InternalError, $"Internal error: {ex.Message}");
+                return BuildErrorResponse(
+                    idElem,
+                    JsonRpcErrorCodes.InternalError,
+                    $"Internal error: {ex.Message}"
+                );
             }
 
             return result.IsOk

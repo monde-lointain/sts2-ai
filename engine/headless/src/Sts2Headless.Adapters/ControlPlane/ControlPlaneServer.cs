@@ -76,7 +76,13 @@ public sealed class ControlPlaneServer : IDisposable
         // join our own accept thread.
         ThreadPool.QueueUserWorkItem(_ =>
         {
-            try { _socketServer.Stop(); } catch { /* swallowed */ }
+            try
+            {
+                _socketServer.Stop();
+            }
+            catch
+            { /* swallowed */
+            }
         });
     }
 
@@ -96,7 +102,10 @@ public sealed class ControlPlaneServer : IDisposable
     private void HandleConnection(Stream stream, CancellationToken ct)
     {
         // No BOM; explicit \n line terminator on the way out.
-        var utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+        var utf8 = new UTF8Encoding(
+            encoderShouldEmitUTF8Identifier: false,
+            throwOnInvalidBytes: false
+        );
         using StreamReader reader = new(stream, utf8, leaveOpen: true);
         using StreamWriter writer = new(stream, utf8, leaveOpen: true)
         {
@@ -119,10 +128,12 @@ public sealed class ControlPlaneServer : IDisposable
             {
                 return; // stream torn down
             }
-            if (line is null) return; // EOF
+            if (line is null)
+                return; // EOF
 
             // Empty line — ignore (some clients flush whitespace).
-            if (string.IsNullOrWhiteSpace(line)) continue;
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
 
             string response = _dispatcher.Handle(line);
             try
@@ -159,14 +170,23 @@ public sealed class ControlPlaneServer : IDisposable
         RelicCatalog relics,
         PowerCatalog powers,
         MonsterCatalog monsters,
-        EncounterCatalog encounters)
+        EncounterCatalog encounters
+    )
     {
         var session = new ControlPlaneSession(
-            context, rng, clock, cards, relics, powers, monsters, encounters,
+            context,
+            rng,
+            clock,
+            cards,
+            relics,
+            powers,
+            monsters,
+            encounters,
             runRng: new RunRngSet("control-plane-default"),
             playerRng: new PlayerRngSet(seed),
             tokens: new TokenMap(),
-            stamp: stamp);
+            stamp: stamp
+        );
         return new ControlPlaneServer(socketPath, session);
     }
 }

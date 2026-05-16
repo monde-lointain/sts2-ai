@@ -12,8 +12,8 @@ namespace Sts2Headless.Tests.Domain.Content.Cards;
 /// </summary>
 public class EffectObserverTests
 {
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     [Fact]
     public void Unattached_observer_is_silent_no_op()

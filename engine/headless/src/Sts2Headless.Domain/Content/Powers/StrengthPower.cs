@@ -11,5 +11,6 @@ namespace Sts2Headless.Domain.Content.Powers;
 /// </summary>
 public sealed class StrengthPower : PowerModel
 {
-    public StrengthPower() : base(PowerIds.Strength, PowerType.Buff, PowerStackType.Counter) { }
+    public StrengthPower()
+        : base(PowerIds.Strength, PowerType.Buff, PowerStackType.Counter) { }
 }

@@ -20,5 +20,15 @@ public static class GcMetricNames
     public const string GcTimeSeconds = "q1_gc_time_seconds";
 
     /// <summary>D5 bucket boundaries for the GC pause histogram (microseconds).</summary>
-    public static readonly double[] GcPauseBuckets = { 10, 50, 100, 500, 1_000, 5_000, 10_000, 50_000 };
+    public static readonly double[] GcPauseBuckets =
+    {
+        10,
+        50,
+        100,
+        500,
+        1_000,
+        5_000,
+        10_000,
+        50_000,
+    };
 }

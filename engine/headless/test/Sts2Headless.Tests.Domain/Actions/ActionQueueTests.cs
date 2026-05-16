@@ -18,7 +18,13 @@ public class ActionQueueTests
     {
         public string Label { get; }
         public List<string> Log { get; }
-        public RecordAction(string label, List<string> log) { Label = label; Log = log; }
+
+        public RecordAction(string label, List<string> log)
+        {
+            Label = label;
+            Log = log;
+        }
+
         public void Execute(ExecutionContext ctx) => Log.Add(Label);
     }
 
@@ -27,8 +33,19 @@ public class ActionQueueTests
         public string Label { get; }
         public List<string> Log { get; }
         public IAction Follow { get; }
-        public EnqueueAction(string label, List<string> log, IAction follow) { Label = label; Log = log; Follow = follow; }
-        public void Execute(ExecutionContext ctx) { Log.Add(Label); ctx.Queue.Enqueue(Follow); }
+
+        public EnqueueAction(string label, List<string> log, IAction follow)
+        {
+            Label = label;
+            Log = log;
+            Follow = follow;
+        }
+
+        public void Execute(ExecutionContext ctx)
+        {
+            Log.Add(Label);
+            ctx.Queue.Enqueue(Follow);
+        }
     }
 
     private sealed class InsertFrontAction : IAction
@@ -36,12 +53,23 @@ public class ActionQueueTests
         public string Label { get; }
         public List<string> Log { get; }
         public IAction Follow { get; }
-        public InsertFrontAction(string label, List<string> log, IAction follow) { Label = label; Log = log; Follow = follow; }
-        public void Execute(ExecutionContext ctx) { Log.Add(Label); ctx.Queue.InsertAtFront(Follow); }
+
+        public InsertFrontAction(string label, List<string> log, IAction follow)
+        {
+            Label = label;
+            Log = log;
+            Follow = follow;
+        }
+
+        public void Execute(ExecutionContext ctx)
+        {
+            Log.Add(Label);
+            ctx.Queue.InsertAtFront(Follow);
+        }
     }
 
-    private static ExecutionContext NewCtx(ActionQueue q)
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), q);
+    private static ExecutionContext NewCtx(ActionQueue q) =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), q);
 
     [Fact]
     public void NewQueueIsEmpty()

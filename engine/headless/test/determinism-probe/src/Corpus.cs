@@ -13,7 +13,8 @@ public sealed record CorpusEntry(
     [property: JsonPropertyName("seed")] uint Seed,
     [property: JsonPropertyName("encounter")] string Encounter,
     [property: JsonPropertyName("relics")] IReadOnlyList<string> Relics,
-    [property: JsonPropertyName("script")] IReadOnlyList<string> Script)
+    [property: JsonPropertyName("script")] IReadOnlyList<string> Script
+)
 {
     /// <summary>Probe modes — exactly mirrors the <c>--mode</c> CLI choices.</summary>
     public const string ModePerStep = "per_step";
@@ -28,7 +29,8 @@ public sealed record CorpusEntry(
 public sealed record Corpus(
     [property: JsonPropertyName("version")] int Version,
     [property: JsonPropertyName("description")] string Description,
-    [property: JsonPropertyName("entries")] IReadOnlyList<CorpusEntry> Entries)
+    [property: JsonPropertyName("entries")] IReadOnlyList<CorpusEntry> Entries
+)
 {
     public const int CurrentVersion = 1;
 
@@ -53,7 +55,8 @@ public sealed record Corpus(
         if (c.Version != CurrentVersion)
         {
             throw new InvalidDataException(
-                $"Corpus.FromJson: version {c.Version} unsupported (this probe handles v{CurrentVersion}).");
+                $"Corpus.FromJson: version {c.Version} unsupported (this probe handles v{CurrentVersion})."
+            );
         }
         return c;
     }

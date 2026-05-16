@@ -17,8 +17,7 @@ public sealed class Slice : CardModel
     public int Damage => BaseDamage;
 
     public Slice()
-        : base(CanonicalId, cost: 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy)
-    { }
+        : base(CanonicalId, cost: 0, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

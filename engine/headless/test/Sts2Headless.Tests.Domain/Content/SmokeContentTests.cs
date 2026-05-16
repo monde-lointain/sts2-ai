@@ -34,7 +34,9 @@ public class SmokeContentTests
             }
             dir = Path.GetDirectoryName(dir)!;
         }
-        throw new System.InvalidOperationException("Could not locate repo root from " + AppContext.BaseDirectory);
+        throw new System.InvalidOperationException(
+            "Could not locate repo root from " + AppContext.BaseDirectory
+        );
     }
 
     private static Q4Manifest LoadFixture()
@@ -109,8 +111,10 @@ public class SmokeContentTests
         MonsterCatalog monsters = SmokeContent.BuildMonsterCatalog();
         foreach (string monsterId in encounter.MonsterIds)
         {
-            Assert.True(monsters.Contains(monsterId),
-                $"Encounter '{encounter.Id}' references monster id '{monsterId}' not in monster catalog.");
+            Assert.True(
+                monsters.Contains(monsterId),
+                $"Encounter '{encounter.Id}' references monster id '{monsterId}' not in monster catalog."
+            );
         }
     }
 
@@ -129,7 +133,8 @@ public class SmokeContentTests
             Phase1Content.BuildRelicCatalog(),
             Phase1Content.BuildPowerCatalog(),
             Phase1Content.BuildMonsterCatalog(),
-            Phase1Content.BuildPotionCatalog());
+            Phase1Content.BuildPotionCatalog()
+        );
 
         // Each bucket must be green with zero missing.
         AssertBucketGreen(result.Cards, "Cards");
@@ -153,8 +158,10 @@ public class SmokeContentTests
 
     private static void AssertBucketGreen(CoverageResult bucket, string name)
     {
-        Assert.True(bucket.IsGreen,
-            $"{name} coverage gate is RED. Missing={{{string.Join(",", bucket.Missing)}}}");
+        Assert.True(
+            bucket.IsGreen,
+            $"{name} coverage gate is RED. Missing={{{string.Join(",", bucket.Missing)}}}"
+        );
         Assert.Empty(bucket.Missing);
         // Extra entries are allowed (S12 cards may not yet be on the manifest mid-stage).
     }

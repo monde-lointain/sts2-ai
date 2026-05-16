@@ -61,7 +61,10 @@ public class RngSetTests
         {
             Assert.Equal(a.Rewards.NextInt(1_000_000), b.Rewards.NextInt(1_000_000));
             Assert.Equal(a.Shops.NextInt(1_000_000), b.Shops.NextInt(1_000_000));
-            Assert.Equal(a.Transformations.NextInt(1_000_000), b.Transformations.NextInt(1_000_000));
+            Assert.Equal(
+                a.Transformations.NextInt(1_000_000),
+                b.Transformations.NextInt(1_000_000)
+            );
         }
     }
 

@@ -30,7 +30,8 @@ public sealed class CombatStateTests
             DiscardPile: CardPile.Empty,
             ExhaustPile: CardPile.Empty,
             PlayerRngCounter: 0,
-            MonsterRngCounter: 0);
+            MonsterRngCounter: 0
+        );
     }
 
     [Fact]

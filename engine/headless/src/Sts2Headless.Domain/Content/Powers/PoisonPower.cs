@@ -12,5 +12,6 @@ namespace Sts2Headless.Domain.Content.Powers;
 /// </summary>
 public sealed class PoisonPower : PowerModel
 {
-    public PoisonPower() : base(PowerIds.Poison, PowerType.Debuff, PowerStackType.Counter) { }
+    public PoisonPower()
+        : base(PowerIds.Poison, PowerType.Debuff, PowerStackType.Counter) { }
 }

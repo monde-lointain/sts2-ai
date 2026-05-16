@@ -60,11 +60,16 @@ public sealed record ManifestStamp(string GitSha, string BuildId, byte[] Content
     /// <summary>Override required because <see cref="ContentHash"/> is a reference type.</summary>
     public bool Equals(ManifestStamp? other)
     {
-        if (other is null) return false;
-        if (ReferenceEquals(this, other)) return true;
-        if (!string.Equals(GitSha, other.GitSha, StringComparison.Ordinal)) return false;
-        if (!string.Equals(BuildId, other.BuildId, StringComparison.Ordinal)) return false;
-        if (ContentHash.Length != other.ContentHash.Length) return false;
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (!string.Equals(GitSha, other.GitSha, StringComparison.Ordinal))
+            return false;
+        if (!string.Equals(BuildId, other.BuildId, StringComparison.Ordinal))
+            return false;
+        if (ContentHash.Length != other.ContentHash.Length)
+            return false;
         return ContentHash.AsSpan().SequenceEqual(other.ContentHash);
     }
 

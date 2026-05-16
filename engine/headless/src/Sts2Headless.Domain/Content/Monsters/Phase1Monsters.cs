@@ -25,25 +25,38 @@ public sealed class Chomper : MonsterModel
     public const string CanonicalId = "Chomper";
     public const int MinHp = 60;
     public const int MaxHp = 64;
+
     /// <summary>Per-hit damage on CLAMP — upstream <c>ClampDamage = 8</c> at A0.</summary>
     public const int ClampDamagePerHit = 8;
+
     /// <summary>Number of hits on CLAMP — upstream <c>_clampRepeat = 2</c>.</summary>
     public const int ClampHitCount = 2;
+
     /// <summary>Status cards added by SCREECH — upstream <c>_screechStatusCount = 3</c>.</summary>
     public const int ScreechStatusCards = 3;
+
     /// <summary>Aggregate per-turn damage on CLAMP (for old single-state callers).</summary>
     public const int AttackDamage = ClampDamagePerHit * ClampHitCount;
 
     public const string ClampMoveId = "CLAMP_MOVE";
     public const string ScreechMoveId = "SCREECH_MOVE";
 
-    public Chomper() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            new(ClampMoveId,   Intent.MultiAttack(ClampDamagePerHit, ClampHitCount), FollowUpMoveId: ScreechMoveId),
-            new(ScreechMoveId, Intent.Status(ScreechStatusCards),                    FollowUpMoveId: ClampMoveId),
-        },
-        initialMoveId: ClampMoveId) { }
+    public Chomper()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                new(
+                    ClampMoveId,
+                    Intent.MultiAttack(ClampDamagePerHit, ClampHitCount),
+                    FollowUpMoveId: ScreechMoveId
+                ),
+                new(ScreechMoveId, Intent.Status(ScreechStatusCards), FollowUpMoveId: ClampMoveId),
+            },
+            initialMoveId: ClampMoveId
+        ) { }
 }
 
 /// <summary>
@@ -68,6 +81,7 @@ public sealed class Exoskeleton : MonsterModel
     public const int MandiblesDamage = 8;
     public const int EnrageStrengthAmount = 2;
     public const int HardToKillStacks = 9;
+
     /// <summary>Backwards-compat for callers still using a single damage number.</summary>
     public const int AttackDamage = SkitterDamage * SkitterRepeats;
 
@@ -75,32 +89,44 @@ public sealed class Exoskeleton : MonsterModel
     public const string MandiblesMoveId = "MANDIBLES_MOVE";
     public const string EnrageMoveId = "ENRAGE_MOVE";
 
-    public Exoskeleton() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            // SKITTER: 1 dmg x 3. Upstream RAND with CannotRepeat after a SKITTER
-            // is guaranteed to pick MANDIBLES (SKITTER weight zeroed). Encode that
-            // deterministically.
-            new(SkitterMoveId, Intent.MultiAttack(SkitterDamage, SkitterRepeats),
-                FollowUpMoveId: MandiblesMoveId),
-            // MANDIBLES → ENRAGE (upstream static FollowUp).
-            new(MandiblesMoveId, Intent.Attack(MandiblesDamage),
-                FollowUpMoveId: EnrageMoveId),
-            // ENRAGE → RAND (50/50 between SKITTER and MANDIBLES). After ENRAGE
-            // both moves are eligible since neither was just played.
-            new(EnrageMoveId, Intent.Buff(),
-                FollowUpMoveId: SkitterMoveId,
-                BranchResolver: new RngBranchResolver(
-                    choices: ImmutableArray.Create(
-                        new RngBranchChoice(SkitterMoveId, 1f),
-                        new RngBranchChoice(MandiblesMoveId, 1f)))),
-        },
-        initialMoveId: SkitterMoveId,
-        // Upstream AfterAddedToRoom: 9 HardToKill (not in Q1's catalog yet; the
-        // engine fails-soft on unknown ids so this is documentation-only).
-        spawnPowers: ImmutableArray.Create(
-            new MonsterSpawnPower("HardToKillPower", HardToKillStacks)))
-    { }
+    public Exoskeleton()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // SKITTER: 1 dmg x 3. Upstream RAND with CannotRepeat after a SKITTER
+                // is guaranteed to pick MANDIBLES (SKITTER weight zeroed). Encode that
+                // deterministically.
+                new(
+                    SkitterMoveId,
+                    Intent.MultiAttack(SkitterDamage, SkitterRepeats),
+                    FollowUpMoveId: MandiblesMoveId
+                ),
+                // MANDIBLES → ENRAGE (upstream static FollowUp).
+                new(MandiblesMoveId, Intent.Attack(MandiblesDamage), FollowUpMoveId: EnrageMoveId),
+                // ENRAGE → RAND (50/50 between SKITTER and MANDIBLES). After ENRAGE
+                // both moves are eligible since neither was just played.
+                new(
+                    EnrageMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: SkitterMoveId,
+                    BranchResolver: new RngBranchResolver(
+                        choices: ImmutableArray.Create(
+                            new RngBranchChoice(SkitterMoveId, 1f),
+                            new RngBranchChoice(MandiblesMoveId, 1f)
+                        )
+                    )
+                ),
+            },
+            initialMoveId: SkitterMoveId,
+            // Upstream AfterAddedToRoom: 9 HardToKill (not in Q1's catalog yet; the
+            // engine fails-soft on unknown ids so this is documentation-only).
+            spawnPowers: ImmutableArray.Create(
+                new MonsterSpawnPower("HardToKillPower", HardToKillStacks)
+            )
+        ) { }
 }
 
 public sealed class FuzzyWurmCrawler : MonsterModel
@@ -109,8 +135,15 @@ public sealed class FuzzyWurmCrawler : MonsterModel
     public const int MinHp = 55;
     public const int MaxHp = 57;
     public const int AttackDamage = 14;
-    public FuzzyWurmCrawler() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public FuzzyWurmCrawler()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 /// <summary>
@@ -126,6 +159,7 @@ public sealed class LouseProgenitor : MonsterModel
     public const string CanonicalId = "LouseProgenitor";
     public const int MinHp = 134;
     public const int MaxHp = 136;
+
     /// <summary>Backwards-compat aggregate damage. Use <see cref="PounceDamage"/> for the
     /// per-hit attack stat.</summary>
     public const int AttackDamage = PounceDamage;
@@ -139,18 +173,21 @@ public sealed class LouseProgenitor : MonsterModel
     public const string CurlAndGrowMoveId = "CURL_AND_GROW_MOVE";
     public const string PounceMoveId = "POUNCE_MOVE";
 
-    public LouseProgenitor() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            new(WebCannonMoveId,    Intent.Attack(WebDamage),       FollowUpMoveId: CurlAndGrowMoveId),
-            new(CurlAndGrowMoveId,  Intent.Defend(CurlBlock),       FollowUpMoveId: PounceMoveId),
-            new(PounceMoveId,       Intent.Attack(PounceDamage),    FollowUpMoveId: WebCannonMoveId),
-        },
-        initialMoveId: WebCannonMoveId,
-        // Upstream AfterAddedToRoom: CurlUp(CurlBlock=14).
-        spawnPowers: ImmutableArray.Create(
-            new MonsterSpawnPower(PowerIds.CurlUp, CurlBlock)))
-    { }
+    public LouseProgenitor()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                new(WebCannonMoveId, Intent.Attack(WebDamage), FollowUpMoveId: CurlAndGrowMoveId),
+                new(CurlAndGrowMoveId, Intent.Defend(CurlBlock), FollowUpMoveId: PounceMoveId),
+                new(PounceMoveId, Intent.Attack(PounceDamage), FollowUpMoveId: WebCannonMoveId),
+            },
+            initialMoveId: WebCannonMoveId,
+            // Upstream AfterAddedToRoom: CurlUp(CurlBlock=14).
+            spawnPowers: ImmutableArray.Create(new MonsterSpawnPower(PowerIds.CurlUp, CurlBlock))
+        ) { }
 }
 
 public sealed class GremlinMerc : MonsterModel
@@ -159,8 +196,15 @@ public sealed class GremlinMerc : MonsterModel
     public const int MinHp = 47;
     public const int MaxHp = 49;
     public const int AttackDamage = 9;
-    public GremlinMerc() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public GremlinMerc()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class HauntedShip : MonsterModel
@@ -169,8 +213,15 @@ public sealed class HauntedShip : MonsterModel
     public const int MinHp = 63;
     public const int MaxHp = 63;
     public const int AttackDamage = 12;
-    public HauntedShip() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public HauntedShip()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class LivingFog : MonsterModel
@@ -179,8 +230,15 @@ public sealed class LivingFog : MonsterModel
     public const int MinHp = 80;
     public const int MaxHp = 80;
     public const int AttackDamage = 14;
-    public LivingFog() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public LivingFog()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 /// <summary>
@@ -202,6 +260,7 @@ public sealed class CeremonialBeast : MonsterModel
     public const int StompDamage = 15;
     public const int CrushDamage = 17;
     public const int CrushStrengthGain = 3;
+
     /// <summary>Backwards-compat aggregate damage.</summary>
     public const int AttackDamage = PlowDamage;
 
@@ -211,18 +270,23 @@ public sealed class CeremonialBeast : MonsterModel
     public const string CrushMoveId = "CRUSH_MOVE";
     public const string BeastCryMoveId = "BEAST_CRY_MOVE";
 
-    public CeremonialBeast() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            // Pre-stun loop (upstream's initial state machine).
-            new(StampMoveId, Intent.Buff(),           FollowUpMoveId: PlowMoveId),
-            new(PlowMoveId,  Intent.Attack(PlowDamage), FollowUpMoveId: PlowMoveId),
-            // Post-stun cycle (reached only if Plow is stripped — deferred wiring).
-            new(BeastCryMoveId, Intent.Debuff(),         FollowUpMoveId: StompMoveId),
-            new(StompMoveId,    Intent.Attack(StompDamage), FollowUpMoveId: CrushMoveId),
-            new(CrushMoveId,    Intent.Attack(CrushDamage), FollowUpMoveId: BeastCryMoveId),
-        },
-        initialMoveId: StampMoveId) { }
+    public CeremonialBeast()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // Pre-stun loop (upstream's initial state machine).
+                new(StampMoveId, Intent.Buff(), FollowUpMoveId: PlowMoveId),
+                new(PlowMoveId, Intent.Attack(PlowDamage), FollowUpMoveId: PlowMoveId),
+                // Post-stun cycle (reached only if Plow is stripped — deferred wiring).
+                new(BeastCryMoveId, Intent.Debuff(), FollowUpMoveId: StompMoveId),
+                new(StompMoveId, Intent.Attack(StompDamage), FollowUpMoveId: CrushMoveId),
+                new(CrushMoveId, Intent.Attack(CrushDamage), FollowUpMoveId: BeastCryMoveId),
+            },
+            initialMoveId: StampMoveId
+        ) { }
 }
 
 // === Common Act-1 normals ===
@@ -232,8 +296,15 @@ public sealed class JawWorm : MonsterModel
     public const int MinHp = 40;
     public const int MaxHp = 44;
     public const int AttackDamage = 11;
-    public JawWorm() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public JawWorm()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class RedLouse : MonsterModel
@@ -242,8 +313,15 @@ public sealed class RedLouse : MonsterModel
     public const int MinHp = 10;
     public const int MaxHp = 15;
     public const int AttackDamage = 6;
-    public RedLouse() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public RedLouse()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class GreenLouse : MonsterModel
@@ -252,8 +330,15 @@ public sealed class GreenLouse : MonsterModel
     public const int MinHp = 11;
     public const int MaxHp = 17;
     public const int AttackDamage = 5;
-    public GreenLouse() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public GreenLouse()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class AcidSlimeS : MonsterModel
@@ -262,8 +347,15 @@ public sealed class AcidSlimeS : MonsterModel
     public const int MinHp = 8;
     public const int MaxHp = 12;
     public const int AttackDamage = 3;
-    public AcidSlimeS() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public AcidSlimeS()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class AcidSlimeM : MonsterModel
@@ -272,8 +364,15 @@ public sealed class AcidSlimeM : MonsterModel
     public const int MinHp = 28;
     public const int MaxHp = 32;
     public const int AttackDamage = 7;
-    public AcidSlimeM() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public AcidSlimeM()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class AcidSlimeL : MonsterModel
@@ -282,8 +381,15 @@ public sealed class AcidSlimeL : MonsterModel
     public const int MinHp = 65;
     public const int MaxHp = 69;
     public const int AttackDamage = 11;
-    public AcidSlimeL() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public AcidSlimeL()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class SpikeSlimeS : MonsterModel
@@ -292,8 +398,15 @@ public sealed class SpikeSlimeS : MonsterModel
     public const int MinHp = 10;
     public const int MaxHp = 14;
     public const int AttackDamage = 5;
-    public SpikeSlimeS() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public SpikeSlimeS()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class SpikeSlimeM : MonsterModel
@@ -302,8 +415,15 @@ public sealed class SpikeSlimeM : MonsterModel
     public const int MinHp = 28;
     public const int MaxHp = 32;
     public const int AttackDamage = 8;
-    public SpikeSlimeM() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public SpikeSlimeM()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class SpikeSlimeL : MonsterModel
@@ -312,8 +432,15 @@ public sealed class SpikeSlimeL : MonsterModel
     public const int MinHp = 64;
     public const int MaxHp = 70;
     public const int AttackDamage = 16;
-    public SpikeSlimeL() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public SpikeSlimeL()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class FungalBoss : MonsterModel
@@ -322,8 +449,15 @@ public sealed class FungalBoss : MonsterModel
     public const int MinHp = 200;
     public const int MaxHp = 200;
     public const int AttackDamage = 18;
-    public FungalBoss() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public FungalBoss()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class SnakePlant : MonsterModel
@@ -332,8 +466,15 @@ public sealed class SnakePlant : MonsterModel
     public const int MinHp = 75;
     public const int MaxHp = 79;
     public const int AttackDamage = 6;
-    public SnakePlant() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public SnakePlant()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class Sentry : MonsterModel
@@ -342,8 +483,15 @@ public sealed class Sentry : MonsterModel
     public const int MinHp = 38;
     public const int MaxHp = 42;
     public const int AttackDamage = 9;
-    public Sentry() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public Sentry()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 /// <summary>
@@ -374,8 +522,10 @@ public sealed class LagavulinMatriarch : MonsterModel
     public const int SoulSiphonStrengthSelf = 2;
     public const int SoulSiphonStatsDownPlayer = 2;
     public const int PlatingStacks = 12;
+
     /// <summary>Backwards-compat aggregate damage.</summary>
     public const int AttackDamage = SlashDamage;
+
     /// <summary>HP fraction at or below which Lagavulin wakes.</summary>
     public const float WakeHpFraction = 0.5f;
 
@@ -385,32 +535,45 @@ public sealed class LagavulinMatriarch : MonsterModel
     public const string Slash2MoveId = "SLASH2_MOVE";
     public const string SoulSiphonMoveId = "SOUL_SIPHON_MOVE";
 
-    public LagavulinMatriarch() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            // SLEEP → conditional: HP > half → SLEEP, HP <= half → SLASH.
-            // Q1 maps Asleep-power gate onto HP threshold (deviation; see class
-            // remarks). "Above" branch keeps sleeping; "below-or-equal" branches
-            // to SLASH per HpThresholdResolver convention.
-            new(SleepMoveId, Intent.Buff(),
-                FollowUpMoveId: SlashMoveId,
-                BranchResolver: new HpThresholdResolver(
-                    fraction: WakeHpFraction,
-                    belowMoveId: SlashMoveId,
-                    aboveMoveId: SleepMoveId)),
-            // Once awake: SLASH → DISEMBOWEL → SLASH2 → SOUL_SIPHON → SLASH (loop).
-            new(SlashMoveId,      Intent.Attack(SlashDamage),                        FollowUpMoveId: DisembowelMoveId),
-            new(DisembowelMoveId, Intent.MultiAttack(DisembowelDamage, DisembowelRepeats), FollowUpMoveId: Slash2MoveId),
-            new(Slash2MoveId,     Intent.Attack(Slash2Damage),                       FollowUpMoveId: SoulSiphonMoveId),
-            new(SoulSiphonMoveId, Intent.Debuff(),                                   FollowUpMoveId: SlashMoveId),
-        },
-        initialMoveId: SleepMoveId,
-        // Upstream AfterAddedToRoom: Plating(12) + Asleep(3). Asleep elided per
-        // class remarks (HP-threshold proxy); Plating is documentation-only
-        // (Q1's PlatedArmor power id; fails-soft on unknown).
-        spawnPowers: ImmutableArray.Create(
-            new MonsterSpawnPower(PowerIds.Plated, PlatingStacks)))
-    { }
+    public LagavulinMatriarch()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // SLEEP → conditional: HP > half → SLEEP, HP <= half → SLASH.
+                // Q1 maps Asleep-power gate onto HP threshold (deviation; see class
+                // remarks). "Above" branch keeps sleeping; "below-or-equal" branches
+                // to SLASH per HpThresholdResolver convention.
+                new(
+                    SleepMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: SlashMoveId,
+                    BranchResolver: new HpThresholdResolver(
+                        fraction: WakeHpFraction,
+                        belowMoveId: SlashMoveId,
+                        aboveMoveId: SleepMoveId
+                    )
+                ),
+                // Once awake: SLASH → DISEMBOWEL → SLASH2 → SOUL_SIPHON → SLASH (loop).
+                new(SlashMoveId, Intent.Attack(SlashDamage), FollowUpMoveId: DisembowelMoveId),
+                new(
+                    DisembowelMoveId,
+                    Intent.MultiAttack(DisembowelDamage, DisembowelRepeats),
+                    FollowUpMoveId: Slash2MoveId
+                ),
+                new(Slash2MoveId, Intent.Attack(Slash2Damage), FollowUpMoveId: SoulSiphonMoveId),
+                new(SoulSiphonMoveId, Intent.Debuff(), FollowUpMoveId: SlashMoveId),
+            },
+            initialMoveId: SleepMoveId,
+            // Upstream AfterAddedToRoom: Plating(12) + Asleep(3). Asleep elided per
+            // class remarks (HP-threshold proxy); Plating is documentation-only
+            // (Q1's PlatedArmor power id; fails-soft on unknown).
+            spawnPowers: ImmutableArray.Create(
+                new MonsterSpawnPower(PowerIds.Plated, PlatingStacks)
+            )
+        ) { }
 }
 
 public sealed class CenturyGuard : MonsterModel
@@ -419,8 +582,15 @@ public sealed class CenturyGuard : MonsterModel
     public const int MinHp = 240;
     public const int MaxHp = 240;
     public const int AttackDamage = 12;
-    public CenturyGuard() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public CenturyGuard()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class SilverMage : MonsterModel
@@ -429,8 +599,15 @@ public sealed class SilverMage : MonsterModel
     public const int MinHp = 86;
     public const int MaxHp = 86;
     public const int AttackDamage = 13;
-    public SilverMage() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public SilverMage()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 // B.1-final-T2b: KaiserCrab (Q1-invented single-monster boss) replaced by upstream
@@ -461,6 +638,7 @@ public sealed class Crusher : MonsterModel
     public const int AdaptStrengthGain = 2;
     public const int GuardedStrikeDamage = 12;
     public const int GuardedStrikeBlock = 18;
+
     /// <summary>Backwards-compat aggregate damage.</summary>
     public const int AttackDamage = ThrashDamage;
 
@@ -470,23 +648,44 @@ public sealed class Crusher : MonsterModel
     public const string AdaptMoveId = "ADAPT_MOVE";
     public const string GuardedStrikeMoveId = "GUARDED_STRIKE_MOVE";
 
-    public Crusher() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            new(ThrashMoveId,           Intent.Attack(ThrashDamage),                       FollowUpMoveId: EnlargingStrikeMoveId),
-            new(EnlargingStrikeMoveId,  Intent.Attack(EnlargingStrikeDamage),              FollowUpMoveId: BugStingMoveId),
-            new(BugStingMoveId,         Intent.MultiAttack(BugStingDamage, BugStingRepeats), FollowUpMoveId: AdaptMoveId),
-            new(AdaptMoveId,            Intent.Buff(),                                     FollowUpMoveId: GuardedStrikeMoveId),
-            new(GuardedStrikeMoveId,    Intent.Attack(GuardedStrikeDamage),                FollowUpMoveId: ThrashMoveId),
-        },
-        initialMoveId: ThrashMoveId,
-        // Upstream AfterAddedToRoom: BackAttackLeft(1) + CrabRage(1). Both ids
-        // are not in Q1's power catalog yet — fails-soft per the engine spawn-time
-        // hook convention.
-        spawnPowers: ImmutableArray.Create(
-            new MonsterSpawnPower("BackAttackLeftPower", 1),
-            new MonsterSpawnPower("CrabRagePower", 1)))
-    { }
+    public Crusher()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                new(
+                    ThrashMoveId,
+                    Intent.Attack(ThrashDamage),
+                    FollowUpMoveId: EnlargingStrikeMoveId
+                ),
+                new(
+                    EnlargingStrikeMoveId,
+                    Intent.Attack(EnlargingStrikeDamage),
+                    FollowUpMoveId: BugStingMoveId
+                ),
+                new(
+                    BugStingMoveId,
+                    Intent.MultiAttack(BugStingDamage, BugStingRepeats),
+                    FollowUpMoveId: AdaptMoveId
+                ),
+                new(AdaptMoveId, Intent.Buff(), FollowUpMoveId: GuardedStrikeMoveId),
+                new(
+                    GuardedStrikeMoveId,
+                    Intent.Attack(GuardedStrikeDamage),
+                    FollowUpMoveId: ThrashMoveId
+                ),
+            },
+            initialMoveId: ThrashMoveId,
+            // Upstream AfterAddedToRoom: BackAttackLeft(1) + CrabRage(1). Both ids
+            // are not in Q1's power catalog yet — fails-soft per the engine spawn-time
+            // hook convention.
+            spawnPowers: ImmutableArray.Create(
+                new MonsterSpawnPower("BackAttackLeftPower", 1),
+                new MonsterSpawnPower("CrabRagePower", 1)
+            )
+        ) { }
 }
 
 /// <summary>
@@ -512,6 +711,7 @@ public sealed class Rocket : MonsterModel
     public const int PrecisionBeamDamage = 18;
     public const int LaserDamage = 31;
     public const int ChargeUpStrengthGain = 2;
+
     /// <summary>Backwards-compat aggregate damage.</summary>
     public const int AttackDamage = TargetingReticleDamage;
 
@@ -521,25 +721,38 @@ public sealed class Rocket : MonsterModel
     public const string LaserMoveId = "LASER_MOVE";
     public const string RechargeMoveId = "RECHARGE_MOVE";
 
-    public Rocket() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            new(TargetingReticleMoveId, Intent.Attack(TargetingReticleDamage),  FollowUpMoveId: PrecisionBeamMoveId),
-            new(PrecisionBeamMoveId,    Intent.Attack(PrecisionBeamDamage),     FollowUpMoveId: ChargeUpMoveId),
-            new(ChargeUpMoveId,         Intent.Buff(),                          FollowUpMoveId: LaserMoveId),
-            new(LaserMoveId,            Intent.Attack(LaserDamage),             FollowUpMoveId: RechargeMoveId),
-            new(RechargeMoveId,         Intent.Buff(),                          FollowUpMoveId: TargetingReticleMoveId),
-        },
-        initialMoveId: TargetingReticleMoveId,
-        // Upstream AfterAddedToRoom: Surrounded(1) on opponents (engine target
-        // dispatch differs; declared on self for spawn-time visibility) +
-        // BackAttackRight(1) + CrabRage(1) on self. All ids absent from Q1's
-        // power catalog — fail-soft.
-        spawnPowers: ImmutableArray.Create(
-            new MonsterSpawnPower("BackAttackRightPower", 1),
-            new MonsterSpawnPower("CrabRagePower", 1),
-            new MonsterSpawnPower("SurroundedPower", 1)))
-    { }
+    public Rocket()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                new(
+                    TargetingReticleMoveId,
+                    Intent.Attack(TargetingReticleDamage),
+                    FollowUpMoveId: PrecisionBeamMoveId
+                ),
+                new(
+                    PrecisionBeamMoveId,
+                    Intent.Attack(PrecisionBeamDamage),
+                    FollowUpMoveId: ChargeUpMoveId
+                ),
+                new(ChargeUpMoveId, Intent.Buff(), FollowUpMoveId: LaserMoveId),
+                new(LaserMoveId, Intent.Attack(LaserDamage), FollowUpMoveId: RechargeMoveId),
+                new(RechargeMoveId, Intent.Buff(), FollowUpMoveId: TargetingReticleMoveId),
+            },
+            initialMoveId: TargetingReticleMoveId,
+            // Upstream AfterAddedToRoom: Surrounded(1) on opponents (engine target
+            // dispatch differs; declared on self for spawn-time visibility) +
+            // BackAttackRight(1) + CrabRage(1) on self. All ids absent from Q1's
+            // power catalog — fail-soft.
+            spawnPowers: ImmutableArray.Create(
+                new MonsterSpawnPower("BackAttackRightPower", 1),
+                new MonsterSpawnPower("CrabRagePower", 1),
+                new MonsterSpawnPower("SurroundedPower", 1)
+            )
+        ) { }
 }
 
 // === Bowlbugs (Act 1 swarms) ===
@@ -552,8 +765,15 @@ public sealed class BowlbugEgg : MonsterModel
     public const int MinHp = 21;
     public const int MaxHp = 22;
     public const int AttackDamage = 0;
-    public BowlbugEgg() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("BUFF", Intent.Buff(), "BUFF") }, "BUFF") { }
+
+    public BowlbugEgg()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("BUFF", Intent.Buff(), "BUFF") },
+            "BUFF"
+        ) { }
 }
 
 public sealed class BowlbugNectar : MonsterModel
@@ -562,8 +782,15 @@ public sealed class BowlbugNectar : MonsterModel
     public const int MinHp = 35;
     public const int MaxHp = 38;
     public const int AttackDamage = 5;
-    public BowlbugNectar() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public BowlbugNectar()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class BowlbugRock : MonsterModel
@@ -572,8 +799,15 @@ public sealed class BowlbugRock : MonsterModel
     public const int MinHp = 45;
     public const int MaxHp = 48;
     public const int AttackDamage = 7;
-    public BowlbugRock() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public BowlbugRock()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 public sealed class BowlbugSilk : MonsterModel
@@ -582,8 +816,15 @@ public sealed class BowlbugSilk : MonsterModel
     public const int MinHp = 40;
     public const int MaxHp = 43;
     public const int AttackDamage = 4;
-    public BowlbugSilk() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public BowlbugSilk()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }
 
 // === Fossil Stalker / Frog Knight (Act 1 elites) ===
@@ -607,6 +848,7 @@ public sealed class FossilStalker : MonsterModel
     public const int LatchDamage = 12;
     public const int LashDamage = 3;
     public const int LashRepeats = 2;
+
     /// <summary>Backwards-compat aggregate damage.</summary>
     public const int AttackDamage = LatchDamage;
 
@@ -618,21 +860,39 @@ public sealed class FossilStalker : MonsterModel
         choices: ImmutableArray.Create(
             new RngBranchChoice(TackleMoveId, 1f),
             new RngBranchChoice(LatchMoveId, 1f),
-            new RngBranchChoice(LashMoveId, 1f)));
+            new RngBranchChoice(LashMoveId, 1f)
+        )
+    );
 
-
-    public FossilStalker() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[]
-        {
-            new(TackleMoveId, Intent.Attack(TackleDamage),
-                FollowUpMoveId: LatchMoveId, BranchResolver: _randResolver),
-            new(LatchMoveId,  Intent.Attack(LatchDamage),
-                FollowUpMoveId: LashMoveId, BranchResolver: _randResolver),
-            new(LashMoveId,   Intent.MultiAttack(LashDamage, LashRepeats),
-                FollowUpMoveId: TackleMoveId, BranchResolver: _randResolver),
-        },
-        // Upstream's machine constructor initialises with LATCH_MOVE.
-        initialMoveId: LatchMoveId) { }
+    public FossilStalker()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                new(
+                    TackleMoveId,
+                    Intent.Attack(TackleDamage),
+                    FollowUpMoveId: LatchMoveId,
+                    BranchResolver: _randResolver
+                ),
+                new(
+                    LatchMoveId,
+                    Intent.Attack(LatchDamage),
+                    FollowUpMoveId: LashMoveId,
+                    BranchResolver: _randResolver
+                ),
+                new(
+                    LashMoveId,
+                    Intent.MultiAttack(LashDamage, LashRepeats),
+                    FollowUpMoveId: TackleMoveId,
+                    BranchResolver: _randResolver
+                ),
+            },
+            // Upstream's machine constructor initialises with LATCH_MOVE.
+            initialMoveId: LatchMoveId
+        ) { }
 }
 
 public sealed class FrogKnight : MonsterModel
@@ -641,6 +901,13 @@ public sealed class FrogKnight : MonsterModel
     public const int MinHp = 191;
     public const int MaxHp = 191;
     public const int AttackDamage = 15;
-    public FrogKnight() : base(CanonicalId, MinHp, MaxHp,
-        new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") }, "ATTACK") { }
+
+    public FrogKnight()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
+            "ATTACK"
+        ) { }
 }

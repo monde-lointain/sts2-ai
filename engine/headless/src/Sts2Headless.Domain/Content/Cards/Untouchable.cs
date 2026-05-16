@@ -14,7 +14,8 @@ public sealed class Untouchable : CardModel
     public const int UpgradeDelta = 2;
     public int Block => BaseBlock;
 
-    public Untouchable() : base(CanonicalId, 2, CardType.Skill, CardRarity.Common, TargetType.Self) { }
+    public Untouchable()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

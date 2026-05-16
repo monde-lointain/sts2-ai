@@ -69,7 +69,8 @@ public sealed class GcMetricsSampler
                     GcMetricNames.GcGenCollectionsTotal,
                     "gen",
                     gen.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    delta);
+                    delta
+                );
             }
             _baselineCounts[gen] = counts[gen];
         }

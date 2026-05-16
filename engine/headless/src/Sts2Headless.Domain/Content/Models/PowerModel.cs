@@ -38,7 +38,8 @@ public abstract class PowerModel : IPowerModel
         {
             throw new System.ArgumentException(
                 $"PowerModel '{id}': StackType must be Counter or Single (not None).",
-                nameof(stackType));
+                nameof(stackType)
+            );
         }
         Id = id;
         Type = type;

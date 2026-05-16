@@ -21,6 +21,8 @@ public interface IGcReader
 public sealed class SystemGcReader : IGcReader
 {
     public int GetCollectionCount(int generation) => GC.CollectionCount(generation);
+
     public long GetTotalAllocatedBytes() => GC.GetTotalAllocatedBytes(precise: false);
+
     public TimeSpan GetTotalPauseDuration() => GC.GetTotalPauseDuration();
 }

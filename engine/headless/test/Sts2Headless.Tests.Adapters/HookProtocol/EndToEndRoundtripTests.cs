@@ -31,9 +31,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Runtime;
 using System.Text;
 using System.Threading;
 using Sts2Headless.Adapters.HookProtocol;
@@ -60,16 +60,32 @@ public class EndToEndRoundtripTests
         string testDll = Assembly.GetExecutingAssembly().Location;
         // Walk up to repo root: test/Sts2Headless.Tests.Adapters/bin/Debug/net9.0 -> ../../../..
         string? dir = Path.GetDirectoryName(testDll);
-        for (int i = 0; i < 4 && dir is not null; i++) dir = Path.GetDirectoryName(dir);
+        for (int i = 0; i < 4 && dir is not null; i++)
+            dir = Path.GetDirectoryName(dir);
         // Now `dir` should be at test/. Walk one more up to repo root, then dive into mock-worker.
-        if (dir is null) throw new InvalidOperationException("could not resolve repo root from test assembly path");
+        if (dir is null)
+            throw new InvalidOperationException(
+                "could not resolve repo root from test assembly path"
+            );
         string repoRoot = Path.GetDirectoryName(dir)!;
-        string config = testDll.Contains("/Release/", StringComparison.Ordinal) ? "Release" : "Debug";
-        string candidate = Path.Combine(repoRoot, "test", "mock-worker", "bin", config, "net9.0", "Sts2Headless.MockWorker.dll");
+        string config = testDll.Contains("/Release/", StringComparison.Ordinal)
+            ? "Release"
+            : "Debug";
+        string candidate = Path.Combine(
+            repoRoot,
+            "test",
+            "mock-worker",
+            "bin",
+            config,
+            "net9.0",
+            "Sts2Headless.MockWorker.dll"
+        );
         if (!File.Exists(candidate))
         {
             throw new FileNotFoundException(
-                $"mock-worker DLL not found at {candidate}. Did the Tests.Adapters BuildMockWorker target run?", candidate);
+                $"mock-worker DLL not found at {candidate}. Did the Tests.Adapters BuildMockWorker target run?",
+                candidate
+            );
         }
         return candidate;
     }
@@ -77,21 +93,29 @@ public class EndToEndRoundtripTests
     private static byte[] FixedHash(byte b)
     {
         byte[] h = new byte[HookProtocolManifest.ContentHashSize];
-        for (int i = 0; i < h.Length; i++) h[i] = (byte)(b + i);
+        for (int i = 0; i < h.Length; i++)
+            h[i] = (byte)(b + i);
         return h;
     }
 
-    private static HookProtocolManifest MakeManifest(int cap = HookProtocolAdapter.DefaultRingCapacity)
+    private static HookProtocolManifest MakeManifest(
+        int cap = HookProtocolAdapter.DefaultRingCapacity
+    )
     {
         return new HookProtocolManifest(
             FixedHash(0xC0),
             HookProtocolAdapter.SchemaVersion,
             cap,
-            "q1-e2e-test");
+            "q1-e2e-test"
+        );
     }
 
     /// <summary>Spawn the mock-worker as a subprocess and return the Process handle.</summary>
-    private static Process SpawnMockWorker(string basePath, HookProtocolManifest manifest, string script)
+    private static Process SpawnMockWorker(
+        string basePath,
+        HookProtocolManifest manifest,
+        string script
+    )
     {
         string dll = ResolveMockWorkerDll();
         string hex = Convert.ToHexString(manifest.ContentHash.ToArray());
@@ -104,12 +128,22 @@ public class EndToEndRoundtripTests
             CreateNoWindow = true,
         };
         psi.ArgumentList.Add(dll);
-        psi.ArgumentList.Add("--base-path"); psi.ArgumentList.Add(basePath);
-        psi.ArgumentList.Add("--ring-capacity"); psi.ArgumentList.Add(manifest.RingCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        psi.ArgumentList.Add("--schema"); psi.ArgumentList.Add(manifest.SchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        psi.ArgumentList.Add("--content-hash"); psi.ArgumentList.Add(hex);
-        psi.ArgumentList.Add("--build-id"); psi.ArgumentList.Add(manifest.BuildId);
-        psi.ArgumentList.Add("--script"); psi.ArgumentList.Add(script);
+        psi.ArgumentList.Add("--base-path");
+        psi.ArgumentList.Add(basePath);
+        psi.ArgumentList.Add("--ring-capacity");
+        psi.ArgumentList.Add(
+            manifest.RingCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
+        psi.ArgumentList.Add("--schema");
+        psi.ArgumentList.Add(
+            manifest.SchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
+        psi.ArgumentList.Add("--content-hash");
+        psi.ArgumentList.Add(hex);
+        psi.ArgumentList.Add("--build-id");
+        psi.ArgumentList.Add(manifest.BuildId);
+        psi.ArgumentList.Add("--script");
+        psi.ArgumentList.Add(script);
 
         var p = Process.Start(psi)!;
         // Drain stderr to a buffer so it doesn't block. Append to test output on failure.
@@ -120,10 +154,13 @@ public class EndToEndRoundtripTests
                 while (!p.HasExited)
                 {
                     string? line = p.StandardError.ReadLine();
-                    if (line is null) break;
+                    if (line is null)
+                        break;
                 }
             }
-            catch { /* shutdown */ }
+            catch
+            { /* shutdown */
+            }
         });
         return p;
     }
@@ -131,7 +168,8 @@ public class EndToEndRoundtripTests
     [Fact]
     public void EndToEnd_FireHook_returns_echoed_payload_through_subprocess()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = "/dev/shm/q1-e2e-" + Guid.NewGuid().ToString("N");
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
@@ -154,14 +192,19 @@ public class EndToEndRoundtripTests
         {
             adapter.Stop();
             worker?.WaitForExit(2000);
-            try { worker?.Kill(); } catch { }
+            try
+            {
+                worker?.Kill();
+            }
+            catch { }
         }
     }
 
     [Fact]
     public void EndToEnd_drives_combat_to_completion_through_adapter()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = "/dev/shm/q1-combat-" + Guid.NewGuid().ToString("N");
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
@@ -169,7 +212,10 @@ public class EndToEndRoundtripTests
         var hookCounts = new Dictionary<HookType, int>();
         try
         {
-            adapter.Start(basePath, info => worker = SpawnMockWorker(basePath, manifest, "always-end-turn"));
+            adapter.Start(
+                basePath,
+                info => worker = SpawnMockWorker(basePath, manifest, "always-end-turn")
+            );
 
             // Reference combat (Silent + RingOfTheSnake vs CultistsNormal),
             // same construction as S6-T7's HARD GATE test. We want the engine
@@ -177,8 +223,10 @@ public class EndToEndRoundtripTests
             // AfterPlayerTurnStartLate) while the adapter is subscribed.
             var deck = new List<Sts2Headless.Domain.Combat.CardInstance>();
             uint id = 100u;
-            for (int i = 0; i < 5; i++) deck.Add(new(id++, StrikeSilent.CanonicalId, 0, null));
-            for (int i = 0; i < 5; i++) deck.Add(new(id++, DefendSilent.CanonicalId, 0, null));
+            for (int i = 0; i < 5; i++)
+                deck.Add(new(id++, StrikeSilent.CanonicalId, 0, null));
+            for (int i = 0; i < 5; i++)
+                deck.Add(new(id++, DefendSilent.CanonicalId, 0, null));
             deck.Add(new(id++, Neutralize.CanonicalId, 0, null));
             deck.Add(new(id++, Survivor.CanonicalId, 0, null));
             deck.Add(new(id++, DeadlyPoison.CanonicalId, 0, null));
@@ -201,8 +249,13 @@ public class EndToEndRoundtripTests
                 payloadFactory: _ => Array.Empty<byte>(),
                 responseSink: (ht, _) =>
                 {
-                    lock (hookCounts) { hookCounts.TryGetValue(ht, out int c); hookCounts[ht] = c + 1; }
-                });
+                    lock (hookCounts)
+                    {
+                        hookCounts.TryGetValue(ht, out int c);
+                        hookCounts[ht] = c + 1;
+                    }
+                }
+            );
 
             // Drive a real CombatEngine StartCombat — engine fires its own
             // hooks internally and runs the action queue, proving the S5
@@ -212,16 +265,20 @@ public class EndToEndRoundtripTests
                 SmokeContent.BuildRelicCatalog(),
                 SmokeContent.BuildPowerCatalog(),
                 SmokeContent.BuildMonsterCatalog(),
-                SmokeContent.BuildEncounterCatalog());
+                SmokeContent.BuildEncounterCatalog()
+            );
             var playerSpec = new PlayerSpec(
                 RelicIds: new[] { RingOfTheSnake.CanonicalId },
-                Deck: deck);
+                Deck: deck
+            );
             var ctx = CombatEngine.StartCombat(
-                (IEncounterModel)SmokeContent.BuildEncounterCatalog().Get(CultistsNormal.CanonicalId),
+                (IEncounterModel)
+                    SmokeContent.BuildEncounterCatalog().Get(CultistsNormal.CanonicalId),
                 bootstrap,
                 playerSpec,
                 new RunRngSet("seed-42"),
-                new LogicalClock());
+                new LogicalClock()
+            );
 
             // Fire the adapter-forwarded BeforeCombatStart so the worker sees
             // it. (The engine fired BeforeCombatStart on its internal registry;
@@ -238,28 +295,44 @@ public class EndToEndRoundtripTests
                 {
                     var playable = ctx.State.HandPile.Cards.FirstOrDefault(c =>
                     {
-                        var m = (Sts2Headless.Domain.Content.Models.CardModel)ctx.Cards.Get(c.ModelId);
+                        var m = (Sts2Headless.Domain.Content.Models.CardModel)
+                            ctx.Cards.Get(c.ModelId);
                         int cost = c.CostOverride ?? m.Cost;
-                        if (ctx.State.Energy < cost) return false;
-                        bool needsEnemy = m.Target == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
-                            || m.Target == Sts2Headless.Domain.Content.Models.TargetType.RandomEnemy;
-                        if (needsEnemy && !ctx.State.Enemies.Any(e => e.IsAlive)) return false;
+                        if (ctx.State.Energy < cost)
+                            return false;
+                        bool needsEnemy =
+                            m.Target == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
+                            || m.Target
+                                == Sts2Headless.Domain.Content.Models.TargetType.RandomEnemy;
+                        if (needsEnemy && !ctx.State.Enemies.Any(e => e.IsAlive))
+                            return false;
                         return true;
                     });
-                    if (playable is null) break;
-                    var model = (Sts2Headless.Domain.Content.Models.CardModel)ctx.Cards.Get(playable.ModelId);
-                    uint? target = (model.Target == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
-                                 || model.Target == Sts2Headless.Domain.Content.Models.TargetType.RandomEnemy)
-                        ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id : null;
+                    if (playable is null)
+                        break;
+                    var model = (Sts2Headless.Domain.Content.Models.CardModel)
+                        ctx.Cards.Get(playable.ModelId);
+                    uint? target =
+                        (
+                            model.Target == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
+                            || model.Target
+                                == Sts2Headless.Domain.Content.Models.TargetType.RandomEnemy
+                        )
+                            ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id
+                            : null;
                     CombatEngine.PlayerPlayCard(ctx, playable.InstanceId, target);
-                    if (ctx.State.IsCombatOver) break;
+                    if (ctx.State.IsCombatOver)
+                        break;
                 }
-                if (ctx.State.IsCombatOver) break;
+                if (ctx.State.IsCombatOver)
+                    break;
                 registry.Fire(HookType.BeforeTurnEnd, default);
                 CombatEngine.EndPlayerTurn(ctx);
-                if (ctx.State.IsCombatOver) break;
+                if (ctx.State.IsCombatOver)
+                    break;
                 CombatEngine.EnemyTurn(ctx);
-                if (ctx.State.IsCombatOver) break;
+                if (ctx.State.IsCombatOver)
+                    break;
                 CombatEngine.StartPlayerTurn(ctx);
                 turnsRun++;
             }
@@ -267,7 +340,10 @@ public class EndToEndRoundtripTests
             registry.Fire(HookType.AfterCombatEnd, default);
 
             // Real-combat termination — the same property S6-T7 asserts.
-            Assert.True(ctx.State.IsCombatOver, "Combat must reach a definite end state through the adapter-driven harness.");
+            Assert.True(
+                ctx.State.IsCombatOver,
+                "Combat must reach a definite end state through the adapter-driven harness."
+            );
             Assert.True(ctx.State.PlayerWon || ctx.State.PlayerLost);
             // Adapter forwarded the lifecycle hooks for every fire.
             Assert.Equal(1, hookCounts.GetValueOrDefault(HookType.BeforeCombatStart));
@@ -279,14 +355,19 @@ public class EndToEndRoundtripTests
         {
             adapter.Stop();
             worker?.WaitForExit(2000);
-            try { worker?.Kill(); } catch { }
+            try
+            {
+                worker?.Kill();
+            }
+            catch { }
         }
     }
 
     [Fact]
     public void LatencyGate_p99_under_500us_over_10000_roundtrips()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string basePath = "/dev/shm/q1-lat-" + Guid.NewGuid().ToString("N");
         var manifest = MakeManifest();
         using var adapter = new HookProtocolAdapter(manifest);
@@ -345,11 +426,21 @@ public class EndToEndRoundtripTests
                 var sb = new StringBuilder();
                 sb.Append("{\"event\":\"s9_latency_gate\",");
                 sb.Append("\"samples\":").Append(N).Append(',');
-                sb.Append("\"p50_us\":").Append(p50.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)).Append(',');
-                sb.Append("\"p95_us\":").Append(p95.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)).Append(',');
-                sb.Append("\"p99_us\":").Append(p99.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)).Append(',');
-                sb.Append("\"p999_us\":").Append(p999.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)).Append(',');
-                sb.Append("\"max_us\":").Append(max.ToString("F3", System.Globalization.CultureInfo.InvariantCulture)).Append(',');
+                sb.Append("\"p50_us\":")
+                    .Append(p50.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
+                sb.Append("\"p95_us\":")
+                    .Append(p95.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
+                sb.Append("\"p99_us\":")
+                    .Append(p99.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
+                sb.Append("\"p999_us\":")
+                    .Append(p999.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
+                sb.Append("\"max_us\":")
+                    .Append(max.ToString("F3", System.Globalization.CultureInfo.InvariantCulture))
+                    .Append(',');
                 sb.Append("\"alloc_bytes_per_rt\":").Append(allocPerRt).Append(',');
                 sb.Append("\"hard_gate_us\":500,\"warn_gate_us\":400}");
                 string json = sb.ToString();
@@ -359,12 +450,16 @@ public class EndToEndRoundtripTests
                 File.AppendAllText(logPath, json + "\n");
 
                 // Hard assertion: p99 < 500 μs.
-                Assert.True(p99 < 500.0,
-                    $"LATENCY GATE FAILED: p99 = {p99:F2} μs (limit 500 μs). Full measurement: {json}");
+                Assert.True(
+                    p99 < 500.0,
+                    $"LATENCY GATE FAILED: p99 = {p99:F2} μs (limit 500 μs). Full measurement: {json}"
+                );
                 // Soft warn at 400 μs — we report but don't fail.
                 if (p99 >= 400.0)
                 {
-                    Console.WriteLine($"WARN: p99 = {p99:F2} μs is above the 400 μs warn threshold.");
+                    Console.WriteLine(
+                        $"WARN: p99 = {p99:F2} μs is above the 400 μs warn threshold."
+                    );
                 }
             }
             finally
@@ -376,7 +471,11 @@ public class EndToEndRoundtripTests
         {
             adapter.Stop();
             worker?.WaitForExit(2000);
-            try { worker?.Kill(); } catch { }
+            try
+            {
+                worker?.Kill();
+            }
+            catch { }
         }
     }
 }

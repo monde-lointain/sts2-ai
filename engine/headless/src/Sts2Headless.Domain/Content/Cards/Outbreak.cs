@@ -16,7 +16,8 @@ public sealed class Outbreak : CardModel
     public int Amount => BaseAmount;
     public const int Repeat = 3;
 
-    public Outbreak() : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
+    public Outbreak()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

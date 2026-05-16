@@ -15,7 +15,8 @@ public sealed class Ricochet : CardModel
     public const int UpgradeDelta = 1;
     public int Repeat => BaseRepeat;
 
-    public Ricochet() : base(CanonicalId, 2, CardType.Attack, CardRarity.Common, TargetType.RandomEnemy) { }
+    public Ricochet()
+        : base(CanonicalId, 2, CardType.Attack, CardRarity.Common, TargetType.RandomEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

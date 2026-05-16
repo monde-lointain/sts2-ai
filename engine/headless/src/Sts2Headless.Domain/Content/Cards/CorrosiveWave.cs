@@ -16,7 +16,8 @@ public sealed class CorrosiveWave : CardModel
     public const int UpgradeDelta = 1;
     public int Amount => BaseAmount;
 
-    public CorrosiveWave() : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public CorrosiveWave()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

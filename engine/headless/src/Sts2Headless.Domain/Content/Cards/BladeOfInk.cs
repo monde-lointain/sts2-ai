@@ -14,7 +14,8 @@ public sealed class BladeOfInk : CardModel
     public const int UpgradeDelta = 1;
     public int Cards => BaseCards;
 
-    public BladeOfInk() : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public BladeOfInk()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

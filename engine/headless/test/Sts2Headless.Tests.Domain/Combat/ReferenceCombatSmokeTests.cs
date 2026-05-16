@@ -95,8 +95,10 @@ public sealed class ReferenceCombatSmokeTests
 
         for (int i = 0; i < GoldenHashes.Length; i++)
         {
-            Assert.True(GoldenHashes[i] == hashes[i],
-                $"Hash divergence at boundary {i}: expected {GoldenHashes[i]}, got {hashes[i]}");
+            Assert.True(
+                GoldenHashes[i] == hashes[i],
+                $"Hash divergence at boundary {i}: expected {GoldenHashes[i]}, got {hashes[i]}"
+            );
         }
     }
 
@@ -114,21 +116,27 @@ public sealed class ReferenceCombatSmokeTests
             while (true)
             {
                 CardInstance? playable = PickPlayable(ctx);
-                if (playable is null) break;
+                if (playable is null)
+                    break;
                 uint? targetId = NeedsEnemyTarget(ctx, playable)
                     ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id
                     : null;
-                if (NeedsEnemyTarget(ctx, playable) && targetId is null) break;
+                if (NeedsEnemyTarget(ctx, playable) && targetId is null)
+                    break;
                 CombatEngine.PlayerPlayCard(ctx, playable.InstanceId, targetId);
-                if (ctx.State.IsCombatOver) break;
+                if (ctx.State.IsCombatOver)
+                    break;
             }
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             CombatEngine.EndPlayerTurn(ctx);
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             CombatEngine.EnemyTurn(ctx);
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             CombatEngine.StartPlayerTurn(ctx);
         }
@@ -139,8 +147,10 @@ public sealed class ReferenceCombatSmokeTests
         // can swing either way depending on draws. We only assert reachability of
         // CombatEnd; the action sequence's *exact* terminal hash is captured by the
         // golden-hash test above.
-        Assert.True(ctx.State.PlayerWon || ctx.State.PlayerLost,
-            "Combat must end with a definite victory or defeat.");
+        Assert.True(
+            ctx.State.PlayerWon || ctx.State.PlayerLost,
+            "Combat must end with a definite victory or defeat."
+        );
     }
 
     // === Implementation ===================================================
@@ -172,16 +182,16 @@ public sealed class ReferenceCombatSmokeTests
             SmokeContent.BuildRelicCatalog(),
             SmokeContent.BuildPowerCatalog(),
             SmokeContent.BuildMonsterCatalog(),
-            SmokeContent.BuildEncounterCatalog());
-        var playerSpec = new PlayerSpec(
-            RelicIds: new[] { RingOfTheSnake.CanonicalId },
-            Deck: deck);
+            SmokeContent.BuildEncounterCatalog()
+        );
+        var playerSpec = new PlayerSpec(RelicIds: new[] { RingOfTheSnake.CanonicalId }, Deck: deck);
         return CombatEngine.StartCombat(
             (IEncounterModel)SmokeContent.BuildEncounterCatalog().Get(CultistsNormal.CanonicalId),
             bootstrap,
             playerSpec,
             new RunRngSet("seed-42"),
-            new LogicalClock());
+            new LogicalClock()
+        );
     }
 
     private static List<string> RunReferenceCombatAndCollectHashes(out CombatContext finalCtx)
@@ -205,22 +215,28 @@ public sealed class ReferenceCombatSmokeTests
             while (playsRemaining-- > 0)
             {
                 CardInstance? playable = PickPlayable(ctx);
-                if (playable is null) break;
+                if (playable is null)
+                    break;
                 uint? targetId = NeedsEnemyTarget(ctx, playable)
                     ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id
                     : null;
-                if (NeedsEnemyTarget(ctx, playable) && targetId is null) break;
+                if (NeedsEnemyTarget(ctx, playable) && targetId is null)
+                    break;
                 CombatEngine.PlayerPlayCard(ctx, playable.InstanceId, targetId);
-                if (ctx.State.IsCombatOver) break;
+                if (ctx.State.IsCombatOver)
+                    break;
             }
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
             CombatEngine.EndPlayerTurn(ctx);
             hashes.Add(HashOf(ctx.State));
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             CombatEngine.EnemyTurn(ctx);
             hashes.Add(HashOf(ctx.State));
-            if (ctx.State.IsCombatOver) break;
+            if (ctx.State.IsCombatOver)
+                break;
 
             CombatEngine.StartPlayerTurn(ctx);
         }
@@ -243,15 +259,16 @@ public sealed class ReferenceCombatSmokeTests
         };
         foreach (string modelId in priorityIds)
         {
-            CardInstance? c = ctx.State.HandPile.Cards
-                .FirstOrDefault(c => c.ModelId == modelId);
-            if (c is null) continue;
+            CardInstance? c = ctx.State.HandPile.Cards.FirstOrDefault(c => c.ModelId == modelId);
+            if (c is null)
+                continue;
             var model = (Sts2Headless.Domain.Content.Models.CardModel)ctx.Cards.Get(c.ModelId);
             int cost = c.CostOverride ?? model.Cost;
             if (ctx.State.Energy >= cost)
             {
                 bool needsEnemy = NeedsEnemyTargetFor(model.Target);
-                if (needsEnemy && !ctx.State.Enemies.Any(e => e.IsAlive)) continue;
+                if (needsEnemy && !ctx.State.Enemies.Any(e => e.IsAlive))
+                    continue;
                 return c;
             }
         }
@@ -264,8 +281,8 @@ public sealed class ReferenceCombatSmokeTests
         return NeedsEnemyTargetFor(model.Target);
     }
 
-    private static bool NeedsEnemyTargetFor(Sts2Headless.Domain.Content.Models.TargetType t)
-        => t == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
+    private static bool NeedsEnemyTargetFor(Sts2Headless.Domain.Content.Models.TargetType t) =>
+        t == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
         || t == Sts2Headless.Domain.Content.Models.TargetType.RandomEnemy;
 
     private static string HashOf(CombatState state)

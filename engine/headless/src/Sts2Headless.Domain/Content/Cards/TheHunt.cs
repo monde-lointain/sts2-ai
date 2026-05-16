@@ -14,7 +14,8 @@ public sealed class TheHunt : CardModel
     public const int UpgradeDelta = 5;
     public int Damage => BaseDamage;
 
-    public TheHunt() : base(CanonicalId, 1, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
+    public TheHunt()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

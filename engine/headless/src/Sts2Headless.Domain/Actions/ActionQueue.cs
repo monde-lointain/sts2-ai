@@ -55,7 +55,8 @@ public sealed class ActionQueue
     /// <summary>Append an action to the tail of the queue.</summary>
     public void Enqueue(IAction action)
     {
-        if (action is null) throw new ArgumentNullException(nameof(action));
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
         _items.Add(action);
     }
 
@@ -66,7 +67,8 @@ public sealed class ActionQueue
     /// </summary>
     public void InsertAtFront(IAction action)
     {
-        if (action is null) throw new ArgumentNullException(nameof(action));
+        if (action is null)
+            throw new ArgumentNullException(nameof(action));
         // Insert at the logical head (_head index in the backing list).
         // List<T>.Insert is O(N) on the suffix; acceptable given queue depth.
         _items.Insert(_head, action);
@@ -79,7 +81,8 @@ public sealed class ActionQueue
     /// </summary>
     public void Drain(ExecutionContext ctx)
     {
-        if (ctx is null) throw new ArgumentNullException(nameof(ctx));
+        if (ctx is null)
+            throw new ArgumentNullException(nameof(ctx));
         while (_head < _items.Count)
         {
             IAction next = _items[_head];
@@ -100,7 +103,8 @@ public sealed class ActionQueue
 
     private void CompactIfWastedPrefixGrew()
     {
-        if (_head < CompactionThreshold) return;
+        if (_head < CompactionThreshold)
+            return;
         // Move the live suffix [_head, Count) to the front and trim.
         int live = _items.Count - _head;
         for (int i = 0; i < live; i++)

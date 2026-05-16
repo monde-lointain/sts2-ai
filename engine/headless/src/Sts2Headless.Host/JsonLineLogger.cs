@@ -66,7 +66,8 @@ public sealed class JsonLineLogger : IStructuredLogger
         foreach (KeyValuePair<string, object?> kv in payload)
         {
             // Skip reserved keys to keep the envelope unambiguous.
-            if (kv.Key == "ts" || kv.Key == "event") continue;
+            if (kv.Key == "ts" || kv.Key == "event")
+                continue;
             envelope[kv.Key] = kv.Value;
         }
 

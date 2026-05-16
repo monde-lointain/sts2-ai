@@ -96,13 +96,24 @@ public sealed class GracefulShutdown : IDisposable
 
     public void Dispose()
     {
-        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+        if (Interlocked.Exchange(ref _disposed, 1) != 0)
+            return;
         if (_attachedToProcess)
         {
-            try { AppDomain.CurrentDomain.ProcessExit -= _processExitHandler; }
-            catch { /* swallow */ }
-            try { Console.CancelKeyPress -= _cancelKeyPressHandler; }
-            catch { /* swallow */ }
+            try
+            {
+                AppDomain.CurrentDomain.ProcessExit -= _processExitHandler;
+            }
+            catch
+            { /* swallow */
+            }
+            try
+            {
+                Console.CancelKeyPress -= _cancelKeyPressHandler;
+            }
+            catch
+            { /* swallow */
+            }
         }
         _cts.Dispose();
     }

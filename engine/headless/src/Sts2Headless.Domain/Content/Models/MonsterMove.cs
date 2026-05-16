@@ -31,7 +31,8 @@ public sealed record MonsterMove(
     string Id,
     Intent Intent,
     string FollowUpMoveId,
-    IMoveBranchResolver? BranchResolver = null);
+    IMoveBranchResolver? BranchResolver = null
+);
 
 /// <summary>
 /// Read-only snapshot the engine hands to an <see cref="IMoveBranchResolver"/>
@@ -50,7 +51,8 @@ public readonly record struct MoveBranchContext(
     int CurrentHp,
     int MaxHp,
     System.Func<string, bool> HasPower,
-    System.Func<string, int> GetPowerStacks);
+    System.Func<string, int> GetPowerStacks
+);
 
 /// <summary>
 /// Decides the next move id when the current move has branching logic
@@ -92,12 +94,15 @@ public sealed class RngBranchResolver : IMoveBranchResolver
     /// <c>RunState.Rng.MonsterAi</c>.</param>
     public RngBranchResolver(
         ImmutableArray<RngBranchChoice> choices,
-        RunRngType bucket = RunRngType.MonsterAi)
+        RunRngType bucket = RunRngType.MonsterAi
+    )
     {
         if (choices.IsDefault || choices.Length == 0)
         {
             throw new System.ArgumentException(
-                "RngBranchResolver requires at least one choice.", nameof(choices));
+                "RngBranchResolver requires at least one choice.",
+                nameof(choices)
+            );
         }
         float total = 0f;
         for (int i = 0; i < choices.Length; i++)
@@ -106,7 +111,8 @@ public sealed class RngBranchResolver : IMoveBranchResolver
             {
                 throw new System.ArgumentException(
                     $"RngBranchChoice weights must be positive (got {choices[i].Weight} for {choices[i].MoveId}).",
-                    nameof(choices));
+                    nameof(choices)
+                );
             }
             total += choices[i].Weight;
         }
@@ -127,7 +133,8 @@ public sealed class RngBranchResolver : IMoveBranchResolver
         for (int i = 0; i < _choices.Length; i++)
         {
             running += _choices[i].Weight;
-            if (sample < running) return _choices[i].MoveId;
+            if (sample < running)
+                return _choices[i].MoveId;
         }
         // Fallback: last choice (covers floating-point boundary).
         return _choices[_choices.Length - 1].MoveId;
@@ -162,8 +169,10 @@ public sealed class HpThresholdResolver : IMoveBranchResolver
     {
         if (fraction <= 0f || fraction > 1f)
         {
-            throw new System.ArgumentOutOfRangeException(nameof(fraction),
-                $"HpThresholdResolver fraction must be in (0, 1] (got {fraction}).");
+            throw new System.ArgumentOutOfRangeException(
+                nameof(fraction),
+                $"HpThresholdResolver fraction must be in (0, 1] (got {fraction})."
+            );
         }
         System.ArgumentException.ThrowIfNullOrWhiteSpace(belowMoveId);
         System.ArgumentException.ThrowIfNullOrWhiteSpace(aboveMoveId);
@@ -175,7 +184,8 @@ public sealed class HpThresholdResolver : IMoveBranchResolver
     /// <inheritdoc />
     public string Resolve(MoveBranchContext context, RunRngSet runRng)
     {
-        if (context.MaxHp <= 0) return AboveMoveId;
+        if (context.MaxHp <= 0)
+            return AboveMoveId;
         float current = (float)context.CurrentHp / context.MaxHp;
         return current < Fraction ? BelowMoveId : AboveMoveId;
     }
@@ -203,8 +213,8 @@ public sealed class HasPowerResolver : IMoveBranchResolver
     }
 
     /// <inheritdoc />
-    public string Resolve(MoveBranchContext context, RunRngSet runRng)
-        => context.HasPower(PowerId) ? HasPowerMoveId : LacksPowerMoveId;
+    public string Resolve(MoveBranchContext context, RunRngSet runRng) =>
+        context.HasPower(PowerId) ? HasPowerMoveId : LacksPowerMoveId;
 }
 
 /// <summary>
@@ -223,5 +233,6 @@ public sealed class PredicateBranchResolver : IMoveBranchResolver
     }
 
     /// <inheritdoc />
-    public string Resolve(MoveBranchContext context, RunRngSet runRng) => _resolver(context, runRng);
+    public string Resolve(MoveBranchContext context, RunRngSet runRng) =>
+        _resolver(context, runRng);
 }

@@ -18,8 +18,7 @@ public sealed class Survivor : CardModel
     public int Block => BaseBlock;
 
     public Survivor()
-        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Basic, TargetType.Self)
-    { }
+        : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Basic, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

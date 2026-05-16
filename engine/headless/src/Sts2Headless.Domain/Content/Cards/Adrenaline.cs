@@ -16,7 +16,8 @@ public sealed class Adrenaline : CardModel
     public int EnergyGain => BaseEnergy;
     public const int CardsDrawn = 2;
 
-    public Adrenaline() : base(CanonicalId, 0, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public Adrenaline()
+        : base(CanonicalId, 0, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

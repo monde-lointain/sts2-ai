@@ -85,8 +85,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
     private SharedMemorySegment? _q8ToQ1Shm;
     private SpscRingBuffer? _q1ToQ8Ring;
     private SpscRingBuffer? _q8ToQ1Ring;
-    private PosixSemaphore? _outboundSem;  // Q1 releases; Q8 waits.
-    private PosixSemaphore? _inboundSem;   // Q8 releases; Q1 waits.
+    private PosixSemaphore? _outboundSem; // Q1 releases; Q8 waits.
+    private PosixSemaphore? _inboundSem; // Q8 releases; Q1 waits.
 
     private Thread? _readerThread;
     private CancellationTokenSource? _readerCts;
@@ -108,7 +108,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         HookProtocolManifest manifest,
         int? ringCapacity = null,
         TimeSpan? handshakeTimeout = null,
-        TimeSpan? waitTimeout = null)
+        TimeSpan? waitTimeout = null
+    )
     {
         ArgumentNullException.ThrowIfNull(manifest);
         _manifest = manifest;
@@ -116,7 +117,9 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         if (_ringCapacity != manifest.RingCapacity)
         {
             throw new ArgumentException(
-                $"ringCapacity ({_ringCapacity}) must match manifest.RingCapacity ({manifest.RingCapacity})", nameof(ringCapacity));
+                $"ringCapacity ({_ringCapacity}) must match manifest.RingCapacity ({manifest.RingCapacity})",
+                nameof(ringCapacity)
+            );
         }
         _handshakeTimeout = handshakeTimeout ?? DefaultHandshakeTimeout;
         _waitTimeout = waitTimeout ?? DefaultWaitTimeout;
@@ -127,10 +130,13 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
 
     /// <summary>Outbound (Q1->Q8) shared-memory file path. Available after Start.</summary>
     public string? OutboundShmPath => _basePath is null ? null : OutboundShmPathFor(_basePath);
+
     /// <summary>Inbound (Q8->Q1) shared-memory file path. Available after Start.</summary>
     public string? InboundShmPath => _basePath is null ? null : InboundShmPathFor(_basePath);
+
     /// <summary>Outbound semaphore name (Q1 releases; Q8 waits).</summary>
     public string? OutboundSemName => _basePath is null ? null : OutboundSemNameFor(_basePath);
+
     /// <summary>Inbound semaphore name (Q8 releases; Q1 waits).</summary>
     public string? InboundSemName => _basePath is null ? null : InboundSemNameFor(_basePath);
 
@@ -138,9 +144,14 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
     // Used by the mock-worker (and any real Q8) to attach to the same primitives.
 
     public static string OutboundShmPathFor(string basePath) => basePath + ".q1tq8.shm";
+
     public static string InboundShmPathFor(string basePath) => basePath + ".q8tq1.shm";
-    public static string OutboundSemNameFor(string basePath) => SanitizeForSemName(basePath) + "_q1tq8";
-    public static string InboundSemNameFor(string basePath) => SanitizeForSemName(basePath) + "_q8tq1";
+
+    public static string OutboundSemNameFor(string basePath) =>
+        SanitizeForSemName(basePath) + "_q1tq8";
+
+    public static string InboundSemNameFor(string basePath) =>
+        SanitizeForSemName(basePath) + "_q8tq1";
 
     private static string SanitizeForSemName(string s)
     {
@@ -150,7 +161,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         for (int i = 0; i < s.Length; i++)
         {
             char c = s[i];
-            if (c == '/' || c == '\\') continue;
+            if (c == '/' || c == '\\')
+                continue;
             buf[n++] = c;
         }
         return new string(buf, 0, n);
@@ -195,7 +207,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             InboundShmPathFor(workerSocketPath),
             OutboundSemNameFor(workerSocketPath),
             InboundSemNameFor(workerSocketPath),
-            _ringCapacity);
+            _ringCapacity
+        );
     }
 
     /// <summary>
@@ -205,7 +218,12 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
     /// </summary>
     public void FinishStart()
     {
-        if (_q1ToQ8Ring is null || _q8ToQ1Ring is null || _outboundSem is null || _inboundSem is null)
+        if (
+            _q1ToQ8Ring is null
+            || _q8ToQ1Ring is null
+            || _outboundSem is null
+            || _inboundSem is null
+        )
         {
             throw new InvalidOperationException("PreStart must be called before FinishStart");
         }
@@ -219,7 +237,9 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         string? mismatch = _manifest.DescribeMismatch(peer);
         if (mismatch is not null)
         {
-            throw new HookProtocolHandshakeException($"Hook-protocol manifest mismatch — {mismatch}");
+            throw new HookProtocolHandshakeException(
+                $"Hook-protocol manifest mismatch — {mismatch}"
+            );
         }
 
         // Spawn the reader thread for subsequent inbound messages.
@@ -260,7 +280,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         {
             _slotPool.Return(slot);
             throw new InvalidOperationException(
-                $"correlation_id {correlationId} is already pending — caller must use unique IDs per outstanding request");
+                $"correlation_id {correlationId} is already pending — caller must use unique IDs per outstanding request"
+            );
         }
         // Build the frame body: 2-byte hook type + caller payload. This is
         // the M2 wire convention for hook-request bodies.
@@ -271,7 +292,12 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             bodyBuf[1] = (byte)(((int)hookType >> 8) & 0xFF);
             payload.CopyTo(bodyBuf.AsSpan(2, payload.Length));
 
-            var header = new MessageHeader(MessageType.HookRequest, SchemaVersion, 2 + payload.Length, correlationId);
+            var header = new MessageHeader(
+                MessageType.HookRequest,
+                SchemaVersion,
+                2 + payload.Length,
+                correlationId
+            );
             SendFrame(header, bodyBuf.AsSpan(0, 2 + payload.Length));
         }
         finally
@@ -284,21 +310,34 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
     /// Await the response with the given correlation_id. Returns a
     /// <see cref="ResponseFrame"/> on success; throws on timeout / cancellation.
     /// </summary>
-    public ValueTask<ResponseFrame> WaitResponse(ulong correlationId, CancellationToken ct = default)
+    public ValueTask<ResponseFrame> WaitResponse(
+        ulong correlationId,
+        CancellationToken ct = default
+    )
     {
         ThrowIfNotRunning();
         if (!_pending.TryGetValue(correlationId, out var slot))
         {
-            throw new InvalidOperationException($"correlation_id {correlationId} has no pending entry — FireHook must be called first");
+            throw new InvalidOperationException(
+                $"correlation_id {correlationId} has no pending entry — FireHook must be called first"
+            );
         }
-        return new ValueTask<ResponseFrame>(slot.WaitAsync(_waitTimeout, ct).ContinueWith(t =>
-        {
-            // Slot is single-shot; remove from map and return to pool once consumed.
-            _pending.TryRemove(correlationId, out _);
-            // Don't return to pool until value retrieved — keep ResponseFrame alive
-            // for the caller. We return on a separate path via Stop().
-            return t.GetAwaiter().GetResult();
-        }, ct, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default));
+        return new ValueTask<ResponseFrame>(
+            slot.WaitAsync(_waitTimeout, ct)
+                .ContinueWith(
+                    t =>
+                    {
+                        // Slot is single-shot; remove from map and return to pool once consumed.
+                        _pending.TryRemove(correlationId, out _);
+                        // Don't return to pool until value retrieved — keep ResponseFrame alive
+                        // for the caller. We return on a separate path via Stop().
+                        return t.GetAwaiter().GetResult();
+                    },
+                    ct,
+                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskScheduler.Default
+                )
+        );
     }
 
     /// <summary>
@@ -312,7 +351,9 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         ThrowIfNotRunning();
         if (!_pending.TryGetValue(correlationId, out var slot))
         {
-            throw new InvalidOperationException($"correlation_id {correlationId} has no pending entry — FireHook must be called first");
+            throw new InvalidOperationException(
+                $"correlation_id {correlationId} has no pending entry — FireHook must be called first"
+            );
         }
         var frame = slot.Wait(_waitTimeout, ct);
         _pending.TryRemove(correlationId, out _);
@@ -331,7 +372,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         HookRegistry registry,
         IEnumerable<HookType> hookTypes,
         Func<HookType, byte[]> payloadFactory,
-        Action<HookType, ResponseFrame> responseSink)
+        Action<HookType, ResponseFrame> responseSink
+    )
     {
         ArgumentNullException.ThrowIfNull(registry);
         ArgumentNullException.ThrowIfNull(hookTypes);
@@ -360,7 +402,8 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
     /// <summary>Graceful shutdown: send Terminate, join reader, dispose resources.</summary>
     public void Stop()
     {
-        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0) return;
+        if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0)
+            return;
         try
         {
             if (Volatile.Read(ref _started) == 1)
@@ -371,11 +414,17 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
                     var header = new MessageHeader(MessageType.Terminate, SchemaVersion, 0, 0);
                     SendFrame(header, ReadOnlySpan<byte>.Empty);
                 }
-                catch { /* best effort */ }
+                catch
+                { /* best effort */
+                }
 
                 _readerCts?.Cancel();
                 // Self-wake the reader by posting the inbound sem.
-                try { _inboundSem?.Release(); } catch { }
+                try
+                {
+                    _inboundSem?.Release();
+                }
+                catch { }
                 _readerThread?.Join(TimeSpan.FromSeconds(2));
             }
         }
@@ -384,7 +433,9 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             // Wake all pending slots so callers don't deadlock.
             foreach (var kv in _pending)
             {
-                kv.Value.Fail(new HookProtocolHandshakeException("Adapter stopped before response arrived"));
+                kv.Value.Fail(
+                    new HookProtocolHandshakeException("Adapter stopped before response arrived")
+                );
             }
             _pending.Clear();
 
@@ -416,8 +467,12 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             if (_outboundScratch.Length < wire)
             {
                 // Grow to next power-of-two ≥ wire.
-                int cap = Math.Max(64, _outboundScratch.Length == 0 ? 64 : _outboundScratch.Length * 2);
-                while (cap < wire) cap *= 2;
+                int cap = Math.Max(
+                    64,
+                    _outboundScratch.Length == 0 ? 64 : _outboundScratch.Length * 2
+                );
+                while (cap < wire)
+                    cap *= 2;
                 _outboundScratch = new byte[cap];
             }
             int n = MessageFrame.Encode(header, body, _outboundScratch);
@@ -467,13 +522,17 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         Span<byte> headerSpan = stackalloc byte[MessageHeader.HeaderSize];
         while (true)
         {
-            if (_q8ToQ1Ring!.AvailableToRead < MessageHeader.HeaderSize) return;
-            if (!_q8ToQ1Ring.TryPeek(headerSpan)) return;
+            if (_q8ToQ1Ring!.AvailableToRead < MessageHeader.HeaderSize)
+                return;
+            if (!_q8ToQ1Ring.TryPeek(headerSpan))
+                return;
             var header = MessageHeader.Decode(headerSpan);
             int wire = header.WireSize;
-            if (_q8ToQ1Ring.AvailableToRead < wire) return;
+            if (_q8ToQ1Ring.AvailableToRead < wire)
+                return;
             byte[] frameBuf = new byte[wire];
-            if (!_q8ToQ1Ring.TryRead(frameBuf)) return; // shouldn't happen given we checked
+            if (!_q8ToQ1Ring.TryRead(frameBuf))
+                return; // shouldn't happen given we checked
             byte[] payload = new byte[header.PayloadLength];
             Buffer.BlockCopy(frameBuf, MessageHeader.HeaderSize, payload, 0, header.PayloadLength);
 
@@ -540,12 +599,18 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
                     {
                         byte[] frameBuf = new byte[wire];
                         _q8ToQ1Ring.TryRead(frameBuf);
-                        if (hdr.Type != MessageType.ManifestRequest && hdr.Type != MessageType.ManifestResponse)
+                        if (
+                            hdr.Type != MessageType.ManifestRequest
+                            && hdr.Type != MessageType.ManifestResponse
+                        )
                         {
                             throw new HookProtocolHandshakeException(
-                                $"Handshake protocol violation: expected ManifestRequest/Response, got {hdr.Type}");
+                                $"Handshake protocol violation: expected ManifestRequest/Response, got {hdr.Type}"
+                            );
                         }
-                        return HookProtocolManifest.Decode(frameBuf.AsSpan(MessageHeader.HeaderSize, hdr.PayloadLength));
+                        return HookProtocolManifest.Decode(
+                            frameBuf.AsSpan(MessageHeader.HeaderSize, hdr.PayloadLength)
+                        );
                     }
                 }
             }
@@ -553,10 +618,15 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             if (remaining <= TimeSpan.Zero)
             {
                 throw new HookProtocolHandshakeException(
-                    $"Handshake timed out after {timeout} waiting for peer manifest");
+                    $"Handshake timed out after {timeout} waiting for peer manifest"
+                );
             }
             // Bounded wait on inbound sem.
-            _inboundSem!.Wait(remaining > TimeSpan.FromMilliseconds(50) ? TimeSpan.FromMilliseconds(50) : remaining);
+            _inboundSem!.Wait(
+                remaining > TimeSpan.FromMilliseconds(50)
+                    ? TimeSpan.FromMilliseconds(50)
+                    : remaining
+            );
         }
     }
 
@@ -566,11 +636,16 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
 
     private void ThrowIfNotRunning()
     {
-        if (!IsRunning) throw new InvalidOperationException("HookProtocolAdapter is not running (call Start / FinishStart first)");
+        if (!IsRunning)
+            throw new InvalidOperationException(
+                "HookProtocolAdapter is not running (call Start / FinishStart first)"
+            );
     }
 
     // Body buffer pool: simple thread-static stash to avoid hot-path GC.
-    [ThreadStatic] private static byte[]? t_bodyBuf;
+    [ThreadStatic]
+    private static byte[]? t_bodyBuf;
+
     private static byte[] RentBody(int min)
     {
         var b = t_bodyBuf;
@@ -581,7 +656,11 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         }
         return b;
     }
-    private static void ReturnBody(byte[] _) { /* thread-static; no-op return */ }
+
+    private static void ReturnBody(
+        byte[] _
+    ) { /* thread-static; no-op return */
+    }
 
     /// <summary>Tuple-ish info returned by <see cref="PreStart"/>.</summary>
     public readonly struct StartResult
@@ -591,6 +670,7 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
         public string OutboundSemName { get; }
         public string InboundSemName { get; }
         public int RingCapacity { get; }
+
         public StartResult(string outShm, string inShm, string outSem, string inSem, int cap)
         {
             OutboundShmPath = outShm;
@@ -641,22 +721,28 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             if (!_signal.Wait(timeout, ct))
             {
                 throw new TimeoutException(
-                    $"WaitResponse timed out for correlation_id={CorrelationId} after {timeout}");
+                    $"WaitResponse timed out for correlation_id={CorrelationId} after {timeout}"
+                );
             }
-            if (_error is not null) throw _error;
+            if (_error is not null)
+                throw _error;
             return _frame!;
         }
 
         public Task<ResponseFrame> WaitAsync(TimeSpan timeout, CancellationToken ct)
         {
             // Build a TCS the producer can complete from the reader thread.
-            var tcs = new TaskCompletionSource<ResponseFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var tcs = new TaskCompletionSource<ResponseFrame>(
+                TaskCreationOptions.RunContinuationsAsynchronously
+            );
             _tcs = tcs;
             // Already complete?
             if (_signal.IsSet)
             {
-                if (_error is not null) tcs.TrySetException(_error);
-                else if (_frame is not null) tcs.TrySetResult(_frame);
+                if (_error is not null)
+                    tcs.TrySetException(_error);
+                else if (_frame is not null)
+                    tcs.TrySetResult(_frame);
             }
             if (ct.CanBeCanceled)
             {
@@ -664,22 +750,37 @@ public sealed unsafe class HookProtocolAdapter : IDisposable
             }
             if (timeout != Timeout.InfiniteTimeSpan && timeout > TimeSpan.Zero)
             {
-                _ = Task.Delay(timeout, ct).ContinueWith(_ =>
-                {
-                    tcs.TrySetException(new TimeoutException($"WaitResponse timed out for correlation_id={CorrelationId} after {timeout}"));
-                }, TaskScheduler.Default);
+                _ = Task.Delay(timeout, ct)
+                    .ContinueWith(
+                        _ =>
+                        {
+                            tcs.TrySetException(
+                                new TimeoutException(
+                                    $"WaitResponse timed out for correlation_id={CorrelationId} after {timeout}"
+                                )
+                            );
+                        },
+                        TaskScheduler.Default
+                    );
             }
             return tcs.Task;
         }
     }
 
     /// <summary>Tiny object pool, single-threaded use (we hold _outboundLock).</summary>
-    private sealed class Pool<T> where T : class
+    private sealed class Pool<T>
+        where T : class
     {
         private readonly Func<T> _factory;
         private readonly ConcurrentQueue<T> _stash = new();
-        public Pool(Func<T> factory) { _factory = factory; }
+
+        public Pool(Func<T> factory)
+        {
+            _factory = factory;
+        }
+
         public T Rent() => _stash.TryDequeue(out var x) ? x : _factory();
+
         public void Return(T x) => _stash.Enqueue(x);
     }
 }

@@ -15,7 +15,8 @@ public sealed class CloakAndDagger : CardModel
     public const int UpgradeDelta = 1;
     public int Shivs => BaseShivs;
 
-    public CloakAndDagger() : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
+    public CloakAndDagger()
+        : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

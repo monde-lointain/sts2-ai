@@ -59,7 +59,9 @@ public static class Program
             Corpus generated = CorpusGenerator.BuildPhase1Corpus();
             Directory.CreateDirectory(Path.GetDirectoryName(corpusPath)!);
             File.WriteAllText(corpusPath, generated.ToJson());
-            stdout.WriteLine($"determinism-probe: corpus written to {corpusPath} ({generated.Entries.Count} entries).");
+            stdout.WriteLine(
+                $"determinism-probe: corpus written to {corpusPath} ({generated.Entries.Count} entries)."
+            );
             return ExitPass;
         }
 
@@ -76,8 +78,9 @@ public static class Program
         if (!File.Exists(corpusPath))
         {
             stderr.WriteLine(
-                $"determinism-probe: corpus '{corpusPath}' does not exist. " +
-                "Run with --mode generate-corpus first.");
+                $"determinism-probe: corpus '{corpusPath}' does not exist. "
+                    + "Run with --mode generate-corpus first."
+            );
             return ExitError;
         }
         Corpus corpus;
@@ -87,18 +90,25 @@ public static class Program
         }
         catch (Exception ex)
         {
-            stderr.WriteLine($"determinism-probe: failed to load corpus '{corpusPath}': {ex.Message}");
+            stderr.WriteLine(
+                $"determinism-probe: failed to load corpus '{corpusPath}': {ex.Message}"
+            );
             return ExitError;
         }
 
         // Select the entries to run for this mode.
         IReadOnlyList<CorpusEntry> entries = SelectEntries(corpus, cli);
-        stdout.WriteLine($"determinism-probe: mode={cli.Mode} entries={entries.Count} goldens={goldensDir}");
+        stdout.WriteLine(
+            $"determinism-probe: mode={cli.Mode} entries={entries.Count} goldens={goldensDir}"
+        );
 
         // Run each entry.
         bool captureMode = cli.Mode == ProbeMode.Capture;
         var runner = new ProbeRunner(goldensDir);
-        int passed = 0, failed = 0, errored = 0, captured = 0;
+        int passed = 0,
+            failed = 0,
+            errored = 0,
+            captured = 0;
         ProbeRunner.EntryResult? firstFailure = null;
         var startTime = System.Diagnostics.Stopwatch.StartNew();
 
@@ -109,11 +119,17 @@ public static class Program
             {
                 case ProbeRunner.EntryOutcome.Pass:
                     passed++;
-                    if (cli.Verbose) stdout.WriteLine($"  PASS {entry.Id} ({res.Duration.TotalMilliseconds:F0}ms)");
+                    if (cli.Verbose)
+                        stdout.WriteLine(
+                            $"  PASS {entry.Id} ({res.Duration.TotalMilliseconds:F0}ms)"
+                        );
                     break;
                 case ProbeRunner.EntryOutcome.Captured:
                     captured++;
-                    if (cli.Verbose) stdout.WriteLine($"  CAPTURED {entry.Id} ({res.Duration.TotalMilliseconds:F0}ms)");
+                    if (cli.Verbose)
+                        stdout.WriteLine(
+                            $"  CAPTURED {entry.Id} ({res.Duration.TotalMilliseconds:F0}ms)"
+                        );
                     break;
                 case ProbeRunner.EntryOutcome.Diverged:
                     failed++;
@@ -132,12 +148,16 @@ public static class Program
         startTime.Stop();
 
         // Summary.
-        stdout.WriteLine($"determinism-probe: summary — passed={passed} captured={captured} failed={failed} errored={errored} duration={startTime.Elapsed.TotalSeconds:F2}s");
+        stdout.WriteLine(
+            $"determinism-probe: summary — passed={passed} captured={captured} failed={failed} errored={errored} duration={startTime.Elapsed.TotalSeconds:F2}s"
+        );
         if (firstFailure is not null)
         {
             stderr.WriteLine("determinism-probe: first failure ↓");
             stderr.WriteLine($"  entry: {firstFailure.Entry.Id}");
-            stderr.WriteLine($"  mode: {firstFailure.Entry.Mode}  seed: {firstFailure.Entry.Seed}  encounter: {firstFailure.Entry.Encounter}");
+            stderr.WriteLine(
+                $"  mode: {firstFailure.Entry.Mode}  seed: {firstFailure.Entry.Seed}  encounter: {firstFailure.Entry.Encounter}"
+            );
             if (firstFailure.ErrorMessage is not null)
             {
                 stderr.WriteLine($"  error: {firstFailure.ErrorMessage}");
@@ -146,16 +166,22 @@ public static class Program
             {
                 ProbeRunner.DivergencePoint d = firstFailure.Divergence;
                 stderr.WriteLine($"  divergence at step {d.StepIndex}: {d.Reason}");
-                stderr.WriteLine($"    Q1: turn={d.Q1Record.Turn} phase={d.Q1Record.Phase} hash={d.Q1Record.Hash}");
+                stderr.WriteLine(
+                    $"    Q1: turn={d.Q1Record.Turn} phase={d.Q1Record.Phase} hash={d.Q1Record.Hash}"
+                );
                 if (d.GoldenRecord is not null)
                 {
-                    stderr.WriteLine($"    golden: turn={d.GoldenRecord.Turn} phase={d.GoldenRecord.Phase} hash={d.GoldenRecord.Hash}");
+                    stderr.WriteLine(
+                        $"    golden: turn={d.GoldenRecord.Turn} phase={d.GoldenRecord.Phase} hash={d.GoldenRecord.Hash}"
+                    );
                 }
             }
         }
 
-        if (errored > 0) return ExitError;
-        if (failed > 0) return ExitFail;
+        if (errored > 0)
+            return ExitError;
+        if (failed > 0)
+            return ExitFail;
         return ExitPass;
     }
 
@@ -174,32 +200,48 @@ public static class Program
     /// </summary>
     private static int RunInitialStateUpstream(ProbeCli cli, TextWriter stdout, TextWriter stderr)
     {
-        string goldensRoot = cli.GoldensDir
-            ?? Path.Combine(LocateProbeDir(), "goldens-upstream", "initial-state");
+        string goldensRoot =
+            cli.GoldensDir ?? Path.Combine(LocateProbeDir(), "goldens-upstream", "initial-state");
         if (!Directory.Exists(goldensRoot))
         {
             stderr.WriteLine(
-                $"determinism-probe: goldens-upstream root '{goldensRoot}' does not exist. " +
-                "Run `make probe-upstream-capture` first (Stream-C-T3).");
+                $"determinism-probe: goldens-upstream root '{goldensRoot}' does not exist. "
+                    + "Run `make probe-upstream-capture` first (Stream-C-T3)."
+            );
             return ExitError;
         }
 
         // 16 encounters x 10 seeds — matches the corpus + upstream-capture EncounterCatalog.
         IReadOnlyList<string> encounters = new[]
         {
-            "CultistsNormal", "ChompersNormal", "ExoskeletonsNormal",
-            "SmallSlimes", "MediumSlimes",
-            "BowlbugsTrio", "FuzzyWurmCrawlerSolo", "FossilStalkerElite",
-            "FrogKnightElite", "LagavulinElite", "HauntedShipSolo",
-            "LivingFogSolo", "GremlinMercNormal", "KaiserCrabBoss",
-            "CeremonialBeastBoss", "LouseProgenitorNormal",
+            "CultistsNormal",
+            "ChompersNormal",
+            "ExoskeletonsNormal",
+            "SmallSlimes",
+            "MediumSlimes",
+            "BowlbugsTrio",
+            "FuzzyWurmCrawlerSolo",
+            "FossilStalkerElite",
+            "FrogKnightElite",
+            "LagavulinElite",
+            "HauntedShipSolo",
+            "LivingFogSolo",
+            "GremlinMercNormal",
+            "KaiserCrabBoss",
+            "CeremonialBeastBoss",
+            "LouseProgenitorNormal",
         };
         int[] seeds = Enumerable.Range(42, 10).ToArray();
 
         var comparer = new UpstreamInitialStateComparer(goldensRoot);
-        stdout.WriteLine($"determinism-probe: mode=initial-state-upstream entries={encounters.Count * seeds.Length} goldens={goldensRoot}");
+        stdout.WriteLine(
+            $"determinism-probe: mode=initial-state-upstream entries={encounters.Count * seeds.Length} goldens={goldensRoot}"
+        );
 
-        int passed = 0, diverged = 0, skipped = 0, errored = 0;
+        int passed = 0,
+            diverged = 0,
+            skipped = 0,
+            errored = 0;
         var firstFailures = new List<UpstreamInitialStateComparer.EntryResult>();
         var sw = System.Diagnostics.Stopwatch.StartNew();
         foreach (string encId in encounters)
@@ -211,28 +253,34 @@ public static class Program
                 {
                     case UpstreamInitialStateComparer.EntryOutcome.Pass:
                         passed++;
-                        if (cli.Verbose) stdout.WriteLine($"  PASS    {encId} seed={seed}");
+                        if (cli.Verbose)
+                            stdout.WriteLine($"  PASS    {encId} seed={seed}");
                         break;
                     case UpstreamInitialStateComparer.EntryOutcome.Diverged:
                         diverged++;
-                        if (firstFailures.Count < 5) firstFailures.Add(res);
+                        if (firstFailures.Count < 5)
+                            firstFailures.Add(res);
                         if (cli.Verbose)
                         {
                             stdout.WriteLine($"  DIVERGE {encId} seed={seed}");
                             foreach (string line in (res.DiffSummary ?? "").TrimEnd().Split('\n'))
                             {
-                                if (line.Length > 0) stdout.WriteLine($"    {line}");
+                                if (line.Length > 0)
+                                    stdout.WriteLine($"    {line}");
                             }
                         }
                         break;
                     case UpstreamInitialStateComparer.EntryOutcome.Skipped:
                         skipped++;
-                        if (cli.Verbose) stdout.WriteLine($"  SKIP    {encId} seed={seed} (MissingUpstream)");
+                        if (cli.Verbose)
+                            stdout.WriteLine($"  SKIP    {encId} seed={seed} (MissingUpstream)");
                         break;
                     case UpstreamInitialStateComparer.EntryOutcome.Error:
                         errored++;
-                        if (firstFailures.Count < 5) firstFailures.Add(res);
-                        if (cli.Verbose) stdout.WriteLine($"  ERROR   {encId} seed={seed}: {res.ErrorMessage}");
+                        if (firstFailures.Count < 5)
+                            firstFailures.Add(res);
+                        if (cli.Verbose)
+                            stdout.WriteLine($"  ERROR   {encId} seed={seed}: {res.ErrorMessage}");
                         break;
                 }
             }
@@ -240,8 +288,9 @@ public static class Program
         sw.Stop();
 
         stdout.WriteLine(
-            $"determinism-probe: initial-state-upstream summary — passed={passed} diverged={diverged} skipped={skipped} errored={errored} " +
-            $"duration={sw.Elapsed.TotalSeconds:F2}s");
+            $"determinism-probe: initial-state-upstream summary — passed={passed} diverged={diverged} skipped={skipped} errored={errored} "
+                + $"duration={sw.Elapsed.TotalSeconds:F2}s"
+        );
 
         // Always print per-entry table (not just on failure) so the report
         // captures the full canary picture.
@@ -253,14 +302,16 @@ public static class Program
             foreach (int seed in seeds)
             {
                 UpstreamInitialStateComparer.EntryResult res = comparer.CompareOne(encId, seed);
-                rowParts.Add(res.Outcome switch
-                {
-                    UpstreamInitialStateComparer.EntryOutcome.Pass => "PASS",
-                    UpstreamInitialStateComparer.EntryOutcome.Diverged => "DIVR",
-                    UpstreamInitialStateComparer.EntryOutcome.Skipped => "SKIP",
-                    UpstreamInitialStateComparer.EntryOutcome.Error => "ERR ",
-                    _ => "??? ",
-                });
+                rowParts.Add(
+                    res.Outcome switch
+                    {
+                        UpstreamInitialStateComparer.EntryOutcome.Pass => "PASS",
+                        UpstreamInitialStateComparer.EntryOutcome.Diverged => "DIVR",
+                        UpstreamInitialStateComparer.EntryOutcome.Skipped => "SKIP",
+                        UpstreamInitialStateComparer.EntryOutcome.Error => "ERR ",
+                        _ => "??? ",
+                    }
+                );
             }
             stdout.WriteLine(string.Join("  ", rowParts));
         }
@@ -268,16 +319,20 @@ public static class Program
         if (diverged > 0 || errored > 0)
         {
             stderr.WriteLine();
-            stderr.WriteLine($"determinism-probe: {firstFailures.Count} failure(s) — first 5 with diff summary ↓");
+            stderr.WriteLine(
+                $"determinism-probe: {firstFailures.Count} failure(s) — first 5 with diff summary ↓"
+            );
             foreach (var f in firstFailures)
             {
                 stderr.WriteLine($"-- {f.EncounterId} seed={f.Seed} outcome={f.Outcome}");
-                if (f.ErrorMessage is not null) stderr.WriteLine($"   error: {f.ErrorMessage}");
+                if (f.ErrorMessage is not null)
+                    stderr.WriteLine($"   error: {f.ErrorMessage}");
                 if (f.DiffSummary is not null)
                 {
                     foreach (string line in f.DiffSummary.TrimEnd().Split('\n'))
                     {
-                        if (line.Length > 0) stderr.WriteLine($"   {line}");
+                        if (line.Length > 0)
+                            stderr.WriteLine($"   {line}");
                     }
                 }
             }
@@ -285,8 +340,10 @@ public static class Program
 
         // Exit code: ExitPass if all comparable entries pass (skipped doesn't fail),
         // ExitFail if any divergence, ExitError if any I/O / construction error.
-        if (errored > 0) return ExitError;
-        if (diverged > 0) return ExitFail;
+        if (errored > 0)
+            return ExitError;
+        if (diverged > 0)
+            return ExitFail;
         return ExitPass;
     }
 
@@ -302,21 +359,25 @@ public static class Program
             case ProbeMode.InitialState:
                 return corpus.Entries.Where(e => e.Mode == CorpusEntry.ModeInitialState).ToList();
             case ProbeMode.PerStep:
+            {
+                var list = corpus.Entries.Where(e => e.Mode == CorpusEntry.ModePerStep).ToList();
+                if (cli.SmokeSeeds.HasValue && cli.SmokeSeeds.Value < list.Count)
                 {
-                    var list = corpus.Entries.Where(e => e.Mode == CorpusEntry.ModePerStep).ToList();
-                    if (cli.SmokeSeeds.HasValue && cli.SmokeSeeds.Value < list.Count)
-                    {
-                        return list.Take(cli.SmokeSeeds.Value).ToList();
-                    }
-                    return list;
+                    return list.Take(cli.SmokeSeeds.Value).ToList();
                 }
+                return list;
+            }
             case ProbeMode.Quick:
-                {
-                    var structural = corpus.Entries.Where(e => e.Mode == CorpusEntry.ModeStructural).ToList();
-                    int smokeN = cli.SmokeSeeds ?? 5;
-                    var perStep = corpus.Entries.Where(e => e.Mode == CorpusEntry.ModePerStep).Take(smokeN);
-                    return structural.Concat(perStep).ToList();
-                }
+            {
+                var structural = corpus
+                    .Entries.Where(e => e.Mode == CorpusEntry.ModeStructural)
+                    .ToList();
+                int smokeN = cli.SmokeSeeds ?? 5;
+                var perStep = corpus
+                    .Entries.Where(e => e.Mode == CorpusEntry.ModePerStep)
+                    .Take(smokeN);
+                return structural.Concat(perStep).ToList();
+            }
             case ProbeMode.Full:
             case ProbeMode.Capture:
                 return corpus.Entries;
@@ -366,21 +427,28 @@ public enum ProbeMode
 {
     /// <summary>Smoke 5 seeds + all structural (default budget &lt; 60s).</summary>
     Quick,
+
     /// <summary>Full corpus.</summary>
     Full,
+
     /// <summary>Structural per-encounter only.</summary>
     Structural,
+
     /// <summary>Initial-state across all encounters / seeds.</summary>
     InitialState,
+
     /// <summary>
     /// Byte-compare Q1's post-SetUpCombat snapshot against upstream-derived
     /// goldens (Stream-C-T3). Reads from <c>goldens-upstream/initial-state/</c>.
     /// </summary>
     InitialStateUpstream,
+
     /// <summary>Per-step smoke entries only.</summary>
     PerStep,
+
     /// <summary>Capture mode: overwrite all goldens with the current Q1 trace.</summary>
     Capture,
+
     /// <summary>Generate and write phase1-corpus.json from <see cref="CorpusGenerator"/>.</summary>
     GenerateCorpus,
 }
@@ -391,11 +459,12 @@ public sealed record ProbeCli(
     string? CorpusPath,
     string? GoldensDir,
     int? SmokeSeeds,
-    bool Verbose)
+    bool Verbose
+)
 {
     public const string Usage =
-        "Usage: determinism-probe --mode <mode> [--corpus path] [--goldens dir] [--smoke-seeds N] [--verbose]\n" +
-        "  modes: quick, full, structural, per-step, initial-state, initial-state-upstream, capture, generate-corpus";
+        "Usage: determinism-probe --mode <mode> [--corpus path] [--goldens dir] [--smoke-seeds N] [--verbose]\n"
+        + "  modes: quick, full, structural, per-step, initial-state, initial-state-upstream, capture, generate-corpus";
 
     public static ProbeCli Parse(string[] args)
     {
@@ -419,8 +488,10 @@ public sealed record ProbeCli(
             }
             string Take()
             {
-                if (inlineValue is not null) return inlineValue;
-                if (i + 1 >= args.Length) throw new ArgumentException($"missing value for {flag}.");
+                if (inlineValue is not null)
+                    return inlineValue;
+                if (i + 1 >= args.Length)
+                    throw new ArgumentException($"missing value for {flag}.");
                 return args[++i];
             }
             switch (flag)
@@ -435,15 +506,25 @@ public sealed record ProbeCli(
                     goldensDir = Take();
                     break;
                 case "--smoke-seeds":
+                {
+                    string v = Take();
+                    if (
+                        !int.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out int parsed
+                        )
+                        || parsed < 1
+                    )
                     {
-                        string v = Take();
-                        if (!int.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed) || parsed < 1)
-                        {
-                            throw new ArgumentException($"--smoke-seeds: expected positive int, got '{v}'.");
-                        }
-                        smokeSeeds = parsed;
-                        break;
+                        throw new ArgumentException(
+                            $"--smoke-seeds: expected positive int, got '{v}'."
+                        );
                     }
+                    smokeSeeds = parsed;
+                    break;
+                }
                 case "--verbose":
                 case "-v":
                     verbose = true;
@@ -456,21 +537,24 @@ public sealed record ProbeCli(
             }
             i++;
         }
-        if (mode is null) throw new ArgumentException("--mode is required.");
+        if (mode is null)
+            throw new ArgumentException("--mode is required.");
         return new ProbeCli(mode.Value, corpusPath, goldensDir, smokeSeeds, verbose);
     }
 
-    private static ProbeMode ParseMode(string s) => s switch
-    {
-        "quick" => ProbeMode.Quick,
-        "full" => ProbeMode.Full,
-        "structural" => ProbeMode.Structural,
-        "per-step" => ProbeMode.PerStep,
-        "initial-state" => ProbeMode.InitialState,
-        "initial-state-upstream" => ProbeMode.InitialStateUpstream,
-        "capture" => ProbeMode.Capture,
-        "generate-corpus" => ProbeMode.GenerateCorpus,
-        _ => throw new ArgumentException(
-            $"--mode '{s}' unknown (expected: quick|full|structural|per-step|initial-state|initial-state-upstream|capture|generate-corpus)."),
-    };
+    private static ProbeMode ParseMode(string s) =>
+        s switch
+        {
+            "quick" => ProbeMode.Quick,
+            "full" => ProbeMode.Full,
+            "structural" => ProbeMode.Structural,
+            "per-step" => ProbeMode.PerStep,
+            "initial-state" => ProbeMode.InitialState,
+            "initial-state-upstream" => ProbeMode.InitialStateUpstream,
+            "capture" => ProbeMode.Capture,
+            "generate-corpus" => ProbeMode.GenerateCorpus,
+            _ => throw new ArgumentException(
+                $"--mode '{s}' unknown (expected: quick|full|structural|per-step|initial-state|initial-state-upstream|capture|generate-corpus)."
+            ),
+        };
 }

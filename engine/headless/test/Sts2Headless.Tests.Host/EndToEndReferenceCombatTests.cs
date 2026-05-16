@@ -46,7 +46,8 @@ public sealed class EndToEndReferenceCombatTests
     // B.1-gamma-T3 also reshaped Exoskeleton/Lagavulin/Louse intent rotation,
     // which changes the per-step state — but the smoke encounter is Cultists
     // and so isn't affected by those monsters. The shift is purely codec.
-    private const string GoldenFinalStateSha = "30e234fdca323a95740580a2fb0c7279571662c067ae80198dc3a8184d905d80";
+    private const string GoldenFinalStateSha =
+        "30e234fdca323a95740580a2fb0c7279571662c067ae80198dc3a8184d905d80";
 
     // The same fixed end-turn script is used for both Domain-level golden and
     // this E2E test. Driving end_turn repeatedly is deterministic because the
@@ -120,21 +121,29 @@ public sealed class EndToEndReferenceCombatTests
                 args: BuildArgs("--script", scriptPath),
                 stdout: stdout,
                 stderr: stderr,
-                attachProcessSignals: false);
+                attachProcessSignals: false
+            );
 
             // Exit code: victory(0) or defeat(1) — script_exhausted(2) means
             // the combat didn't terminate in our budget, which is itself a
             // regression.
-            Assert.True(exit == Program.ExitVictory || exit == Program.ExitDefeat,
-                $"Unexpected exit code {exit}. stdout=<<<{stdout}>>> stderr=<<<{stderr}>>>");
+            Assert.True(
+                exit == Program.ExitVictory || exit == Program.ExitDefeat,
+                $"Unexpected exit code {exit}. stdout=<<<{stdout}>>> stderr=<<<{stderr}>>>"
+            );
 
             // Parse the summary line.
             string summary = stdout.ToString().Trim();
-            Assert.Matches(@"^(victory|defeat) \| turns=\d+ \| final_state_sha256=[0-9a-f]{64}$", summary);
+            Assert.Matches(
+                @"^(victory|defeat) \| turns=\d+ \| final_state_sha256=[0-9a-f]{64}$",
+                summary
+            );
             string sha = ExtractSha(summary);
 
-            Assert.True(sha == GoldenFinalStateSha,
-                $"Final state SHA mismatch. Expected={GoldenFinalStateSha} Actual={sha}");
+            Assert.True(
+                sha == GoldenFinalStateSha,
+                $"Final state SHA mismatch. Expected={GoldenFinalStateSha} Actual={sha}"
+            );
         }
         finally
         {
@@ -149,8 +158,10 @@ public sealed class EndToEndReferenceCombatTests
         var stderr = new StringWriter();
         int exit = Program.Run(
             args: new[] { "--help" },
-            stdout: stdout, stderr: stderr,
-            attachProcessSignals: false);
+            stdout: stdout,
+            stderr: stderr,
+            attachProcessSignals: false
+        );
         Assert.Equal(0, exit);
         Assert.Contains("Usage", stdout.ToString());
     }
@@ -162,8 +173,10 @@ public sealed class EndToEndReferenceCombatTests
         var stderr = new StringWriter();
         int exit = Program.Run(
             args: new[] { "--bogus" },
-            stdout: stdout, stderr: stderr,
-            attachProcessSignals: false);
+            stdout: stdout,
+            stderr: stderr,
+            attachProcessSignals: false
+        );
         Assert.Equal(Program.ExitError, exit);
         Assert.Contains("--bogus", stderr.ToString());
     }
@@ -177,8 +190,10 @@ public sealed class EndToEndReferenceCombatTests
         {
             int exit = Program.Run(
                 args: BuildArgs("--script", scriptPath, "--out", outPath),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             // We don't care about the exact exit here — we care that the blob exists and is non-empty.
             _ = exit;
             Assert.True(File.Exists(outPath));
@@ -187,8 +202,10 @@ public sealed class EndToEndReferenceCombatTests
         }
         finally
         {
-            if (File.Exists(scriptPath)) File.Delete(scriptPath);
-            if (File.Exists(outPath)) File.Delete(outPath);
+            if (File.Exists(scriptPath))
+                File.Delete(scriptPath);
+            if (File.Exists(outPath))
+                File.Delete(outPath);
         }
     }
 
@@ -200,17 +217,29 @@ public sealed class EndToEndReferenceCombatTests
         try
         {
             int exit = Program.Run(
-                args: BuildArgs("--script", scriptPath, "--metrics-port", port.ToString(CultureInfo.InvariantCulture)),
-                stdout: new StringWriter(), stderr: new StringWriter(),
-                attachProcessSignals: false);
+                args: BuildArgs(
+                    "--script",
+                    scriptPath,
+                    "--metrics-port",
+                    port.ToString(CultureInfo.InvariantCulture)
+                ),
+                stdout: new StringWriter(),
+                stderr: new StringWriter(),
+                attachProcessSignals: false
+            );
             // Note: the metrics server is torn down before Program.Run returns,
             // so a post-Run scrape would 404. The smoke we want is "doesn't
             // crash" + "exit code is sensible".
-            Assert.True(exit == Program.ExitVictory || exit == Program.ExitDefeat || exit == Program.ExitError);
+            Assert.True(
+                exit == Program.ExitVictory
+                    || exit == Program.ExitDefeat
+                    || exit == Program.ExitError
+            );
         }
         finally
         {
-            if (File.Exists(scriptPath)) File.Delete(scriptPath);
+            if (File.Exists(scriptPath))
+                File.Delete(scriptPath);
         }
     }
 
@@ -222,9 +251,22 @@ public sealed class EndToEndReferenceCombatTests
         {
             var stdout1 = new StringWriter();
             var stdout2 = new StringWriter();
-            Program.Run(BuildArgs("--script", scriptPath), stdout1, new StringWriter(), attachProcessSignals: false);
-            Program.Run(BuildArgs("--script", scriptPath), stdout2, new StringWriter(), attachProcessSignals: false);
-            Assert.Equal(ExtractSha(stdout1.ToString().Trim()), ExtractSha(stdout2.ToString().Trim()));
+            Program.Run(
+                BuildArgs("--script", scriptPath),
+                stdout1,
+                new StringWriter(),
+                attachProcessSignals: false
+            );
+            Program.Run(
+                BuildArgs("--script", scriptPath),
+                stdout2,
+                new StringWriter(),
+                attachProcessSignals: false
+            );
+            Assert.Equal(
+                ExtractSha(stdout1.ToString().Trim()),
+                ExtractSha(stdout2.ToString().Trim())
+            );
         }
         finally
         {
@@ -238,12 +280,18 @@ public sealed class EndToEndReferenceCombatTests
     {
         var baseArgs = new[]
         {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
+            "--seed",
+            "42",
+            "--character",
+            "silent",
+            "--deck",
+            "starter",
+            "--relics",
+            "ring_of_the_snake",
+            "--encounter",
+            "cultists_normal",
+            "--ascension",
+            "0",
         };
         return baseArgs.Concat(extras).ToArray();
     }
@@ -284,17 +332,29 @@ public sealed class SigtermShutdownTests
         // when the GracefulShutdown is pre-triggered. Here, we invoke
         // MainLoop directly with a pre-cancelled token to exercise the
         // same path.
-        var bundle = CompositionRoot.Build(CliArgs.Parse(new[]
-        {
-            "--seed", "42",
-            "--character", "silent",
-            "--deck", "starter",
-            "--relics", "ring_of_the_snake",
-            "--encounter", "cultists_normal",
-            "--ascension", "0",
-        }));
+        var bundle = CompositionRoot.Build(
+            CliArgs.Parse(
+                new[]
+                {
+                    "--seed",
+                    "42",
+                    "--character",
+                    "silent",
+                    "--deck",
+                    "starter",
+                    "--relics",
+                    "ring_of_the_snake",
+                    "--encounter",
+                    "cultists_normal",
+                    "--ascension",
+                    "0",
+                }
+            )
+        );
         var provider = new FileScriptedActionProvider(
-            Enumerable.Repeat("end_turn", 10_000), bundle.Cards);
+            Enumerable.Repeat("end_turn", 10_000),
+            bundle.Cards
+        );
         var logger = new CapturingLogger();
         var metrics = new InMemoryMetrics();
         var cts = new CancellationTokenSource();
@@ -302,11 +362,20 @@ public sealed class SigtermShutdownTests
         // Deadline = 5s per the prompt.
         var sw = System.Diagnostics.Stopwatch.StartNew();
         cts.Cancel();
-        var result = MainLoop.Run(bundle.Context, bundle.Cards, provider, logger, metrics, cts.Token);
+        var result = MainLoop.Run(
+            bundle.Context,
+            bundle.Cards,
+            provider,
+            logger,
+            metrics,
+            cts.Token
+        );
         sw.Stop();
 
         Assert.Equal(MainLoop.LoopOutcome.Cancelled, result.Outcome);
-        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(5),
-            $"MainLoop should exit promptly on cancellation; took {sw.Elapsed}.");
+        Assert.True(
+            sw.Elapsed < TimeSpan.FromSeconds(5),
+            $"MainLoop should exit promptly on cancellation; took {sw.Elapsed}."
+        );
     }
 }

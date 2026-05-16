@@ -19,25 +19,45 @@ public static class Input
 {
     public static bool IsActionPressed(string action, bool exactMatch = false)
     {
-        StubRegistry.Record(StubCategory.Input, nameof(Input), nameof(IsActionPressed), $"action={action}");
+        StubRegistry.Record(
+            StubCategory.Input,
+            nameof(Input),
+            nameof(IsActionPressed),
+            $"action={action}"
+        );
         return false;
     }
 
     public static bool IsActionJustPressed(string action, bool exactMatch = false)
     {
-        StubRegistry.Record(StubCategory.Input, nameof(Input), nameof(IsActionJustPressed), $"action={action}");
+        StubRegistry.Record(
+            StubCategory.Input,
+            nameof(Input),
+            nameof(IsActionJustPressed),
+            $"action={action}"
+        );
         return false;
     }
 
     public static bool IsActionJustReleased(string action, bool exactMatch = false)
     {
-        StubRegistry.Record(StubCategory.Input, nameof(Input), nameof(IsActionJustReleased), $"action={action}");
+        StubRegistry.Record(
+            StubCategory.Input,
+            nameof(Input),
+            nameof(IsActionJustReleased),
+            $"action={action}"
+        );
         return false;
     }
 
     public static float GetActionStrength(string action, bool exactMatch = false)
     {
-        StubRegistry.Record(StubCategory.Input, nameof(Input), nameof(GetActionStrength), $"action={action}");
+        StubRegistry.Record(
+            StubCategory.Input,
+            nameof(Input),
+            nameof(GetActionStrength),
+            $"action={action}"
+        );
         return 0f;
     }
 }

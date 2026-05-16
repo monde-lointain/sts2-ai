@@ -13,7 +13,8 @@ public sealed class Afterimage : CardModel
     public const string CanonicalId = "Afterimage";
     public const int Amount = 1;
 
-    public Afterimage() : base(CanonicalId, 1, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public Afterimage()
+        : base(CanonicalId, 1, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

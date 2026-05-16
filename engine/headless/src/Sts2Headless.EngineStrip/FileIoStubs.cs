@@ -44,13 +44,19 @@ public static class ResourceLoader
     /// has a public parameterless constructor (e.g., <see cref="Texture2D"/>), otherwise
     /// <c>default</c>. Records the path so tests can assert which resources were requested.
     /// </summary>
-    public static T? Load<T>(string path, string? typeHint = null, CacheMode cacheMode = CacheMode.Reuse) where T : class
+    public static T? Load<T>(
+        string path,
+        string? typeHint = null,
+        CacheMode cacheMode = CacheMode.Reuse
+    )
+        where T : class
     {
         StubRegistry.Record(
             StubCategory.GodotFileIo,
             nameof(ResourceLoader),
             nameof(Load),
-            $"T={typeof(T).Name},path={path}");
+            $"T={typeof(T).Name},path={path}"
+        );
         try
         {
             return Activator.CreateInstance<T>();
@@ -68,7 +74,8 @@ public static class ResourceLoader
             StubCategory.GodotFileIo,
             nameof(ResourceLoader),
             nameof(Exists),
-            $"path={path}");
+            $"path={path}"
+        );
         return false;
     }
 }
@@ -99,7 +106,8 @@ public static class ResourceSaver
             StubCategory.GodotFileIo,
             nameof(ResourceSaver),
             nameof(Save),
-            $"path={path}");
+            $"path={path}"
+        );
         return 0; // Godot.Error.Ok
     }
 }
@@ -125,7 +133,8 @@ public class DirAccess : IDisposable
             StubCategory.GodotFileIo,
             nameof(DirAccess),
             nameof(Open),
-            $"path={path}");
+            $"path={path}"
+        );
         // Headless has no filesystem under res://; null is the documented "missing" return.
         return null;
     }
@@ -184,7 +193,8 @@ public class FileAccess : IDisposable
             StubCategory.GodotFileIo,
             nameof(FileAccess),
             nameof(Open),
-            $"path={path},flags={flags}");
+            $"path={path},flags={flags}"
+        );
         return null;
     }
 
@@ -194,7 +204,8 @@ public class FileAccess : IDisposable
             StubCategory.GodotFileIo,
             nameof(FileAccess),
             nameof(FileExists),
-            $"path={path}");
+            $"path={path}"
+        );
         return false;
     }
 

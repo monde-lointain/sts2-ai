@@ -16,5 +16,6 @@ public sealed class VulnerablePower : PowerModel
     /// </summary>
     public const decimal DamageIncrease = 1.5m;
 
-    public VulnerablePower() : base(PowerIds.Vulnerable, PowerType.Debuff, PowerStackType.Counter) { }
+    public VulnerablePower()
+        : base(PowerIds.Vulnerable, PowerType.Debuff, PowerStackType.Counter) { }
 }

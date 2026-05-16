@@ -36,10 +36,16 @@ public class ExecutionContextTests
         var registry = new HookRegistry();
         var queue = new ActionQueue();
 
-        Assert.Throws<ArgumentNullException>(() => new ExecutionContext(null!, rng, registry, queue));
-        Assert.Throws<ArgumentNullException>(() => new ExecutionContext(clock, null!, registry, queue));
+        Assert.Throws<ArgumentNullException>(() =>
+            new ExecutionContext(null!, rng, registry, queue)
+        );
+        Assert.Throws<ArgumentNullException>(() =>
+            new ExecutionContext(clock, null!, registry, queue)
+        );
         Assert.Throws<ArgumentNullException>(() => new ExecutionContext(clock, rng, null!, queue));
-        Assert.Throws<ArgumentNullException>(() => new ExecutionContext(clock, rng, registry, null!));
+        Assert.Throws<ArgumentNullException>(() =>
+            new ExecutionContext(clock, rng, registry, null!)
+        );
     }
 
     [Fact]

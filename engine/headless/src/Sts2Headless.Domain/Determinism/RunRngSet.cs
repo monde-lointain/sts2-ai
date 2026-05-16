@@ -55,7 +55,10 @@ public sealed class RunRngSet
     /// Each subsystem RNG is freshly constructed and fast-forwarded so the
     /// resumed stream is byte-equal to the pre-save stream.
     /// </summary>
-    public static RunRngSet Restore(string stringSeed, IReadOnlyDictionary<RunRngType, int> counters)
+    public static RunRngSet Restore(
+        string stringSeed,
+        IReadOnlyDictionary<RunRngType, int> counters
+    )
     {
         var set = new RunRngSet(stringSeed);
         foreach (RunRngType t in Enum.GetValues<RunRngType>())

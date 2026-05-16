@@ -10,7 +10,8 @@ public sealed class Dazed : CardModel
 {
     public const string CanonicalId = "Dazed";
 
-    public Dazed() : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
+    public Dazed()
+        : base(CanonicalId, -1, CardType.Status, CardRarity.Status, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

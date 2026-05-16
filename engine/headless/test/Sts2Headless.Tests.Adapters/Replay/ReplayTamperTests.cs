@@ -14,8 +14,7 @@ public class ReplayTamperTests
 {
     private static readonly byte[] ZeroHash = new byte[32];
 
-    private static ManifestStamp MakeStamp() =>
-        new("deadbeef", "Q1-Phase1-test", ZeroHash);
+    private static ManifestStamp MakeStamp() => new("deadbeef", "Q1-Phase1-test", ZeroHash);
 
     private static byte[] RecordTwoSteps()
     {
@@ -24,7 +23,13 @@ public class ReplayTamperTests
         ReplayRecorder rec = new();
         rec.OpenStream(ms, MakeStamp(), initialSeed: 42u);
         rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
-        rec.AppendStep(f.State, new PlayerAction.PlayCard(20u, null), f.RunRng, f.PlayerRng, f.Tokens);
+        rec.AppendStep(
+            f.State,
+            new PlayerAction.PlayCard(20u, null),
+            f.RunRng,
+            f.PlayerRng,
+            f.Tokens
+        );
         rec.Close();
         return ms.ToArray();
     }

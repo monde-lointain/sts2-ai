@@ -41,11 +41,11 @@ public static class Program
     public const int ExitLoad = 2;
 
     public const string UsageText =
-        "Usage: Sts2Q1ConsoleHost --sts2-dll <path> --seed <uint> --encounter <id> --out <path>\n" +
-        "\n" +
-        "Loads upstream sts2.dll, resolves CombatManager + Player via reflection,\n" +
-        "and emits an upstream_bound sentinel JSON line on stdout. The per-step\n" +
-        "driver (P-1.5-1.δ) populates the --out JSONL stream; α only opens it.";
+        "Usage: Sts2Q1ConsoleHost --sts2-dll <path> --seed <uint> --encounter <id> --out <path>\n"
+        + "\n"
+        + "Loads upstream sts2.dll, resolves CombatManager + Player via reflection,\n"
+        + "and emits an upstream_bound sentinel JSON line on stdout. The per-step\n"
+        + "driver (P-1.5-1.δ) populates the --out JSONL stream; α only opens it.";
 
     public static int Main(string[] args)
     {
@@ -75,7 +75,9 @@ public static class Program
 
         if (!File.Exists(cli.Sts2DllPath))
         {
-            stderr.WriteLine($"Sts2Q1ConsoleHost: --sts2-dll path does not exist: {cli.Sts2DllPath}");
+            stderr.WriteLine(
+                $"Sts2Q1ConsoleHost: --sts2-dll path does not exist: {cli.Sts2DllPath}"
+            );
             return ExitUsage;
         }
 
@@ -91,11 +93,18 @@ public static class Program
             }
             // Touch the file (create-or-truncate) to confirm we have write
             // access. The driver in δ re-opens this path in append mode.
-            using FileStream _ = new(cli.OutputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+            using FileStream _ = new(
+                cli.OutputPath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.Read
+            );
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            stderr.WriteLine($"Sts2Q1ConsoleHost: cannot open --out path '{cli.OutputPath}': {ex.Message}");
+            stderr.WriteLine(
+                $"Sts2Q1ConsoleHost: cannot open --out path '{cli.OutputPath}': {ex.Message}"
+            );
             return ExitUsage;
         }
 
@@ -114,11 +123,7 @@ public static class Program
 }
 
 /// <summary>Parsed CLI args.</summary>
-public sealed record CliArgs(
-    string Sts2DllPath,
-    uint Seed,
-    string EncounterId,
-    string OutputPath)
+public sealed record CliArgs(string Sts2DllPath, uint Seed, string EncounterId, string OutputPath)
 {
     public static CliArgs Parse(string[] args)
     {
@@ -132,7 +137,8 @@ public sealed record CliArgs(
             string flag = args[i];
             string Take()
             {
-                if (i + 1 >= args.Length) throw new ArgumentException($"missing value for {flag}.");
+                if (i + 1 >= args.Length)
+                    throw new ArgumentException($"missing value for {flag}.");
                 return args[++i];
             }
             switch (flag)
@@ -141,15 +147,22 @@ public sealed record CliArgs(
                     sts2Dll = Take();
                     break;
                 case "--seed":
+                {
+                    string v = Take();
+                    if (
+                        !uint.TryParse(
+                            v,
+                            NumberStyles.Integer,
+                            CultureInfo.InvariantCulture,
+                            out uint parsed
+                        )
+                    )
                     {
-                        string v = Take();
-                        if (!uint.TryParse(v, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint parsed))
-                        {
-                            throw new ArgumentException($"--seed: expected uint, got '{v}'.");
-                        }
-                        seed = parsed;
-                        break;
+                        throw new ArgumentException($"--seed: expected uint, got '{v}'.");
                     }
+                    seed = parsed;
+                    break;
+                }
                 case "--encounter":
                     encounter = Take();
                     break;
@@ -163,10 +176,14 @@ public sealed record CliArgs(
                     throw new ArgumentException($"unknown flag '{flag}'.");
             }
         }
-        if (sts2Dll is null) throw new ArgumentException("--sts2-dll is required.");
-        if (seed is null) throw new ArgumentException("--seed is required.");
-        if (encounter is null) throw new ArgumentException("--encounter is required.");
-        if (outputPath is null) throw new ArgumentException("--out is required.");
+        if (sts2Dll is null)
+            throw new ArgumentException("--sts2-dll is required.");
+        if (seed is null)
+            throw new ArgumentException("--seed is required.");
+        if (encounter is null)
+            throw new ArgumentException("--encounter is required.");
+        if (outputPath is null)
+            throw new ArgumentException("--out is required.");
         return new CliArgs(sts2Dll, seed.Value, encounter, outputPath);
     }
 }

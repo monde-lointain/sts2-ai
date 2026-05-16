@@ -33,7 +33,11 @@ public class Phase1PotionTests
     [InlineData(typeof(FairyInABottle), "FairyInABottle", PotionRarity.Rare)]
     [InlineData(typeof(LiquidMemories), "LiquidMemories", PotionRarity.Rare)]
     [InlineData(typeof(EntropicBrew), "EntropicBrew", PotionRarity.Rare)]
-    public void Potion_canonical_metadata(System.Type t, string expectedId, PotionRarity expectedRarity)
+    public void Potion_canonical_metadata(
+        System.Type t,
+        string expectedId,
+        PotionRarity expectedRarity
+    )
     {
         PotionModel p = (PotionModel)System.Activator.CreateInstance(t)!;
         Assert.Equal(expectedId, p.Id);

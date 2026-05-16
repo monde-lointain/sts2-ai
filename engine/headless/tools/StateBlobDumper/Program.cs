@@ -57,9 +57,9 @@ public static class Program
     public const int ExitDecode = 2;
 
     public const string UsageText =
-        "Usage: StateBlobDumper <path-to-state.blob>\n" +
-        "Reads the blob produced by Sts2Headless.Adapters.StateCodec.StateCodec.Serialize\n" +
-        "and emits JSONL describing the envelope + per-section pretty-print to stdout.";
+        "Usage: StateBlobDumper <path-to-state.blob>\n"
+        + "Reads the blob produced by Sts2Headless.Adapters.StateCodec.StateCodec.Serialize\n"
+        + "and emits JSONL describing the envelope + per-section pretty-print to stdout.";
 
     public static int Main(string[] args)
     {
@@ -136,7 +136,12 @@ public static class Program
         // so we use a Dictionary throughout and add keys in canonical order.
     };
 
-    private static void EmitEnvelopeLine(TextWriter stdout, StateBlob blob, string path, int blobBytes)
+    private static void EmitEnvelopeLine(
+        TextWriter stdout,
+        StateBlob blob,
+        string path,
+        int blobBytes
+    )
     {
         var doc = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -241,12 +246,15 @@ public static class Program
         int i = 0;
         foreach ((string tok, int id) in map.Enumerate())
         {
-            if (i >= previewCount) break;
-            preview.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["token"] = tok,
-                ["id"] = id,
-            });
+            if (i >= previewCount)
+                break;
+            preview.Add(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["token"] = tok,
+                    ["id"] = id,
+                }
+            );
             i++;
         }
         return new Dictionary<string, object?>(StringComparer.Ordinal)
@@ -295,13 +303,15 @@ public static class Program
         var powers = new List<object>(c.Powers.Count);
         foreach (PowerInstance p in c.Powers)
         {
-            powers.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["model_id"] = p.ModelId,
-                ["stacks"] = p.Stacks,
-                ["source_creature_id"] = (long)p.SourceCreatureId,
-                ["just_applied"] = p.JustApplied,
-            });
+            powers.Add(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["model_id"] = p.ModelId,
+                    ["stacks"] = p.Stacks,
+                    ["source_creature_id"] = (long)p.SourceCreatureId,
+                    ["just_applied"] = p.JustApplied,
+                }
+            );
         }
         var summary = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -326,11 +336,13 @@ public static class Program
         var applies = new List<object>(m.AppliesPowers.Count);
         foreach (MonsterIntentPower p in m.AppliesPowers)
         {
-            applies.Add(new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["power_id"] = p.PowerId,
-                ["stacks"] = p.Stacks,
-            });
+            applies.Add(
+                new Dictionary<string, object?>(StringComparer.Ordinal)
+                {
+                    ["power_id"] = p.PowerId,
+                    ["stacks"] = p.Stacks,
+                }
+            );
         }
         return new Dictionary<string, object?>(StringComparer.Ordinal)
         {

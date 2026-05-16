@@ -15,7 +15,8 @@ public sealed class Reflex : CardModel
     public const int UpgradeDelta = 1;
     public int Cards => BaseCards;
 
-    public Reflex() : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
+    public Reflex()
+        : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

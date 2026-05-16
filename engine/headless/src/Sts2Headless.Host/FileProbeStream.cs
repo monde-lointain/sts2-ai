@@ -64,7 +64,8 @@ public sealed class FileProbeStream : IProbeStream, IDisposable
         _stamp = new ManifestStamp(
             GitSha: ProbeManifestConstants.PlaceholderGitSha,
             BuildId: ProbeManifestConstants.PlaceholderBuildId,
-            ContentHash: ManifestStamp.ContentHashFromIds(EnumerateAllCatalogIds(bundle)));
+            ContentHash: ManifestStamp.ContentHashFromIds(EnumerateAllCatalogIds(bundle))
+        );
     }
 
     /// <inheritdoc/>
@@ -72,7 +73,8 @@ public sealed class FileProbeStream : IProbeStream, IDisposable
     {
         ArgumentNullException.ThrowIfNull(eventName);
         ArgumentNullException.ThrowIfNull(state);
-        if (_closed) throw new ObjectDisposedException(nameof(FileProbeStream));
+        if (_closed)
+            throw new ObjectDisposedException(nameof(FileProbeStream));
 
         // Build a fresh RNG bundle for this snapshot — uses the current Rng
         // counter so per-step records reflect post-action RNG state.
@@ -90,9 +92,11 @@ public sealed class FileProbeStream : IProbeStream, IDisposable
         sb.Append(",\"event\":").Append(JsonEncode(eventName));
         sb.Append(",\"turn\":").Append(state.TurnCounter.ToString(CultureInfo.InvariantCulture));
         sb.Append(",\"phase\":").Append(JsonEncode(state.Phase.ToString()));
-        sb.Append(",\"player_hp\":").Append(state.Player.CurrentHp.ToString(CultureInfo.InvariantCulture));
+        sb.Append(",\"player_hp\":")
+            .Append(state.Player.CurrentHp.ToString(CultureInfo.InvariantCulture));
         sb.Append(",\"energy\":").Append(state.Energy.ToString(CultureInfo.InvariantCulture));
-        sb.Append(",\"enemy_count\":").Append(state.Enemies.Count.ToString(CultureInfo.InvariantCulture));
+        sb.Append(",\"enemy_count\":")
+            .Append(state.Enemies.Count.ToString(CultureInfo.InvariantCulture));
         sb.Append(",\"hash\":\"").Append(hash).Append('"');
         sb.Append('}');
 
@@ -103,7 +107,8 @@ public sealed class FileProbeStream : IProbeStream, IDisposable
     /// <inheritdoc/>
     public void Close()
     {
-        if (_closed) return;
+        if (_closed)
+            return;
         _writer.Flush();
         _writer.Dispose();
         _closed = true;
@@ -125,13 +130,20 @@ public sealed class FileProbeStream : IProbeStream, IDisposable
         return tokens;
     }
 
-    private static IEnumerable<string> EnumerateAllCatalogIds(CompositionRoot.CompositionRootBundle bundle)
+    private static IEnumerable<string> EnumerateAllCatalogIds(
+        CompositionRoot.CompositionRootBundle bundle
+    )
     {
-        foreach (string id in bundle.Cards.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Relics.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Powers.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Monsters.EnumerateIds()) yield return id;
-        foreach (string id in bundle.Encounters.EnumerateIds()) yield return id;
+        foreach (string id in bundle.Cards.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Relics.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Powers.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Monsters.EnumerateIds())
+            yield return id;
+        foreach (string id in bundle.Encounters.EnumerateIds())
+            yield return id;
     }
 }
 

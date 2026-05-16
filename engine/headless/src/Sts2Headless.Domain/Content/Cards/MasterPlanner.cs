@@ -16,7 +16,8 @@ public sealed class MasterPlanner : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public MasterPlanner() : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
+    public MasterPlanner()
+        : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

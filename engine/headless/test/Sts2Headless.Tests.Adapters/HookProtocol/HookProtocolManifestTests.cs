@@ -22,7 +22,8 @@ public class HookProtocolManifestTests
     private static byte[] FixedHash(byte b)
     {
         byte[] h = new byte[HookProtocolManifest.ContentHashSize];
-        for (int i = 0; i < h.Length; i++) h[i] = (byte)(b + i);
+        for (int i = 0; i < h.Length; i++)
+            h[i] = (byte)(b + i);
         return h;
     }
 
@@ -48,15 +49,24 @@ public class HookProtocolManifestTests
         byte[] buf = new byte[m.EncodedSize];
         m.Encode(buf);
         // Bytes 0..31: hash.
-        for (int i = 0; i < 32; i++) Assert.Equal(hash[i], buf[i]);
+        for (int i = 0; i < 32; i++)
+            Assert.Equal(hash[i], buf[i]);
         // Bytes 32..33: schema u16 LE = 0x1234
-        Assert.Equal(0x34, buf[32]); Assert.Equal(0x12, buf[33]);
+        Assert.Equal(0x34, buf[32]);
+        Assert.Equal(0x12, buf[33]);
         // Bytes 34..35: reserved zero.
-        Assert.Equal(0, buf[34]); Assert.Equal(0, buf[35]);
+        Assert.Equal(0, buf[34]);
+        Assert.Equal(0, buf[35]);
         // Bytes 36..39: ring_capacity u32 LE = 0x00010000
-        Assert.Equal(0x00, buf[36]); Assert.Equal(0x00, buf[37]); Assert.Equal(0x01, buf[38]); Assert.Equal(0x00, buf[39]);
+        Assert.Equal(0x00, buf[36]);
+        Assert.Equal(0x00, buf[37]);
+        Assert.Equal(0x01, buf[38]);
+        Assert.Equal(0x00, buf[39]);
         // Bytes 40..43: build_id_length u32 LE = 1
-        Assert.Equal(0x01, buf[40]); Assert.Equal(0x00, buf[41]); Assert.Equal(0x00, buf[42]); Assert.Equal(0x00, buf[43]);
+        Assert.Equal(0x01, buf[40]);
+        Assert.Equal(0x00, buf[41]);
+        Assert.Equal(0x00, buf[42]);
+        Assert.Equal(0x00, buf[43]);
         // Byte 44: 'X'
         Assert.Equal((byte)'X', buf[44]);
     }
@@ -74,8 +84,9 @@ public class HookProtocolManifestTests
     [Fact]
     public void Hash_wrong_size_rejected()
     {
-        Assert.Throws<ArgumentException>(
-            () => new HookProtocolManifest(new byte[16], 1, 1024, "x"));
+        Assert.Throws<ArgumentException>(() =>
+            new HookProtocolManifest(new byte[16], 1, 1024, "x")
+        );
     }
 
     [Fact]
@@ -85,8 +96,9 @@ public class HookProtocolManifestTests
         byte[] buf = new byte[m.EncodedSize];
         m.Encode(buf);
         // Truncate by one byte; build_id_length says 3 but only 2 remain.
-        Assert.Throws<FormatException>(
-            () => HookProtocolManifest.Decode(buf.AsSpan(0, buf.Length - 1)));
+        Assert.Throws<FormatException>(() =>
+            HookProtocolManifest.Decode(buf.AsSpan(0, buf.Length - 1))
+        );
     }
 
     [Fact]

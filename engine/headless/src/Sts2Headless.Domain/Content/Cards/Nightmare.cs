@@ -15,7 +15,8 @@ public sealed class Nightmare : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public Nightmare() : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
+    public Nightmare()
+        : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

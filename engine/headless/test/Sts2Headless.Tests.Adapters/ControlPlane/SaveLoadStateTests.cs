@@ -55,7 +55,10 @@ public sealed class SaveLoadStateTests
         string savedBlob;
         using (JsonDocument doc = JsonDocument.Parse(saveResp))
         {
-            savedBlob = doc.RootElement.GetProperty("result").GetProperty("state_blob").GetString()!;
+            savedBlob = doc
+                .RootElement.GetProperty("result")
+                .GetProperty("state_blob")
+                .GetString()!;
         }
 
         // Mutate the session (mimic some progress).
@@ -64,7 +67,8 @@ public sealed class SaveLoadStateTests
         Assert.NotEqual(beforeState, session.Context.State);
 
         // Now load the saved blob.
-        string loadReq = $$"""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"{{savedBlob}}"},"id":2}""";
+        string loadReq =
+            $$"""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"{{savedBlob}}"},"id":2}""";
         string loadResp = d.Handle(loadReq);
         using (JsonDocument doc = JsonDocument.Parse(loadResp))
         {
@@ -103,7 +107,9 @@ public sealed class SaveLoadStateTests
         var d = new JsonRpcDispatcher();
         ControlPlaneRpcHandlers.Register(d, session);
 
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"not-base64!!"},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":"not-base64!!"},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         Assert.Equal(-32602, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());
     }
@@ -116,7 +122,9 @@ public sealed class SaveLoadStateTests
         ControlPlaneRpcHandlers.Register(d, session);
 
         // Pass an empty base64 — too short to be a valid codec blob.
-        string resp = d.Handle("""{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":""},"id":1}""");
+        string resp = d.Handle(
+            """{"jsonrpc":"2.0","method":"load_state","params":{"state_blob":""},"id":1}"""
+        );
         using JsonDocument doc = JsonDocument.Parse(resp);
         // Empty bytes — StateCodec throws StateCodecException. Wrapped as invalid params.
         Assert.Equal(-32602, doc.RootElement.GetProperty("error").GetProperty("code").GetInt32());

@@ -25,9 +25,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Runtime;
 using System.Text;
 using Sts2Headless.Adapters.HookProtocol;
 using Sts2Headless.Domain.Actions;
@@ -53,7 +53,8 @@ public sealed class GcMeasurementHarnessTests
     [Fact]
     public void Harness_emits_R7_GC_measurement_over_10K_RT_workload()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
 
         var registry = new PrometheusMetricsRegistry();
         GcMetricsBootstrap.RegisterFamilies(registry);
@@ -112,7 +113,13 @@ public sealed class GcMeasurementHarnessTests
         {
             adapter.Stop();
             worker?.WaitForExit(2000);
-            try { worker?.Kill(); } catch { /* worker may already be dead */ }
+            try
+            {
+                worker?.Kill();
+            }
+            catch
+            { /* worker may already be dead */
+            }
         }
 
         // Emit the measurement as a JSON line on stdout — CI captures stdout
@@ -133,7 +140,8 @@ public sealed class GcMeasurementHarnessTests
         if (result.RatioGcOverWall > R7RatioThreshold)
         {
             Console.WriteLine(
-                $"R7-REOPEN-CANDIDATE: ratio={result.RatioGcOverWall:F4} > {R7RatioThreshold:F2} threshold; surface to orchestrator.");
+                $"R7-REOPEN-CANDIDATE: ratio={result.RatioGcOverWall:F4} > {R7RatioThreshold:F2} threshold; surface to orchestrator."
+            );
         }
     }
 
@@ -145,7 +153,8 @@ public sealed class GcMeasurementHarnessTests
     [Fact]
     public void Harness_three_runs_within_20pct_variance()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
 
         const int Runs = 3;
         double[] gcSeconds = new double[Runs];
@@ -174,7 +183,8 @@ public sealed class GcMeasurementHarnessTests
         Console.WriteLine(json);
         File.AppendAllText(
             Path.Combine(Path.GetTempPath(), "sts2-r7-gc-variance.jsonl"),
-            json + "\n");
+            json + "\n"
+        );
 
         // Sanity invariants only; the variance number is reported, not asserted
         // (the stage prompt explicitly accepts 10-20% variance).
@@ -231,15 +241,27 @@ public sealed class GcMeasurementHarnessTests
         {
             adapter.Stop();
             worker?.WaitForExit(2000);
-            try { worker?.Kill(); } catch { /* worker may already be dead */ }
+            try
+            {
+                worker?.Kill();
+            }
+            catch
+            { /* worker may already be dead */
+            }
         }
     }
 
-    private static GcHarnessResult ExtractResult(PrometheusMetricsRegistry registry, double wallSeconds)
+    private static GcHarnessResult ExtractResult(
+        PrometheusMetricsRegistry registry,
+        double wallSeconds
+    )
     {
         string rendered = registry.RenderPrometheus();
         double gcSeconds = ParseSingleValue(rendered, GcMetricNames.GcTimeSeconds + " ");
-        long allocBytes = (long)ParseSingleValue(rendered, GcMetricNames.GcAllocatedBytesTotal + " ");
+        long allocBytes = (long)ParseSingleValue(
+            rendered,
+            GcMetricNames.GcAllocatedBytesTotal + " "
+        );
         long gen0 = ParseLabeledValue(rendered, GcMetricNames.GcGenCollectionsTotal, "gen", "0");
         long gen1 = ParseLabeledValue(rendered, GcMetricNames.GcGenCollectionsTotal, "gen", "1");
         long gen2 = ParseLabeledValue(rendered, GcMetricNames.GcGenCollectionsTotal, "gen", "2");
@@ -249,7 +271,8 @@ public sealed class GcMeasurementHarnessTests
             WallClockSeconds: wallSeconds,
             GcTimeSeconds: gcSeconds,
             AllocatedBytes: allocBytes,
-            GenCounts: new[] { gen0, gen1, gen2 });
+            GenCounts: new[] { gen0, gen1, gen2 }
+        );
     }
 
     /// <summary>
@@ -263,15 +286,24 @@ public sealed class GcMeasurementHarnessTests
         foreach (string line in rendered.Split('\n'))
         {
             string trimmed = line.TrimEnd('\r');
-            if (!trimmed.StartsWith(namePrefix, StringComparison.Ordinal)) continue;
+            if (!trimmed.StartsWith(namePrefix, StringComparison.Ordinal))
+                continue;
             // Exclude labeled and histogram-suffixed variants.
             int spaceIdx = trimmed.IndexOf(' ', StringComparison.Ordinal);
-            if (spaceIdx < 0) continue;
+            if (spaceIdx < 0)
+                continue;
             string nameOnly = trimmed.Substring(0, spaceIdx);
-            if (nameOnly.Length != namePrefix.Length - 1) continue;
+            if (nameOnly.Length != namePrefix.Length - 1)
+                continue;
             string valueText = trimmed.Substring(spaceIdx + 1);
-            if (double.TryParse(valueText, System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out double v))
+            if (
+                double.TryParse(
+                    valueText,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out double v
+                )
+            )
             {
                 return v;
             }
@@ -283,16 +315,28 @@ public sealed class GcMeasurementHarnessTests
     /// Parse a labeled-counter line like
     /// <c>q1_gc_gen_collections_total{gen="0"} 7</c>. Returns 0 if not present.
     /// </summary>
-    private static long ParseLabeledValue(string rendered, string family, string labelName, string labelValue)
+    private static long ParseLabeledValue(
+        string rendered,
+        string family,
+        string labelName,
+        string labelValue
+    )
     {
         string needle = $"{family}{{{labelName}=\"{labelValue}\"}} ";
         foreach (string line in rendered.Split('\n'))
         {
             string trimmed = line.TrimEnd('\r');
-            if (!trimmed.StartsWith(needle, StringComparison.Ordinal)) continue;
+            if (!trimmed.StartsWith(needle, StringComparison.Ordinal))
+                continue;
             string valueText = trimmed.Substring(needle.Length);
-            if (long.TryParse(valueText, System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out long v))
+            if (
+                long.TryParse(
+                    valueText,
+                    System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out long v
+                )
+            )
             {
                 return v;
             }
@@ -311,17 +355,21 @@ public sealed class GcMeasurementHarnessTests
     private static byte[] FixedHash(byte b)
     {
         byte[] h = new byte[HookProtocolManifest.ContentHashSize];
-        for (int i = 0; i < h.Length; i++) h[i] = (byte)(b + i);
+        for (int i = 0; i < h.Length; i++)
+            h[i] = (byte)(b + i);
         return h;
     }
 
-    private static HookProtocolManifest MakeManifest(int cap = HookProtocolAdapter.DefaultRingCapacity)
+    private static HookProtocolManifest MakeManifest(
+        int cap = HookProtocolAdapter.DefaultRingCapacity
+    )
     {
         return new HookProtocolManifest(
             FixedHash(0xC0),
             HookProtocolAdapter.SchemaVersion,
             cap,
-            "q1-r7-gc-harness");
+            "q1-r7-gc-harness"
+        );
     }
 
     private static string ResolveMockWorkerDll()
@@ -330,20 +378,40 @@ public sealed class GcMeasurementHarnessTests
         // .../test/Sts2Headless.Tests.Host/bin/Debug/net9.0/Sts2Headless.Tests.Host.dll
         // Walk up to engine/headless/test/, then into mock-worker.
         string? dir = Path.GetDirectoryName(testDll);
-        for (int i = 0; i < 4 && dir is not null; i++) dir = Path.GetDirectoryName(dir);
-        if (dir is null) throw new InvalidOperationException("could not resolve test root from harness assembly path.");
+        for (int i = 0; i < 4 && dir is not null; i++)
+            dir = Path.GetDirectoryName(dir);
+        if (dir is null)
+            throw new InvalidOperationException(
+                "could not resolve test root from harness assembly path."
+            );
         string testsRoot = Path.GetDirectoryName(dir)!;
-        string config = testDll.Contains("/Release/", StringComparison.Ordinal) ? "Release" : "Debug";
-        string candidate = Path.Combine(testsRoot, "test", "mock-worker", "bin", config, "net9.0", "Sts2Headless.MockWorker.dll");
+        string config = testDll.Contains("/Release/", StringComparison.Ordinal)
+            ? "Release"
+            : "Debug";
+        string candidate = Path.Combine(
+            testsRoot,
+            "test",
+            "mock-worker",
+            "bin",
+            config,
+            "net9.0",
+            "Sts2Headless.MockWorker.dll"
+        );
         if (!File.Exists(candidate))
         {
             throw new FileNotFoundException(
-                $"mock-worker DLL not found at {candidate}. Did the Tests.Host BuildMockWorker target run?", candidate);
+                $"mock-worker DLL not found at {candidate}. Did the Tests.Host BuildMockWorker target run?",
+                candidate
+            );
         }
         return candidate;
     }
 
-    private static Process SpawnMockWorker(string basePath, HookProtocolManifest manifest, string script)
+    private static Process SpawnMockWorker(
+        string basePath,
+        HookProtocolManifest manifest,
+        string script
+    )
     {
         string dll = ResolveMockWorkerDll();
         string hex = Convert.ToHexString(manifest.ContentHash.ToArray());
@@ -356,12 +424,22 @@ public sealed class GcMeasurementHarnessTests
             CreateNoWindow = true,
         };
         psi.ArgumentList.Add(dll);
-        psi.ArgumentList.Add("--base-path"); psi.ArgumentList.Add(basePath);
-        psi.ArgumentList.Add("--ring-capacity"); psi.ArgumentList.Add(manifest.RingCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        psi.ArgumentList.Add("--schema"); psi.ArgumentList.Add(manifest.SchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        psi.ArgumentList.Add("--content-hash"); psi.ArgumentList.Add(hex);
-        psi.ArgumentList.Add("--build-id"); psi.ArgumentList.Add(manifest.BuildId);
-        psi.ArgumentList.Add("--script"); psi.ArgumentList.Add(script);
+        psi.ArgumentList.Add("--base-path");
+        psi.ArgumentList.Add(basePath);
+        psi.ArgumentList.Add("--ring-capacity");
+        psi.ArgumentList.Add(
+            manifest.RingCapacity.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
+        psi.ArgumentList.Add("--schema");
+        psi.ArgumentList.Add(
+            manifest.SchemaVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+        );
+        psi.ArgumentList.Add("--content-hash");
+        psi.ArgumentList.Add(hex);
+        psi.ArgumentList.Add("--build-id");
+        psi.ArgumentList.Add(manifest.BuildId);
+        psi.ArgumentList.Add("--script");
+        psi.ArgumentList.Add(script);
 
         Process p = Process.Start(psi)!;
         _ = System.Threading.Tasks.Task.Run(() =>
@@ -371,10 +449,13 @@ public sealed class GcMeasurementHarnessTests
                 while (!p.HasExited)
                 {
                     string? line = p.StandardError.ReadLine();
-                    if (line is null) break;
+                    if (line is null)
+                        break;
                 }
             }
-            catch { /* shutdown */ }
+            catch
+            { /* shutdown */
+            }
         });
         return p;
     }
@@ -385,7 +466,8 @@ public sealed class GcMeasurementHarnessTests
         double WallClockSeconds,
         double GcTimeSeconds,
         long AllocatedBytes,
-        long[] GenCounts)
+        long[] GenCounts
+    )
     {
         public double RatioGcOverWall =>
             WallClockSeconds > 0 ? GcTimeSeconds / WallClockSeconds : 0d;

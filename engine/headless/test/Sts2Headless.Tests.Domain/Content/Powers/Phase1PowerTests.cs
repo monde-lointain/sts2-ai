@@ -21,38 +21,98 @@ public class Phase1PowerTests
     [InlineData(typeof(AccuracyPower), "AccuracyPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(AfterimagePower), "AfterimagePower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(EnvenomPower), "EnvenomPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(SerpentFormPower), "SerpentFormPower", PowerType.Buff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(SerpentFormPower),
+        "SerpentFormPower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(OutbreakPower), "OutbreakPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(PhantomBladesPower), "PhantomBladesPower", PowerType.Buff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(PhantomBladesPower),
+        "PhantomBladesPower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(StranglePower), "StranglePower", PowerType.Debuff, PowerStackType.Counter)]
     [InlineData(typeof(SneakyPower), "SneakyPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(SpeedsterPower), "SpeedsterPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(WraithFormPower), "WraithFormPower", PowerType.Debuff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(WraithFormPower),
+        "WraithFormPower",
+        PowerType.Debuff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(BurstPower), "BurstPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(MasterPlannerPower), "MasterPlannerPower", PowerType.Buff, PowerStackType.Single)]
-    [InlineData(typeof(InfiniteBladesPower), "InfiniteBladesPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(FanOfKnivesPower), "FanOfKnivesPower", PowerType.Buff, PowerStackType.Single)]
+    [InlineData(
+        typeof(MasterPlannerPower),
+        "MasterPlannerPower",
+        PowerType.Buff,
+        PowerStackType.Single
+    )]
+    [InlineData(
+        typeof(InfiniteBladesPower),
+        "InfiniteBladesPower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
+    [InlineData(
+        typeof(FanOfKnivesPower),
+        "FanOfKnivesPower",
+        PowerType.Buff,
+        PowerStackType.Single
+    )]
     [InlineData(typeof(TrackingPower), "TrackingPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(ToolsOfTheTradePower), "ToolsOfTheTradePower", PowerType.Buff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(ToolsOfTheTradePower),
+        "ToolsOfTheTradePower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(CurlUpPower), "CurlUpPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(AngerPower), "AngerPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(EnragePower), "EnragePower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(MetallicizePower), "MetallicizePower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(PlatedArmorPower), "PlatedArmorPower", PowerType.Buff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(MetallicizePower),
+        "MetallicizePower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
+    [InlineData(
+        typeof(PlatedArmorPower),
+        "PlatedArmorPower",
+        PowerType.Buff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(RegenPower), "RegenPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(ModeShiftPower), "ModeShiftPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(PenNibPower), "PenNibPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(EnergizedPower), "EnergizedPower", PowerType.Buff, PowerStackType.Counter)]
     [InlineData(typeof(BlockPower), "BlockPower", PowerType.Buff, PowerStackType.Counter)]
-    [InlineData(typeof(DexterityLossPower), "DexterityLossPower", PowerType.Debuff, PowerStackType.Counter)]
-    [InlineData(typeof(StrengthDownPower), "StrengthDownPower", PowerType.Debuff, PowerStackType.Counter)]
+    [InlineData(
+        typeof(DexterityLossPower),
+        "DexterityLossPower",
+        PowerType.Debuff,
+        PowerStackType.Counter
+    )]
+    [InlineData(
+        typeof(StrengthDownPower),
+        "StrengthDownPower",
+        PowerType.Debuff,
+        PowerStackType.Counter
+    )]
     [InlineData(typeof(EntangledPower), "EntangledPower", PowerType.Debuff, PowerStackType.Counter)]
     [InlineData(typeof(NoBlockPower), "NoBlockPower", PowerType.Debuff, PowerStackType.Counter)]
     [InlineData(typeof(NoDrawPower), "NoDrawPower", PowerType.Debuff, PowerStackType.Single)]
     [InlineData(typeof(ConfusedPower), "ConfusedPower", PowerType.Debuff, PowerStackType.Single)]
     [InlineData(typeof(BarricadePower), "BarricadePower", PowerType.Buff, PowerStackType.Single)]
     [InlineData(typeof(BlurPower), "BlurPower", PowerType.Buff, PowerStackType.Counter)]
-    public void Power_canonical_metadata(System.Type t, string expectedId, PowerType type, PowerStackType stack)
+    public void Power_canonical_metadata(
+        System.Type t,
+        string expectedId,
+        PowerType type,
+        PowerStackType stack
+    )
     {
         PowerModel p = (PowerModel)System.Activator.CreateInstance(t)!;
         Assert.Equal(expectedId, p.Id);

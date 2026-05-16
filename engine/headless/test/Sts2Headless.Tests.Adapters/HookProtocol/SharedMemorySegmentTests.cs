@@ -19,13 +19,15 @@ public unsafe class SharedMemorySegmentTests
 {
     private static bool OnLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
 
-    private static string UniqueShmPath([System.Runtime.CompilerServices.CallerMemberName] string member = "")
-        => Path.Combine("/dev/shm", $"q1-test-shm-{member}-{Guid.NewGuid():N}");
+    private static string UniqueShmPath(
+        [System.Runtime.CompilerServices.CallerMemberName] string member = ""
+    ) => Path.Combine("/dev/shm", $"q1-test-shm-{member}-{Guid.NewGuid():N}");
 
     [Fact]
     public void Owner_and_peer_see_same_bytes()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string path = UniqueShmPath();
         try
         {
@@ -43,14 +45,19 @@ public unsafe class SharedMemorySegmentTests
         }
         finally
         {
-            try { File.Delete(path); } catch { }
+            try
+            {
+                File.Delete(path);
+            }
+            catch { }
         }
     }
 
     [Fact]
     public void Owner_dispose_deletes_backing_file()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string path = UniqueShmPath();
         using (var owner = SharedMemorySegment.CreateOwner(path, 4096))
         {
@@ -62,16 +69,17 @@ public unsafe class SharedMemorySegmentTests
     [Fact]
     public void OpenExisting_missing_path_throws_FileNotFound()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         string path = UniqueShmPath();
-        Assert.Throws<FileNotFoundException>(
-            () => SharedMemorySegment.OpenExisting(path, 4096));
+        Assert.Throws<FileNotFoundException>(() => SharedMemorySegment.OpenExisting(path, 4096));
     }
 
     [Fact]
     public void Ring_on_top_of_shared_segment_roundtrips_across_attach()
     {
-        if (!OnLinux) return;
+        if (!OnLinux)
+            return;
         const int cap = 1024;
         int total = SpscRingBuffer.HeaderSize + cap;
         string path = UniqueShmPath();
@@ -94,7 +102,11 @@ public unsafe class SharedMemorySegmentTests
         }
         finally
         {
-            try { File.Delete(path); } catch { }
+            try
+            {
+                File.Delete(path);
+            }
+            catch { }
         }
     }
 }

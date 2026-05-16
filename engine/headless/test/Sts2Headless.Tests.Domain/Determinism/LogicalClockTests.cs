@@ -68,7 +68,11 @@ public class LogicalClockTests
         var a = new LogicalClock();
         var b = new LogicalClock();
         int[] deltas = { 1, 2, 3, 0, 5, 13 };
-        foreach (int d in deltas) { a.Tick(d); b.Tick(d); }
+        foreach (int d in deltas)
+        {
+            a.Tick(d);
+            b.Tick(d);
+        }
         Assert.Equal(a.NowTicks, b.NowTicks);
     }
 }

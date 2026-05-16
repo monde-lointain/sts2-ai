@@ -10,7 +10,8 @@ public sealed class Slimed : CardModel
 {
     public const string CanonicalId = "Slimed";
 
-    public Slimed() : base(CanonicalId, 1, CardType.Status, CardRarity.Status, TargetType.None) { }
+    public Slimed()
+        : base(CanonicalId, 1, CardType.Status, CardRarity.Status, TargetType.None) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target) { }
 }

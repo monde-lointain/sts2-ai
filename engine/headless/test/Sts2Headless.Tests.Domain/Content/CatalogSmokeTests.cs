@@ -11,9 +11,13 @@ namespace Sts2Headless.Tests.Domain.Content;
 public class CatalogSmokeTests
 {
     private sealed record FakeCard(string Id) : ICardModel;
+
     private sealed record FakeRelic(string Id) : IRelicModel;
+
     private sealed record FakePower(string Id) : IPowerModel;
+
     private sealed record FakeMonster(string Id) : IMonsterModel;
+
     private sealed record FakePotion(string Id) : IPotionModel;
 
     [Fact]
@@ -97,6 +101,7 @@ public class CatalogSmokeTests
         IContentModel[] all = { card, relic, power, monster, potion };
         Assert.Equal(
             new[] { "card_x", "relic_x", "power_x", "monster_x", "potion_x" },
-            all.Select(m => m.Id).ToArray());
+            all.Select(m => m.Id).ToArray()
+        );
     }
 }

@@ -27,7 +27,9 @@ public sealed class ResponseFrame
         if (payload.Length != header.PayloadLength)
         {
             throw new ArgumentException(
-                $"payload length {payload.Length} != header.PayloadLength {header.PayloadLength}", nameof(payload));
+                $"payload length {payload.Length} != header.PayloadLength {header.PayloadLength}",
+                nameof(payload)
+            );
         }
         Header = header;
         Payload = payload;

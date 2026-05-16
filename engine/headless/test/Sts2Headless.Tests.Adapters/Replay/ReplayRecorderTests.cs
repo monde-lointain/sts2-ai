@@ -69,7 +69,10 @@ public class ReplayRecorderTests
             rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
         }
         long elapsedMs = Environment.TickCount64 - start;
-        Assert.True(elapsedMs < 500, $"50 AppendStep calls took {elapsedMs}ms — should be near-immediate");
+        Assert.True(
+            elapsedMs < 500,
+            $"50 AppendStep calls took {elapsedMs}ms — should be near-immediate"
+        );
 
         rec.Close();
     }
@@ -86,8 +89,10 @@ public class ReplayRecorderTests
 
         // Last 4+32 bytes are the trailer.
         byte[] all = ms.ToArray();
-        Assert.True(all.Length >= ReplayConstants.TrailerSizeBytes + 4,
-            "stream must include terminator + trailer");
+        Assert.True(
+            all.Length >= ReplayConstants.TrailerSizeBytes + 4,
+            "stream must include terminator + trailer"
+        );
 
         int trailerOffset = all.Length - ReplayConstants.TrailerSizeBytes;
         uint trailerMagic = BinaryPrimitives.ReadUInt32LittleEndian(all.AsSpan(trailerOffset, 4));
@@ -120,7 +125,8 @@ public class ReplayRecorderTests
         rec.OpenStream(ms, MakeStamp(), initialSeed: 0u);
         rec.Close();
         Assert.Throws<InvalidOperationException>(() =>
-            rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens));
+            rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens)
+        );
     }
 
     [Fact]
@@ -129,7 +135,9 @@ public class ReplayRecorderTests
         using MemoryStream ms = new();
         ReplayRecorder rec = new();
         rec.OpenStream(ms, MakeStamp(), initialSeed: 0u);
-        Assert.Throws<InvalidOperationException>(() => rec.OpenStream(ms, MakeStamp(), initialSeed: 1u));
+        Assert.Throws<InvalidOperationException>(() =>
+            rec.OpenStream(ms, MakeStamp(), initialSeed: 1u)
+        );
         rec.Close();
     }
 
@@ -139,7 +147,8 @@ public class ReplayRecorderTests
         StateCodecFixture f = PickFixture(0);
         ReplayRecorder rec = new();
         Assert.Throws<InvalidOperationException>(() =>
-            rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens));
+            rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens)
+        );
     }
 
     [Fact]
@@ -188,15 +197,20 @@ public class ReplayRecorderTests
             rec.Close();
 
             byte[] bytes = File.ReadAllBytes(path);
-            Assert.Equal(ReplayConstants.HeaderMagic,
-                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(0, 4)));
+            Assert.Equal(
+                ReplayConstants.HeaderMagic,
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(0, 4))
+            );
             int trailerOffset = bytes.Length - ReplayConstants.TrailerSizeBytes;
-            Assert.Equal(ReplayConstants.TrailerMagic,
-                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(trailerOffset, 4)));
+            Assert.Equal(
+                ReplayConstants.TrailerMagic,
+                BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(trailerOffset, 4))
+            );
         }
         finally
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+                File.Delete(path);
         }
     }
 }

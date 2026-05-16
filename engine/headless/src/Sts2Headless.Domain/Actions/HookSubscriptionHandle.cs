@@ -26,8 +26,14 @@ public readonly struct HookSubscriptionHandle : System.IEquatable<HookSubscripti
     }
 
     public bool Equals(HookSubscriptionHandle other) => Type == other.Type && Id == other.Id;
+
     public override bool Equals(object? obj) => obj is HookSubscriptionHandle h && Equals(h);
+
     public override int GetHashCode() => System.HashCode.Combine(Type, Id);
-    public static bool operator ==(HookSubscriptionHandle a, HookSubscriptionHandle b) => a.Equals(b);
-    public static bool operator !=(HookSubscriptionHandle a, HookSubscriptionHandle b) => !a.Equals(b);
+
+    public static bool operator ==(HookSubscriptionHandle a, HookSubscriptionHandle b) =>
+        a.Equals(b);
+
+    public static bool operator !=(HookSubscriptionHandle a, HookSubscriptionHandle b) =>
+        !a.Equals(b);
 }

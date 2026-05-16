@@ -16,8 +16,7 @@ public class ReplayDebugDumperTests
 {
     private static readonly byte[] ZeroHash = new byte[32];
 
-    private static ManifestStamp MakeStamp() =>
-        new("deadbeef", "Q1-Phase1-dumper", ZeroHash);
+    private static ManifestStamp MakeStamp() => new("deadbeef", "Q1-Phase1-dumper", ZeroHash);
 
     private static byte[] RecordFor(int fixtureIndex, params PlayerAction[] actions)
     {
@@ -39,10 +38,12 @@ public class ReplayDebugDumperTests
     [InlineData(2)]
     public void Dumper_DTO_matches_binary_reader_per_fixture(int fixtureIndex)
     {
-        byte[] bytes = RecordFor(fixtureIndex,
+        byte[] bytes = RecordFor(
+            fixtureIndex,
             PlayerAction.EndTurn.Instance,
             new PlayerAction.PlayCard(10u, 1u),
-            new PlayerAction.PlayCard(20u, null));
+            new PlayerAction.PlayCard(20u, null)
+        );
 
         ReplayBlob blob = ReplayReader.Decode(bytes);
         ReplayDumpDto dto = ReplayDebugDumper.ToDto(blob);
@@ -53,8 +54,10 @@ public class ReplayDebugDumperTests
         Assert.Equal(blob.TrailerValidated, dto.TrailerValidated);
         Assert.Equal(blob.ManifestStamp.GitSha, dto.ManifestStamp.GitSha);
         Assert.Equal(blob.ManifestStamp.BuildId, dto.ManifestStamp.BuildId);
-        Assert.Equal(Convert.ToHexStringLower(blob.ManifestStamp.ContentHash),
-            dto.ManifestStamp.ContentHashHex);
+        Assert.Equal(
+            Convert.ToHexStringLower(blob.ManifestStamp.ContentHash),
+            dto.ManifestStamp.ContentHashHex
+        );
 
         Assert.Equal(blob.Entries.Count, dto.Entries.Length);
         for (int i = 0; i < blob.Entries.Count; i++)
@@ -100,7 +103,13 @@ public class ReplayDebugDumperTests
             ReplayRecorder rec = new();
             rec.Open(replayPath, MakeStamp(), initialSeed: 7u);
             rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
-            rec.AppendStep(f.State, new PlayerAction.PlayCard(99u, 5u), f.RunRng, f.PlayerRng, f.Tokens);
+            rec.AppendStep(
+                f.State,
+                new PlayerAction.PlayCard(99u, 5u),
+                f.RunRng,
+                f.PlayerRng,
+                f.Tokens
+            );
             rec.Close();
 
             ReplayDebugDumper.WriteJson(replayPath, jsonPath);
@@ -113,8 +122,10 @@ public class ReplayDebugDumperTests
         }
         finally
         {
-            if (File.Exists(replayPath)) File.Delete(replayPath);
-            if (File.Exists(jsonPath)) File.Delete(jsonPath);
+            if (File.Exists(replayPath))
+                File.Delete(replayPath);
+            if (File.Exists(jsonPath))
+                File.Delete(jsonPath);
         }
     }
 
@@ -142,10 +153,12 @@ public class ReplayDebugDumperTests
     [Fact]
     public void Dump_action_types_match_recorded_actions()
     {
-        byte[] bytes = RecordFor(0,
+        byte[] bytes = RecordFor(
+            0,
             PlayerAction.EndTurn.Instance,
             new PlayerAction.PlayCard(10u, 1u),
-            new PlayerAction.PlayCard(20u, null));
+            new PlayerAction.PlayCard(20u, null)
+        );
 
         ReplayBlob blob = ReplayReader.Decode(bytes);
         ReplayDumpDto dto = ReplayDebugDumper.ToDto(blob);

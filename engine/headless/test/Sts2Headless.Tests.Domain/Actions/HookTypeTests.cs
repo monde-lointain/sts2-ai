@@ -16,8 +16,10 @@ public class HookTypeTests
     {
         // Stage S4 spec: "Full ~150-entry HookType enum".
         var values = Enum.GetValues<HookType>();
-        Assert.True(values.Length >= 150,
-            $"HookType must have >=150 values to cover upstream Hook.cs surface; found {values.Length}");
+        Assert.True(
+            values.Length >= 150,
+            $"HookType must have >=150 values to cover upstream Hook.cs surface; found {values.Length}"
+        );
     }
 
     [Fact]
@@ -67,8 +69,10 @@ public class HookTypeTests
     [InlineData("TryModifyCardBeingAddedToDeckLate")]
     public void NameExistsInEnum(string name)
     {
-        Assert.True(Enum.TryParse<HookType>(name, ignoreCase: false, out _),
-            $"HookType.{name} missing — upstream Hook.cs callsite is not represented");
+        Assert.True(
+            Enum.TryParse<HookType>(name, ignoreCase: false, out _),
+            $"HookType.{name} missing — upstream Hook.cs callsite is not represented"
+        );
     }
 
     [Fact]

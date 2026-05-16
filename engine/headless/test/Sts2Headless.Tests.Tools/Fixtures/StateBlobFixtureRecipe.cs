@@ -61,33 +61,59 @@ public static class StateBlobFixtureRecipe
         string DirName,
         int Seed,
         string EncounterId,
-        string Role);
+        string Role
+    );
 
     /// <summary>
     /// The six fixture slots, project-lead approved. Order is the catalog order
     /// recorded in the README; do not reorder without updating the README.
     /// </summary>
-    public static IReadOnlyList<Slot> AllSlots { get; } = new Slot[]
-    {
-        new(1, "01-cultists-normal-seed42",
-            Seed: 42, EncounterId: "CultistsNormal",
-            Role: "Smoke per-step gold standard (full Godot per-step parity). Indexed 2-monster slot."),
-        new(2, "02-fossil-stalker-elite-seed42",
-            Seed: 42, EncounterId: "FossilStalkerElite",
-            Role: "Elite, initial-state-only. Single-monster."),
-        new(3, "03-fossil-stalker-elite-seed1337",
-            Seed: 1337, EncounterId: "FossilStalkerElite",
-            Role: "Seed variation — tests Q2 seed-dependence for same encounter."),
-        new(4, "04-kaiser-crab-boss-seed42",
-            Seed: 42, EncounterId: "KaiserCrabBoss",
-            Role: "Phase-1 boss; spawns Crusher + Rocket. Exercises named-slot encoding (\"crusher\" / \"rocket\"); spawn-time powers reference ids absent from Phase-1 power catalog (escalated to Q2 S0 ADRs)."),
-        new(5, "05-louse-progenitor-normal-seed42",
-            Seed: 42, EncounterId: "LouseProgenitorNormal",
-            Role: "Single-monster non-smoke normal. Drop-in for the deleted TwoLouseNormal slot."),
-        new(6, "06-small-slimes-seed42",
-            Seed: 42, EncounterId: "SmallSlimes",
-            Role: "B.1-ε DEFER — encounter cannot run end-to-end in Q1 Phase-1A; encounter-RNG plumbing deferred. Initial-state only; stresses Q2 MissingUpstream path."),
-    };
+    public static IReadOnlyList<Slot> AllSlots { get; } =
+        new Slot[]
+        {
+            new(
+                1,
+                "01-cultists-normal-seed42",
+                Seed: 42,
+                EncounterId: "CultistsNormal",
+                Role: "Smoke per-step gold standard (full Godot per-step parity). Indexed 2-monster slot."
+            ),
+            new(
+                2,
+                "02-fossil-stalker-elite-seed42",
+                Seed: 42,
+                EncounterId: "FossilStalkerElite",
+                Role: "Elite, initial-state-only. Single-monster."
+            ),
+            new(
+                3,
+                "03-fossil-stalker-elite-seed1337",
+                Seed: 1337,
+                EncounterId: "FossilStalkerElite",
+                Role: "Seed variation — tests Q2 seed-dependence for same encounter."
+            ),
+            new(
+                4,
+                "04-kaiser-crab-boss-seed42",
+                Seed: 42,
+                EncounterId: "KaiserCrabBoss",
+                Role: "Phase-1 boss; spawns Crusher + Rocket. Exercises named-slot encoding (\"crusher\" / \"rocket\"); spawn-time powers reference ids absent from Phase-1 power catalog (escalated to Q2 S0 ADRs)."
+            ),
+            new(
+                5,
+                "05-louse-progenitor-normal-seed42",
+                Seed: 42,
+                EncounterId: "LouseProgenitorNormal",
+                Role: "Single-monster non-smoke normal. Drop-in for the deleted TwoLouseNormal slot."
+            ),
+            new(
+                6,
+                "06-small-slimes-seed42",
+                Seed: 42,
+                EncounterId: "SmallSlimes",
+                Role: "B.1-ε DEFER — encounter cannot run end-to-end in Q1 Phase-1A; encounter-RNG plumbing deferred. Initial-state only; stresses Q2 MissingUpstream path."
+            ),
+        };
 
     /// <summary>
     /// Stable build-id stamped into the manifest for every fixture. We do NOT
@@ -127,7 +153,11 @@ public static class StateBlobFixtureRecipe
         ArgumentNullException.ThrowIfNull(encounterId);
         if (seed < 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(seed), seed, "Seed must be a non-negative int (CLI is uint).");
+            throw new ArgumentOutOfRangeException(
+                nameof(seed),
+                seed,
+                "Seed must be a non-negative int (CLI is uint)."
+            );
         }
 
         CliArgs args = new(
@@ -141,7 +171,8 @@ public static class StateBlobFixtureRecipe
             ScriptPath: null,
             OutPath: null,
             ProbeOutPath: null,
-            RegistryPath: null);
+            RegistryPath: null
+        );
 
         CompositionRoot.CompositionRootBundle bundle = CompositionRoot.Build(args);
         CombatState state = bundle.Context.State;
@@ -158,16 +189,37 @@ public static class StateBlobFixtureRecipe
         // registration order. ContentTable.EnumerateIds is deterministic.
         TokenMap tokens = new();
         List<string> ids = new();
-        foreach (string id in bundle.Cards.EnumerateIds()) { tokens.GetOrAddId(id); ids.Add(id); }
-        foreach (string id in bundle.Relics.EnumerateIds()) { tokens.GetOrAddId(id); ids.Add(id); }
-        foreach (string id in bundle.Powers.EnumerateIds()) { tokens.GetOrAddId(id); ids.Add(id); }
-        foreach (string id in bundle.Monsters.EnumerateIds()) { tokens.GetOrAddId(id); ids.Add(id); }
-        foreach (string id in bundle.Encounters.EnumerateIds()) { tokens.GetOrAddId(id); ids.Add(id); }
+        foreach (string id in bundle.Cards.EnumerateIds())
+        {
+            tokens.GetOrAddId(id);
+            ids.Add(id);
+        }
+        foreach (string id in bundle.Relics.EnumerateIds())
+        {
+            tokens.GetOrAddId(id);
+            ids.Add(id);
+        }
+        foreach (string id in bundle.Powers.EnumerateIds())
+        {
+            tokens.GetOrAddId(id);
+            ids.Add(id);
+        }
+        foreach (string id in bundle.Monsters.EnumerateIds())
+        {
+            tokens.GetOrAddId(id);
+            ids.Add(id);
+        }
+        foreach (string id in bundle.Encounters.EnumerateIds())
+        {
+            tokens.GetOrAddId(id);
+            ids.Add(id);
+        }
 
         ManifestStamp stamp = new(
             GitSha: FixtureGitSha,
             BuildId: FixtureBuildId,
-            ContentHash: ManifestStamp.ContentHashFromIds(ids));
+            ContentHash: ManifestStamp.ContentHashFromIds(ids)
+        );
 
         return StateCodec.Serialize(state, runRng, playerRng, tokens, stamp);
     }
@@ -187,7 +239,8 @@ public static class StateBlobFixtureRecipe
         string EncounterId,
         string Role,
         string ExpectedCanonicalHashHex,
-        int BlobBytes);
+        int BlobBytes
+    );
 
     /// <summary>
     /// Serialize a <see cref="Metadata"/> to the on-disk JSON shape. Keys are
@@ -222,6 +275,7 @@ public static class StateBlobFixtureRecipe
             EncounterId: root.GetProperty("encounter_id").GetString()!,
             Role: root.GetProperty("role").GetString()!,
             ExpectedCanonicalHashHex: root.GetProperty("expected_canonical_hash_hex").GetString()!,
-            BlobBytes: root.GetProperty("blob_bytes").GetInt32());
+            BlobBytes: root.GetProperty("blob_bytes").GetInt32()
+        );
     }
 }

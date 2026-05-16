@@ -28,9 +28,7 @@ public class CardModelTests
         public const int BaseDamage = 6;
 
         public FakeCard()
-            : base("fake_card", cost: 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy)
-        {
-        }
+            : base("fake_card", cost: 1, CardType.Attack, CardRarity.Basic, TargetType.AnyEnemy) { }
 
         protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Strike);
 
@@ -42,8 +40,8 @@ public class CardModelTests
         }
     }
 
-    private static ExecutionContext NewCtx()
-        => new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
+    private static ExecutionContext NewCtx() =>
+        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     [Fact]
     public void Construction_assigns_canonical_properties()
@@ -92,7 +90,9 @@ public class CardModelTests
 
     private sealed class BadCard : CardModel
     {
-        public BadCard(string id) : base(id, 1, CardType.Skill, CardRarity.Basic, TargetType.Self) { }
+        public BadCard(string id)
+            : base(id, 1, CardType.Skill, CardRarity.Basic, TargetType.Self) { }
+
         public override void OnPlay(ExecutionContext ctx, string? target) { }
     }
 

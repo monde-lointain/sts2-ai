@@ -15,7 +15,8 @@ public sealed class Flanking : CardModel
     public const int UpgradeDelta = -1;
     public int EnergyCost => BaseCost;
 
-    public Flanking() : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
+    public Flanking()
+        : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {

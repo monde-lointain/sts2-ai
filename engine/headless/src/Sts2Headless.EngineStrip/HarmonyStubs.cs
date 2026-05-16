@@ -34,7 +34,8 @@ public class Harmony
             StubCategory.Harmony,
             nameof(Harmony),
             nameof(PatchAll),
-            $"asm={assembly?.GetName().Name ?? "(null)"}");
+            $"asm={assembly?.GetName().Name ?? "(null)"}"
+        );
         // No-op: do not actually patch anything in headless. Modding hooks are out of scope
         // for Q1 (pipeline ADR-002).
     }

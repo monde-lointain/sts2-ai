@@ -16,7 +16,8 @@ public sealed class FollowThrough : CardModel
     public int Damage => BaseDamage;
     public const int CardCount = 5;
 
-    public FollowThrough() : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
+    public FollowThrough()
+        : base(CanonicalId, 1, CardType.Attack, CardRarity.Common, TargetType.AnyEnemy) { }
 
     public override void OnPlay(ExecutionContext ctx, string? target)
     {
