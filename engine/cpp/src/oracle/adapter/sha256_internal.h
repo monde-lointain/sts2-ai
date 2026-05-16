@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <span>
+#include <string>
 
 // Clean-room SHA-256 (FIPS 180-4). Adapter-internal helper; not exposed in
 // any public header per Q2-ADR-001 (no new external deps, hand-rolled crypto

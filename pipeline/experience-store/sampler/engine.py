@@ -44,10 +44,10 @@ def _enum_value(spec: Any) -> int | None:
     if isinstance(spec, int):
         return int(spec)
     if isinstance(spec, str):
-        if spec in DecisionType:
+        if spec in DecisionType.keys():  # noqa: SIM118
             return int(DecisionType.Value(spec))
         prefixed = f"DECISION_TYPE_{spec}"
-        if prefixed in DecisionType:
+        if prefixed in DecisionType.keys():  # noqa: SIM118
             return int(DecisionType.Value(prefixed))
     return None
 
