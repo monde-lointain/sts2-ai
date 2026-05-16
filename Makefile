@@ -6,6 +6,12 @@
 .PHONY: cloc cloc-full cloc-report cloc-report-full
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
 
+# Resolve .venv path so make works from main repo, subdirs, and worktrees alike.
+# $(abspath ...) is critical: in main repo, git rev-parse --git-common-dir
+# returns relative `.git` (dirname → `.`), which resolves against make's CWD.
+# In a worktree, it returns absolute /path/to/main/.git. abspath normalizes both.
+VENV := $(abspath $(shell dirname $(shell git rev-parse --git-common-dir)))/.venv
+
 BUILD_DIR := build
 Q2_CI_BUILD_DIR := build-q2-ci
 SANITIZE_BUILD_DIR := build-sanitize
@@ -140,25 +146,25 @@ q1-ci:
 	@$(MAKE) -C engine/headless ci
 
 q3-ci:
-	@.venv/bin/pytest pipeline/experience-store/ -q
+	@$(VENV)/bin/pytest pipeline/experience-store/ -q
 
 q10-ci:
-	@.venv/bin/pytest pipeline/trainer/ -q
+	@$(VENV)/bin/pytest pipeline/trainer/ -q
 
 schema-codegen:
-	@.venv/bin/python tools/schema/generate_bindings.py
+	@$(VENV)/bin/python tools/schema/generate_bindings.py
 
 schema-test: schema-codegen
-	@.venv/bin/python -m unittest tools.tests.schema.test_compatibility
+	@$(VENV)/bin/python -m unittest tools.tests.schema.test_compatibility
 
 services-smoke:
-	@.venv/bin/python pipeline/tests/smoke_services.py
+	@$(VENV)/bin/python pipeline/tests/smoke_services.py
 
 content-registry:
-	@.venv/bin/python tools/content/seed_phase1_registry.py
+	@$(VENV)/bin/python tools/content/seed_phase1_registry.py
 
 content-test: content-registry
-	@.venv/bin/python -m unittest tools.tests.content.test_registry
+	@$(VENV)/bin/python -m unittest tools.tests.content.test_registry
 
 phase0-gate: test q1-ci schema-test services-smoke content-test q3-ci q10-ci
 
@@ -244,16 +250,16 @@ SYNC_ARGS ?=
 .PHONY: sync-check sync-extract sync-diff sync-port-decisions sync
 
 sync-check:
-	@.venv/bin/python -m upstream_sync.cli check $(SYNC_ARGS)
+	@$(VENV)/bin/python -m upstream_sync.cli check $(SYNC_ARGS)
 
 sync-extract:
-	@.venv/bin/python -m upstream_sync.cli extract $(SYNC_ARGS)
+	@$(VENV)/bin/python -m upstream_sync.cli extract $(SYNC_ARGS)
 
 sync-diff:
-	@.venv/bin/python -m upstream_sync.cli diff $(SYNC_ARGS)
+	@$(VENV)/bin/python -m upstream_sync.cli diff $(SYNC_ARGS)
 
 sync-port-decisions:
-	@.venv/bin/python -m upstream_sync.cli port-decisions $(SYNC_ARGS)
+	@$(VENV)/bin/python -m upstream_sync.cli port-decisions $(SYNC_ARGS)
 
 sync:
-	@.venv/bin/python -m upstream_sync.cli sync $(SYNC_ARGS)
+	@$(VENV)/bin/python -m upstream_sync.cli sync $(SYNC_ARGS)
