@@ -160,17 +160,50 @@ jobs:
         run: make tidy
 
   cppcheck:
-    name: cppcheck
+    name: cppcheck (custom build, HAVE_RULES=ON)
     runs-on: ubuntu-latest
+    env:
+      CPPCHECK_VERSION: "2.18.3"
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
-      - name: Install cppcheck
+          submodules: recursive  # external/cppcheck-rules
+      - name: Install runtime deps
+        # libpcre3 needed at runtime by cppcheck built with HAVE_RULES=ON
         run: |
           sudo apt-get update
-          sudo apt-get install -y cppcheck
-      - name: Run cppcheck
+          sudo apt-get install -y libpcre3
+      - name: Cache cppcheck install tree
+        id: cache-cppcheck
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cppcheck-install
+          key: cppcheck-${{ env.CPPCHECK_VERSION }}-rules-${{ runner.os }}
+      - name: Build cppcheck from source with rules support
+        if: steps.cache-cppcheck.outputs.cache-hit != 'true'
+        # Stock apt cppcheck lacks HAVE_RULES=ON; the project relies on
+        # custom rules in external/cppcheck-rules/, applied via cppcheck's
+        # --rule-file (which is a no-op without HAVE_RULES). Build from
+        # source to match the local dev configuration (cppcheck 2.18.3).
+        run: |
+          sudo apt-get install -y ninja-build cmake g++ libpcre3-dev
+          git clone --depth 1 --branch "$CPPCHECK_VERSION" \
+            https://github.com/danmar/cppcheck.git /tmp/cppcheck-src
+          cmake -B /tmp/cppcheck-src/build -S /tmp/cppcheck-src -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DHAVE_RULES=ON \
+            -DUSE_MATCHCOMPILER=ON
+          cmake --build /tmp/cppcheck-src/build -j"$(nproc)"
+          cmake --install /tmp/cppcheck-src/build \
+            --prefix "${{ github.workspace }}/.cppcheck-install"
+      - name: Add cppcheck to PATH
+        run: echo "${{ github.workspace }}/.cppcheck-install/bin" >> "$GITHUB_PATH"
+      - name: Verify cppcheck supports rules
+        # Smoke: --rule-file is rejected as unknown when HAVE_RULES=OFF
+        run: |
+          cppcheck --version
+          cppcheck --rule-file=external/cppcheck-rules/EmptyIfStatement/rule.xml --help >/dev/null
+      - name: Run project cppcheck target
         run: make cppcheck
 
   sanitize-test:

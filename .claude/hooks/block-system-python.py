@@ -22,18 +22,27 @@ if data.get("tool_name") != "Bash":
 
 command = data.get("tool_input", {}).get("command", "") or ""
 
-# Match `python` (or python3, python3.12) at a command boundary,
-# not preceded by `.venv/bin/` or `/.venv/bin/` (absolute venv path).
+# Match `python` (or python3, python3.12) only at command position:
+# start-of-input or after a shell separator (;, &&, ||, |, backtick, $().
+# Plain whitespace before `python` is NOT a match — prevents false
+# positives on prose like `echo "=== python deps ==="`.
 BARE = re.compile(
-    r"(?:^|[\s;&|`(])"
+    r"(?:^|[;&|`(])\s*"
     r"(?!\S*\.venv/bin/)"
+    r"(?!\S*/\.venv/bin/)"
     r"python(?:\d+(?:\.\d+)?)?"
     r"(?=\s|$)"
 )
-# Exception: python -c "..." is allowed (quick inline diagnostics)
-INLINE_C = re.compile(r"(?:^|[\s;&|`(])python(?:\d+(?:\.\d+)?)?\s+-c\b")
+# Exceptions (also at command position):
+#   - python -c "..."  inline diagnostics
+#   - python -m venv ...  venv bootstrap
+INLINE_OK = re.compile(
+    r"(?:^|[;&|`(])\s*"
+    r"python(?:\d+(?:\.\d+)?)?\s+"
+    r"(?:-c\b|-m\s+venv\b)"
+)
 
-if BARE.search(command) and not INLINE_C.search(command):
+if BARE.search(command) and not INLINE_OK.search(command):
     sys.stderr.write(
         "BLOCKED by block-system-python hook: bare 'python' invocation.\n"
         "Use .venv/bin/python (or absolute venv path). System python lacks\n"
