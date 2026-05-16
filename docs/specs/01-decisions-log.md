@@ -27,6 +27,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-021 | Phase-1 `combat_outcome_samples[]` Degenerate-Single Convention | Accepted |
 | ADR-022 | Trajectory Protobuf Binding Homed at `pipeline/common/` | Accepted |
 | ADR-023 | Spec Status Badges + Module-Spec Frontmatter | Accepted |
+| ADR-024 | Spec-Edit Tracker + Re-Baseline Convention | Accepted |
 
 ---
 
@@ -526,3 +527,39 @@ substrate: engine/headless/
 - *Positive:* the badge taxonomy mirrors the project's phase-gate structure already in use (`docs/scaling-strategy.md` Phase 1 / 1.5 / 2+), so no new mental model.
 
 **Origin.** Doc-sync planning session 2026-05-16. Triggered by project-lead status report flagging Q7/Q8/Q9/Q12 specs newer than dormant substrates ("phantom features") and spot-checks of Q1/Q4/Q10 surfacing aspirational-as-current responsibilities.
+
+---
+
+## ADR-024 — Spec-Edit Tracker + Re-Baseline Convention
+
+**Status:** Accepted (2026-05-16).
+
+**Context.** ADR-023 ratifies a per-section badge convention for module specs but does not enforce that badges stay accurate as code evolves. Without machinery, the convention rots — agents edit specs, substrate moves on, badges fall behind. The proto-edit tracker (`proto-edit-tracker.py` + `pre-push-proto-adr-gate.py`) is a proven soft-enforcement pattern: a PreToolUse hook logs edits to a state file; a pre-push gate enforces resolution criteria before main-bound pushes. Extending the same pattern to module specs is the lowest-friction enforcement extension surface available.
+
+**Decision.** Three coupled mechanisms.
+
+*1. Spec-edit tracker hook.* New file `.claude/hooks/spec-edit-tracker.py`, modeled directly on `proto-edit-tracker.py`. Fires PreToolUse on Edit/Write/MultiEdit when the target file matches `docs/specs/(modules/.+|00-system-overview)\.md$`. Appends an entry `{file, edited_at, agent, head_sha_at_edit, resolution: null}` to `.claude/state/spec-edits-pending-resolution.json`. Non-blocking. Registered in `.claude/settings.local.json` alongside the proto tracker (matcher: `Edit|Write|MultiEdit`).
+
+*2. Pre-push spec-resolution gate.* New file `.pre-commit-hooks/pre-push-spec-resolution-gate.py`, wired into `.pre-commit-config.yaml` at `stages: [pre-push]` alongside the proto-adr-gate. On main-bound push, for each pending entry, the gate looks up the spec's `substrate:` path **directly from the spec's YAML frontmatter** (per ADR-023 — no quantum-map markdown parsing) and checks whether either (a) the pushed commits touch that substrate path or (b) any pushed commit message contains the literal flag `doc-only:`. **Phase 3a is warn-only**: the gate prints unresolved entries to stderr but exits 0. Feature-branch pushes pass freely.
+
+*3. Re-baseline convention update.* The `running-a-quantum-ci-gate` skill is extended with a post-gate audit step: when a quantum's gate passes, scan its spec for sections that should change badge (e.g., a `[PHASE-1.5]` claim that the gate now exercises → `[SHIPPED]`). Phase-gate reports MUST end with a single line: `specs re-baselined: yes — sections updated: <list>` OR `specs re-baselined: not needed — <rationale>`. **Applies prospectively from the Phase-1.5 gate onwards** — no retroactive backfill of Phase-0/Phase-1 reports.
+
+*Future promotion path (ADR-025+).* The warn-only gate promotes to a hard block after **two consecutive wave cycles complete with zero gate warnings**. One wave is too small a sample (could be coincidence); two cycles is strong signal the convention is being followed. A follow-up ADR (ADR-025 or later) ratifies the promotion. Until then, the warn output is the early signal — agents should treat warnings as TODO list items, not noise.
+
+*`doc-only:` commit-message flag.* A new commit-message convention. Any commit whose message contains the literal substring `doc-only:` declares that the spec edit is intentional without a corresponding substrate change (e.g., post-hoc badge rebalancing, ADR cross-reference cleanup, typo fix in a spec). The gate honors the flag without further scrutiny — it is an audit-trail signal, not an enforcement bypass. Convention is documented here only; no separate doc.
+
+**Consequences.**
+
+- *Negative:* the tracker accumulates entries indefinitely — `.claude/state/spec-edits-pending-resolution.json` has no cleanup logic in this ADR. Resolved entries should be pruned by the gate or by a hand-rolled cleanup step at wave close. Deferred to a follow-up — Phase 3a entries are small enough to ignore for now.
+- *Negative:* the `substrate:` frontmatter is a new sync surface that can drift from `.claude/CLAUDE.md`'s quantum-map table (see ADR-023 Consequences). The gate trusts frontmatter; if it's wrong, the gate gives the wrong answer. Convention-only check; CI consistency check is a follow-up tooling pass.
+- *Negative:* the `doc-only:` flag is a documented hole in enforcement — anyone can add it without justification. Mitigation: it's an audit signal that shows up in `git log`. Reviewers can grep for it during PR review.
+- *Negative:* warn-only mode is silent under the project's default tooling — pushers may ignore the stderr message. Mitigation: two-wave promote-to-block window forces the convention to be observably enforced before going hard.
+- *Negative:* registering the new hook in `.claude/settings.local.json` (which is gitignored) means the hook does not fire for other team members until they manually register it. Inherits this constraint from the proto-edit-tracker precedent. Follow-up: migrate shared-hook registrations to a tracked `.claude/settings.json`.
+- *Positive:* re-uses the proto-tracker pattern exactly — no new mental model, no new tooling, low maintenance cost.
+- *Positive:* frontmatter-as-lookup avoids fragile markdown-table parsing. Adding a new module spec automatically participates in the gate as long as its frontmatter is present (ADR-023 mandates this).
+- *Positive:* phase-gate reports become the natural re-baseline checkpoint, surfacing rebadging needs at the moment evidence is fresh (the gate just ran).
+- *Positive:* warn-only first cycle creates a measurable adoption signal before forcing compliance.
+
+**Future tooling appendix.** *Badge auto-inference from gate-report status.* Phase-gate reports already encode per-section "shipped vs deferred" via their pass/fail structure. A future tool could parse gate reports and propose badge rebalances mechanically. Deferred until the gate-report convention has stabilized across ≥3 phase gates — premature today.
+
+**Origin.** Doc-sync planning session 2026-05-16. Follows immediately from ADR-023; ratifies the prevention machinery sketched in the same plan (`/home/clydew372/.claude/plans/do-p0-dynamic-alpaca.md`).

@@ -79,8 +79,38 @@ Always run `make <target>` from the worktree root (or main repo root for merges)
 | Pre-PR full verification | `make phase0-gate` (background, ~20 min) |
 | Suspected memory corruption | `make sanitize-test` (background, ~10 min) |
 
+## Post-gate spec re-baseline audit (per ADR-024)
+
+After a gate **passes**, scan the gated quantum's module spec for sections
+that should change badge as a result. Common triggers:
+
+- Substrate behavior that was `[PHASE-1.5]` is now exercised by a gate
+  step → rebadge to `[SHIPPED]`.
+- A `[PHASE-2]` feature actually shipped → rebadge to `[SHIPPED]`.
+- A `[NOTE: contradicts code at ...]` annotation was resolved → drop the
+  annotation; restore the simple badge.
+
+If any sections need rebadging, edit the spec in the same PR as the gate
+run. The `spec-edit-tracker` hook will log the edit; pair it with the
+substrate-touching commit that's already in the PR (or add a `doc-only:`
+commit if the badge change reflects post-hoc reality).
+
+### Phase-gate report convention
+
+Every phase-gate report (e.g., `engine/headless/docs/phaseN-gate-report.md`)
+MUST end with one of:
+
+```
+specs re-baselined: yes — sections updated: <list>
+specs re-baselined: not needed — <one-line rationale>
+```
+
+This convention applies **prospectively from the Phase-1.5 gate onwards**.
+Historical reports (Phase-0, Phase-1) are not backfilled.
+
 ## Cross-references
 
 - [[merging-a-wave]] — smoke gate is mandatory between stream merges
 - [[verifying-subagent-claims]] — gate results are part of claim verification
 - `.claude/state/SCHEMA.md` — `last-gate.json` schema
+- ADR-023, ADR-024 — badge convention and re-baseline machinery

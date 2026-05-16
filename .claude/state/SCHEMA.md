@@ -108,6 +108,37 @@ referencing the proto edit lands.
 `adr_ref` is null AND no ADR with `Date: >= edited_at` references the
 file path.
 
+## `spec-edits-pending-resolution.json`
+
+Written by `.claude/hooks/spec-edit-tracker.py` (PreToolUse Edit/Write on
+`docs/specs/modules/*.md` or `docs/specs/00-system-overview.md`). Read by
+`.pre-commit-hooks/pre-push-spec-resolution-gate.py`. Per ADR-024.
+
+```json
+{
+  "entries": [
+    {
+      "file": "docs/specs/modules/trainer.md",
+      "edited_at": "2026-05-16T23:36:03Z",
+      "agent": "Edit | Write | MultiEdit",
+      "head_sha_at_edit": "9d703c5...",
+      "resolution": null
+    }
+  ]
+}
+```
+
+`resolution` field reserved for future manual marking (e.g., explicit
+substrate-paired commit SHA). Current gate logic ignores this field and
+checks resolution dynamically against pushed commits: passes if the
+pushed range touches the spec's frontmatter `substrate:` path OR any
+commit message contains `doc-only:`. **Phase 3a is warn-only**; promotes
+to block in ADR-N+2 after two silent wave cycles.
+
+Entry cleanup: no automatic prune today — entries accumulate. Manual
+cleanup at wave-close is acceptable; full lifecycle TBD per ADR-024
+Consequences §1.
+
 ## `ci-rescue.json`
 
 Written by `.claude/scripts/write-ci-rescue.sh` (invoked from the

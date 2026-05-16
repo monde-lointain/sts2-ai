@@ -29,6 +29,7 @@ artifacts here instead of re-deriving each session.
 - `block-merge-in-worktree`, `block-dirty-worktree-merge` — enforce main-CWD merge invariant.
 - `warn-foreground-longrun` — flag `make q2-ci|phase0-gate|sanitize*` without backgrounding.
 - `proto-edit-tracker` — log `contracts/schemas/*.proto` edits to `.claude/state/proto-edits-pending-adr.json`.
+- `spec-edit-tracker` — log `docs/specs/modules/*.md` + `00-system-overview.md` edits to `.claude/state/spec-edits-pending-resolution.json` (per ADR-024; pre-push gate is warn-only Phase 3a).
 
 **State contract** — `.claude/state/SCHEMA.md` documents JSON shapes for
 runtime files. Writes go via `.claude/scripts/write-*.sh` (never trust

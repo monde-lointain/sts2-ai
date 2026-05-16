@@ -11,7 +11,8 @@ out/
 .claude/settings.local.json
 .claude/worktrees/
 .claude/**/__pycache__/
-.claude/state/*.json
+.claude/state/**
+!.claude/state/SCHEMA.md
 .worktrees/
 *.user
 
