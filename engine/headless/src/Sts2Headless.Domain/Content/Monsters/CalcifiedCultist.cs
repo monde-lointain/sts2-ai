@@ -51,5 +51,6 @@ public sealed class CalcifiedCultist : MonsterModel
                 ),
             },
             initialMoveId: IncantationMoveId
-        ) { }
+        )
+    { }
 }

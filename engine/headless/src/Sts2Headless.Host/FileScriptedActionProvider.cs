@@ -89,67 +89,67 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
         switch (d.Kind)
         {
             case ScriptDirectiveKind.EndTurn:
-            {
-                var endTurn = legal.OfType<PlayerAction.EndTurn>().FirstOrDefault();
-                if (endTurn is null)
                 {
-                    throw new ScriptParseException(
-                        $"line {d.Line}: end_turn directive issued but EndTurn is not legal in phase {state.Phase}."
-                    );
-                }
-                return endTurn;
-            }
-            case ScriptDirectiveKind.Play:
-            {
-                string cardId = d.CardModelId!;
-                if (!_cards.Contains(cardId))
-                {
-                    throw new ScriptParseException(
-                        $"line {d.Line}: unknown card model id '{cardId}'."
-                    );
-                }
-                // Find the legal PlayCard for THIS card model.
-                var candidates = new List<PlayerAction.PlayCard>();
-                foreach (PlayerAction a in legal)
-                {
-                    if (a is PlayerAction.PlayCard pc)
-                    {
-                        CardInstance? inst = state.HandPile.Cards.FirstOrDefault(c =>
-                            c.InstanceId == pc.CardInstanceId
-                        );
-                        if (inst is null)
-                            continue;
-                        if (inst.ModelId == cardId)
-                        {
-                            candidates.Add(pc);
-                        }
-                    }
-                }
-                if (candidates.Count == 0)
-                {
-                    throw new ScriptParseException(
-                        $"line {d.Line}: no legal play for card '{cardId}' in current hand "
-                            + $"(hand: {string.Join(",", state.HandPile.Cards.Select(c => c.ModelId))})."
-                    );
-                }
-                // Pick a candidate. If target= specified, prefer the matching one.
-                // Otherwise (or if no match), pick the first.
-                if (d.TargetEnemyId.HasValue)
-                {
-                    var matched = candidates.FirstOrDefault(pc =>
-                        pc.TargetEnemyId == d.TargetEnemyId.Value
-                    );
-                    if (matched is null)
+                    var endTurn = legal.OfType<PlayerAction.EndTurn>().FirstOrDefault();
+                    if (endTurn is null)
                     {
                         throw new ScriptParseException(
-                            $"line {d.Line}: card '{cardId}' target={d.TargetEnemyId.Value} not legal "
-                                + $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString() ?? "self"))})."
+                            $"line {d.Line}: end_turn directive issued but EndTurn is not legal in phase {state.Phase}."
                         );
                     }
-                    return matched;
+                    return endTurn;
                 }
-                return candidates[0];
-            }
+            case ScriptDirectiveKind.Play:
+                {
+                    string cardId = d.CardModelId!;
+                    if (!_cards.Contains(cardId))
+                    {
+                        throw new ScriptParseException(
+                            $"line {d.Line}: unknown card model id '{cardId}'."
+                        );
+                    }
+                    // Find the legal PlayCard for THIS card model.
+                    var candidates = new List<PlayerAction.PlayCard>();
+                    foreach (PlayerAction a in legal)
+                    {
+                        if (a is PlayerAction.PlayCard pc)
+                        {
+                            CardInstance? inst = state.HandPile.Cards.FirstOrDefault(c =>
+                                c.InstanceId == pc.CardInstanceId
+                            );
+                            if (inst is null)
+                                continue;
+                            if (inst.ModelId == cardId)
+                            {
+                                candidates.Add(pc);
+                            }
+                        }
+                    }
+                    if (candidates.Count == 0)
+                    {
+                        throw new ScriptParseException(
+                            $"line {d.Line}: no legal play for card '{cardId}' in current hand "
+                                + $"(hand: {string.Join(",", state.HandPile.Cards.Select(c => c.ModelId))})."
+                        );
+                    }
+                    // Pick a candidate. If target= specified, prefer the matching one.
+                    // Otherwise (or if no match), pick the first.
+                    if (d.TargetEnemyId.HasValue)
+                    {
+                        var matched = candidates.FirstOrDefault(pc =>
+                            pc.TargetEnemyId == d.TargetEnemyId.Value
+                        );
+                        if (matched is null)
+                        {
+                            throw new ScriptParseException(
+                                $"line {d.Line}: card '{cardId}' target={d.TargetEnemyId.Value} not legal "
+                                    + $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString() ?? "self"))})."
+                            );
+                        }
+                        return matched;
+                    }
+                    return candidates[0];
+                }
             default:
                 throw new ScriptParseException($"line {d.Line}: unknown directive kind {d.Kind}.");
         }

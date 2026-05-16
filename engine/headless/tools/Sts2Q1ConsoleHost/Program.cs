@@ -147,22 +147,22 @@ public sealed record CliArgs(string Sts2DllPath, uint Seed, string EncounterId, 
                     sts2Dll = Take();
                     break;
                 case "--seed":
-                {
-                    string v = Take();
-                    if (
-                        !uint.TryParse(
-                            v,
-                            NumberStyles.Integer,
-                            CultureInfo.InvariantCulture,
-                            out uint parsed
-                        )
-                    )
                     {
-                        throw new ArgumentException($"--seed: expected uint, got '{v}'.");
+                        string v = Take();
+                        if (
+                            !uint.TryParse(
+                                v,
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out uint parsed
+                            )
+                        )
+                        {
+                            throw new ArgumentException($"--seed: expected uint, got '{v}'.");
+                        }
+                        seed = parsed;
+                        break;
                     }
-                    seed = parsed;
-                    break;
-                }
                 case "--encounter":
                     encounter = Take();
                     break;

@@ -285,34 +285,34 @@ public static class ControlPlaneRpcHandlers
             switch (type)
             {
                 case "play_card":
-                {
-                    if (
-                        !actionElem.TryGetProperty("card_instance_id", out JsonElement idElem)
-                        || idElem.ValueKind != JsonValueKind.Number
-                    )
                     {
-                        return JsonRpcResult.Error(
-                            JsonRpcErrorCodes.InvalidParams,
-                            "apply_action: play_card requires numeric 'card_instance_id'"
-                        );
+                        if (
+                            !actionElem.TryGetProperty("card_instance_id", out JsonElement idElem)
+                            || idElem.ValueKind != JsonValueKind.Number
+                        )
+                        {
+                            return JsonRpcResult.Error(
+                                JsonRpcErrorCodes.InvalidParams,
+                                "apply_action: play_card requires numeric 'card_instance_id'"
+                            );
+                        }
+                        uint cardId = idElem.GetUInt32();
+                        uint? targetId = null;
+                        if (
+                            actionElem.TryGetProperty("target_enemy_id", out JsonElement tgtElem)
+                            && tgtElem.ValueKind == JsonValueKind.Number
+                        )
+                        {
+                            targetId = tgtElem.GetUInt32();
+                        }
+                        CombatEngine.PlayerPlayCard(ctx, cardId, targetId);
+                        break;
                     }
-                    uint cardId = idElem.GetUInt32();
-                    uint? targetId = null;
-                    if (
-                        actionElem.TryGetProperty("target_enemy_id", out JsonElement tgtElem)
-                        && tgtElem.ValueKind == JsonValueKind.Number
-                    )
-                    {
-                        targetId = tgtElem.GetUInt32();
-                    }
-                    CombatEngine.PlayerPlayCard(ctx, cardId, targetId);
-                    break;
-                }
                 case "end_turn":
-                {
-                    CombatEngine.EndPlayerTurn(ctx);
-                    break;
-                }
+                    {
+                        CombatEngine.EndPlayerTurn(ctx);
+                        break;
+                    }
                 default:
                     return JsonRpcResult.Error(
                         JsonRpcErrorCodes.InvalidParams,

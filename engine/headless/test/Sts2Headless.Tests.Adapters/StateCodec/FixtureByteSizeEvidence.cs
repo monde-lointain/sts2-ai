@@ -30,7 +30,7 @@ public class FixtureByteSizeEvidence
                 f.Tokens,
                 f.Stamp
             );
-            _out.WriteLine($"{f.Name, -46} {bytes.Length, 6} bytes");
+            _out.WriteLine($"{f.Name,-46} {bytes.Length,6} bytes");
         }
     }
 }
