@@ -27,7 +27,7 @@ command = data.get("tool_input", {}).get("command", "") or ""
 # Plain whitespace before `python` is NOT a match — prevents false
 # positives on prose like `echo "=== python deps ==="`.
 BARE = re.compile(
-    r"(?:^|[;&|`(])\s*"
+    r"(?:^|[\n;&|`(])\s*"
     r"(?!\S*\.venv/bin/)"
     r"(?!\S*/\.venv/bin/)"
     r"python(?:\d+(?:\.\d+)?)?"
@@ -37,7 +37,7 @@ BARE = re.compile(
 #   - python -c "..."  inline diagnostics
 #   - python -m venv ...  venv bootstrap
 INLINE_OK = re.compile(
-    r"(?:^|[;&|`(])\s*"
+    r"(?:^|[\n;&|`(])\s*"
     r"python(?:\d+(?:\.\d+)?)?\s+"
     r"(?:-c\b|-m\s+venv\b)"
 )
