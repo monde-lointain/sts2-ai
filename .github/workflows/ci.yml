@@ -95,7 +95,7 @@ jobs:
           .venv/bin/pip install -r requirements-dev.txt
           .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
           .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
-          .venv/bin/pip install rocksdict onnx
+          .venv/bin/pip install rocksdict onnx onnxscript
           .venv/bin/pip install -e tools/upstream-sync
       - name: Run python-quality
         run: make python-quality
@@ -162,7 +162,7 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install pytest pytest-cov numpy protobuf PyYAML
           .venv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch
-          .venv/bin/pip install onnx
+          .venv/bin/pip install onnx onnxscript
       - name: Run q10-ci
         run: make q10-ci
 
@@ -208,7 +208,11 @@ jobs:
       - name: Install deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build clang-tidy-18 libarrow-dev libparquet-dev
+          sudo apt-get install -y ninja-build clang-tidy-18 ca-certificates lsb-release wget
+          wget https://packages.apache.org/artifactory/arrow/$(lsb_release --id --short | tr 'A-Z' 'a-z')/apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt-get install -y -V ./apache-arrow-apt-source-latest-$(lsb_release --codename --short).deb
+          sudo apt-get update
+          sudo apt-get install -y -V libarrow-dev libparquet-dev
       - name: Cache build directory
         uses: actions/cache@v4
         with:
