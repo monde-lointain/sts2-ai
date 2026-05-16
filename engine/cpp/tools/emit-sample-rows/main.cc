@@ -70,11 +70,12 @@ constexpr const char* kModelVersionStub = "phase1a-stub-model-sha";
 // so parent_path() x 5 lands on <root>.
 [[nodiscard]] std::filesystem::path project_root() {
   const std::filesystem::path here(__FILE__);
-  return here.parent_path()  // emit-sample-rows/
-      .parent_path()         // tools/
-      .parent_path()         // cpp/
-      .parent_path()         // engine/
-      .parent_path();        // <root>
+  return here
+      .parent_path()   // emit-sample-rows/
+      .parent_path()   // tools/
+      .parent_path()   // cpp/
+      .parent_path()   // engine/
+      .parent_path();  // <root>
 }
 
 [[nodiscard]] std::vector<std::uint8_t> read_file_bytes(
@@ -249,8 +250,8 @@ int run(int argc, char** argv) {
   if (result.index() != 1U) {
     std::cerr << "emit-sample-rows: expected AdapterReject for fixture "
               << args.fixture_blob.string()
-              << ", got CompactState (variant index "
-              << result.index() << ")\n";
+              << ", got CompactState (variant index " << result.index()
+              << ")\n";
     return 2;
   }
   const auto& reject = std::get<AdapterReject>(result);
@@ -266,8 +267,8 @@ int run(int argc, char** argv) {
   // Diagnostic first, verified second — preserves the natural "what came
   // off the wire" ordering for any human eyeballing the file.
   const std::array<AgreementRow, 2> rows{diag_row, verified_row};
-  sts2::oracle::agreement::write_parquet(
-      args.out_root, std::span<const AgreementRow>{rows});
+  sts2::oracle::agreement::write_parquet(args.out_root,
+                                         std::span<const AgreementRow>{rows});
 
   const auto emitted = expected_partition_path(args.out_root);
   const auto read = sts2::oracle::agreement::read_parquet(emitted);
