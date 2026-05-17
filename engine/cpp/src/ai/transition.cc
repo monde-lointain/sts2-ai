@@ -23,21 +23,96 @@ class StateMutator {
   [[nodiscard]] static sts2::game::Stat& block(EnemyState& e) noexcept {
     return e.block_;
   }
-  [[nodiscard]] static sts2::game::Stat& strength(EnemyState& e) noexcept {
-    return e.strength_;
+  // strength/weak now route through the powers_ array
+  static void add_strength(EnemyState& e, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(e.powers_, e.power_count_,
+                      sts2::game::PowerKind::kStrength,
+                      static_cast<int16_t>(delta));
   }
-  [[nodiscard]] static sts2::game::Stat& weak(EnemyState& e) noexcept {
-    return e.weak_;
+  static void add_weak(EnemyState& e, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kWeak,
+                      static_cast<int16_t>(delta));
   }
+  static void decrement_weak(EnemyState& e) noexcept {
+    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                          sts2::game::PowerKind::kWeak);
+    if (p == nullptr) {
+      return;
+    }
+    --p->stacks;
+    if (p->stacks <= 0) {
+      // Remove from array
+      for (uint8_t i = 0; i < e.power_count_; ++i) {
+        if (e.powers_[i].kind == sts2::game::PowerKind::kWeak) {
+          for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
+            e.powers_[j] = e.powers_[j + 1];
+          }
+          --e.power_count_;
+          e.powers_[e.power_count_] = {};
+          break;
+        }
+      }
+    }
+  }
+  // Ritual flag manipulation
+  [[nodiscard]] static bool get_just_applied_ritual(
+      const EnemyState& e) noexcept {
+    const PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                                sts2::game::PowerKind::kRitual);
+    return (p != nullptr) && ((p->flags & 0x01U) != 0);
+  }
+  static void set_just_applied_ritual(EnemyState& e, bool value) noexcept {
+    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                          sts2::game::PowerKind::kRitual);
+    if (value) {
+      if (p == nullptr) {
+        p = &powers::add_power(e.powers_, e.power_count_,
+                               sts2::game::PowerKind::kRitual, 0);
+      }
+      p->flags |= 0x01U;
+    } else {
+      if (p != nullptr) {
+        p->flags &= static_cast<uint8_t>(~0x01U);
+      }
+    }
+  }
+  static void clear_just_applied_ritual(EnemyState& e) noexcept {
+    // Clear the just_applied flag. If the resulting PowerInstance has stacks=0
+    // and no flags set, remove it so from_combat comparison stays consistent
+    // (from_combat only inserts kRitual when just_applied=true).
+    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                          sts2::game::PowerKind::kRitual);
+    if (p == nullptr) {
+      return;
+    }
+    p->flags &= static_cast<uint8_t>(~0x01U);
+    if (p->stacks == 0 && p->flags == 0) {
+      // Remove the now-empty Ritual entry
+      for (uint8_t i = 0; i < e.power_count_; ++i) {
+        if (e.powers_[i].kind == sts2::game::PowerKind::kRitual) {
+          for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
+            e.powers_[j] = e.powers_[j + 1];
+          }
+          --e.power_count_;
+          e.powers_[e.power_count_] = {};
+          break;
+        }
+      }
+    }
+  }
+
   [[nodiscard]] static sts2::game::Stat& dark_strike_base(
       EnemyState& e) noexcept {
     return e.dark_strike_base_;
   }
   [[nodiscard]] static sts2::game::Stat& ritual_amount(EnemyState& e) noexcept {
     return e.ritual_amount_;
-  }
-  [[nodiscard]] static bool& just_applied_ritual(EnemyState& e) noexcept {
-    return e.just_applied_ritual_;
   }
   [[nodiscard]] static bool& performed_first_move(EnemyState& e) noexcept {
     return e.performed_first_move_;
@@ -55,12 +130,22 @@ class StateMutator {
       CompactState& s) noexcept {
     return s.player_block_;
   }
-  [[nodiscard]] static sts2::game::Stat& player_strength(
-      CompactState& s) noexcept {
-    return s.player_strength_;
+  // player_strength / player_weak: route through player_powers_
+  static void add_player_strength(CompactState& s, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(s.player_powers_, s.player_power_count_,
+                      sts2::game::PowerKind::kStrength,
+                      static_cast<int16_t>(delta));
   }
-  [[nodiscard]] static sts2::game::Stat& player_weak(CompactState& s) noexcept {
-    return s.player_weak_;
+  static void add_player_weak(CompactState& s, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(s.player_powers_, s.player_power_count_,
+                      sts2::game::PowerKind::kWeak,
+                      static_cast<int16_t>(delta));
   }
   [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
     return s.energy_;
@@ -71,9 +156,12 @@ class StateMutator {
   [[nodiscard]] static Phase& phase(CompactState& s) noexcept {
     return s.phase_;
   }
-  [[nodiscard]] static std::array<EnemyState, 2>& enemies(
+  [[nodiscard]] static std::array<EnemyState, kMaxEnemies>& enemies(
       CompactState& s) noexcept {
     return s.enemies_;
+  }
+  [[nodiscard]] static uint8_t& enemy_count(CompactState& s) noexcept {
+    return s.enemy_count_;
   }
   [[nodiscard]] static CardCounts& hand(CompactState& s) noexcept {
     return s.hand_;
@@ -150,7 +238,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   }
   if (fx.weak_to_target) {
     EnemyState& e = action.target_idx.at(M::enemies(state));
-    M::weak(e) += fx.weak_to_target;
+    M::add_weak(e, fx.weak_to_target);
   }
   if (fx.requires_discard) {
     if (state.get_hand().total() == 0) {
@@ -188,7 +276,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
       M::hand(state) = CardCounts{};
     }
     [[nodiscard]] std::size_t enemy_count() const {
-      return state.get_enemies().size();
+      return state.get_enemy_count();
     }
     [[nodiscard]] bool enemy_alive(std::size_t slot) const {
       return is_alive(state.get_enemy(slot));
@@ -261,7 +349,7 @@ std::vector<Action> legal_actions(const CompactState& state) {
 
     const TargetType tgt = fx.target;
     if (tgt == TargetType::kAnyEnemy) {
-      for (uint8_t i = 0; i < 2; ++i) {
+      for (uint8_t i = 0; i < state.get_enemy_count(); ++i) {
         if (!state.get_enemy(i).get_alive()) {
           continue;
         }
@@ -331,8 +419,8 @@ void enemy_act(CompactState& s, EnemyState& e) {
         // Mirrors powers::apply for kRitual: amount accumulates on the Power,
         // but in v1 Ritual is applied once -> Power.amount stays at
         // ritual_amount. We model the dynamic Ritual state purely via
-        // just_applied_ritual.
-        M::just_applied_ritual(e) = true;
+        // just_applied flag on the kRitual PowerInstance.
+        M::set_just_applied_ritual(e, true);
       },
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
@@ -344,12 +432,18 @@ void enemy_act(CompactState& s, EnemyState& e) {
 }
 
 void enemy_tick_powers(EnemyState& e) {
-  if (sts2::game::move_calc::ritual_should_grant_strength(
-          M::just_applied_ritual(e))) {
-    M::strength(e) += e.get_ritual_amount().value();
+  // ritual_should_grant_strength: if just_applied is true, clears it and
+  // returns false (skip strength this turn). If false, returns true (grant).
+  bool just_applied = M::get_just_applied_ritual(e);
+  if (just_applied) {
+    // Spawn-turn: skip strength grant, clear the just_applied flag.
+    M::clear_just_applied_ritual(e);
+  } else {
+    // Subsequent turns: grant Ritual → Strength.
+    M::add_strength(e, e.get_ritual_amount().value());
   }
   if (e.get_weak() > sts2::game::Stat{0}) {
-    M::weak(e) -= 1;
+    M::decrement_weak(e);
   }
 }
 
@@ -365,8 +459,13 @@ bool is_terminal(const CompactState& s) noexcept {
     return true;
   }
   const auto& enemies = s.get_enemies();
-  return std::all_of(enemies.begin(), enemies.end(),
-                     [](const EnemyState& e) { return !e.get_alive(); });
+  const uint8_t count = s.get_enemy_count();
+  for (uint8_t i = 0; i < count; ++i) {
+    if (enemies[i].get_alive()) {
+      return false;
+    }
+  }
+  return true;
 }
 
 int draw_count(const CompactState& s) noexcept {

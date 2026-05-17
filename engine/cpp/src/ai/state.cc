@@ -28,6 +28,8 @@ void tally(CardCounts& counts, std::span<const sts2::game::Card> pile) {
 EnemyState build_enemy_state(const sts2::game::Enemy& e) {
   const sts2::game::Power* ritual =
       sts2::powers::find(e.vitals.powers, sts2::game::PowerKind::kRitual);
+  // Build via builder; strength/weak/just_applied_ritual route through powers_.
+  // dark_strike_base and ritual_amount remain scalar fields.
   return EnemyStateBuilder{}
       .alive(e.vitals.hp > sts2::game::Stat{0})
       .hp(e.vitals.hp)
@@ -94,10 +96,11 @@ CompactState from_combat(const sts2::game::Combat& combat) {
       .phase(Phase::kPlayerActing);
 
   const auto& es = combat.enemies();
-  assert(es.size() <= 2);
+  assert(es.size() <= kMaxEnemies);
   for (std::size_t i = 0; i < es.size(); ++i) {
     builder.enemy(i, build_enemy_state(es[i]));
   }
+  // enemy_count_ is set automatically by builder.enemy() calls.
 
   CardCounts hand;
   CardCounts draw;

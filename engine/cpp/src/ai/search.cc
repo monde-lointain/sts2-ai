@@ -72,13 +72,15 @@ bool Score::better_than(Score other) const noexcept {
 }
 
 std::size_t CompactStateHash::operator()(const CompactState& s) const noexcept {
-  const auto& enemies = s.get_enemies();
   std::size_t h = hash_u64(pack_player(s));
-  h = hash_combine(h, hash_u64(pack_enemy(enemies[0])));
-  h = hash_combine(h, hash_u64(pack_enemy(enemies[1])));
+  const uint8_t count = s.get_enemy_count();
+  for (uint8_t i = 0; i < count; ++i) {
+    h = hash_combine(h, hash_u64(pack_enemy(s.get_enemy(i))));
+  }
   h = hash_combine(h, hash_u64(pack_counts(s.get_hand())));
   h = hash_combine(h, hash_u64(pack_counts(s.get_draw())));
   h = hash_combine(h, hash_u64(pack_counts(s.get_discard())));
+  h = hash_combine(h, static_cast<std::size_t>(count));
   return h;
 }
 
