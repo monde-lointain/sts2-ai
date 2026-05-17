@@ -1,3 +1,3 @@
 encounter=SmallSlimes
-reason=AcidSlime/SpikeSlime are STS1 monsters; upstream STS2 has Leaf/Twig slimes.
+reason=DEFER: SmallSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextItem for spawn variant selection). Deferred to B.1-ε.
 monsters=AcidSlimeS,SpikeSlimeS

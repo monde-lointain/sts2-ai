@@ -496,7 +496,13 @@ public sealed class UpstreamDriver
                 .Invoke(combatState, new object[] { creature });
         }
 
-        // --- 4. Invoke CombatManager.SetUpCombat ---------------------------
+        // --- 4. Replicate CombatManager.SetUpCombat body (sans NetCombatCardDb) --
+        // Upstream v0.105.1 added Log.LogMessage calls inside
+        // NetCombatCardDb.IdCardIfNecessary which trigger the Log/Logger/Godot.OS
+        // cctor chain → P/Invoke into uninitialized GDExtension function-pointer
+        // table → SIGSEGV. We replicate the 6 logical steps of SetUpCombat via
+        // reflection, skipping only the NetCombatCardDb.Instance.StartCombat call.
+        // See tools/upstream-sync/docs/wave-6-sigsegv-spike-report.md §Primary.
         Type combatManagerType = TypeOrThrow("MegaCrit.Sts2.Core.Combat.CombatManager");
         object combatManagerInstance =
             combatManagerType
@@ -504,16 +510,77 @@ public sealed class UpstreamDriver
                 .GetValue(null)
             ?? throw new InvalidOperationException("CombatManager.Instance returned null.");
 
-        // NOTE: We DON'T call CombatManager.Reset() — its last line calls
-        // RunManager.Instance.ActionQueueSynchronizer (scene-tree singleton)
-        // and NREs. Since we run one capture per process invocation, the
-        // CombatManager state is fresh.
-        InvokeMethod(
-            combatManagerType,
-            combatManagerInstance,
-            "SetUpCombat",
-            new object[] { combatState }
-        );
+        // L195: CombatManager._state = state
+        combatManagerType
+            .GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(combatManagerInstance, combatState);
+
+        // L196: _state.MultiplayerScalingModel?.OnCombatEntered(_state)
+        object? multiplayerScaling = ReflectionFlex.TryGetProperty(combatState, "MultiplayerScalingModel");
+        if (multiplayerScaling is not null)
+        {
+            multiplayerScaling
+                .GetType()
+                .GetMethod("OnCombatEntered", BindingFlags.Public | BindingFlags.Instance)!
+                .Invoke(multiplayerScaling, new object[] { combatState });
+        }
+
+        // L197: StateTracker.SetState(state)
+        object stateTracker =
+            combatManagerType
+                .GetProperty("StateTracker", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(combatManagerInstance)!;
+        stateTracker
+            .GetType()
+            .GetMethod("SetState", BindingFlags.Public | BindingFlags.Instance)!
+            .Invoke(stateTracker, new object[] { combatState });
+
+        // L198-201: _playerReadyLock.EnterScope(); _playersTakingExtraTurn.Clear()
+        // SKIP — fresh CombatManager instance; list is already empty; no observable state.
+
+        // L202-205: foreach player: player.ResetCombatState()
+        // L206-209: foreach player: player.PopulateCombatState(player.RunState.Rng.Shuffle, state)
+        MethodInfo resetMi =
+            playerType.GetMethod("ResetCombatState", BindingFlags.Public | BindingFlags.Instance)!;
+        MethodInfo populateMi =
+            playerType.GetMethod("PopulateCombatState", BindingFlags.Public | BindingFlags.Instance)!;
+        object playersList =
+            combatState.GetType()
+                .GetProperty("Players", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(combatState)!;
+        foreach (object p in (IEnumerable)playersList)
+            resetMi.Invoke(p, null);
+        foreach (object p in (IEnumerable)playersList)
+        {
+            object runState_p =
+                playerType.GetProperty("RunState", BindingFlags.Public | BindingFlags.Instance)!
+                    .GetValue(p)!;
+            object rngSet =
+                runState_p.GetType()
+                    .GetProperty("Rng", BindingFlags.Public | BindingFlags.Instance)!
+                    .GetValue(runState_p)!;
+            object shuffleRng =
+                rngSet.GetType()
+                    .GetProperty("Shuffle", BindingFlags.Public | BindingFlags.Instance)!
+                    .GetValue(rngSet)!;
+            populateMi.Invoke(p, new object[] { shuffleRng, combatState });
+        }
+
+        // L210: NetCombatCardDb.Instance.StartCombat(state.Players) — SKIPPED.
+        // This populates a card→net-id dictionary for multiplayer net-serialization.
+        // Our byte snapshot omits net-ids; skipping is semantically a no-op here.
+
+        // L211-214: foreach creature: combatManager.AddCreature(creature)
+        MethodInfo addCreatureMi =
+            combatManagerType.GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!;
+        object creaturesList =
+            combatState.GetType()
+                .GetProperty("Creatures", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(combatState)!;
+        foreach (object c in (IEnumerable)creaturesList)
+            addCreatureMi.Invoke(combatManagerInstance, new object[] { c });
+
+        // L215: CombatSetUp?.Invoke(state) — SKIPPED; no subscribers in headless.
 
         // --- 5. Serialize canonical bytes ---------------------------------
         return SerializeCanonical(combatState, player, monsters);
