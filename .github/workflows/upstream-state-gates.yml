@@ -1,0 +1,87 @@
+name: Upstream State Gates
+
+on:
+  schedule:
+    # Daily at 04:17 UTC — Steam-independent gates only (no Steam API calls).
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-state-gates-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  # -----------------------------------------------------------------------
+  # drift-gates-ci: Steam-independent xUnit gates (A.1 adds the target).
+  #
+  # SyncStatePinGate and DllSignatureGate are Steam-dependent; they check
+  # out via xUnit Skip semantics when STEAM_HOME is absent. The remaining
+  # gates (PromptTemplateSnapshotGate, StateConsistencyGate) run clean.
+  #
+  # Allow-failure on PRs that touch engine/headless/src/ — bridge work-in-
+  # progress may intentionally break drift gates before the pin is bumped.
+  # -----------------------------------------------------------------------
+  drift-gates:
+    name: Upstream drift gates (Steam-independent)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.x"
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-upstream-${{ hashFiles('engine/headless/**/*.csproj', 'engine/headless/sts2-headless.sln') }}
+          restore-keys: nuget-
+
+      - name: Run drift-gates-ci (Steam-independent gates only)
+        # SyncStatePinGate + DllSignatureGate skip automatically via xUnit
+        # Skip when STEAM_HOME is unset. No secrets required.
+        # Issue creation on detected drift is deferred — GHA cannot reach
+        # Steam to confirm live drift; sentinel-based issue creation is a
+        # local-cron responsibility (see tools/upstream-sync/scripts/cron-sync-check.sh).
+        run: make drift-gates-ci
+
+  # -----------------------------------------------------------------------
+  # snapshot-tests: pytest suite shipped by A.2 (tools/upstream-sync/tests/).
+  # Covers prompt-template rendering + state-vs-port-decision-doc consistency.
+  # allow_failure: false — these gates are Steam-independent and must be green.
+  # -----------------------------------------------------------------------
+  snapshot-tests:
+    name: Upstream-sync snapshot tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Setup .venv + install upstream-sync
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install pytest pytest-cov jinja2 PyYAML
+          .venv/bin/pip install -e tools/upstream-sync
+
+      - name: Prompt-template snapshot tests
+        # Tests live in tools/upstream-sync/tests/; A.2 ships them.
+        run: .venv/bin/pytest tools/upstream-sync/tests/ -v --tb=short
+
+      - name: Sync-state vs port-decision-doc consistency check
+        # Verifies .upstream-sync-state.json (if present) is consistent with
+        # docs/plans/upstream-pipeline.md (or equivalent port-decision doc).
+        # If the state file is absent (fresh checkout), the check is a no-op.
+        run: |
+          if [[ -f .upstream-sync-state.json ]]; then
+            .venv/bin/python -m upstream_sync.cli check --state-only
+          else
+            echo "No .upstream-sync-state.json present — consistency check skipped on fresh checkout."
+          fi

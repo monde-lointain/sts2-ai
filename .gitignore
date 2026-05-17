@@ -103,3 +103,7 @@ tools/upstream-sync/**/__pycache__/
 # tools/upstream-sync runtime state
 .upstream-sync-state.json
 tools/upstream-sync/cache/
+
+# upstream-drift-detected sentinel (runtime; covered by .claude/state/**)
+# Explicit pattern for grep-ability; .claude/state/** above already ignores it.
+.claude/state/upstream-drift-detected.json
