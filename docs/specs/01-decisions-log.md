@@ -617,10 +617,40 @@ Un-categorizable changes (paths falling through all bucket patterns) surface to 
 
 ## ADR-027 — Q4 Phase-1 Fixture Growth Policy
 
-**Status:** RESERVED — pending Wave 5.5 ratification.
+**Status:** Accepted (2026-05-17). Ratified in Wave 5.5 (Phase B.0).
 
-**Context.** The upstream v0.103.2 → v0.105.1 delta (categorized by Phase A.2 tooling and recorded in `engine/headless/docs/specs/03-v0.103.2-to-v0.105.1-port-decisions.md`) includes 323 card changes, 110 monster changes, 148 power changes, 120 relic changes, and 5 encounter changes. The Q4 Content Registry Phase-1 manifest fixture (`engine/headless/test/fixtures/q4-manifest-phase1.json`) is capped at 96 cards / 58 monsters / 45 powers / 32 relics / 22 encounters per `docs/specs/modules/content-registry.md`. If the bridge ports all PORT-classified upstream changes into Phase-1, the fixture caps are likely exceeded. Three policy options are available: (i) grow caps to track upstream, (ii) keep existing caps and classify the excess as Phase-2 scope, (iii) one-time re-baseline via this ADR setting new permanent caps. The choice has downstream impact on Q1 test harness count, Q4 manifest schema versioning, and CI wall-clock budget.
+**Context.** The upstream v0.103.2 → v0.105.1 delta (categorized by Phase A.2 tooling and recorded in `engine/headless/docs/specs/03-v0.103.2-to-v0.105.1-port-decisions.md`) includes 323 card changes (PORT), 110 monster changes (PORT + DELETE), 148 power changes (PORT + DELETE), 120 relic changes (PORT + SURFACE-NO-ACTION), 5 encounter changes (PORT), 33 potion changes (PORT). The Q4 Content Registry Phase-1 manifest is split across two artifacts:
 
-**Decision.** TBD — Wave 5.5 (Phase B.0) project-lead decision. Project-lead reads `03-v0.103.2-to-v0.105.1-port-decisions.md` + JSON sidecar + `content-registry.md` fixture caps before committing to an option. Independent quantum-lead architectural read is optional (dispatch if option choice has ambiguous downstream impact).
+- **Canonical Q4 registry** (`contracts/registry/phase1-silent.json`): 98 cards / 59 relics / 45 powers / 0 monsters / 0 potions / 0 encounters today. Per `content-registry.md` § Token IDs SHIPPED, the documented seed is "96 cards / 58 relics / 45 powers / 32 monsters / 21 potions / 22 encounters" — minor spec drift (registry artifact has +2c/+1r already from Wave 1 work; monsters/potions/encounters were never added to the canonical registry, only to the Q1 fixture).
+- **Q1 Phase-1 manifest fixture** (`engine/headless/test/fixtures/q4-manifest-phase1.json`): 98 cards / 59 relics / 45 powers / 33 monsters / 21 potions / 0 encounters. The fixture is Q1's local snapshot of canonical-registry-equivalent content for use in `Q4ManifestLoaderTests` content-coverage gate.
 
-**Consequences.** TBD per chosen option. Wave 5.5 fills this section in-place and flips Status to `Accepted`.
+If the bridge ports all PORT-classified upstream changes into Phase-1, both artifacts grow substantially (likely 200+ cards, 100+ relics, 100+ powers, 100+ monsters). Three policy options were under consideration: (i) grow caps to track upstream, (ii) keep caps + classify excess as Phase-2 scope, (iii) one-time re-baseline via ADR setting new permanent caps.
+
+**Decision.** **Option (i) + (iii) blended: grow caps to upstream content, formalized as a one-time re-baseline event ratified by this ADR.**
+
+Rationale (in priority order):
+1. **Probe-gate validity:** The bridge's `make probe-upstream-initial-state` gate flips green only when Q1 content matches upstream v0.105.1. Capping at v0.103.2 content means the gate can never reach 100% — defeating the purpose of the upstream-sync pipeline (ADR-026).
+2. **Content-registry honesty:** "Phase-1 cap" was originally a starting seed, not a binding ceiling. Treating it as binding has been holding spec text out of sync with the canonical artifact since Wave 1 (already +2c/+1r drift). Re-baselining acknowledges the cap-as-floor reality.
+3. **Phase-2 boundary preserved:** Phase-2 is defined by FEATURE COMPLETENESS (Q5/Q6 boot, evaluation harness boot, observability TSDB scrape live) per `00-system-overview.md`, NOT by content counts. Growing Phase-1 caps does not move the Phase-2 trigger.
+4. **No downstream-quantum spec churn:** Q5/Q6 ASPIRATION sections in their respective module specs do NOT reference exact Phase-1 cap numbers (verified via grep 2026-05-17); they reference "Phase-1 manifest" generically. This ADR does not cascade into Q5/Q6 spec edits.
+
+**Mechanics.** The bridge waves (Phase B.2-δ onward) port content per the port-decisions doc; the canonical Q4 registry + Q1 test fixture grow per-wave as monsters/cards/relics/powers/potions/encounters land. Final post-bridge caps are determined by what v0.105.1 actually contains (counted at pin-advance ceremony). Future upstream syncs that grow content further repeat the same pattern — but DO NOT require a fresh ADR per sync; this ADR ratifies the *policy* (Phase-1 caps track upstream), not specific numbers.
+
+**Consequences.**
+
+*Negatives:*
+- **Phase-1 manifest fixture grows ~3× across categories.** `Q4ManifestLoaderTests` test count grows proportionally; CI wall-clock for content-coverage gate may grow noticeably (mitigation: gate runs in parallel with other Q1 gates).
+- **Re-baselining sets a precedent.** Future syncs (v0.105.1 → v0.106.x) grow caps further; future spec readers might assume "Phase-1 caps == upstream HEAD." This is the intended outcome per the policy, but requires explicit acknowledgment in `content-registry.md` so newcomers don't read the cap numbers as binding constraints.
+- **Stale spec text remains stale until corrected.** `content-registry.md` Token IDs SHIPPED line still claims "96 cards / 58 relics / 45 powers / 32 monsters / 21 potions / 22 encounters." This ADR + the `content-registry.md` addendum (landed in this commit) correct it explicitly; future bridges update the line per pin-advance ceremony.
+- **Bridge engineer prompts will reference larger fixture targets.** Prompt-generator (Phase A.2) must template the current post-bridge expected counts into engineer-dispatch prompts. Not a blocker but worth noting.
+- **Test wall-clock budget** for `make q1-ci` grows; if it approaches the project's 60s budget threshold, partition tests by content category.
+
+*Positives:*
+- Q1 substrate becomes byte-faithful to upstream v0.105.1 post-bridge; probe-upstream-initial-state reaches its design intent (160 PASS or whatever the new full count is).
+- Canonical Q4 registry vs Q1 fixture drift gets closed (both grow together in bridge waves).
+- Future upstream syncs flow through the pipeline without re-litigating cap policy.
+- Phase-2 work (Q5/Q6/Q7 boot, evaluation harness) operates against the actual upstream content space, not a frozen v0.103.2 subset — reduces "Phase-2 surprise" risk.
+
+**Implementation.** Per the bridge plan (Phase B.1 quantum-lead output): each bridge wave that adds upstream content also adds the corresponding token-table entries to `contracts/registry/phase1-silent.json` + `engine/headless/test/fixtures/q4-manifest-phase1.json` in the same commit. Token ID assignment per `content-registry.md` stability rules (ADR-003): new IDs for new content; deprecated content's IDs never reused. The bridge wave that finalizes Phase-1.5 close-out (pin-advance ceremony) audits both artifacts for parity + corrects any per-wave drift.
+
+**Cross-references.** ADR-003 (Token Registry as Patch-Adaptation Lever) — this ADR is the concrete first invocation of ADR-003's "patch adaptation" machinery. ADR-026 (Upstream-Sync Pipeline) — defines the bridge sequence + pin-advance ceremony that mechanizes this policy.
