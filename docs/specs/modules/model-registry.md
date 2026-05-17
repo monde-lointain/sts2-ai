@@ -5,11 +5,13 @@ substrate: pipeline/model-registry/
 
 > Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
 
+> **Phase-1 status: pre-boot.** Substrate is a 3-line service stub. All Responsibilities below describe target state under `[PHASE-1]`; none are SHIPPED.
+
 # Module: Model Registry (Q5)
 
 > Versioned blob store + metadata table for trained model artifacts. Distinct from serving authority (ADR-007).
 
-## Responsibilities
+## Responsibilities [PHASE-1]
 
 - **Store artifacts.** Each artifact = `(weights, ONNX export, packaged Q4 registry, provenance manifest)`. Artifacts are immutable; promotion / demotion happen elsewhere (ADR-007).
 - **Metadata.** Maintain searchable rows: `(artifact_id, code SHA, dataset SHA, seed, hyperparameters JSON, parent_artifact_id?, eval_suite_version, created_at, owner)` per `scaling-strategy.md` §5.5.
@@ -18,7 +20,7 @@ substrate: pipeline/model-registry/
 
 Out of scope: deciding which artifact is "current production" (Q9 + a separate config workflow); training; inference.
 
-## Data Ownership
+## Data Ownership [PHASE-1]
 
 - **Artifact blob store** — large-object storage (S3-equivalent for primary, local mirror for recent artifacts). Each blob immutable; addressed by content-hash SHA.
 - **Metadata table** — relational (Postgres or SQLite at small scale). Schema versioned; columns above. Foreign key from `parent_artifact_id` to `artifact_id` for lineage.
@@ -26,23 +28,23 @@ Out of scope: deciding which artifact is "current production" (Q9 + a separate c
 
 No other quantum writes the metadata table. The trainer (Q10) writes blobs through Q5's publish API; promotion is via a separate workflow that records into the promotion log.
 
-## Communication
+## Communication [PHASE-1]
 
 - **Sync — publish:** Q10 calls `publish(blob, metadata) → artifact_id`. Atomic; deduplicated on content hash.
-- **Sync — fetch:** Q9 calls `fetch(artifact_id) → blob_path` at startup and on configured promotion. Q12 calls the same to evaluate.
+- **Sync — fetch:** Q9 calls `fetch(artifact_id) → blob_path` at startup and on configured promotion `[PHASE-1 — once both endpoints exist]`. Q12 calls the same to evaluate `[PHASE-1 — once both endpoints exist]`.
 - **Sync — query:** ad-hoc CLI / dashboard queries over metadata for lineage and provenance.
 - **Out-of-band — promotion workflow:** an external script gates production updates; reviewer sign-off appends to promotion log.
 - **Pull — metrics:** Q7 reads publish rate, fetch rate, blob storage size.
 
 ## Coupling
 
-- **Afferent (in):** Q9 (fetches at startup / promotion), Q12 (fetches under-test artifact), humans (auditing lineage).
+- **Afferent (in):** Q9 (fetches at startup / promotion) `[PHASE-1 — once both endpoints exist]`, Q12 (fetches under-test artifact) `[PHASE-1 — once both endpoints exist]`, humans (auditing lineage).
 - **Efferent (out):** Q7 (metrics).
 - **Indirect:** Q4 (bundled inside artifacts but sourced from its own release workflow); object storage backend.
 
 ## Phase Expectations
 
-- **Phase 1.** Single-host metadata store; local filesystem blob store mirrored to S3-equivalent. Manual promotion (eyeball + edit serving config).
+- **Phase 1 `[PHASE-1]`.** Target: single-host metadata store; local filesystem blob store mirrored to S3-equivalent. Manual promotion (eyeball + edit serving config). Substrate is currently pre-boot — this is the Phase-1 delivery commitment, not current state.
 - **Phase 2.** Promotion workflow scripted with reviewer sign-off. Lineage queries supported.
 - **Phase 3+.** Multi-region blob mirror if rollouts go cross-region. Retention policy on archival.
 
