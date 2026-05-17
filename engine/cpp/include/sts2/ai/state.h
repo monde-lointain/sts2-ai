@@ -59,7 +59,13 @@ constexpr uint8_t kMaxPowersPerCreature =
     sts2::game::monster_moves::kMaxSpawnPowers * 2;  // = 6
 
 // Max enemies in a CompactState.
-constexpr uint8_t kMaxEnemies = 4;
+// Wave-17 reduces from 4 → 2 to control transposition-table memory pressure:
+// sizeof(EnemyState) grew ~25 bytes with the power-array refactor; 4 enemy
+// slots × 85M TT entries projected ~17 GB extra memory → cultist regression
+// OOM-killed. kMaxEnemies=2 covers cultist (N=2) + LouseProgenitor (N=1).
+// Widen back to 4 when the first N≥3 encounter lands (BowlbugsTrio / slimes
+// — per ADR-029 Path A roadmap).
+constexpr uint8_t kMaxEnemies = 2;
 
 // ---------------------------------------------------------------------------
 // Power helpers (find/add/set flags)
