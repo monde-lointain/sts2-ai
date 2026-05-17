@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Sts2Headless.Domain.Content.Models;
+using Sts2Headless.Domain.Determinism;
 
 namespace Sts2Headless.Domain.Content.Encounters;
 
@@ -60,4 +61,18 @@ public abstract class EncounterModel : IEncounterModel
         Id = id;
         MonsterIds = ids;
     }
+
+    /// <summary>
+    /// B.1-ε scaffold: additive virtual overload that receives a per-encounter
+    /// <see cref="Rng"/> instance. Default implementation returns the static
+    /// <see cref="MonsterIds"/> spawn list WITHOUT consuming the rng — all 22
+    /// existing encounters keep identical behaviour.
+    ///
+    /// <para>
+    /// Wave 3.5 overrides this in <c>SmallSlimes</c> / <c>MediumSlimes</c> to
+    /// use <paramref name="rng"/> for variant selection. Callers derive the rng
+    /// via <see cref="RunRngSet.ForEncounter"/>.
+    /// </para>
+    /// </summary>
+    public virtual IReadOnlyList<string> GenerateMonsters(Rng rng) => MonsterIds;
 }

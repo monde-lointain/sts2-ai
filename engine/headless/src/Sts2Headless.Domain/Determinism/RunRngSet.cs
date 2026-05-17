@@ -75,6 +75,28 @@ public sealed class RunRngSet
 
     public int GetCounter(RunRngType type) => _rngs[type].Counter;
 
+    /// <summary>
+    /// B.1-ε scaffold: derives a fresh per-encounter <see cref="Rng"/> for spawn
+    /// randomisation. Formula matches upstream <c>EncounterModel.cs:198</c>:
+    /// <c>seed = (uint)((int)Seed + totalFloor + GetDeterministicHashCode(encounterId))</c>.
+    ///
+    /// <para>
+    /// Returns a freshly constructed <see cref="Rng"/> — it is NOT stored in the
+    /// subsystem dictionary and therefore does NOT appear in <see cref="RunRngType"/>
+    /// or the serialised <c>RunRngSet</c> blob. Callers serialise the returned
+    /// instance directly via <see cref="IRngStateSerializer.SerializeRng"/> when
+    /// persistence is required.
+    /// </para>
+    /// </summary>
+    public Rng ForEncounter(int totalFloor, string encounterId)
+    {
+        System.ArgumentNullException.ThrowIfNull(encounterId);
+        uint seed = (uint)(
+            (int)Seed + totalFloor + StringHelpers.GetDeterministicHashCode(encounterId)
+        );
+        return new Rng(seed);
+    }
+
     private Rng CreateRng(RunRngType type)
     {
         string name = StringHelpers.SnakeCase(type.ToString());
