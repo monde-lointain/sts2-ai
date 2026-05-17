@@ -744,7 +744,7 @@ public class Phase1CardTests
         Untouchable c = new();
         Assert.Equal(6, c.Block);
         Assert.Equal(6, Untouchable.BaseBlock);
-        Assert.Equal(2, Untouchable.UpgradeDelta);
+        Assert.Equal(3, Untouchable.UpgradeDelta); // upstream v0.105.1: Block upgrade +2 → +3
     }
 
     [Fact]

@@ -5,13 +5,14 @@ using ExecutionContext = Sts2Headless.Domain.Actions.ExecutionContext;
 namespace Sts2Headless.Domain.Content.Cards;
 
 /// <summary>
-/// Upstream <c>Cards.Untouchable</c>: 2 energy Skill (Sly). 6 block. Upgrade: +2.
+/// Upstream <c>Cards.Untouchable</c>: 2 energy Skill (Sly). 6 block. Upgrade: +3.
 /// </summary>
+// UPSTREAM_REF: src/Core/Models/Cards/Untouchable.cs:31 — upgrade Block +2 → +3
 public sealed class Untouchable : CardModel
 {
     public const string CanonicalId = "Untouchable";
     public const int BaseBlock = 6;
-    public const int UpgradeDelta = 2;
+    public const int UpgradeDelta = 3;
     public int Block => BaseBlock;
 
     public Untouchable()
