@@ -7,6 +7,7 @@
 .PHONY: sanitize sanitize-run sanitize-test sanitize-clean
 .PHONY: py-format py-format-check py-lint py-lint-fix py-typecheck py-dead-code python-quality
 .PHONY: q1-format q1-format-check q1-format-whitespace q1-format-whitespace-check q1-inspect q1-quality
+.PHONY: drift-gates-ci
 
 # Resolve .venv path so make works from main repo, subdirs, and worktrees alike.
 # $(abspath ...) is critical: in main repo, git rev-parse --git-common-dir
@@ -327,3 +328,8 @@ q1-inspect:
 
 q1-quality:
 	@$(MAKE) -C engine/headless quality
+
+# A.1 upstream drift gates (engine/headless/). Delegates to the sub-make.
+# DRIFT_GATES_REPRO=1 opt-in enables DecompileReproducibilityGate (slow).
+drift-gates-ci:
+	@$(MAKE) -C engine/headless drift-gates-ci DRIFT_GATES_REPRO=$(DRIFT_GATES_REPRO)

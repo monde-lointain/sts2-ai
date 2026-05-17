@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!--
+      A.1 drift-gate project. Uses Roslyn CSharp syntax APIs to AST-parse
+      UpstreamDriver.cs and enumerate reflection-call targets, then cross-checks
+      them against the live sts2.dll via System.Reflection. Intentionally OUTSIDE
+      the solution's normal DLL reference chain — this project loads sts2.dll via
+      Assembly.LoadFile at runtime (path from upstream-pin.json), not compile-time
+      reference. That keeps TreatWarningsAsErrors intact.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <!--
+      Roslyn CSharp syntax APIs for AST-parsing UpstreamDriver.cs.
+      4.x is compatible with .NET 9 and is a transitive dep of the SDK already;
+      pinning explicitly avoids version drift.
+    -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
+    <!--
+      Xunit.SkippableFact — provides Skip.IfNot() / [Fact(Skip=...)] semantics
+      compatible with xUnit 2.9.x. Used by SyncStatePinGate to skip (not silently
+      pass) when the Steam install is absent from the runner.
+    -->
+    <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
+    <!--
+      System.Text.Json for reading upstream-pin.json and .upstream-sync-state.json.
+      Included transitively but pinned for determinism.
+    -->
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+</Project>
