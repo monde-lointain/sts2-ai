@@ -1,9 +1,9 @@
 {
-  "pinned_version": "v0.103.2",
-  "pinned_buildid": "22823976",
+  "pinned_version": "v0.105.1",
+  "pinned_buildid": "23156356",
   "pinned_dll_sha256": "ab571bed6e64a78b03149620ec5b3ac6762c2a5cbd3d11eeadda5e337e6e990b",
   "pinned_commit": "d5e30a22",
-  "pinned_at": "2026-05-17T14:19:39Z",
-  "rationale": "Phase-1A baseline content. Engine content is byte-faithfully ported from upstream v0.103.2. Infrastructure files (UpstreamDriver, drift gates, tools/upstream-sync) MAY be ahead — see ADR-026 for pin semantics. Bridge to v0.105.1 in progress per docs/plans/2026-05-17-upstream-pipeline.md.",
+  "pinned_at": "2026-05-17T18:30:00Z",
+  "rationale": "Wave 15 pin-advance ceremony — bridge COMPLETE. Engine content + infrastructure baselined to upstream v0.105.1 per ADR-026 + ADR-027. Bridge timeline: Waves 4 → 14.5 over 2026-05-17 (single-day execution via parallel dispatch + Path D compression after Wave 10.5.β audit identified 0 PORT-pending rows in remaining content buckets). Pin semantics codified ADR-026: content baseline tracks upstream conventions; infrastructure files (UpstreamDriver flex-reflection refactor + surgical SetUpCombat replica) were ahead of pin during bridge. Q1 substrate is parallel-substrate to upstream (immutable records + static methods + ApplyPowerAction queue) — NOT class-hierarchy-inherited; bridge audit revealed v0.105.1 is fundamentally Godot UI + multiplayer refactor with minimal Q1-content impact. Single real Q1-PORT landed: Untouchable UpgradeDelta 2→3 (Wave 10). Plus the slime port (Wave 14) which closes B.1-ε. Q4 canonical registry caught up (Wave 14.5) to phase1-silent.1.",
   "schema_version": "v1"
 }

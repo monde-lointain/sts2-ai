@@ -90,9 +90,23 @@ git clone engine/headless/genealogy/phase1-genealogy-v1.bundle ~/development/pro
 
 Tag `phase1-genealogy/v1` names this preservation point. Future archive bumps (e.g., post-Phase-1.5) create `phase1-genealogy/v2` without overwriting v1.
 
+## Upstream baseline shifts
+
+| Shift | Date | Pin transition | Bridge waves | Genealogy bundle |
+|---|---|---|---|---|
+| v0.103.2 → v0.105.1 | 2026-05-17 | `phase1-silent.0` → `phase1-silent.1`; `upstream-pin.json` flipped to v0.105.1 | Waves 4–15 per ADR-026 upstream-sync pipeline + Path D compression (Wave 10.5.β audit identified 0 PORT-pending rows in Powers/Relics/Monsters buckets; skipped Waves 11–13) | N/A — see note below |
+
+**v2 bundle decision:** The genealogy-bundle mechanism preserved a separate pre-monorepo Q1 substrate at the v1 (post-S13) boundary. Post-monorepo-import, the Q1 substrate IS this repository's git history, so the v2 bundle would be a redundant snapshot of refs already preserved by `wave-*` tags + `v0.105.1-engine-pinned` tag in this repo. v2 bundle skipped per pragmatic ADR-026 amendment; future bumps may revisit if the bundle artifact becomes load-bearing again.
+
+**v0.105.1 catch-up notes:** Bridge audit revealed v0.105.1 is fundamentally a Godot UI + multiplayer refactor with minimal Q1-content impact. Q1's parallel substrate (immutable records + static methods + `ApplyPowerAction` queue) filters out almost all upstream changes. Real Q1-PORT work landed: (1) Wave 6 UpstreamDriver reflection flex-predicate refactor; (2) Wave 6.5 surgical SetUpCombat replica omitting `NetCombatCardDb.Instance.StartCombat` (Godot.OS cctor → P/Invoke SIGSEGV); (3) Wave 10 Untouchable card upgrade buff (UpgradeDelta +2→+3); (4) Wave 14 slime port retry (B.1-ε close; LeafSlimeS/M + TwigSlimeS/M with byte-exact upstream HP + intent rotations; M-Headless gate flipped 140/20 SKIP → 160/0). Wave 14.5 Q4 canonical registry catch-up populated 21 potions + 4 new slime tokens; deprecated 4 placeholder slime tokens per ADR-003 stability rules.
+
+Tag `v0.105.1-engine-pinned` names this shift point.
+
 ## Status as of this manifest
 
 - **Phase-1A** — ratified 2026-05-12.
-- **Phase-1 (per `docs/plans/q1-implementation-plan.md` §6.1)** — NOT closed pending Phase-1.5 (14-encounter per-step + live-Godot per-step full corpus + B.1-ε encounter-RNG).
-- **R4 (headless port ≤ 2 mo)** — SUBSTANTIALLY MITIGATED.
+- **B.1-ε** — CLOSED 2026-05-17 (Wave 14 slime port; probe gate 160/0).
+- **v0.105.1 catch-up** — COMPLETE 2026-05-17 (Wave 15 pin-advance ceremony).
+- **Phase-1 (per `docs/plans/q1-implementation-plan.md` §6.1)** — Phase-1.5 substantially advanced. 14-encounter per-step + live-Godot per-step full corpus still pending.
+- **R4 (headless port ≤ 2 mo)** — SUBSTANTIALLY MITIGATED (further mitigated by v0.105.1 catch-up automation per ADR-026 upstream-sync pipeline).
 - **R9 (Phase-1.5 scope/timing)** — NEW, IN PROGRESS; target date + live-Godot approach pending.
