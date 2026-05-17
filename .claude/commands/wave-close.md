@@ -57,4 +57,16 @@ Steps:
    <one-line summary: N streams, gate status from last-gate.json, merged SHA short>
    ```
 
-7. Report: wave number, snapshot path, tag, log entry written.
+7. **Update per-row port-decision status** (soft-fail — do not block wave close on failure):
+
+   For each stream branch in the wave snapshot, invoke the status-update script in batch mode:
+   ```bash
+   for branch in <stream-branches>; do
+     .claude/scripts/update-port-decision-status.sh --batch "$branch" \
+       || echo "WARN: update-port-decision-status soft-failed for $branch — continuing" >&2
+   done
+   ```
+   This bumps matching JSON sidecar rows to `MERGED` for any upstream paths ported in the wave.
+   If the script is not present or jq is unavailable, the warning is logged and wave close proceeds.
+
+8. Report: wave number, snapshot path, tag, log entry written, status-update result.

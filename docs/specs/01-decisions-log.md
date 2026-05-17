@@ -563,3 +563,64 @@ substrate: engine/headless/
 **Future tooling appendix.** *Badge auto-inference from gate-report status.* Phase-gate reports already encode per-section "shipped vs deferred" via their pass/fail structure. A future tool could parse gate reports and propose badge rebalances mechanically. Deferred until the gate-report convention has stabilized across ≥3 phase gates — premature today.
 
 **Origin.** Doc-sync planning session 2026-05-16. Follows immediately from ADR-023; ratifies the prevention machinery sketched in the same plan (`/home/clydew372/.claude/plans/do-p0-dynamic-alpaca.md`).
+
+---
+
+## ADR-026 — Upstream-Sync Pipeline
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Prior to this ADR, syncing new STS2 upstream patches was a fully manual ceremony: user runs Steam auto-update → user runs GDRE → user rsync-mirrors the decompiled tree → user manually diffs → user authors port-decision markdown by hand. This ceremony was not repeatable at scale and missed the v0.103.2 → v0.105.1 gap (a 37-day drift spanning 323 card + 110 monster + 148 power + 120 relic + 5 encounter changes). Wave 3.5 attempted a bridge under this manual model and was ABORTED (ref: B.0.5 close-out). Phase A.1–A.4 ship detection, categorization, prompt-generation, and drift-gate tooling (tools/upstream-sync). This ADR codifies the resulting pipeline design.
+
+**Decision.** Four-tier pipeline:
+
+1. **Detection** — `tools/upstream-sync/src/upstream_sync/cli.py sync-check` polls Steam buildid against `.upstream-sync-state.json`; compares against last-synced buildid. Emits structured delta report.
+2. **Categorization** — `diff_analyze.py` classifies each changed upstream path into buckets (monsters, encounters, cards, relics, powers, combat-engine, etc.) and assigns a per-row decision (PORT / DELETE / IGNORE / SURFACE-NO-ACTION) based on heuristics + correlation against patch notes. Emits port-decision markdown + JSON sidecar (`engine/headless/docs/specs/0N-vA.B.C-to-vX.Y.Z-port-decisions.json`) with machine-readable per-row records including a `status` field.
+3. **Prompt generation** — `prompt_generator.py` generates engineer-dispatch prompts from JSON sidecar rows. Templates per bucket (Monsters, Encounters, Cards, Relics, Powers, …) embed project wave-protocol invariants (absolute paths, OWNED/FORBIDDEN lists, preflight SHA, verification commands). `cli.py dispatch-quantum-lead` emits a quantum-lead briefing to stdout (not a subagent spawn — user pastes into Claude session).
+4. **Drift gates** — `SyncStatePinGate` (content baseline) + `DllSignatureGate` (reflection-call viability). Both run in Q1 CI. Execution follows the existing wave-dispatch protocol; no new infrastructure.
+
+**Detect-and-propose semantics.** The pipeline detects drift and generates dispatch artifacts. It does NOT auto-edit engine code. All engine code changes go through standard engineer-subagent → wave → gate → merge flow.
+
+**Multi-trigger.** Three trigger surfaces:
+- Local crontab on user's hardware (Steam-aware; polls buildid via steamcmd or state file).
+- GHA state-only cron (Steam-unaware; polls `.upstream-sync-state.json` committed to repo; fires if buildid diverges from pin — signals local sync needed but cannot fetch Steam artifacts itself).
+- Manual `make sync` / `make sync-check` (on-demand).
+
+Un-categorizable changes (paths falling through all bucket patterns) surface to quantum-lead for manual review. Quantum-lead decides PORT / IGNORE / SURFACE-NO-ACTION.
+
+**Pin semantics (concern 1 codified).** `engine/headless/upstream-pin.json:pinned_version` tracks the **content baseline** — the upstream version from which Phase-1 monsters, encounters, cards, relics, and powers were ported. It does NOT track every file in the repo. Infrastructure files (UpstreamDriver, drift gates, tools/upstream-sync) MAY be at a newer upstream version than the pin. Two gates are deliberately decoupled:
+- `SyncStatePinGate` enforces content baseline: asserts `.upstream-sync-state.json:last_synced_version == pinned_version`. Fails if state has advanced past the pin (signals un-merged bridge wave).
+- `DllSignatureGate` enforces reflection-call viability against the live DLL (by SHA). Asserts DLL SHA matches `upstream-pin.json:pinned_dll_sha256`.
+
+**Pin advancement.** The pin flips only at end-of-Phase-B bridge ceremony: after the final bridge wave merges AND all gates are green. Pin does NOT advance incrementally per bridge wave. During an in-progress bridge, `SyncStatePinGate` reports FAIL with a structured `"bridge-in-progress"` message as a WIP signal; this is expected and non-blocking for bridge-wave CI.
+
+**JSON sidecar per-row status lifecycle.** Five terminal/transition states: `PENDING` (initial, awaiting dispatch) | `DISPATCHED` (wave in flight) | `MERGED` (wave merged, gate green) | `DEFERRED` (explicitly deferred to Phase-2+) | `NO_ACTION_NEEDED` (SURFACE-NO-ACTION or IGNORE rows — set at sidecar-generation time, never auto-flipped). `/wave-close` bumps PORT/DELETE rows to `MERGED` via `.claude/scripts/update-port-decision-status.sh` (soft-fail). `NO_ACTION_NEEDED` rows are excluded from dispatch; this prevents the 468-row "other" bucket from generating perpetual PENDING noise.
+
+**Consequences.**
+
+- *Negative: Semantic drift not detected by structural gates (concern 7).* `DllSignatureGate` + `SyncStatePinGate` catch arity/rename drift but NOT behavioral changes within unchanged signatures — e.g., upstream rebalances a Power's stack-application without changing method name or signature. `probe-upstream-initial-state` catches initial-state-plane semantic drift; mid-combat semantic drift surfaces only via the Wave 6.5 SetUpCombat shim (deferred to Phase-2+). **Bridge engineers MUST paste relevant upstream code as inline comments at every Q1 behavior-change site** to provide a code-review baseline. This is a convention, not a gate.
+- *Negative: Lockfile required for concurrent runs (concern 9).* Local crontab + manual `make sync` can race on `.upstream-sync-state.json` writes. `tools/upstream-sync/cli.py` MUST acquire `flock` on `.upstream-sync-state.json.lock` before writes; cron script bails on lock contention. Implementation deferred to a follow-up wave. Documented here as a known requirement to prevent partial-write corruption.
+- *Negative: Bundle preservation cadence (concern 8).* Existing `phase1-genealogy-v1.bundle` preserved as-is; a new `phase1-genealogy-v2.bundle` is created at each Phase boundary (Phase-1 close, Phase-2 close, etc.). Bundles are immutable — do not overwrite old ones.
+- *Negative: Template coverage incomplete (concern 10).* Phase A.2 ships 2 prompt templates (`monster.j2` + `generic-port.j2` fallback). Six-plus additional bucket templates (encounter, card, relic, power, combat-engine, signature-change) added incrementally during bridge waves as observed need arises. Missing template → fallback to `generic-port.j2`; quality of generated prompts degrades gracefully.
+- *Negative: CI cannot detect Steam-side drift.* GHA runners have no Steam access. Detection requires local crontab on user's hardware. Recommendation: disable Steam auto-update for STS2 during bridge to prevent mid-bridge drift.
+- *Negative: Phase-1 close delayed by ~2–3 weeks* while bridge runs. Minimal-bridge off-ramp is available: if bridge stalls after Wave 6, project-lead may elect to cap Phase-1 at v0.103.2 content + classify v0.105.1 delta as Phase-2 scope. This off-ramp is documented; decision authority rests with project-lead.
+- *Negative: CI cost.* The 2–3 week bridge consumes approximately 10 GHA-hours total CI cost. Nontrivial but bounded and accepted.
+- *Negative: Wave 3.5 ABORTED reference branch preserved.* Wave 3.5 work is preserved as an ABORTED reference (re-dispatched fresh post-bridge-Wave-1). See B.0.5 close-out entry.
+- *Positive:* Future upstream updates flow through the pipeline with standard detection-categorization-dispatch shape, replacing the ad-hoc GDRE+rsync ceremony.
+- *Positive:* Drift gates catch the v0.105.1-class break automatically; the manual incident that triggered Wave 3.5 ABORT cannot recur post-pipeline.
+- *Positive:* JSON sidecar enables per-row status tracking across bridge waves; quantum-lead's bridge plans become machine-readable and tool-auditable.
+- *Positive:* Local-cron + GHA-state-cron split maintains both Steam-aware and Steam-independent detection paths, preserving detection capability even when the user's machine is offline.
+
+**Origin.** Wave 5 / Stream A.4. Upstream-sync pipeline planning session 2026-05-17. Follows from Wave 4 (A.0) prerequisites (pin artifact, DLL hash, schema v1). Plan: `~/.claude/plans/use-your-best-judgement-sparkling-feigenbaum.md` § Phase A.
+
+---
+
+## ADR-027 — Q4 Phase-1 Fixture Growth Policy
+
+**Status:** RESERVED — pending Wave 5.5 ratification.
+
+**Context.** The upstream v0.103.2 → v0.105.1 delta (categorized by Phase A.2 tooling and recorded in `engine/headless/docs/specs/03-v0.103.2-to-v0.105.1-port-decisions.md`) includes 323 card changes, 110 monster changes, 148 power changes, 120 relic changes, and 5 encounter changes. The Q4 Content Registry Phase-1 manifest fixture (`engine/headless/test/fixtures/q4-manifest-phase1.json`) is capped at 96 cards / 58 monsters / 45 powers / 32 relics / 22 encounters per `docs/specs/modules/content-registry.md`. If the bridge ports all PORT-classified upstream changes into Phase-1, the fixture caps are likely exceeded. Three policy options are available: (i) grow caps to track upstream, (ii) keep existing caps and classify the excess as Phase-2 scope, (iii) one-time re-baseline via this ADR setting new permanent caps. The choice has downstream impact on Q1 test harness count, Q4 manifest schema versioning, and CI wall-clock budget.
+
+**Decision.** TBD — Wave 5.5 (Phase B.0) project-lead decision. Project-lead reads `03-v0.103.2-to-v0.105.1-port-decisions.md` + JSON sidecar + `content-registry.md` fixture caps before committing to an option. Independent quantum-lead architectural read is optional (dispatch if option choice has ambiguous downstream impact).
+
+**Consequences.** TBD per chosen option. Wave 5.5 fills this section in-place and flips Status to `Accepted`.
