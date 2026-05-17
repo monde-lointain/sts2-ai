@@ -101,12 +101,19 @@ public static class CombatEngine
     ///   (which routes back to <c>.Shuffle</c>) — matching upstream's per-
     ///   call-site bucket choice.</param>
     /// <param name="clock">Determinism kernel clock.</param>
+    /// <param name="totalFloor">
+    ///   Run floor number for encounter-Rng seeding via <see cref="RunRngSet.ForEncounter"/>.
+    ///   Phase-1 (pre-combat start) is always 0 — matching upstream's
+    ///   <c>RunState.TotalFloor = 0</c> on <c>CreateForNewRun</c>.
+    ///   Defaults to 0 so all existing callers compile unchanged.
+    /// </param>
     public static CombatContext StartCombat(
         IEncounterModel encounter,
         CombatBootstrap catalogs,
         PlayerSpec player,
         RunRngSet runRng,
-        IClock clock
+        IClock clock,
+        int totalFloor = 0
     )
     {
         ArgumentNullException.ThrowIfNull(encounter);
@@ -116,10 +123,11 @@ public static class CombatEngine
         ArgumentNullException.ThrowIfNull(clock);
 
         ImmutableList<Creature> enemies = SpawnEnemies(
-            encounter,
+            (EncounterModel)encounter,
             catalogs.Monsters,
             catalogs.Powers,
-            runRng
+            runRng,
+            totalFloor
         );
         Creature playerCreature = BuildPlayerCreature(player.InitialHp, player.MaxHp);
         CardPile drawPile = BuildInitialDrawPile(player.Deck, runRng.Shuffle);
@@ -180,19 +188,30 @@ public static class CombatEngine
 
     /// <summary>
     /// Spawn enemies for the encounter, rolling HP from the Niche bucket and
-    /// stamping spawn-time powers. Order matches the encounter's MonsterIds;
-    /// ids assigned sequentially starting at <see cref="FirstEnemyId"/>.
+    /// stamping spawn-time powers. Monster list derived from
+    /// <c>encounter.GenerateMonsters(runRng.ForEncounter(totalFloor, encounter.Id))</c>
+    /// so RNG-driven encounters (SmallSlimes, MediumSlimes) pick variants per-seed.
+    /// Ids assigned sequentially starting at <see cref="FirstEnemyId"/>.
     /// </summary>
     private static ImmutableList<Creature> SpawnEnemies(
-        IEncounterModel encounter,
+        EncounterModel encounter,
         MonsterCatalog monsters,
         PowerCatalog powers,
-        RunRngSet runRng
+        RunRngSet runRng,
+        int totalFloor
     )
     {
+        // B.1-ε Wave 14: derive per-encounter Rng and call GenerateMonsters so
+        // RNG-driven encounters (SmallSlimes, MediumSlimes) produce the correct
+        // seed-specific variant list instead of the static sentinel MonsterIds.
+        // EncounterRngKey may differ from Id (e.g. SmallSlimes → "SLIMES_WEAK")
+        // to match upstream's slugified type name used in the seed formula.
+        Rng encounterRng = runRng.ForEncounter(totalFloor, encounter.EncounterRngKey);
+        IReadOnlyList<string> spawnList = encounter.GenerateMonsters(encounterRng);
+
         var enemies = ImmutableList.CreateBuilder<Creature>();
         uint nextEnemyId = FirstEnemyId;
-        foreach (string monsterId in encounter.MonsterIds)
+        foreach (string monsterId in spawnList)
         {
             var monsterModel = (MonsterModel)monsters.Get(monsterId);
             int hp = monsterModel.RollInitialHp(runRng.Niche);

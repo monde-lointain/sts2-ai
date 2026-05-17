@@ -341,6 +341,199 @@ public sealed class GreenLouse : MonsterModel
         ) { }
 }
 
+/// <summary>
+/// Verbatim port of upstream <c>Monsters.LeafSlimeS</c> (A0 values).
+/// TACKLE_MOVE (Attack 3) ↔ GOOP_MOVE (Status 1 Slimed) — <see cref="RngBranchResolver"/>
+/// uniform 50/50 (CannotRepeat on both branches in upstream, which prevents immediate
+/// repeat; Q1 elides CannotRepeat tracking — deviation affects later turns only,
+/// not the initial-state byte snapshot captured by the probe).
+/// Upstream initial state is the RandomBranchState ("RAND") node, so the first
+/// move is resolved by RNG from MonsterAi bucket.
+/// B.1-ε Wave 14: replaces AcidSlimeS placeholder.
+/// </summary>
+public sealed class LeafSlimeS : MonsterModel
+{
+    public const string CanonicalId = "LeafSlimeS";
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 12, 11) → 11
+    public const int MinHp = 11;
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 16, 15) → 15
+    public const int MaxHp = 15;
+    // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 4, 3) → 3
+    public const int TackleDamage = 3;
+    // TODO Phase-2 ascension: ToughEnemies MinHp=12, MaxHp=16; DeadlyEnemies TackleDamage=4
+    public const int GoopStatusCount = 1;
+
+    public const string TackleMoveId = "TACKLE_MOVE";
+    public const string GoopMoveId = "GOOP_MOVE";
+
+    private static readonly RngBranchResolver _randResolver = new(
+        choices: ImmutableArray.Create(
+            new RngBranchChoice(TackleMoveId, 1f),
+            new RngBranchChoice(GoopMoveId, 1f)
+        )
+    );
+
+    public LeafSlimeS()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // Both moves follow up to the RAND resolver (same pattern as Exoskeleton's
+                // post-ENRAGE 50/50). Upstream uses CannotRepeat on both branches; Q1
+                // elides CannotRepeat — deviation affects rotation after turn 1, not
+                // the initial-state probe which only captures HP.
+                new(
+                    TackleMoveId,
+                    Intent.Attack(TackleDamage),
+                    FollowUpMoveId: TackleMoveId,
+                    BranchResolver: _randResolver
+                ),
+                new(
+                    GoopMoveId,
+                    Intent.Status(GoopStatusCount),
+                    FollowUpMoveId: GoopMoveId,
+                    BranchResolver: _randResolver
+                ),
+            },
+            // Upstream initial state is RandomBranchState; Q1 encodes as TACKLE_MOVE
+            // with resolver — first turn picks randomly between TACKLE and GOOP.
+            initialMoveId: TackleMoveId
+        ) { }
+}
+
+/// <summary>
+/// Verbatim port of upstream <c>Monsters.LeafSlimeM</c> (A0 values).
+/// Strict alternation: STICKY_SHOT (Status 2 Slimed) → CLUMP_SHOT (Attack 8) → STICKY_SHOT → ...
+/// Upstream initial state is STICKY_SHOT (moveState2).
+/// B.1-ε Wave 14: replaces AcidSlimeM placeholder.
+/// </summary>
+public sealed class LeafSlimeM : MonsterModel
+{
+    public const string CanonicalId = "LeafSlimeM";
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 33, 32) → 32
+    public const int MinHp = 32;
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 36, 35) → 35
+    public const int MaxHp = 35;
+    // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 9, 8) → 8
+    public const int ClumpDamage = 8;
+    // TODO Phase-2 ascension: ToughEnemies MinHp=33, MaxHp=36; DeadlyEnemies ClumpDamage=9
+    public const int StickyStatusCount = 2;
+
+    public const string ClumpShotMoveId = "CLUMP_SHOT";
+    public const string StickyShotMoveId = "STICKY_SHOT";
+
+    public LeafSlimeM()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // Upstream: CLUMP_SHOT.FollowUpState = STICKY_SHOT; STICKY_SHOT.FollowUpState = CLUMP_SHOT.
+                new(ClumpShotMoveId, Intent.Attack(ClumpDamage), FollowUpMoveId: StickyShotMoveId),
+                new(StickyShotMoveId, Intent.Status(StickyStatusCount), FollowUpMoveId: ClumpShotMoveId),
+            },
+            // Upstream initial state: moveState2 = STICKY_SHOT.
+            initialMoveId: StickyShotMoveId
+        ) { }
+}
+
+/// <summary>
+/// Verbatim port of upstream <c>Monsters.TwigSlimeS</c> (A0 values).
+/// Single-state self-loop: TACKLE_MOVE (Attack 4) → TACKLE_MOVE → ...
+/// B.1-ε Wave 14: replaces SpikeSlimeS placeholder.
+/// </summary>
+public sealed class TwigSlimeS : MonsterModel
+{
+    public const string CanonicalId = "TwigSlimeS";
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 8, 7) → 7
+    public const int MinHp = 7;
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 12, 11) → 11
+    public const int MaxHp = 11;
+    // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 5, 4) → 4
+    public const int TackleDamage = 4;
+    // TODO Phase-2 ascension: ToughEnemies MinHp=8, MaxHp=12; DeadlyEnemies TackleDamage=5
+
+    public const string TackleMoveId = "TACKLE_MOVE";
+
+    public TwigSlimeS()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // Upstream: moveState.FollowUpState = moveState — self-loop.
+                new(TackleMoveId, Intent.Attack(TackleDamage), FollowUpMoveId: TackleMoveId),
+            },
+            initialMoveId: TackleMoveId
+        ) { }
+}
+
+/// <summary>
+/// Verbatim port of upstream <c>Monsters.TwigSlimeM</c> (A0 values).
+/// STICKY_SHOT (Status 1 Slimed) → RAND → POKEY_POUNCE (Attack 11 weight 2) or
+/// STICKY_SHOT (CannotRepeat). Upstream initial state is STICKY_SHOT (moveState2).
+/// Weight-2 on POKEY_POUNCE means it's 2× more likely than STICKY_SHOT when eligible;
+/// CannotRepeat on STICKY_SHOT prevents it repeating immediately.
+/// B.1-ε Wave 14: replaces SpikeSlimeM placeholder.
+/// </summary>
+public sealed class TwigSlimeM : MonsterModel
+{
+    public const string CanonicalId = "TwigSlimeM";
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 27, 26) → 26
+    public const int MinHp = 26;
+    // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 29, 28) → 28
+    public const int MaxHp = 28;
+    // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 12, 11) → 11
+    public const int ClumpDamage = 11;
+    // TODO Phase-2 ascension: ToughEnemies MinHp=27, MaxHp=29; DeadlyEnemies ClumpDamage=12
+    public const int StickyStatusCount = 1;
+
+    public const string PokeyPounceMoveId = "POKEY_POUNCE_MOVE";
+    public const string StickyShotMoveId = "STICKY_SHOT_MOVE";
+
+    // Upstream: randomBranchState.AddBranch(moveState, 2) — weight=2 for POKEY_POUNCE
+    //           randomBranchState.AddBranch(moveState2, MoveRepeatType.CannotRepeat) — weight=0 if just played
+    // Q1 approximation: weight 2.0f vs 1.0f (CannotRepeat deviation; see class remarks).
+    private static readonly RngBranchResolver _randResolver = new(
+        choices: ImmutableArray.Create(
+            new RngBranchChoice(PokeyPounceMoveId, 2f),
+            new RngBranchChoice(StickyShotMoveId, 1f)
+        )
+    );
+
+    public TwigSlimeM()
+        : base(
+            CanonicalId,
+            MinHp,
+            MaxHp,
+            new MonsterMove[]
+            {
+                // POKEY_POUNCE follows up via RAND resolver (weight=2).
+                new(
+                    PokeyPounceMoveId,
+                    Intent.Attack(ClumpDamage),
+                    FollowUpMoveId: PokeyPounceMoveId,
+                    BranchResolver: _randResolver
+                ),
+                // STICKY_SHOT follows up via RAND resolver (CannotRepeat in upstream;
+                // Q1 uses weight=1 approximation — deviation affects rotation after
+                // initial STICKY_SHOT, not the initial-state byte snapshot).
+                new(
+                    StickyShotMoveId,
+                    Intent.Status(StickyStatusCount),
+                    FollowUpMoveId: StickyShotMoveId,
+                    BranchResolver: _randResolver
+                ),
+            },
+            // Upstream initial state: moveState2 = STICKY_SHOT_MOVE.
+            initialMoveId: StickyShotMoveId
+        ) { }
+}
+
 public sealed class AcidSlimeS : MonsterModel
 {
     public const string CanonicalId = "AcidSlimeS";
@@ -392,39 +585,10 @@ public sealed class AcidSlimeL : MonsterModel
         ) { }
 }
 
-public sealed class SpikeSlimeS : MonsterModel
-{
-    public const string CanonicalId = "SpikeSlimeS";
-    public const int MinHp = 10;
-    public const int MaxHp = 14;
-    public const int AttackDamage = 5;
-
-    public SpikeSlimeS()
-        : base(
-            CanonicalId,
-            MinHp,
-            MaxHp,
-            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
-            "ATTACK"
-        ) { }
-}
-
-public sealed class SpikeSlimeM : MonsterModel
-{
-    public const string CanonicalId = "SpikeSlimeM";
-    public const int MinHp = 28;
-    public const int MaxHp = 32;
-    public const int AttackDamage = 8;
-
-    public SpikeSlimeM()
-        : base(
-            CanonicalId,
-            MinHp,
-            MaxHp,
-            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
-            "ATTACK"
-        ) { }
-}
+// SpikeSlimeS and SpikeSlimeM removed — Wave 14 / B.1-ε.
+// Replaced by TwigSlimeS and TwigSlimeM (upstream v0.105.1 STS2 content).
+// AcidSlimeS/M/L, SpikeSlimeL retained (not part of the slime encounter pool;
+// referenced by other S12 encounters or coverage-gate extras).
 
 public sealed class SpikeSlimeL : MonsterModel
 {

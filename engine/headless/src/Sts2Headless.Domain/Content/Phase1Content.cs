@@ -258,11 +258,13 @@ public static class Phase1Content
         monsters.Register(JawWorm.CanonicalId, new JawWorm());
         monsters.Register(RedLouse.CanonicalId, new RedLouse());
         monsters.Register(GreenLouse.CanonicalId, new GreenLouse());
-        monsters.Register(AcidSlimeS.CanonicalId, new AcidSlimeS());
-        monsters.Register(AcidSlimeM.CanonicalId, new AcidSlimeM());
+        // Wave 14 / B.1-ε: AcidSlimeS/M → LeafSlimeS/M; SpikeSlimeS/M → TwigSlimeS/M.
+        // AcidSlimeL, SpikeSlimeL retained (no slime encounter uses them; catalog extras).
+        monsters.Register(LeafSlimeS.CanonicalId, new LeafSlimeS());
+        monsters.Register(LeafSlimeM.CanonicalId, new LeafSlimeM());
         monsters.Register(AcidSlimeL.CanonicalId, new AcidSlimeL());
-        monsters.Register(SpikeSlimeS.CanonicalId, new SpikeSlimeS());
-        monsters.Register(SpikeSlimeM.CanonicalId, new SpikeSlimeM());
+        monsters.Register(TwigSlimeS.CanonicalId, new TwigSlimeS());
+        monsters.Register(TwigSlimeM.CanonicalId, new TwigSlimeM());
         monsters.Register(SpikeSlimeL.CanonicalId, new SpikeSlimeL());
         monsters.Register(FungalBoss.CanonicalId, new FungalBoss());
         monsters.Register(SnakePlant.CanonicalId, new SnakePlant());

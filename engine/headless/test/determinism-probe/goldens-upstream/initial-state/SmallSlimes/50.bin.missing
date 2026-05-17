@@ -1,3 +1,0 @@
-encounter=SmallSlimes
-reason=DEFER: SmallSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextItem for spawn variant selection). Deferred to B.1-ε.
-monsters=AcidSlimeS,SpikeSlimeS

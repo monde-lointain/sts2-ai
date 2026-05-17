@@ -36,6 +36,16 @@ public static class EncounterCatalog
         /// capture. This is documented divergence, not error.
         /// </summary>
         MissingUpstream,
+
+        /// <summary>
+        /// Encounter uses per-seed RNG to generate the monster list (upstream
+        /// calls <c>EncounterModel.GenerateMonsters(base.Rng)</c>).  We
+        /// drive the upstream encounter class directly via reflection —
+        /// calling <c>GenerateMonstersWithSlots(runState)</c> — rather than
+        /// hard-coding a static monster list.  <see cref="EncounterPlan.UpstreamTypeName"/>
+        /// holds the fully-qualified upstream encounter type name.
+        /// </summary>
+        UpstreamEncounterRng,
     }
 
     /// <summary>Resolved plan for one encounter.</summary>
@@ -44,7 +54,8 @@ public static class EncounterCatalog
         IReadOnlyList<string> MonsterIds,
         IReadOnlyList<string?> Slots,
         PlanKind Kind,
-        string? Reason
+        string? Reason,
+        string? UpstreamTypeName = null
     );
 
     /// <summary>
@@ -194,21 +205,25 @@ public static class EncounterCatalog
                 PlanKind.UpstreamComparable,
                 null
             ),
-            // SmallSlimes / MediumSlimes preserved as DEFER (architectural blocker —
-            // requires per-encounter Rng plumbing, deferred to B.1-ε).
+            // B.1-ε RESOLVED Wave 14: SmallSlimes / MediumSlimes now drive the
+            // upstream encounter's GenerateMonstersWithSlots via UpstreamEncounterRng.
+            // MonsterIds is a sentinel (all four slimes) — the actual spawn list is
+            // determined at capture time by the upstream encounter's RNG.
             "SmallSlimes" => new EncounterPlan(
                 id,
-                new[] { "AcidSlimeS", "SpikeSlimeS" },
-                new string?[] { null, null },
-                PlanKind.MissingUpstream,
-                "DEFER: SmallSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextItem for spawn variant selection). Deferred to B.1-ε."
+                new[] { "LeafSlimeS", "TwigSlimeS", "LeafSlimeM", "TwigSlimeM" },
+                new string?[] { null, null, null, null },
+                PlanKind.UpstreamEncounterRng,
+                null,
+                UpstreamTypeName: "MegaCrit.Sts2.Core.Models.Encounters.SlimesWeak"
             ),
             "MediumSlimes" => new EncounterPlan(
                 id,
-                new[] { "AcidSlimeM", "SpikeSlimeM" },
-                new string?[] { null, null },
-                PlanKind.MissingUpstream,
-                "DEFER: MediumSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextBool for spawn variant selection). Deferred to B.1-ε."
+                new[] { "TwigSlimeM", "LeafSlimeM", "LeafSlimeS", "TwigSlimeS" },
+                new string?[] { null, null, null, null },
+                PlanKind.UpstreamEncounterRng,
+                null,
+                UpstreamTypeName: "MegaCrit.Sts2.Core.Models.Encounters.SlimesNormal"
             ),
             _ => throw new System.ArgumentException(
                 $"unknown encounter id '{id}'; --list-encounters to enumerate."
@@ -228,6 +243,7 @@ public static class EncounterCatalog
             switch (Resolve(id).Kind)
             {
                 case PlanKind.UpstreamComparable:
+                case PlanKind.UpstreamEncounterRng:
                     c++;
                     break;
                 case PlanKind.MissingUpstream:

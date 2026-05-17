@@ -1,3 +1,0 @@
-encounter=MediumSlimes
-reason=DEFER: MediumSlimes requires per-encounter Rng plumbing (upstream uses Rng.NextBool for spawn variant selection). Deferred to B.1-ε.
-monsters=AcidSlimeM,SpikeSlimeM

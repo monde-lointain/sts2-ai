@@ -30,8 +30,10 @@ public class EncounterFixtureTests
     [Theory]
     [InlineData("ChompersNormal", 2)]
     [InlineData("ExoskeletonsNormal", 3)]
-    [InlineData("SmallSlimes", 2)]
-    [InlineData("MediumSlimes", 2)]
+    // Wave 14 / B.1-ε: SmallSlimes → 3 monsters (2 small + 1 medium via Rng);
+    // MediumSlimes → 4 monsters (2 medium + 2 small via NextBool).
+    [InlineData("SmallSlimes", 3)]
+    [InlineData("MediumSlimes", 4)]
     [InlineData("BowlbugsTrio", 3)]
     [InlineData("FuzzyWurmCrawlerSolo", 1)]
     [InlineData("FossilStalkerElite", 1)]

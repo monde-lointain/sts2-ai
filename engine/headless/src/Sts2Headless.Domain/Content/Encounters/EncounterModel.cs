@@ -63,6 +63,22 @@ public abstract class EncounterModel : IEncounterModel
     }
 
     /// <summary>
+    /// The string key used when seeding the per-encounter Rng via
+    /// <see cref="RunRngSet.ForEncounter"/>. Matches upstream's
+    /// <c>EncounterModel.Id.Entry</c> (the slugified class name, e.g.
+    /// <c>"SLIMES_WEAK"</c>) for encounters whose <c>GenerateMonsters(Rng)</c>
+    /// override must produce byte-identical output with upstream.
+    ///
+    /// <para>
+    /// Defaults to <see cref="Id"/> (the Q1 canonical encounter id). Encounters
+    /// that drive upstream's Rng-based monster selection MUST override this to
+    /// return the upstream slugified type name so the seed formula
+    /// <c>(int)Seed + totalFloor + hash(key)</c> produces the same uint as upstream.
+    /// </para>
+    /// </summary>
+    public virtual string EncounterRngKey => Id;
+
+    /// <summary>
     /// B.1-ε scaffold: additive virtual overload that receives a per-encounter
     /// <see cref="Rng"/> instance. Default implementation returns the static
     /// <see cref="MonsterIds"/> spawn list WITHOUT consuming the rng — all 22

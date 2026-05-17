@@ -152,7 +152,10 @@ public sealed class UpstreamDriver
     public byte[] Capture(int seed, EncounterCatalog.EncounterPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        if (plan.Kind != EncounterCatalog.PlanKind.UpstreamComparable)
+        if (
+            plan.Kind != EncounterCatalog.PlanKind.UpstreamComparable
+            && plan.Kind != EncounterCatalog.PlanKind.UpstreamEncounterRng
+        )
         {
             throw new InvalidOperationException(
                 $"Capture() called for non-comparable encounter '{plan.EncounterId}'; "
@@ -443,54 +446,52 @@ public sealed class UpstreamDriver
             .Invoke(combatState, new object[] { player });
 
         // --- 3. Spawn enemies via CombatState.CreateCreature.
-        // We bypass EncounterModel.GenerateMonstersWithSlots because Q1 has
-        // some encounters not 1:1 with upstream. Instead, instantiate each
-        // monster class directly and call state.CreateCreature + AddCreature.
+        // For UpstreamEncounterRng plans (slimes), drive the actual upstream encounter
+        // class's GenerateMonstersWithSlots to get seed-accurate monster+slot pairs.
+        // For UpstreamComparable plans, instantiate each monster class directly.
         Type monsterModelType = TypeOrThrow("MegaCrit.Sts2.Core.Models.MonsterModel");
         Type modelDbType = TypeOrThrow("MegaCrit.Sts2.Core.Models.ModelDb");
         MethodInfo modelDbMonsterGeneric =
             modelDbType.GetMethod("Monster", BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException("ModelDb.Monster not found.");
 
-        var monsters = new List<object>();
-        for (int mi = 0; mi < plan.MonsterIds.Count; mi++)
+        // Resolve the (monsterModel, slot) pairs — either statically or via upstream encounter RNG.
+        List<(object mutableMonster, string? slot)> spawnList;
+        if (plan.Kind == EncounterCatalog.PlanKind.UpstreamEncounterRng)
         {
-            string monsterId = plan.MonsterIds[mi];
-            string? slot = plan.Slots[mi];
+            spawnList = ResolveViaUpstreamEncounterRng(plan, runState, modelDbType, modelDbMonsterGeneric, monsterModelType);
+        }
+        else
+        {
+            spawnList = new List<(object, string?)>();
+            for (int mi = 0; mi < plan.MonsterIds.Count; mi++)
+            {
+                string monsterId = plan.MonsterIds[mi];
+                string? slot = plan.Slots[mi];
+                Type monsterClassType = TypeOrThrow($"MegaCrit.Sts2.Core.Models.Monsters.{monsterId}");
+                MethodInfo modelDbMonster = modelDbMonsterGeneric.MakeGenericMethod(monsterClassType);
+                object canonicalMonster =
+                    modelDbMonster.Invoke(null, null)
+                    ?? throw new InvalidOperationException($"ModelDb.Monster<{monsterId}> returned null.");
+                object mutableMonster =
+                    monsterModelType
+                        .GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)!
+                        .Invoke(canonicalMonster, null)
+                    ?? throw new InvalidOperationException($"{monsterId}.ToMutable returned null.");
+                spawnList.Add((mutableMonster, slot));
+            }
+        }
 
-            // ModelDb.Monster<T>() — fetch canonical instance.
-            Type monsterClassType = TypeOrThrow($"MegaCrit.Sts2.Core.Models.Monsters.{monsterId}");
-            MethodInfo modelDbMonster = modelDbMonsterGeneric.MakeGenericMethod(monsterClassType);
-            object canonicalMonster =
-                modelDbMonster.Invoke(null, null)
-                ?? throw new InvalidOperationException(
-                    $"ModelDb.Monster<{monsterId}> returned null."
-                );
-
-            // monster.ToMutable() — get a mutable clone to add to combat.
-            object mutableMonster =
-                monsterModelType
-                    .GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)!
-                    .Invoke(canonicalMonster, null)
-                ?? throw new InvalidOperationException($"{monsterId}.ToMutable returned null.");
+        var monsters = new List<object>();
+        MethodInfo createCreatureMi =
+            combatStateType.GetMethod("CreateCreature", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("CombatState.CreateCreature not found.");
+        foreach ((object mutableMonster, string? slot) in spawnList)
+        {
             monsters.Add(mutableMonster);
-
-            // creature = combatState.CreateCreature(monster, CombatSide.Enemy, slot)
-            MethodInfo createCreatureMi =
-                combatStateType.GetMethod(
-                    "CreateCreature",
-                    BindingFlags.Public | BindingFlags.Instance
-                ) ?? throw new InvalidOperationException("CombatState.CreateCreature not found.");
             object creature =
-                createCreatureMi.Invoke(
-                    combatState,
-                    new object?[] { mutableMonster, combatSideEnemy, slot }
-                )
-                ?? throw new InvalidOperationException(
-                    $"CreateCreature returned null for {monsterId}."
-                );
-
-            // combatState.AddCreature(creature)
+                createCreatureMi.Invoke(combatState, new object?[] { mutableMonster, combatSideEnemy, slot })
+                ?? throw new InvalidOperationException("CreateCreature returned null.");
             combatStateType
                 .GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!
                 .Invoke(combatState, new object[] { creature });
@@ -934,6 +935,116 @@ public sealed class UpstreamDriver
         // AbstractModel's CategorySortingId/EntrySortingId stay at 0. The
         // SetUpCombat code path doesn't read those fields.
         _modelDbInitialized = true;
+    }
+
+    // ===== UpstreamEncounterRng path ======================================
+
+    /// <summary>
+    /// Drive the upstream encounter's <c>GenerateMonstersWithSlots(runState)</c>
+    /// via reflection to get the seed-accurate monster+slot list. Used for
+    /// encounters like <c>SlimesWeak</c> / <c>SlimesNormal</c> whose monster
+    /// composition is RNG-determined per-seed.
+    ///
+    /// <para>
+    /// Flow:
+    /// 1. Fetch the canonical encounter from <c>ModelDb.Encounter&lt;T&gt;()</c>.
+    /// 2. Call <c>encounter.ToMutable()</c> to get a mutable instance.
+    /// 3. Call <c>encounter.GenerateMonstersWithSlots(runState)</c> — this
+    ///    seeds <c>encounter._rng</c> from <c>runState.Rng.Seed + TotalFloor +
+    ///    hash(encounter.Id.Entry)</c> and calls <c>GenerateMonsters()</c>.
+    /// 4. Read the resulting <c>MonstersWithSlots</c> property.
+    /// 5. For each (MonsterModel, slot?), call <c>model.ToMutable()</c> to
+    ///    clone the catalog instance into a mutable one.
+    /// </para>
+    /// </summary>
+    private List<(object mutableMonster, string? slot)> ResolveViaUpstreamEncounterRng(
+        EncounterCatalog.EncounterPlan plan,
+        object runState,
+        Type modelDbType,
+        MethodInfo modelDbMonsterGeneric,
+        Type monsterModelType
+    )
+    {
+        string typeName =
+            plan.UpstreamTypeName
+            ?? throw new InvalidOperationException(
+                $"UpstreamEncounterRng plan for '{plan.EncounterId}' has null UpstreamTypeName."
+            );
+
+        Type encounterType = TypeOrThrow(typeName);
+        Type encounterModelBaseType = TypeOrThrow("MegaCrit.Sts2.Core.Models.EncounterModel");
+
+        // Step 1: fetch canonical encounter instance from ModelDb.
+        MethodInfo? modelDbEncounterMethod = modelDbType.GetMethod(
+            "Encounter",
+            BindingFlags.Static | BindingFlags.Public
+        );
+        if (modelDbEncounterMethod is null)
+        {
+            throw new InvalidOperationException("ModelDb.Encounter not found.");
+        }
+        object canonicalEncounter =
+            modelDbEncounterMethod.MakeGenericMethod(encounterType).Invoke(null, null)
+            ?? throw new InvalidOperationException(
+                $"ModelDb.Encounter<{typeName}> returned null."
+            );
+
+        // Step 2: call encounter.ToMutable().
+        object mutableEncounter =
+            encounterModelBaseType
+                .GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)!
+                .Invoke(canonicalEncounter, null)
+            ?? throw new InvalidOperationException($"{typeName}.ToMutable returned null.");
+
+        // Step 3: call encounter.GenerateMonstersWithSlots(runState) — seeds encounter Rng
+        // from runState.Rng.Seed + TotalFloor + hash(encounter.Id.Entry) and produces monster list.
+        MethodInfo generateMi =
+            encounterModelBaseType.GetMethod(
+                "GenerateMonstersWithSlots",
+                BindingFlags.Public | BindingFlags.Instance
+            )
+            ?? throw new InvalidOperationException(
+                "EncounterModel.GenerateMonstersWithSlots not found."
+            );
+        generateMi.Invoke(mutableEncounter, new object[] { runState });
+
+        // Step 4: read MonstersWithSlots property.
+        PropertyInfo? monstersWithSlotsProp = encounterModelBaseType.GetProperty(
+            "MonstersWithSlots",
+            BindingFlags.Public | BindingFlags.Instance
+        );
+        if (monstersWithSlotsProp is null)
+        {
+            throw new InvalidOperationException(
+                "EncounterModel.MonstersWithSlots property not found."
+            );
+        }
+        object monstersWithSlots =
+            monstersWithSlotsProp.GetValue(mutableEncounter)
+            ?? throw new InvalidOperationException("MonstersWithSlots returned null.");
+
+        // Step 5: for each (MonsterModel, slot?), extract the mutable monster.
+        // The monsters returned by GenerateMonsters() are ALREADY mutable —
+        // upstream's GenerateMonsters() calls model.ToMutable() internally.
+        // Calling ToMutable() again would throw MutableModelException.
+        var result = new List<(object mutableMonster, string? slot)>();
+        foreach (object pair in (System.Collections.IEnumerable)monstersWithSlots)
+        {
+            // ValueTuple<MonsterModel, string?> — access via Item1 / Item2.
+            Type pairType = pair.GetType();
+            object monsterObj =
+                pairType.GetField("Item1")?.GetValue(pair)
+                ?? pairType.GetProperty("Item1")?.GetValue(pair)
+                ?? throw new InvalidOperationException("Cannot read Item1 from MonstersWithSlots pair.");
+            object? slotObj =
+                pairType.GetField("Item2")?.GetValue(pair)
+                ?? pairType.GetProperty("Item2")?.GetValue(pair);
+            string? slot = slotObj as string;
+
+            // Use the mutable monster directly — GenerateMonsters already called ToMutable().
+            result.Add((monsterObj, slot));
+        }
+        return result;
     }
 
     // ===== Reflection helpers ============================================

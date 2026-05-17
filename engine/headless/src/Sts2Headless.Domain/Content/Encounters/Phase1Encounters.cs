@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Sts2Headless.Domain.Content.Monsters;
+using Sts2Headless.Domain.Determinism;
 
 namespace Sts2Headless.Domain.Content.Encounters;
 
@@ -40,25 +42,112 @@ public sealed class ExoskeletonsNormal : EncounterModel
 // B.1-final-T2a: deleted LargeSlimeBoss (STS1 monsters AcidSlimeL + SpikeSlimeL,
 // no STS2 large-slime analogue).
 
-// SmallSlimes + MediumSlimes preserved as DEFER (architectural blocker — encounter
-// requires per-encounter Rng plumbing in upstream's GenerateMonsters(Rng); to be
-// addressed in B.1-ε once architectural lift lands). They stay registered with
-// static spawn lists, but their EncounterCatalog plan stays MissingUpstream so
-// upstream-byte-comparison skips them.
+// B.1-ε RESOLVED Wave 14 — SmallSlimes and MediumSlimes ported from upstream
+// SlimesWeak / SlimesNormal byte-exact RNG patterns. See commit below.
+//
+// SmallSlimes = upstream SlimesWeak: 3 NextItem ticks from encounter Rng.
+//   Pool small  = { LeafSlimeS, TwigSlimeS }; pool medium = { LeafSlimeM, TwigSlimeM }.
+//   tick-1: small1 = NextItem(smallPool) + remove; tick-2: small2 = NextItem(smallPool remaining);
+//   tick-3: medium = NextItem(mediumPool). Output = [small1, medium, small2].
+//
+// MediumSlimes = upstream SlimesNormal: 1 NextBool tick from encounter Rng.
+//   flag=true  → [TwigSlimeM, LeafSlimeM, LeafSlimeS, TwigSlimeS]
+//   flag=false → [TwigSlimeM, LeafSlimeM, TwigSlimeS, LeafSlimeS]
+
+/// <summary>
+/// Port of upstream <c>Encounters.SlimesWeak</c>. Overrides
+/// <see cref="EncounterModel.GenerateMonsters(Rng)"/> to consume 3 <c>NextItem</c>
+/// ticks from the per-encounter <see cref="Rng"/>, byte-exact with upstream.
+/// Static <c>MonsterIds</c> lists LeafSlimeS as first monster for catalog purposes;
+/// the actual spawn list is determined at runtime by the Rng override.
+/// </summary>
 public sealed class SmallSlimes : EncounterModel
 {
     public const string CanonicalId = "SmallSlimes";
 
+    // Upstream type name slugified per ModelDb.GetEntry(type) + Slugify:
+    // SlimesWeak → "SLIMES_WEAK". Used by EncounterRngKey so ForEncounter
+    // produces the same seed as upstream GenerateMonstersWithSlots.
+    public const string UpstreamRngKey = "SLIMES_WEAK";
+
+    // Static spawn list used by base EncounterModel for MonsterIds catalog
+    // (fixture tests, manifest). Rng override produces the actual encounter list.
+    private static readonly string[] _smallPool = { LeafSlimeS.CanonicalId, TwigSlimeS.CanonicalId };
+    private static readonly string[] _mediumPool = { LeafSlimeM.CanonicalId, TwigSlimeM.CanonicalId };
+
     public SmallSlimes()
-        : base(CanonicalId, new[] { AcidSlimeS.CanonicalId, SpikeSlimeS.CanonicalId }) { }
+        // Canonical static spawn list: first small + one medium + second small.
+        // Actual encounter uses GenerateMonsters(Rng) override below.
+        : base(CanonicalId, new[] { LeafSlimeS.CanonicalId, LeafSlimeM.CanonicalId, TwigSlimeS.CanonicalId }) { }
+
+    /// <summary>
+    /// Upstream slug for the encounter Rng seed. Matches
+    /// <c>ModelDb.GetEntry(typeof(SlimesWeak))</c> = <c>Slugify("SlimesWeak")</c>
+    /// = <c>"SLIMES_WEAK"</c> so <c>ForEncounter</c> produces the byte-exact seed.
+    /// </summary>
+    public override string EncounterRngKey => UpstreamRngKey;
+
+    /// <summary>
+    /// Byte-exact port of upstream <c>SlimesWeak.GenerateMonsters()</c>.
+    /// Consumes 3 <c>NextItem</c> ticks: small1 from {LeafSlimeS, TwigSlimeS} (remove
+    /// pattern); small2 from remaining; medium from {LeafSlimeM, TwigSlimeM}.
+    /// Output order: [small1, medium, small2].
+    /// </summary>
+    public override IReadOnlyList<string> GenerateMonsters(Rng rng)
+    {
+        System.ArgumentNullException.ThrowIfNull(rng);
+        var smallPool = new List<string>(_smallPool);
+        // tick 1: pick first small slime, remove from pool
+        string small1 = rng.NextItem<string>(smallPool)!;
+        smallPool.Remove(small1);
+        // tick 2: pick second small slime from remaining (1-element list; still a tick)
+        string small2 = rng.NextItem<string>(smallPool)!;
+        // tick 3: pick medium slime
+        string medium = rng.NextItem<string>(_mediumPool)!;
+        return new[] { small1, medium, small2 };
+    }
 }
 
+/// <summary>
+/// Port of upstream <c>Encounters.SlimesNormal</c>. Overrides
+/// <see cref="EncounterModel.GenerateMonsters(Rng)"/> to consume 1 <c>NextBool</c>
+/// tick from the per-encounter <see cref="Rng"/>, byte-exact with upstream.
+/// </summary>
 public sealed class MediumSlimes : EncounterModel
 {
     public const string CanonicalId = "MediumSlimes";
 
+    // Upstream type name slugified per ModelDb.GetEntry(type) + Slugify:
+    // SlimesNormal → "SLIMES_NORMAL". Used by EncounterRngKey so ForEncounter
+    // produces the same seed as upstream GenerateMonstersWithSlots.
+    public const string UpstreamRngKey = "SLIMES_NORMAL";
+
     public MediumSlimes()
-        : base(CanonicalId, new[] { AcidSlimeM.CanonicalId, SpikeSlimeM.CanonicalId }) { }
+        // Canonical static spawn list: all 4 slimes; actual encounter uses Rng override.
+        : base(CanonicalId, new[] { TwigSlimeM.CanonicalId, LeafSlimeM.CanonicalId, LeafSlimeS.CanonicalId, TwigSlimeS.CanonicalId }) { }
+
+    /// <summary>
+    /// Upstream slug for the encounter Rng seed. Matches
+    /// <c>ModelDb.GetEntry(typeof(SlimesNormal))</c> = <c>Slugify("SlimesNormal")</c>
+    /// = <c>"SLIMES_NORMAL"</c> so <c>ForEncounter</c> produces the byte-exact seed.
+    /// </summary>
+    public override string EncounterRngKey => UpstreamRngKey;
+
+    /// <summary>
+    /// Byte-exact port of upstream <c>SlimesNormal.GenerateMonsters()</c>.
+    /// Consumes 1 <c>NextBool</c> tick.
+    /// flag=true  → [TwigSlimeM, LeafSlimeM, LeafSlimeS, TwigSlimeS]
+    /// flag=false → [TwigSlimeM, LeafSlimeM, TwigSlimeS, LeafSlimeS]
+    /// </summary>
+    public override IReadOnlyList<string> GenerateMonsters(Rng rng)
+    {
+        System.ArgumentNullException.ThrowIfNull(rng);
+        // tick 1: NextBool picks which small is first
+        bool flag = rng.NextBool();
+        string small1 = flag ? LeafSlimeS.CanonicalId : TwigSlimeS.CanonicalId;
+        string small2 = flag ? TwigSlimeS.CanonicalId : LeafSlimeS.CanonicalId;
+        return new[] { TwigSlimeM.CanonicalId, LeafSlimeM.CanonicalId, small1, small2 };
+    }
 }
 
 public sealed class BowlbugsTrio : EncounterModel

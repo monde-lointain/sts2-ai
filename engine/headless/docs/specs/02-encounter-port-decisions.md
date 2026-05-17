@@ -159,3 +159,18 @@ The two slime encounters remain registered in Q1 with static spawn lists (`[Acid
 5. Re-tag `SmallSlimes` / `MediumSlimes` `UpstreamComparable`; regenerate upstream goldens.
 
 **Re-evaluation criterion:** address before P-Run training distribution requires Act-1 slime variety, or sooner if a downstream stream blocks on encounter-RNG. Estimated ~80-150 LOC + 4 new monster files; out of scope for the B.1 wave.
+
+### B.1-ε RESOLVED — Wave 14 / Stream B.3 (slime port retry)
+
+All five deferral items completed. Probe result: `make probe-upstream-initial-state` 160/160 PASS / 0 SKIP / 0 DIVR.
+
+**Changes:**
+- Monster classes `LeafSlimeS` (HP 11–15, TACKLE_MOVE/GOOP_MOVE), `LeafSlimeM` (HP 32–35, STICKY_SHOT/CLUMP_SHOT strict alternation), `TwigSlimeS` (HP 7–11, TACKLE_MOVE self-loop), `TwigSlimeM` (HP 26–28, POKEY_POUNCE_MOVE/STICKY_SHOT_MOVE weighted) added to `Phase1Monsters.cs`. `AcidSlimeS/M` and `SpikeSlimeS/M` removed from catalog (`AcidSlimeL`, `SpikeSlimeL` retained). Net catalog size: 33 (unchanged).
+- `EncounterModel.GenerateMonsters(Rng)` virtual method + `EncounterRngKey` virtual property added. Default `EncounterRngKey` returns `Id`; `SmallSlimes` overrides to `"SLIMES_WEAK"` and `MediumSlimes` to `"SLIMES_NORMAL"` — matching upstream's `ModelDb.GetEntry(type)` slugified name used in the seed formula.
+- `SmallSlimes.GenerateMonsters(Rng)`: 3 NextItem ticks — small1 from {LeafSlimeS, TwigSlimeS} (pool/remove), small2 from remaining, medium from {LeafSlimeM, TwigSlimeM}. Output: [small1, medium, small2].
+- `MediumSlimes.GenerateMonsters(Rng)`: 1 NextBool tick — [TwigSlimeM, LeafSlimeM, LeafSlimeS, TwigSlimeS] if flag else swap small pair.
+- `CombatEngine.SpawnEnemies` updated to call `encounter.GenerateMonsters(runRng.ForEncounter(totalFloor, encounter.EncounterRngKey))` instead of iterating static `encounter.MonsterIds`.
+- `UpstreamInitialStateComparer` updated: uses `EncounterRngKey`, all-enemies `takenHps` (matching upstream's `SetUniqueMonsterHpValue` which excludes all side HP values, not just same-type).
+- 20 slime goldens regenerated via `make probe-upstream-capture`; 20 `.bin.missing` sentinels deleted.
+- `q4-manifest-phase1.json` monster bucket: AcidSlimeS→LeafSlimeS, AcidSlimeM→LeafSlimeM, SpikeSlimeS→TwigSlimeS, SpikeSlimeM→TwigSlimeM.
+- 6 new test files: `LeafSlimeSTests`, `LeafSlimeMTests`, `TwigSlimeSTests`, `TwigSlimeMTests`, `SmallSlimesTests`, `MediumSlimesTests`.

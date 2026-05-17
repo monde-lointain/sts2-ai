@@ -39,8 +39,15 @@ public class Phase1MonsterTests
     [InlineData(typeof(AcidSlimeS), "AcidSlimeS", 8, 12, "attack:3")]
     [InlineData(typeof(AcidSlimeM), "AcidSlimeM", 28, 32, "attack:7")]
     [InlineData(typeof(AcidSlimeL), "AcidSlimeL", 65, 69, "attack:11")]
-    [InlineData(typeof(SpikeSlimeS), "SpikeSlimeS", 10, 14, "attack:5")]
-    [InlineData(typeof(SpikeSlimeM), "SpikeSlimeM", 28, 32, "attack:8")]
+    // Wave 14 / B.1-ε: SpikeSlimeS/M removed; TwigSlimeS/M ported from upstream.
+    // TwigSlimeS opens with TACKLE_MOVE (Attack 4, single-state self-loop).
+    // TwigSlimeM opens with STICKY_SHOT_MOVE (Status 1 Slimed, upstream initial state).
+    // LeafSlimeS opens with TACKLE_MOVE (resolver picks TACKLE or GOOP on turn 1).
+    // LeafSlimeM opens with STICKY_SHOT (strict alternation, upstream initial state).
+    [InlineData(typeof(LeafSlimeS), "LeafSlimeS", 11, 15, "attack:3")]
+    [InlineData(typeof(LeafSlimeM), "LeafSlimeM", 32, 35, "status:2")]
+    [InlineData(typeof(TwigSlimeS), "TwigSlimeS", 7, 11, "attack:4")]
+    [InlineData(typeof(TwigSlimeM), "TwigSlimeM", 26, 28, "status:1")]
     [InlineData(typeof(SpikeSlimeL), "SpikeSlimeL", 64, 70, "attack:16")]
     [InlineData(typeof(FungalBoss), "FungalBoss", 200, 200, "attack:18")]
     [InlineData(typeof(SnakePlant), "SnakePlant", 75, 79, "attack:6")]
@@ -85,6 +92,13 @@ public class Phase1MonsterTests
         else if (expectedFirstIntent == "buff")
         {
             Assert.Equal(IntentKind.Buff, m.InitialIntent.Kind);
+        }
+        else if (expectedFirstIntent.StartsWith("status:"))
+        {
+            // Status intent: monster's opening move adds N status cards to discard.
+            int expectedCards = int.Parse(expectedFirstIntent.Substring("status:".Length));
+            Assert.Equal(IntentKind.Status, m.InitialIntent.Kind);
+            Assert.Equal(expectedCards, m.InitialIntent.Value);
         }
         else
         {

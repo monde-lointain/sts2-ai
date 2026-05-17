@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Sts2Headless.Domain.Combat;
 using Sts2Headless.Domain.Content;
@@ -207,22 +208,27 @@ public sealed class UpstreamInitialStateComparer
         // src/Core/Models/Characters/Silent.cs's StartingDeck byte-for-byte.
         IReadOnlyList<CardInstance> deck = BuildSilentStarterDeck();
 
-        // Spawn enemies. Mirrors CombatEngine.StartCombat post-RC-4: uses
-        // MonsterModel.RollUniqueInitialHp(rng, takenHps) so same-type spawns
-        // get distinct HP values when the envelope allows it.
+        // Spawn enemies. Mirrors upstream CombatState.CreateCreature:138 which calls
+        // creature.SetUniqueMonsterHpValue(creaturesOnSide, RunState.Rng.Niche).
+        // Upstream excludes HP of ALL existing enemies (not just same-type) per:
+        //   hashSet.ExceptWith(from e in creaturesOnSide.Except(this) select e.MaxHp)
+        // B.1-ε Wave 14: derive per-encounter Rng (totalFloor=0 matches upstream's
+        // RunState.TotalFloor=0 on CreateForNewRun) and call GenerateMonsters so
+        // RNG-driven encounters produce the seed-specific variant list.
+        // EncounterRngKey matches upstream's slugified type name (e.g. "SLIMES_WEAK")
+        // so the seed formula produces byte-identical results.
+        var encounterModel = (EncounterModel)encounter;
+        Rng encounterRng = runRng.ForEncounter(0, encounterModel.EncounterRngKey);
+        IReadOnlyList<string> spawnList = encounterModel.GenerateMonsters(encounterRng);
+
         var enemies = ImmutableList.CreateBuilder<Creature>();
         uint nextEnemyId = 1u; // CombatEngine.FirstEnemyId
-        foreach (string monsterId in encounter.MonsterIds)
+        foreach (string monsterId in spawnList)
         {
             var monsterModel = (MonsterModel)_monsters.Get(monsterId);
-            var takenHps = new List<int>();
-            foreach (var existing in enemies)
-            {
-                if (string.Equals(existing.Name, monsterId, StringComparison.Ordinal))
-                {
-                    takenHps.Add(existing.MaxHp);
-                }
-            }
+            // Upstream excludes HP of ALL existing enemies (not just same-type) from
+            // the candidate set. Pass all existing MaxHp values as takenHps.
+            var takenHps = enemies.Select(e => e.MaxHp).ToList();
             int hp = monsterModel.RollUniqueInitialHp(runRng.Niche, takenHps);
             enemies.Add(
                 new Creature(
