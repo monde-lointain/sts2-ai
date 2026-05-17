@@ -1177,16 +1177,37 @@
       "type": "stub"
     }
   ],
-  "deprecation_log": [],
+  "deprecation_log": [
+    {
+      "token_id": 222,
+      "deprecated_in_version": "phase1-silent.1",
+      "reason": "v0.103.2 placeholder; replaced by upstream byte-faithful Leaf/Twig slime variants in Wave 14 (B.1-\u03b5 close per ADR-027 fixture-growth policy)"
+    },
+    {
+      "token_id": 226,
+      "deprecated_in_version": "phase1-silent.1",
+      "reason": "v0.103.2 placeholder; replaced by upstream byte-faithful Leaf/Twig slime variants in Wave 14 (B.1-\u03b5 close per ADR-027 fixture-growth policy)"
+    },
+    {
+      "token_id": 225,
+      "deprecated_in_version": "phase1-silent.1",
+      "reason": "v0.103.2 placeholder; replaced by upstream byte-faithful Leaf/Twig slime variants in Wave 14 (B.1-\u03b5 close per ADR-027 fixture-growth policy)"
+    },
+    {
+      "token_id": 223,
+      "deprecated_in_version": "phase1-silent.1",
+      "reason": "v0.103.2 placeholder; replaced by upstream byte-faithful Leaf/Twig slime variants in Wave 14 (B.1-\u03b5 close per ADR-027 fixture-growth policy)"
+    }
+  ],
   "manifest": {
-    "parent_version": null,
+    "parent_version": "phase1-silent.0",
     "schema_version": {
       "major": 0,
       "minor": 0
     },
-    "source_fixture": "/home/clydew372/development/projects/cs/sts2-headless/test/fixtures/q4-manifest-phase1.json",
+    "source_fixture": "engine/headless/test/fixtures/q4-manifest-phase1.json",
     "upstream_source": "/home/clydew372/development/projects/godot/sts2/src",
-    "version": "phase1-silent.0"
+    "version": "phase1-silent.1"
   },
   "tokens": [
     {
@@ -3401,7 +3422,7 @@
     },
     {
       "content_hash": "6c7afe452975188907bc7db3433eb5986e52450bd11108f934e91e24aebc3085",
-      "deprecated_in": null,
+      "deprecated_in": "phase1-silent.1",
       "kind": "enemy",
       "name": "AcidSlimeS",
       "references": [],
@@ -3411,7 +3432,7 @@
     },
     {
       "content_hash": "6da96123cfc79504b7ce451958ab67a554db2a891a75ffecad2267af781494dc",
-      "deprecated_in": null,
+      "deprecated_in": "phase1-silent.1",
       "kind": "enemy",
       "name": "AcidSlimeM",
       "references": [],
@@ -3431,7 +3452,7 @@
     },
     {
       "content_hash": "3e8fba7ea1a3824896e52047fb197ed8d95372d1fc7339ab2948f17fd0093bf2",
-      "deprecated_in": null,
+      "deprecated_in": "phase1-silent.1",
       "kind": "enemy",
       "name": "SpikeSlimeS",
       "references": [],
@@ -3441,7 +3462,7 @@
     },
     {
       "content_hash": "50b81a5e6619ecd94f297fd2724adf44098ac70d421c2ab0ca65abf07db405ec",
-      "deprecated_in": null,
+      "deprecated_in": "phase1-silent.1",
       "kind": "enemy",
       "name": "SpikeSlimeM",
       "references": [],
@@ -3598,6 +3619,256 @@
       "since_version": "phase1-silent.0",
       "token": "enemy:FrogKnight",
       "token_id": 241
+    },
+    {
+      "content_hash": "fe1262991a301fca1f9e25acd505295e9d454b962eeae1746cc166afe20f620d",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "LeafSlimeS",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "enemy:LeafSlimeS",
+      "token_id": 242
+    },
+    {
+      "content_hash": "0591264a9424d71e868af4f9e113d62da486706095f66598e3d28d33d8f89944",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "LeafSlimeM",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "enemy:LeafSlimeM",
+      "token_id": 243
+    },
+    {
+      "content_hash": "862fa0eb5126de38e0bac939fe626e4d87be187fced6b47e0172a930a6cb47b4",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "TwigSlimeS",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "enemy:TwigSlimeS",
+      "token_id": 244
+    },
+    {
+      "content_hash": "a397d567040cb1ffd02afab9f320adc30d057b06edfe9ac9eb722b65ac5e3dcc",
+      "deprecated_in": null,
+      "kind": "enemy",
+      "name": "TwigSlimeM",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "enemy:TwigSlimeM",
+      "token_id": 245
+    },
+    {
+      "content_hash": "30f84e685accefb77dddacad96c48492eef74df056ae31b754afb5879a75f2b4",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "BlockPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:BlockPotion",
+      "token_id": 246
+    },
+    {
+      "content_hash": "fe8ab2b1c327621cb18a83466dcd19c874197f9821a7ca1fb022b388fb742bfc",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "FirePotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:FirePotion",
+      "token_id": 247
+    },
+    {
+      "content_hash": "8c5438de50712c4da794e3277631b168ddb0bedb660385009b2e5ee69c225570",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "EnergyPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:EnergyPotion",
+      "token_id": 248
+    },
+    {
+      "content_hash": "352ea59cac2a579681a3481182b13ed9b21d828479bab0aa76907d7bc2a1b11a",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "ExplosiveAmpoule",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:ExplosiveAmpoule",
+      "token_id": 249
+    },
+    {
+      "content_hash": "f6b8e231e7801dabd296dcf085c7907787512d46fd2645ca9e3706123530ac89",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "FlexPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:FlexPotion",
+      "token_id": 250
+    },
+    {
+      "content_hash": "a609391cff05b03da7d3cf9db231cdae8dc0084077f6d4a76735400ae652aa1f",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "DexterityPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:DexterityPotion",
+      "token_id": 251
+    },
+    {
+      "content_hash": "e9bcc188eab37f2f9f7927ea41caa0b07426a09ab062c073f7042fed4799ba9c",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "StrengthPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:StrengthPotion",
+      "token_id": 252
+    },
+    {
+      "content_hash": "1171e9e8323898a096cfbb9de1e02f8f82cbe2f1ad80acd6fe51222f45182e10",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "SkillPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:SkillPotion",
+      "token_id": 253
+    },
+    {
+      "content_hash": "ace2b0cf28c59648755b5d7b987f73ba5c95c69aa702d495ae387c8d62a8c5c9",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "AttackPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:AttackPotion",
+      "token_id": 254
+    },
+    {
+      "content_hash": "e6e11c78bd87f3df70552dd319d3d4f090ca6c48050cc87dded4a103ba604df2",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "PowerPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:PowerPotion",
+      "token_id": 255
+    },
+    {
+      "content_hash": "a59449830d202072843149c26690b74fc1122eadfee899570028ed7edf980edf",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "SwiftPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:SwiftPotion",
+      "token_id": 256
+    },
+    {
+      "content_hash": "1dc5b6dd4e661117443d5042089668ff4d87f5db9e84a34823de18f4f6216ced",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "BloodPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:BloodPotion",
+      "token_id": 257
+    },
+    {
+      "content_hash": "eca1bddc29794634e8331f4be119509ca0e246840b3ef32066aa1bf474fe5abb",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "PoisonPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:PoisonPotion",
+      "token_id": 258
+    },
+    {
+      "content_hash": "4594403af7fc755ff750fe04acd484a62162a0581b974488742f578d91dd782b",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "FocusPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:FocusPotion",
+      "token_id": 259
+    },
+    {
+      "content_hash": "b0bfc0f79ef9a286d20415f0d43c95a444ef56ce683988b6573cdda623903cbb",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "CunningPotion",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:CunningPotion",
+      "token_id": 260
+    },
+    {
+      "content_hash": "ac5a649059400af73e1192766f7b204aa0106f96a91ae1aaf7a0a8af5ddc68f4",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "LiquidBronze",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:LiquidBronze",
+      "token_id": 261
+    },
+    {
+      "content_hash": "c8999808d876e3a566e4cda7ebca98e2c45b81f0fff18842fe16ef046c7d9271",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "GamblersBrew",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:GamblersBrew",
+      "token_id": 262
+    },
+    {
+      "content_hash": "56e6b91e0029f1f815067adab2033c25f1a778994a18d56dc96ee39e70a1fe5f",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "HeartOfIron",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:HeartOfIron",
+      "token_id": 263
+    },
+    {
+      "content_hash": "de83ef5828abb833d24e530bfc37504b7d71a7c691c7287fc3980c7b55dbf465",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "FairyInABottle",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:FairyInABottle",
+      "token_id": 264
+    },
+    {
+      "content_hash": "3e3c71b0d57393379a1f44d6f0699ed8ee822b9d32b0d0eec7a715d6b5afc2ca",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "LiquidMemories",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:LiquidMemories",
+      "token_id": 265
+    },
+    {
+      "content_hash": "dc1ec405e1c5bee006e4caf1827e4e64600e5b0eb4eefe736c1685aef00eba4f",
+      "deprecated_in": null,
+      "kind": "potion",
+      "name": "EntropicBrew",
+      "references": [],
+      "since_version": "phase1-silent.1",
+      "token": "potion:EntropicBrew",
+      "token_id": 266
     }
   ]
 }
