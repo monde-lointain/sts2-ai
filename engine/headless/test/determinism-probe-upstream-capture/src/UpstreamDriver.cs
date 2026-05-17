@@ -399,22 +399,43 @@ public sealed class UpstreamDriver
             .GetValue(runState)!;
         object modifiers = runStateType.GetProperty("Modifiers")!.GetValue(runState)!;
 
-        // new CombatState(encounter: null, runState, modifiers, multiplayerScalingModel)
+        // new CombatState(encounter: null, runState, modifiers, multiplayerScalingModel,
+        //                 [badgeModels])
+        // v0.103.2 ctor: 4 params. v0.105.1 ctor: 5 params (adds IReadOnlyList<BadgeModel>
+        // badgeModels between modifiers and multiplayerScalingModel). We resolve by
+        // named-parameter SUBSET so the same code drives both DLLs; extras are sourced
+        // from RunState properties (or filled with flex defaults).
         // (Encounter is optional, used only by certain hooks. We pass null and
         // let SetUpCombat call AddCreature for our pre-built monster list.)
-        ConstructorInfo combatStateCtor = combatStateType
-            .GetConstructors()
-            .Single(c => c.GetParameters().Length == 4);
-        object combatState = combatStateCtor.Invoke(
-            new object?[]
-            {
-                null /* encounter */
-                ,
-                runState,
-                modifiers,
-                multiplayerScalingModel,
-            }
-        );
+        var combatStateNamedArgs = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["encounter"] = null,
+            ["runState"] = runState,
+            ["modifiers"] = modifiers,
+            ["multiplayerScalingModel"] = multiplayerScalingModel,
+        };
+        // v0.105.1 introduced badgeModels: forward the RunState.BadgeModels property
+        // if it exists. ReflectionFlex.GetOptionalProperty returns null if absent
+        // (v0.103.2), in which case the flex-resolver fills an empty list.
+        object? badgeModels = ReflectionFlex.TryGetProperty(runState, "BadgeModels");
+        if (badgeModels is not null)
+        {
+            combatStateNamedArgs["badgeModels"] = badgeModels;
+        }
+        (ConstructorInfo combatStateCtor, object?[] combatStateArgs) =
+            ReflectionFlex.FindCtorByParameterNames(
+                combatStateType,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                combatStateNamedArgs,
+                requiredNames: new[]
+                {
+                    "encounter",
+                    "runState",
+                    "modifiers",
+                    "multiplayerScalingModel",
+                }
+            );
+        object combatState = combatStateCtor.Invoke(combatStateArgs);
 
         // state.AddPlayer(player) — registers player.Creature in _allies.
         combatStateType
@@ -832,6 +853,11 @@ public sealed class UpstreamDriver
         InjectAllSubtypes(injectMi, "MegaCrit.Sts2.Core.Models.EventModel", "Event");
         InjectAllSubtypes(injectMi, "MegaCrit.Sts2.Core.Models.AncientEventModel", "Ancient");
         InjectAllSubtypes(injectMi, "MegaCrit.Sts2.Core.Models.PowerModel", "Power");
+        // v0.105.1 introduced BadgeModel: RunState.CreateShared reads ModelDb.BadgeModels
+        // during construction; we must populate them before CreateForNewRun fires.
+        // InjectAllSubtypes is a no-op if the base type doesn't exist (v0.103.2), so this
+        // remains correct under both DLL versions.
+        InjectAllSubtypes(injectMi, "MegaCrit.Sts2.Core.Models.BadgeModel", "Badge");
         // NOTE: We DON'T call ModelDb.InitIds() — it iterates _contentById and
         // calls ModelIdSerializationCache.GetNetIdForCategory("ACHIEVEMENT")
         // (and similar), which the cache only knows about after upstream's
@@ -926,5 +952,159 @@ public sealed class UpstreamDriver
             addMethod.Invoke(list, new[] { item });
         }
         return list;
+    }
+}
+
+/// <summary>
+/// Flex-predicate reflection helpers for tolerating upstream API drift between
+/// pinned (v0.103.2) and live (v0.105.1) sts2.dll versions.
+///
+/// <para>
+/// The drift mode this addresses: upstream adds a NEW parameter to an existing
+/// constructor (or method) — the old exact-arity <c>Single(c =&gt; c.GetParameters().Length == N)</c>
+/// pattern breaks with <c>Sequence contains no matching element</c>. The flex
+/// approach matches by <b>named-parameter subset</b>: the caller declares which
+/// parameter names + values are REQUIRED; any extras on the live ctor are filled
+/// from supplemental named values (if supplied) or a type-driven flex default
+/// (null for reference types, empty <c>List&lt;T&gt;</c> for
+/// <c>IReadOnlyList&lt;T&gt;</c>, <c>default(T)</c> for value types).
+/// </para>
+///
+/// <para>
+/// <b>Why a helper class:</b> Wave 6 dispatch prompt constraint — refactor must
+/// touch a small number of files. We co-locate the helper in this file to keep
+/// the partition tight (engineer owns <c>UpstreamDriver.cs</c> only; no new
+/// directory needed). The class is <c>file</c>-scoped so it cannot leak into
+/// other compilation units.
+/// </para>
+/// </summary>
+file static class ReflectionFlex
+{
+    /// <summary>
+    /// Get the value of an instance property by name, or <see langword="null"/>
+    /// if the property does not exist or is not readable. Tolerates upstream
+    /// renames / removals.
+    /// </summary>
+    public static object? TryGetProperty(object instance, string name)
+    {
+        Type t = instance.GetType();
+        PropertyInfo? p = t.GetProperty(
+            name,
+            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+        );
+        return p?.CanRead == true ? p.GetValue(instance) : null;
+    }
+
+    /// <summary>
+    /// Locate a constructor on <paramref name="type"/> whose parameters are a
+    /// SUPERSET of <paramref name="requiredNames"/>, and build an argument
+    /// array matched by parameter name from <paramref name="namedValues"/>.
+    /// Extras (parameters present on the ctor but absent from
+    /// <paramref name="namedValues"/>) get a flex default.
+    ///
+    /// <para>
+    /// If multiple ctors match, the one with the FEWEST extra parameters wins
+    /// (the most specific). Ties broken by declaration order.
+    /// </para>
+    ///
+    /// <para>
+    /// Throws <see cref="InvalidOperationException"/> with a diagnostic message
+    /// (listing every ctor's signature) if no ctor matches.
+    /// </para>
+    /// </summary>
+    public static (ConstructorInfo Ctor, object?[] Args) FindCtorByParameterNames(
+        Type type,
+        BindingFlags flags,
+        IReadOnlyDictionary<string, object?> namedValues,
+        IReadOnlyList<string> requiredNames
+    )
+    {
+        ConstructorInfo[] ctors = type.GetConstructors(flags);
+        var candidates = new List<(ConstructorInfo Ctor, ParameterInfo[] Params, int Extras)>();
+        foreach (ConstructorInfo c in ctors)
+        {
+            ParameterInfo[] ps = c.GetParameters();
+            string[] paramNames = ps.Select(p => p.Name ?? "").ToArray();
+            bool allRequiredPresent = requiredNames.All(rn =>
+                paramNames.Any(pn => string.Equals(pn, rn, StringComparison.Ordinal))
+            );
+            if (!allRequiredPresent)
+            {
+                continue;
+            }
+            int extras = ps.Length - requiredNames.Count;
+            candidates.Add((c, ps, extras));
+        }
+        if (candidates.Count == 0)
+        {
+            string available = string.Join(
+                "; ",
+                ctors.Select(c =>
+                    $"({c.GetParameters().Length}: {string.Join(",", c.GetParameters().Select(p => p.Name))})"
+                )
+            );
+            throw new InvalidOperationException(
+                $"ReflectionFlex.FindCtorByParameterNames: no ctor on {type.FullName} "
+                    + $"covers required names [{string.Join(",", requiredNames)}]. "
+                    + $"Available ctors: {available}."
+            );
+        }
+        // Most-specific = fewest extras.
+        candidates.Sort((a, b) => a.Extras.CompareTo(b.Extras));
+        (ConstructorInfo chosen, ParameterInfo[] chosenParams, _) = candidates[0];
+
+        object?[] args = new object?[chosenParams.Length];
+        for (int i = 0; i < chosenParams.Length; i++)
+        {
+            string paramName = chosenParams[i].Name ?? "";
+            if (namedValues.TryGetValue(paramName, out object? namedValue))
+            {
+                args[i] = namedValue;
+            }
+            else
+            {
+                args[i] = FlexDefault(chosenParams[i].ParameterType);
+            }
+        }
+        return (chosen, args);
+    }
+
+    /// <summary>
+    /// Type-driven default for an unsupplied constructor parameter:
+    /// <list type="bullet">
+    ///   <item><c>null</c> for reference types (including
+    ///     <c>IReadOnlyList&lt;T&gt;</c> when null is acceptable).</item>
+    ///   <item>An empty <c>List&lt;T&gt;</c> when the parameter expects
+    ///     <c>IReadOnlyList&lt;T&gt;</c> or <c>IEnumerable&lt;T&gt;</c> — many
+    ///     upstream ctors null-check these and we'd rather supply empty.</item>
+    ///   <item><c>default(T)</c> for value types via
+    ///     <see cref="Activator.CreateInstance(Type)"/>.</item>
+    /// </list>
+    /// </summary>
+    private static object? FlexDefault(Type t)
+    {
+        // IReadOnlyList<T> / IEnumerable<T> / ICollection<T> → empty List<T>.
+        if (t.IsGenericType)
+        {
+            Type def = t.GetGenericTypeDefinition();
+            if (
+                def == typeof(IReadOnlyList<>)
+                || def == typeof(IEnumerable<>)
+                || def == typeof(ICollection<>)
+                || def == typeof(IReadOnlyCollection<>)
+                || def == typeof(IList<>)
+                || def == typeof(List<>)
+            )
+            {
+                Type elemType = t.GetGenericArguments()[0];
+                Type listType = typeof(List<>).MakeGenericType(elemType);
+                return Activator.CreateInstance(listType);
+            }
+        }
+        if (t.IsValueType)
+        {
+            return Activator.CreateInstance(t);
+        }
+        return null;
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -67,14 +68,40 @@ public sealed class DllSignatureGate
         string actualSha = DllLocator.ComputeSha256(dllPath);
         bool hashMatch = string.Equals(actualSha, pin.PinnedDllSha256, StringComparison.OrdinalIgnoreCase);
 
-        // 2. Load assembly
-        Assembly sts2 = Assembly.LoadFile(dllPath);
+        // 2. Install AssemblyResolve hook so sts2.dll's references (GodotSharp.dll,
+        //    0Harmony.dll, etc.) can be located in the Steam install dir. Without
+        //    this hook, GetType("...Players.Player") returns null because the
+        //    type's base/interface classes can't be loaded — the gate then
+        //    misreports every type as "not found". Mirrors UpstreamDriver's
+        //    ResolveFromSteamDir.
+        string steamDir = Path.GetDirectoryName(dllPath) ?? "";
+        AppDomain.CurrentDomain.AssemblyResolve += (object? _, ResolveEventArgs args) =>
+        {
+            string asmFile = new AssemblyName(args.Name).Name + ".dll";
+            string candidate = Path.Combine(steamDir, asmFile);
+            if (File.Exists(candidate))
+            {
+                try
+                {
+                    return Assembly.LoadFrom(candidate);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+            return null;
+        };
 
-        // 3. Extract reflection targets from UpstreamDriver.cs via Roslyn AST
+        // 3. Load assembly via LoadFrom so the resolve hook can locate
+        //    dependencies on probing.
+        Assembly sts2 = Assembly.LoadFrom(dllPath);
+
+        // 4. Extract reflection targets from UpstreamDriver.cs via Roslyn AST
         IReadOnlyList<ReflectionCallExtractor.ReflectionTarget> targets =
             ReflectionCallExtractor.ExtractFromUpstreamDriver();
 
-        // 4. Verify each target
+        // 5. Verify each target
         var missing = new List<string>();
         foreach (var target in targets)
         {
@@ -83,7 +110,7 @@ public sealed class DllSignatureGate
                 missing.Add(failure);
         }
 
-        // 5. Build structured failure report
+        // 6. Build structured failure report
         if (!hashMatch || missing.Count > 0)
         {
             var sb = new StringBuilder();
