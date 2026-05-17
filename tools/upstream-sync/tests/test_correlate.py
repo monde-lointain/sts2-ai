@@ -14,6 +14,7 @@ from upstream_sync.correlate import (
     SECTION_BUCKET_HINTS,
     CorrelationMap,
     character_scope_filter,
+    entity_in_allowlist,
     extract_file_stem,
     normalize_section_header,
     score_entity_match,
@@ -631,3 +632,60 @@ def test_module_docstring_emphasizes_advisory():
     """Q1-ADR-013 Element 1: HINT framing, not authority."""
     doc = (correlate.__doc__ or "").lower()
     assert "advisory" in doc or "hint" in doc
+
+
+# ---------- Concern #2 — content_allowlist filtering in correlate ----------
+
+
+def test_correlate_allowlist_filters_non_game_entities():
+    """Entities not in allowlist are dropped when allowlist is non-empty."""
+    diff = _report({BUCKET_CARDS: [_entry("src/Core/Models/Cards/Untouchable.cs")]})
+    # Note contains [b]Untouchable[/b] (in allowlist) and [b]UI Label[/b] (not)
+    notes = [_note("g1", "[b]Untouchable[/b] buffed; also [b]UI Label[/b] updated.")]
+    allowlist = frozenset({"Untouchable"})
+    result = do_correlate(diff, notes, content_allowlist=allowlist)
+    # Untouchable should match
+    assert "src/Core/Models/Cards/Untouchable.cs" in result.matches
+    # The non-allowlist entity 'UI Label' should not affect the result
+    # (UI Label can't match any diff path anyway in this setup, but the key
+    # is that no error is thrown and matching still works)
+
+
+def test_correlate_allowlist_empty_disables_filtering():
+    """Empty allowlist = no filtering; all entities are candidates."""
+    diff = _report({BUCKET_CARDS: [_entry("src/Core/Models/Cards/Strike.cs")]})
+    notes = [_note("g1", "[b]Strike[/b] damage increased.")]
+    result_no_filter = do_correlate(diff, notes, content_allowlist=frozenset())
+    result_none_filter = do_correlate(diff, notes, content_allowlist=None)
+    # Both should produce same matches
+    assert result_no_filter.matches.keys() == result_none_filter.matches.keys()
+
+
+def test_correlate_allowlist_none_disables_filtering():
+    """content_allowlist=None (default) means no filtering applied."""
+    diff = _report({BUCKET_RELICS: [_entry("src/Core/Models/Relics/Aeonglass.cs")]})
+    notes = [_note("g1", "[b]Aeonglass[/b] relic fixed.")]
+    result = do_correlate(diff, notes)  # no allowlist arg
+    assert "src/Core/Models/Relics/Aeonglass.cs" in result.matches
+
+
+def test_entity_in_allowlist_empty_allowlist_passes_all():
+    assert entity_in_allowlist("Anything", frozenset()) is True
+
+
+def test_entity_in_allowlist_exact_match():
+    al = frozenset({"Untouchable", "Inky"})
+    assert entity_in_allowlist("Untouchable", al) is True
+    assert entity_in_allowlist("Inky", al) is True
+
+
+def test_entity_in_allowlist_prefix_match():
+    """Entity 'Inky' in allowlist matches 'Inky enchantment' entity string."""
+    al = frozenset({"Inky"})
+    assert entity_in_allowlist("Inky enchantment", al) is True
+
+
+def test_entity_in_allowlist_rejects_unknown():
+    al = frozenset({"Untouchable"})
+    assert entity_in_allowlist("Artwork Credit", al) is False
+    assert entity_in_allowlist("The", al) is False

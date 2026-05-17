@@ -13,7 +13,14 @@
       "decision": "PORT",
       "status": "PENDING",
       "re_eval_trigger": null,
-      "patch_notes_hint": "PCN: 'New slime variant' (gid 42)",
+      "patch_notes_hint": {
+        "change_type": "added",
+        "magnitude": null,
+        "version": "Beta Hotfix Notes - v0.105.1",
+        "excerpt": "New slime variant",
+        "gid": "42",
+        "claim_only_candidate": false
+      },
       "rationale": "New file in monsters"
     },
     {

@@ -30,6 +30,7 @@ from typing import Literal
 
 import jinja2
 
+from upstream_sync.change_type import classify_change_type
 from upstream_sync.correlate import CorrelationMap, Match
 from upstream_sync.diff_analyze import (
     BUCKET_ACTS,
@@ -236,7 +237,7 @@ class PortRow:
     character_tag: str | None
     decision: DecisionKind
     re_eval_trigger: str | None
-    patch_notes_hint: str | None
+    patch_notes_hint: dict | None  # structured hint dict; see _format_hint
     rationale: str
 
 
@@ -342,12 +343,53 @@ def _format_status(entry: DiffEntry) -> str:
     return entry.status
 
 
-def _format_hint(match: Match | None) -> str | None:
-    """Format the top-1 correlation match as ``PCN: '<excerpt>' (gid <gid>)``."""
+def _format_hint(
+    match: Match | None,
+    git_status: str | None = None,
+    *,
+    unmatched_note_gids: frozenset[str] | None = None,
+) -> dict | None:
+    """Build the structured patch-notes hint dict for a port-decision row.
+
+    Returns ``None`` if no correlation match is available.
+
+    Schema (v2 — replaces plain string PCN: format)::
+
+        {
+            "change_type": str,  # "buffed"|"nerfed"|"added"|...
+            "magnitude": str | None,  # "+2→+3" or null
+            "version": str | None,  # e.g. "v0.105.1" from note title
+            "excerpt": str,  # ~120-char BBCode-stripped excerpt
+            "gid": str,  # Steam announcement gid
+            "claim_only_candidate": bool,  # True when no upstream .cs diff seen
+        }
+
+    ``claim_only_candidate`` (concern #5): set True when the correlator
+    surfaced a hint but the row's ``git_status`` is ``None`` / not a .cs
+    change, or when the match's ``note_gid`` appears in ``unmatched_note_gids``
+    (notes that didn't produce any code-level match).  This flag is used by
+    the 10.5.β audit to filter PATCH-NOTES-CLAIM-ONLY rows.
+    """
     if match is None:
         return None
-    excerpt = match.excerpt.replace("'", "’")  # avoid quote-in-quote
-    return f"PCN: '{excerpt}' (gid {match.note_gid})"
+    change_type, magnitude = classify_change_type(match.excerpt)
+
+    # claim_only_candidate: True when there is no upstream .cs change
+    # (git_status is None or not set) or the note had no code-level match.
+    claim_only = False
+    if git_status is None:
+        claim_only = True
+    if unmatched_note_gids and match.note_gid in unmatched_note_gids:
+        claim_only = True
+
+    return {
+        "change_type": change_type,
+        "magnitude": magnitude,
+        "version": match.note_title,  # full title contains version hint
+        "excerpt": match.excerpt,
+        "gid": match.note_gid,
+        "claim_only_candidate": claim_only,
+    }
 
 
 def _is_priority_char(character_tag: str | None, priority: str) -> bool:
@@ -399,6 +441,7 @@ def build_port_rows(
 
             matches = correlation_map.matches.get(entry.path, [])
             top = matches[0] if matches else None
+            _unmatched = frozenset(correlation_map.unmatched_notes)
             row = PortRow(
                 path=entry.path,
                 status=_format_status(entry),
@@ -406,7 +449,11 @@ def build_port_rows(
                 character_tag=entry.character_tag,
                 decision=decision,
                 re_eval_trigger=trig,
-                patch_notes_hint=_format_hint(top),
+                patch_notes_hint=_format_hint(
+                    top,
+                    git_status=entry.status if entry.status in ("M", "A", "D", "R") else None,
+                    unmatched_note_gids=_unmatched,
+                ),
                 rationale=rationale,
             )
             rows.append(row)
@@ -649,6 +696,9 @@ def write_sidecar(
     version_range: str,
     generated_at: str,
     tool_version: str,
+    *,
+    wave: int | float | None = None,
+    stream_id: str | None = None,
 ) -> Path:
     """Write the machine-readable JSON sidecar alongside the markdown doc.
 
@@ -659,9 +709,9 @@ def write_sidecar(
     files share the same numeric slot.  Idempotent: if a JSON sidecar for
     the same ``version_range`` already exists, it is overwritten.
 
-    Schema:
+    Schema (v2):
         {
-          "schema_version": "v1",
+          "schema_version": "v2",
           "version_range": "<from>-to-<to>",
           "generated_at": "ISO-8601",
           "tool_version": "<semver>",
@@ -675,12 +725,28 @@ def write_sidecar(
               "decision": "PORT|DELETE|DEFER|IGNORE|SURFACE-NO-ACTION",
               "status": "PENDING|DISPATCHED|MERGED|DEFERRED|NO_ACTION_NEEDED",
               "re_eval_trigger": "<str|null>",
-              "patch_notes_hint": "<str|null>",
-              "rationale": "<str>"
+              "patch_notes_hint": {<dict>|null},
+              "rationale": "<str>",
+              "wave": <int|float|null>,
+              "stream_id": "<str|null>"
             },
             ...
           ]
         }
+
+    Backward-compat read: if ``wave`` or ``stream_id`` fields are absent in an
+    older sidecar, treat as ``null``.  ``patch_notes_hint`` is a structured
+    dict (schema v2) or ``null``; callers reading v1 sidecars (plain string)
+    should coerce to ``{"excerpt": value, ...}`` or ignore on ``str`` type.
+
+    Parameters
+    ----------
+    wave:
+        Wave number (int or float, e.g. ``10`` or ``10.5``).  Populated by
+        ``/wave-close`` hook.  ``None`` at generation time.
+    stream_id:
+        Stream identifier string, e.g. ``"10.β"`` or ``"B.2-γ"``.  ``None``
+        at generation time.
     """
     specs_dir = monorepo_root / _SPECS_REL
     specs_dir.mkdir(parents=True, exist_ok=True)
@@ -739,13 +805,15 @@ def write_sidecar(
                     "decision": row.decision,
                     "status": sync_status_for_decision(row.decision),
                     "re_eval_trigger": row.re_eval_trigger,
-                    "patch_notes_hint": row.patch_notes_hint,
+                    "patch_notes_hint": row.patch_notes_hint,  # dict | null
                     "rationale": row.rationale,
+                    "wave": wave,  # int | float | null; populated by /wave-close
+                    "stream_id": stream_id,  # str | null; e.g. "10.β"
                 }
             )
 
     sidecar = {
-        "schema_version": "v1",
+        "schema_version": "v2",
         "version_range": version_range,
         "generated_at": generated_at,
         "tool_version": tool_version,

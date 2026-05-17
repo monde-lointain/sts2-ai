@@ -35,6 +35,7 @@ from upstream_sync.port_decisions import (
     build_q4_advisory,
     render,
     write_doc,
+    write_sidecar,
 )
 
 # --------------------------------------------------------------------------- #
@@ -272,9 +273,11 @@ def test_build_port_rows_pulls_correlation_hint_when_present():
     assert len(rows) == 1
     hint = rows[0].patch_notes_hint
     assert hint is not None
-    assert "PCN" in hint
-    assert "1832" in hint
-    assert "Strike" in hint
+    assert isinstance(hint, dict)
+    assert hint["gid"] == "1832"
+    assert "Strike" in hint["excerpt"]
+    assert "change_type" in hint
+    assert "claim_only_candidate" in hint
 
 
 def test_build_port_rows_hint_none_when_no_correlation():
@@ -626,3 +629,187 @@ def test_assign_decision_encounters_modified_ports():
     entry = _entry("src/Core/Models/Encounters/StaticEncounter.cs", status="M")
     decision, _, _ = assign_decision(entry, BUCKET_ENCOUNTERS)
     assert decision == "PORT"
+
+
+# --------------------------------------------------------------------------- #
+# Concern #2 — Allowlist filtering in correlate                               #
+# --------------------------------------------------------------------------- #
+
+
+def test_build_port_rows_hint_structured_dict():
+    """patch_notes_hint is now a dict with required keys."""
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    report = _report({BUCKET_CARDS: [entry]})
+    corr = _corr(
+        matches={
+            "src/Core/Models/Cards/Strike.cs": [
+                _match("src/Core/Models/Cards/Strike.cs", "Strike", gid="9999")
+            ]
+        }
+    )
+    rows = build_port_rows(report, corr, "Silent")[BUCKET_CARDS]
+    hint = rows[0].patch_notes_hint
+    assert isinstance(hint, dict)
+    assert "change_type" in hint
+    assert "magnitude" in hint
+    assert "excerpt" in hint
+    assert "gid" in hint
+    assert "claim_only_candidate" in hint
+    assert hint["gid"] == "9999"
+
+
+# --------------------------------------------------------------------------- #
+# Concern #5 — claim_only_candidate flag                                      #
+# --------------------------------------------------------------------------- #
+
+
+def test_hint_claim_only_when_no_git_status():
+    """claim_only_candidate=True when entry has no upstream .cs change."""
+    entry = _entry("src/Core/Models/Cards/NightmarePower.cs", status="M")
+    # Build a match for this path
+    corr = _corr(
+        matches={
+            "src/Core/Models/Cards/NightmarePower.cs": [
+                _match("src/Core/Models/Cards/NightmarePower.cs", "NightmarePower", gid="777")
+            ]
+        }
+    )
+    report = _report({BUCKET_CARDS: [entry]})
+    rows = build_port_rows(report, corr, "Silent")[BUCKET_CARDS]
+    hint = rows[0].patch_notes_hint
+    assert hint is not None
+    # Status "M" means there IS a code diff, so claim_only_candidate should be False
+    assert hint["claim_only_candidate"] is False
+
+
+def test_hint_claim_only_false_when_code_diff_present():
+    """claim_only_candidate=False for a standard modified-file match."""
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    corr = _corr(
+        matches={
+            "src/Core/Models/Cards/Strike.cs": [
+                _match("src/Core/Models/Cards/Strike.cs", "Strike", gid="8888")
+            ]
+        }
+    )
+    report = _report({BUCKET_CARDS: [entry]})
+    rows = build_port_rows(report, corr, "Silent")[BUCKET_CARDS]
+    hint = rows[0].patch_notes_hint
+    assert hint is not None
+    assert hint["claim_only_candidate"] is False
+
+
+def test_hint_claim_only_true_for_unmatched_note_gid():
+    """claim_only_candidate=True when the note's gid is in unmatched_notes."""
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    # The match gid is in unmatched_notes (i.e. the note produced no code match elsewhere)
+    corr = CorrelationMap(
+        matches={
+            "src/Core/Models/Cards/Strike.cs": [
+                _match("src/Core/Models/Cards/Strike.cs", "Strike", gid="CLAIM_ONLY")
+            ]
+        },
+        unmatched_notes=["CLAIM_ONLY"],
+    )
+    report = _report({BUCKET_CARDS: [entry]})
+    rows = build_port_rows(report, corr, "Silent")[BUCKET_CARDS]
+    hint = rows[0].patch_notes_hint
+    assert hint is not None
+    assert hint["claim_only_candidate"] is True
+
+
+# --------------------------------------------------------------------------- #
+# Concern #6 — wave / stream_id sidecar fields                                #
+# --------------------------------------------------------------------------- #
+
+
+def _setup_monorepo_for_sidecar(tmp_path: Path) -> Path:
+    """Create minimal monorepo directory structure for sidecar write tests."""
+    root = tmp_path / "repo"
+    (root / "engine" / "headless" / "docs" / "specs").mkdir(parents=True)
+    return root
+
+
+def test_write_sidecar_includes_wave_and_stream_id(tmp_path):
+    """wave and stream_id are present in every row and top-level schema."""
+    root = _setup_monorepo_for_sidecar(tmp_path)
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    rows_by_bucket = {
+        BUCKET_CARDS: [
+            build_port_rows(_report({BUCKET_CARDS: [entry]}), _corr(), "Silent")[BUCKET_CARDS][0]
+        ]
+    }
+    path = write_sidecar(
+        rows_by_bucket,
+        root,
+        "v0.103.2-to-v0.105.1",
+        "2026-05-17T00:00:00Z",
+        "0.1.0",
+        wave=10.5,
+        stream_id="10.5.α",
+    )
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["schema_version"] == "v2"
+    row = data["rows"][0]
+    assert row["wave"] == 10.5
+    assert row["stream_id"] == "10.5.α"
+
+
+def test_write_sidecar_wave_stream_null_by_default(tmp_path):
+    """wave and stream_id default to None when not supplied."""
+    root = _setup_monorepo_for_sidecar(tmp_path)
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    rows_by_bucket = {
+        BUCKET_CARDS: [
+            build_port_rows(_report({BUCKET_CARDS: [entry]}), _corr(), "Silent")[BUCKET_CARDS][0]
+        ]
+    }
+    path = write_sidecar(
+        rows_by_bucket,
+        root,
+        "v0.103.2-to-v0.105.1",
+        "2026-05-17T00:00:00Z",
+        "0.1.0",
+    )
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    row = data["rows"][0]
+    assert row["wave"] is None
+    assert row["stream_id"] is None
+
+
+def test_write_sidecar_patch_notes_hint_is_dict(tmp_path):
+    """patch_notes_hint in the sidecar is a dict (schema v2), not a string."""
+    root = _setup_monorepo_for_sidecar(tmp_path)
+    entry = _entry("src/Core/Models/Cards/Strike.cs", status="M")
+    corr = _corr(
+        matches={
+            "src/Core/Models/Cards/Strike.cs": [
+                _match("src/Core/Models/Cards/Strike.cs", "Strike", gid="42")
+            ]
+        }
+    )
+    rows_by_bucket = {
+        BUCKET_CARDS: build_port_rows(_report({BUCKET_CARDS: [entry]}), corr, "Silent")[
+            BUCKET_CARDS
+        ]
+    }
+    path = write_sidecar(
+        rows_by_bucket,
+        root,
+        "v0.103.2-to-v0.105.1",
+        "2026-05-17T00:00:00Z",
+        "0.1.0",
+    )
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    row = data["rows"][0]
+    hint = row["patch_notes_hint"]
+    assert isinstance(hint, dict)
+    assert hint["gid"] == "42"
+    assert "change_type" in hint
+    assert "claim_only_candidate" in hint

@@ -218,3 +218,135 @@ def test_snapshot_generic_card_prompt():
     row = _row_by_path(rows, "src/Core/Models/Cards/Strike_Silent.cs")
     result = render_prompt(_make_inputs(row))
     _check_or_update("generic_Strike_Silent.txt", result)
+
+
+# ---------------------------------------------------------------------------
+# Concern #4 — Hint-present + hint-absent snapshot tests
+# ---------------------------------------------------------------------------
+
+
+def _make_untouchable_row() -> dict:
+    """Synthesize a port-decision row for Untouchable.cs with a populated hint."""
+    return {
+        "path": "src/Core/Models/Cards/Untouchable.cs",
+        "bucket": "cards",
+        "git_status": "M",
+        "line_delta": 4,
+        "character_tag": "Silent",
+        "decision": "PORT",
+        "status": "PENDING",
+        "re_eval_trigger": None,
+        "patch_notes_hint": {
+            "change_type": "buffed",
+            "magnitude": "+2→+3",
+            "version": "Beta Hotfix Notes - v0.105.1",
+            "excerpt": "Buffed Untouchable card: upgraded Block gain increased From +2 -> +3",
+            "gid": "1832065502816737",
+            "claim_only_candidate": False,
+        },
+        "rationale": "Modified file in cards",
+        "wave": 10.5,
+        "stream_id": "10.5.α",
+    }
+
+
+def _make_no_hint_row() -> dict:
+    """Synthesize a port-decision row with no patch-notes hint."""
+    return {
+        "path": "src/Core/Models/Cards/SilentStrike.cs",
+        "bucket": "cards",
+        "git_status": "M",
+        "line_delta": 2,
+        "character_tag": "Silent",
+        "decision": "PORT",
+        "status": "PENDING",
+        "re_eval_trigger": None,
+        "patch_notes_hint": None,
+        "rationale": "Modified file in cards",
+        "wave": None,
+        "stream_id": None,
+    }
+
+
+def test_hint_present_contains_header():
+    """Hint-present: prompt must contain the ## ⚠ Patch-notes hint header."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "## ⚠ Patch-notes hint" in result
+
+
+def test_hint_present_contains_change_type_block():
+    """Hint-present: prompt must contain the Change type line for Untouchable."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "**Change type**" in result
+    assert "buffed" in result
+
+
+def test_hint_present_contains_magnitude():
+    """Hint-present: magnitude is rendered when non-null."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "+2→+3" in result
+
+
+def test_hint_present_contains_excerpt():
+    """Hint-present: excerpt text is surfaced."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "Buffed Untouchable card" in result
+
+
+def test_hint_present_contains_gid():
+    """Hint-present: gid is referenced."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "1832065502816737" in result
+
+
+def test_hint_present_cross_check_instruction():
+    """Hint-present: REQUIRED cross-check instruction is present."""
+    row = _make_untouchable_row()
+    result = render_prompt(_make_inputs(row))
+    assert "REQUIRED" in result
+    assert "patch-notes-claim-vs-code-diff-mismatch" in result
+
+
+def test_hint_absent_contains_header():
+    """Hint-absent: prompt still contains the ## ⚠ Patch-notes hint header."""
+    row = _make_no_hint_row()
+    result = render_prompt(_make_inputs(row))
+    assert "## ⚠ Patch-notes hint" in result
+
+
+def test_hint_absent_contains_no_hint_line():
+    """Hint-absent: the 'no hint surfaced' fallback line is present."""
+    row = _make_no_hint_row()
+    result = render_prompt(_make_inputs(row))
+    assert "No patch-notes hint surfaced for this row" in result
+
+
+def test_hint_absent_no_change_type_block():
+    """Hint-absent: no Change type block rendered."""
+    row = _make_no_hint_row()
+    result = render_prompt(_make_inputs(row))
+    assert "**Change type**" not in result
+
+
+def test_hint_present_monster_template():
+    """Hint-present works for monster.j2 as well."""
+    row = _make_untouchable_row()
+    row = {**row, "bucket": "monsters", "path": "src/Core/Models/Monsters/InkyMonster.cs"}
+    result = render_prompt(_make_inputs(row))
+    assert "## ⚠ Patch-notes hint" in result
+    assert "**Change type**" in result
+    assert "buffed" in result
+
+
+def test_hint_absent_monster_template():
+    """Hint-absent fallback works for monster.j2."""
+    row = _make_no_hint_row()
+    row = {**row, "bucket": "monsters", "path": "src/Core/Models/Monsters/SomeMonster.cs"}
+    result = render_prompt(_make_inputs(row))
+    assert "## ⚠ Patch-notes hint" in result
+    assert "No patch-notes hint surfaced for this row" in result

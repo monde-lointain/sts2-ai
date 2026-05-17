@@ -16,12 +16,25 @@ All Edit/Write `file_path` absolute (use `pwd` at session start and keep it as `
 - Port-decision row:
   - Path: `{{ row.path }}`
   - Diff status: `{{ row.status }}`{% if row.line_delta is not none %}
-  - Line delta: {{ row.line_delta }}{% endif %}{% if row.patch_notes_hint %}
-  - Patch-notes hint: {{ row.patch_notes_hint }}{% endif %}
+  - Line delta: {{ row.line_delta }}{% endif %}
   - Decision: `{{ row.decision }}`
   - Rationale: {{ row.rationale }}{% if row.re_eval_trigger %}
   - Re-eval trigger: {{ row.re_eval_trigger }}{% endif %}{% if row.character_tag %}
   - Character tag: {{ row.character_tag }}{% endif %}
+
+## ⚠ Patch-notes hint (verify against diff)
+{% if row.patch_notes_hint %}
+- **Change type**: {{ row.patch_notes_hint.change_type }}{% if row.patch_notes_hint.magnitude %} ({{ row.patch_notes_hint.magnitude }}){% endif %}
+- **Version**: {{ row.patch_notes_hint.version }}
+- **Excerpt**: "{{ row.patch_notes_hint.excerpt }}"
+- **Source**: Steam patch note gid={{ row.patch_notes_hint.gid }}
+
+**REQUIRED**: cross-check this hint against the upstream code diff. If hint claims a stat change (e.g., "+2 → +3") that does NOT appear in the .cs diff, document the discrepancy in your port-log row as `patch-notes-claim-vs-code-diff-mismatch`. **Do NOT skip a row just because the diff looks like Godot threading — the hint trumps pattern recognition.**
+{% else %}
+- _No patch-notes hint surfaced for this row. Verify diff substance per standard workflow._
+{% endif %}
+
+---
 - Upstream file (decompiled): `<UPSTREAM_TREE>/{{ row.path }}`
 - Target location in sts2-ai: **[DISPATCHER: fill in target path]**
 

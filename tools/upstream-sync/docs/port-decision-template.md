@@ -28,7 +28,7 @@ known pattern. Review whether they should be tracked or ignored:
 | Path | Status | Char | Decision | Re-eval | Patch-notes HINT | Rationale |
 |---|---|---|---|---|---|---|
 {% for row in rows_by_bucket[bucket] | priority_char_filter(inputs.priority_character) -%}
-| `{{ row.path }}` | {{ row.status }} | {{ row.character_tag or '—' }} | **{{ row.decision }}** | {{ row.re_eval_trigger or '—' }} | {{ row.patch_notes_hint or '—' }} | {{ row.rationale }} |
+| `{{ row.path }}` | {{ row.status }} | {{ row.character_tag or '—' }} | **{{ row.decision }}** | {{ row.re_eval_trigger or '—' }} | {% if row.patch_notes_hint %}PCN: '{{ row.patch_notes_hint.excerpt | replace("'", "'") }}' (gid {{ row.patch_notes_hint.gid }}){% else %}—{% endif %} | {{ row.rationale }} |
 {% endfor %}
 {%- endif %}
 {%- endfor %}

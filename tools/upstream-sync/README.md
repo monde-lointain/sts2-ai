@@ -83,6 +83,85 @@ Alternate Steam install locations:
 
 Legacy v0 state files are auto-promoted to v1 on next write (new fields populated as null until next `make sync`).
 
+## Port-decision sidecar schema versions
+
+The port-decision JSON sidecar (`engine/headless/docs/specs/0N-*-port-decisions.json`) is versioned via the `schema_version` field.
+
+| Version | Changes | Introduced |
+|---|---|---|
+| v1 | Initial schema: rows with path, bucket, git_status, decision, status, patch_notes_hint (plain string), rationale | Wave 5 / Stream A.2 |
+| v2 | `patch_notes_hint` promoted to structured dict (`change_type`, `magnitude`, `version`, `excerpt`, `gid`, `claim_only_candidate`); added `wave` and `stream_id` per-row fields | Wave 10.5 / Stream 10.5.α |
+
+**Backward-compat read**: if `wave`, `stream_id`, or `claim_only_candidate` fields are absent in a v1 sidecar, treat as `null`. If `patch_notes_hint` is a string (v1 format), coerce to `{"excerpt": value, "gid": null, ...}` or ignore on `str` type.
+
+## Game-content allowlist (ModelDb introspection)
+
+The correlator optionally filters `[b]Entity[/b]` BBCode extractions to known game-content class names. The allowlist is derived from the upstream `sts2.dll` assembly via `content_allowlist.py`:
+
+- **Strategy (Option C — heuristic)**: scans the DLL's metadata string heap for CamelCase names ending in known content suffixes (`Power`, `Model`, `Card`, `Relic`, `Encounter`, `Potion`, `Enchantment`, `Affliction`, `Badge`). No .NET CLR runtime required.
+- **Cache**: `tools/upstream-sync/cache/content-allowlist-<sha7>.json` keyed by `pinned_dll_sha256` from `engine/headless/upstream-pin.json`. On cache hit, the DLL scan is skipped.
+- **CI safety**: if the DLL is absent (CI runners), returns an empty frozenset — the correlator treats this as "disabled" (no filtering).
+
+```python
+from upstream_sync.content_allowlist import build_allowlist
+from pathlib import Path
+
+allowlist = build_allowlist(
+    pin_json_path=Path("engine/headless/upstream-pin.json"),
+    cache_dir=Path("tools/upstream-sync/cache"),
+)
+# Pass to correlate:
+from upstream_sync.correlate import correlate
+corr = correlate(diff_report, patch_notes, content_allowlist=allowlist)
+```
+
+## Change-type classifier
+
+`change_type.py` provides heuristic classification of patch-note excerpt lines:
+
+```python
+from upstream_sync.change_type import classify_change_type
+
+ct, mag = classify_change_type("Buffed Untouchable card: upgraded Block gain increased From +2 -> +3")
+# ct = "buffed", mag = "+2→+3"
+
+ct, mag = classify_change_type("Fixed Aeonglass icon/intent display")
+# ct = "fixed", mag = None
+```
+
+`change_type` values: `"buffed" | "nerfed" | "added" | "removed" | "fixed" | "changed" | "reworked" | "unclassified"`.
+
+**Accuracy caveat**: this is heuristic keyword-matching, not NLP. Estimated accuracy on the v0.105.x corpus is ≥75% for change-type classification, ≥85% for magnitude extraction when a numeric range is present. If accuracy drops below 70% on your corpus, flag in the engineer report.
+
+## Patch-notes hint block in engineer-dispatch prompts
+
+Every prompt template (`monster.j2`, `generic-port.j2`) now renders a `## ⚠ Patch-notes hint` block **at the top of the per-row context section**, before the upstream diff. When a hint is available (structured dict from the correlator), it surfaces:
+
+- **Change type** (buffed/nerfed/added/...) with magnitude
+- **Version** (patch note title)
+- **Excerpt** (BBCode-stripped context around the entity mention)
+- **Source** (Steam gid)
+
+When no hint is available, the block renders a "No patch-notes hint surfaced" placeholder so engineers know the block was checked. The `REQUIRED` cross-check instruction prevents engineers from skipping a row just because the diff looks like a Godot threading change.
+
+## PATCH-NOTES-CLAIM-ONLY tracking
+
+`patch_notes_hint.claim_only_candidate: bool` flags rows where the correlator surfaced a hint but no upstream `.cs` code change was detected (e.g. behavior changes visible only in integration tests or game logic not yet decompiled). The 10.5.β audit filters these rows for the PATCH-NOTES-CLAIM-ONLY category.
+
+## update-port-decision-status.sh extension
+
+The `--wave` and `--stream` flags have been added to both single-row and batch modes:
+
+```bash
+# Single-row: flip to MERGED and stamp wave/stream
+.claude/scripts/update-port-decision-status.sh v0.105.1 src/Core/Models/Cards/Untouchable.cs MERGED --wave 10.5 --stream "10.5.α"
+
+# Batch: flip all matched rows from wave branch to MERGED with wave/stream stamp
+.claude/scripts/update-port-decision-status.sh --batch worktree-agent-abc123 --wave 10.5 --stream "10.5.α"
+```
+
+Wave and stream_id fields are written as JSON values into the matching row(s) in the sidecar. Existing rows without these fields (v1 sidecars) will have them added on first write.
+
 ## Pipeline auto-trigger
 
 Three trigger surfaces are supported (ADR-026):

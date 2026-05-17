@@ -59,6 +59,7 @@ __all__ = [
     "Match",
     "character_scope_filter",
     "correlate",
+    "entity_in_allowlist",
     "extract_file_stem",
     "normalize_section_header",
     "score_entity_match",
@@ -317,6 +318,38 @@ def _iter_diff_entries(
     return [entry for entries in diff_report.buckets.values() for entry in entries]
 
 
+def entity_in_allowlist(entity: str, allowlist: frozenset[str]) -> bool:
+    """Return True if *entity* should be kept given *allowlist*.
+
+    Rules:
+    - If ``allowlist`` is empty (disabled/CI), always return True.
+    - Otherwise: check exact match, then check if the entity *starts with* any
+      allowlist name (catches "Untouchable card" -> "Untouchable") and if any
+      allowlist name *starts with* entity (catches partial entity names).
+
+    This is intentionally lenient — a false-positive (keeping a UI label)
+    is preferable to a false-negative (dropping a real game-content entity).
+    """
+    if not allowlist:
+        return True
+    entity_norm = entity.strip().rstrip(":").strip()
+    if not entity_norm:
+        return True
+    # Exact match
+    if entity_norm in allowlist:
+        return True
+    # entity is a prefix of an allowlist name (e.g. "Untouchable" in "Untouchable")
+    # or allowlist name is prefix of entity (e.g. "Inky" in "Inky enchantment")
+    entity_lower = entity_norm.lower()
+    for name in allowlist:
+        name_lower = name.lower()
+        if entity_lower == name_lower:
+            return True
+        if entity_lower.startswith(name_lower) or name_lower.startswith(entity_lower):
+            return True
+    return False
+
+
 def correlate(
     diff_report: DiffReport,
     patch_notes: list[PatchNote],
@@ -324,6 +357,7 @@ def correlate(
     discovered_characters: set[str] | None = None,
     top_n_per_path: int = 3,
     excerpt_chars: int = 120,
+    content_allowlist: frozenset[str] | None = None,
 ) -> CorrelationMap:
     """Build a :class:`CorrelationMap` from a :class:`DiffReport` and patch notes.
 
@@ -380,6 +414,13 @@ def correlate(
     excerpt_chars:
         Approximate character count of the ``Match.excerpt`` window
         (default 120).
+    content_allowlist:
+        Optional frozenset of short class names from
+        :func:`upstream_sync.content_allowlist.build_allowlist`. When
+        non-empty, ``[b]Entity[/b]`` extractions are filtered to entities
+        whose name is IN the allowlist (via :func:`entity_in_allowlist`) —
+        UI labels, credits, and other non-game-content strings are rejected.
+        ``None`` or empty frozenset disables filtering (safe default for CI).
 
     Returns
     -------
@@ -417,6 +458,13 @@ def correlate(
             section_norm = normalize_section_header(raw_section)
             entity_norm = _normalize_entity(raw_entity)
             if not entity_norm:
+                continue
+
+            # Allowlist filtering: if a non-empty allowlist is provided,
+            # skip entities that are not recognizable game-content names.
+            # An empty or None allowlist disables filtering (CI-safe).
+            _eff_allowlist = content_allowlist if content_allowlist else frozenset()
+            if _eff_allowlist and not entity_in_allowlist(raw_entity, _eff_allowlist):
                 continue
 
             # Character scoping: if section names a character, use it.

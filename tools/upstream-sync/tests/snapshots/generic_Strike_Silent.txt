@@ -20,6 +20,13 @@ All Edit/Write `file_path` absolute (use `pwd` at session start and keep it as `
   - Decision: `PORT`
   - Rationale: Modified file in cards
   - Character tag: Silent
+
+## ⚠ Patch-notes hint (verify against diff)
+
+- _No patch-notes hint surfaced for this row. Verify diff substance per standard workflow._
+
+
+---
 - Upstream file (decompiled): `<UPSTREAM_TREE>/src/Core/Models/Cards/Strike_Silent.cs`
 - Target location in sts2-ai: **[DISPATCHER: fill in target path]**
 

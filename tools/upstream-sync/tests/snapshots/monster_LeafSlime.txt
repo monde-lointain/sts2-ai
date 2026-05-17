@@ -16,9 +16,20 @@ All Edit/Write `file_path` absolute (use `pwd` at session start and keep it as `
   - Path: `src/Core/Models/Monsters/LeafSlime.cs`
   - Diff status: `PENDING`
   - Line delta: 120
-  - Patch-notes hint: PCN: 'New slime variant' (gid 42)
   - Decision: `PORT`
   - Rationale: New file in monsters
+
+## ⚠ Patch-notes hint (verify against diff)
+
+- **Change type**: added
+- **Version**: Beta Hotfix Notes - v0.105.1
+- **Excerpt**: "New slime variant"
+- **Source**: Steam patch note gid=42
+
+**REQUIRED**: cross-check this hint against the upstream code diff. If hint claims a stat change (e.g., "+2 → +3") that does NOT appear in the .cs diff, document the discrepancy in your port-log row as `patch-notes-claim-vs-code-diff-mismatch`. **Do NOT skip a row just because the diff looks like Godot threading — the hint trumps pattern recognition.**
+
+
+---
 - Upstream file (decompiled): `<UPSTREAM_TREE>/src/Core/Models/Monsters/LeafSlime.cs`
 - Target C# file (sts2-ai): `<WROOT>/engine/headless/src/<MIRRORED_PATH>`
 
