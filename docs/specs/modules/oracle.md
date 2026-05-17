@@ -14,7 +14,7 @@ substrate: engine/cpp/
 - **[SHIPPED]** Run expectimax over `CompactState` to produce optimal `(value, action)` for any state small enough to fully expand. Existing capability today (`engine/cpp/src/ai/`); preserved per ADR-004.
 - **[ASPIRATION (parked per project-lead grounding)]** Emit the **oracle-agreement signal**: for any state the oracle can solve in budget, compare the network's top-1 action and value with the oracle's. Drives prioritized labeling at Q10. (Sink writer SHIPPED at `engine/cpp/src/oracle/agreement/sink.cc` per Q2-ADR-004; *consumer pathway* awaits Q10 boot.)
 - **[SHIPPED]** Maintain the **pinned-seed regression set** (`tools/seed-pinner` pattern, today at `tests/seeds/expected_values.h`). **[PHASE-1.5]** Generalize this from one encounter to a per-component battery.
-- **[SHIPPED]** **Engine→CompactState adapter (ADR-011).** Consume Q1's versioned binary state and derive `CompactState` for verifier use. (`engine/cpp/src/oracle/adapter/` per Q2-ADR-001; Phase-1A scope = cultist + Q2-ADR-006 framework; per-encounter expansion per ADR-029 Path A campaign. Non-cultist encounter signatures still reject with `UnsupportedEncounter` diagnostic until their wave adds the corresponding `MonsterMoveTable` entry.)
+- **[SHIPPED]** **Engine→CompactState adapter (ADR-011).** Consume Q1's versioned binary state and derive `CompactState` for verifier use. (`engine/cpp/src/oracle/adapter/` per Q2-ADR-001; Phase-1A scope = cultist + Q2-ADR-006 framework + LouseProgenitorNormal (wave-17); per-encounter expansion per ADR-029 Path A campaign. Non-cultist encounter signatures still reject with `UnsupportedEncounter` diagnostic until their wave adds the corresponding `MonsterMoveTable` entry. LouseProgenitor adapter projection at `engine/cpp/src/oracle/adapter/louse_progenitor_projection.cc`.)
 - **[SHIPPED]** Expose a "verify this state" RPC for Q12 to invoke during evaluation. (`engine/cpp/tools/oracle-verify-server/` per Q2-ADR-003; Q12 consumer not yet booted, transport is forward-laid.)
 
 Out of scope: anything network-side. Q2 does not call the inference server, does not load weights, does not produce trajectories.
@@ -42,7 +42,7 @@ Out of scope: anything network-side. Q2 does not call the inference server, does
 
 ## Phase Expectations [MIXED — see bullets]
 
-- **[SHIPPED]** **Phase 1.** Existing expectimax preserved as-is. Adapter (ADR-011) added when Q1 transitions from C++ prototype to C# headless. **[PHASE-1.5]** Pinned regression set extended to cover the Phase 1 encounter pool. (Phase-1A scope = cultist + Q2-ADR-006 framework; per-encounter coverage extends via Q2-ADR-007 data-table additions per the Path A campaign — ADR-029.)
+- **[SHIPPED]** **Phase 1.** Existing expectimax preserved as-is. Adapter (ADR-011) added when Q1 transitions from C++ prototype to C# headless. **[PHASE-1.5]** Pinned regression set extended to cover the Phase 1 encounter pool. (Phase-1A scope = CULTISTS_NORMAL + LouseProgenitorNormal; per-encounter coverage extends via Q2-ADR-007 data-table additions per the Path A campaign — ADR-029; next encounters scheduled per wave-18+.)
 - **[PHASE-2]** **Phase 2.** Pinned regression set covers card-pick decision points where the oracle can fully expand combat from each candidate offer.
 - **[PHASE-3+]** **Phase 3+.** Oracle scope unchanged — it remains a *verifier on small states*. We do not try to expand the expectimax tractability frontier; we accept the network as the policy on large states and verify what we can.
 
@@ -59,7 +59,7 @@ Q2-ADR-006/007/008 (ratified wave-16) generalize the substrate from cultist-hard
 - **[SHIPPED]** Q2-ADR-002 Phase-1A scope (CULTISTS_NORMAL only) is superseded by Q2-ADR-006. The adapter now supports arbitrary `MonsterKind` entries; per-encounter coverage extends via Q2-ADR-007 data-table additions without new transition-code changes.
 - **[SHIPPED]** Cultist oracle values are numerically identical pre/post refactor (`CultistSolveMatchesPreRefactor` regression test). `algorithm_sha` rotated (Q2-ADR-005); cultist values unchanged.
 - **[PHASE-1.5]** ADR-029 (Path A campaign) is the pipeline-level roadmap for expanding encounter coverage. Wave-17 = LouseProgenitor; wave-18+ = remaining Phase-1 encounters. Each wave narrows the `encounter_not_in_cpp_engine` reject set.
-- **[PHASE-1.5]** D3 fixture #5 (LouseProgenitorNormal) remains a reject-with-diagnostic until wave-17 lands.
+- **[SHIPPED]** D3 fixture #5 (LouseProgenitorNormal) transitions to full round-trip at wave-17: `CurlUpPower` + `FrailPower` hooks implemented; `LouseProgenitorNormal` `MonsterMoveTable` entry populated; adapter projection at `engine/cpp/src/oracle/adapter/louse_progenitor_projection.cc`; pinned seed added (D3 fixture #5). Q2-ADR-009 ratifies this.
 
 No interface change to `verify()` RPC (Q2-ADR-003), oracle-agreement schema (Q2-ADR-004), or manifest (Q2-ADR-005). `CompactState` remains Q2-internal; no `contracts/schemas/` change.
 

@@ -18,6 +18,7 @@ then positives).
 | Q2-ADR-006 | Polymorphic Power-Hook Framework | Accepted (2026-05-17) |
 | Q2-ADR-007 | Data-Driven `MonsterMoveTable` | Accepted (2026-05-17) |
 | Q2-ADR-008 | STS-Canonical Damage/Block Formula Extraction | Accepted (2026-05-17) |
+| Q2-ADR-009 | LouseProgenitor Port — First Encounter via Q2-ADR-006 Framework | Accepted (2026-05-17) |
 
 ---
 
@@ -614,3 +615,40 @@ All transition call sites use these helpers; no inline formula duplication.
 - *Positive:* Future encounter powers (Dexterity, additional Vulnerable stacking) extend the helpers at one site; all call sites benefit automatically.
 
 **Origin.** Wave-16 plan §Framework design §5. Upstream authority `DamageCmd.cs` + `BlockCmd.cs` (STS2 canonical floor-rounding).
+
+---
+
+## Q2-ADR-009 — LouseProgenitor Port (first encounter via Q2-ADR-006 framework)
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Wave-17 ports LouseProgenitor as the first non-cultist encounter exercising the Q2-ADR-006 power-hook framework and Q2-ADR-007 data-driven `MonsterMoveTable`. Q1's `CurlUpPower` and `FrailPower` are behavioral stubs (no hooks implemented in the C# headless engine — they carry the correct power IDs and stacks on the wire but perform no semantic computation during combat resolution). Q2 implements STS2-canonical semantics per upstream `CurlUpPower.cs:14-71` and `FrailPower.cs:22-41` directly, not derived from Q1's stubs. This is the first exercise of the end-to-end framework path (enum reservation wave-16 → hook implementation + table population + adapter projection wave-17).
+
+**Decision.**
+
+1. **LouseProgenitor `MonsterMoveTable` entry** populated in `monster_moves.cc`: HP 134–136 (A0); 3-move rotation starting at WEB_CANNON; follow-up chain WEB_CANNON → CURL_AND_GROW → POUNCE → WEB_CANNON (index 0 → 1 → 2 → 0). Move effects:
+   - `WEB_CANNON`: `kAttack(9)` + `kDebuffPlayer(Frail, 2)`.
+   - `CURL_AND_GROW`: `kDefend(14)` + `kBuffSelf(Strength, 5)`.
+   - `POUNCE`: `kAttack(16)`.
+   Spawn-power entry: `{kCurlUp, 14}` applied at `kOnSpawn`.
+
+2. **`CurlUpPower` hook** implemented per upstream `CurlUpPower.cs:14-71`: two-trigger pattern. `kAfterDamageReceived` — if the damage source is a powered attack AND no card-source has been recorded yet, store the card source. `kAfterCardPlayedFinished` — if the just-played card matches the stored source, owner gains block (amount = stacks), set `LouseProgenitor.Curled=true`, remove this power. Triggers once per combat. Multi-hit cards (Twin Strike) trigger only once; block applied after the card fully resolves, not mid-card.
+
+3. **`FrailPower` hook** implemented per upstream `FrailPower.cs:22-41`: `kBeforeBlockGain` (`ModifyBlockMultiplicative`) — returns `(v * 3) / 4` when the block-gainer is the Frail-owner and `is_powered_source=true`. `kAtEnemyTurnEnd` — `tick_down_power(player, kFrail, 1)` (Frail on the player decrements once per enemy-turn-end per STS2 `FrailPower.AfterTurnEnd(side=Enemy)`).
+
+4. **Adapter projection** `louse_progenitor_projection.cc` recognizes the `LouseProgenitorNormal` encounter signature (already in `adapter.cc` encounter_map from wave-16 framework). Synthesizes spawn-power `CurlUp(14)` per Q2-ADR-005 silent-drop pattern if the wire blob omits it (Q1 drops spawn-powers at boot per D3 fixture README). Sets `kind_ = MonsterKind::kLouseProgenitor`; computes `move_index_` via `find_move_index(kLouseProgenitor, wire_intent_move_id)`.
+
+5. **Pinned-seed gtest** added for `LouseProgenitorNormal` seed=42 (D3 fixture #5). `algorithm_sha` regenerated via `seed-pinner`; cultist pinned values numerically unchanged (same behavior, same oracle output — only the `algorithm_sha` stamp rotates because `transition.cc` and `monster_moves.cc` changed).
+
+**Consequences.**
+
+- *Negative:* Q1's `CurlUpPower` and `FrailPower` are behavioral stubs; Q2's expectimax produces oracle values incorporating real semantic behavior that Q1's combat simulation does not currently mirror. Differential testing (when applicable) may show divergences between Q1 combat output and Q2 oracle labels for LouseProgenitor states. Acceptable for Phase-1: Q2 is the verifier, Q1 is the engine substrate. Divergences surface in the oracle-agreement signal (Q2-ADR-004) and are not silent.
+- *Negative:* The wave-17 shape refactor (`EnemyState` + `CompactState` + `transition.cc` rewrite) invalidates pre-wave-16 cultist hash bytes — `algorithm_sha` flips per Q2-ADR-005. Existing cultist pinned seeds are re-stamped with the new `algorithm_sha`; numerical values (expected_hp, expected_rounds) are UNCHANGED because cultist behavior is preserved bit-identical.
+- *Negative:* q2-ci wall-clock grows from ~18 min to approximately 25–35 min with the LouseProgenitor pinned seed added (slow expectimax solve over LouseProgenitor state space). The new pinned-seed gtest is gated under `DISABLED_` prefix (like the cultist slow-regression test) and runs only via `--gtest_also_run_disabled_tests` in the `make q2-ci` slow-regression target.
+- *Positive:* First non-cultist encounter SHIPPED post-Q2-ADR-002 supersession; the Q2-ADR-006/007/008 framework validated end-to-end on a non-cultist encounter. D3 fixture #5 (LouseProgenitorNormal) transitions from reject-with-diagnostic to full round-trip.
+- *Positive:* Future encounters (GremlinMerc, HauntedShip, FossilStalker, SmallSlimes, ... per ADR-029 Path A roadmap) add as DATA only — one `MonsterMoveTable` entry + optional new `PowerKind` entries + hook functions. Marginal code cost per additional encounter is low.
+- *Positive:* CurlUp + Frail are real player-decision-shaping mechanics (block gain contingent on attack choice; block penalty from debuff). Oracle values for LouseProgenitor states now meaningfully differ from a naive damage simulator, providing genuine training signal for Q10.
+
+**Cross-references.** Q2-ADR-006 (polymorphic power-hook framework). Q2-ADR-007 (data-driven `MonsterMoveTable`). Q2-ADR-008 (damage/block formula). Pipeline ADR-029 (Path A campaign roadmap; LouseProgenitorNormal row checked off).
+
+**Origin.** Wave-17. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §"Wave-17 absorbs the deferred work" + §"Wave-17 preview". Upstream authority: `~/development/projects/godot/sts2/src/Core/Models/Powers/CurlUpPower.cs:14-71`, `FrailPower.cs:22-41`, `Models/Monsters/LouseProgenitor.cs:36-122`.

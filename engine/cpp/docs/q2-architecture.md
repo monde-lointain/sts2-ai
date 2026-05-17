@@ -20,8 +20,11 @@
 | D3 fixture corpus | `engine/headless/test/fixtures/state-blobs/` | 6 fixtures, byte-locked, canonical hashes pinned |
 | Monorepo data convention | `data/{eval-harness,experience-store,inference-server,model-registry,observability,rollout-workers,trainer}/` | per-service subdirs exist; `data/oracle/` open |
 | **Power-hook framework** (wave-16) | `engine/cpp/include/sts2/game/powers.h`, `engine/cpp/src/game/powers.cc` | `PowerKind` enum + `PowerInstance` POD + helpers; cultist re-expressed as data |
-| **Monster move tables** (wave-16) | `engine/cpp/include/sts2/game/monster_moves.h`, `engine/cpp/src/game/monster_moves.cc` | `constexpr kMonsterMoveTables[MonsterKind]`; cultist entries populated; `kLouseProgenitor` slot reserved for wave-17 |
+| **Monster move tables** (wave-16/17) | `engine/cpp/include/sts2/game/monster_moves.h`, `engine/cpp/src/game/monster_moves.cc` | `constexpr kMonsterMoveTables[MonsterKind]`; cultist entries + LouseProgenitorNormal entry populated (wave-17); HP 134–136, WEB_CANNON→CURL_AND_GROW→POUNCE rotation, spawn-power CurlUp(14) |
 | **Damage/block pipeline** (wave-16) | `engine/cpp/include/sts2/game/damage.h`, `engine/cpp/src/game/damage.cc` | `compute_outgoing_attack` + `compute_outgoing_block`; pure helpers; STS-canonical floor-rounding |
+| **CurlUp + Frail power hooks** (wave-17) | `engine/cpp/src/ai/transition.cc` | `hook_curl_up` (two-trigger: kAfterDamageReceived + kAfterCardPlayedFinished) + `hook_frail` (kBeforeBlockGain + kAtEnemyTurnEnd tick-down); per upstream `CurlUpPower.cs:14-71` + `FrailPower.cs:22-41` |
+| **LouseProgenitor adapter projection** (wave-17) | `engine/cpp/src/oracle/adapter/louse_progenitor_projection.cc` | recognizes `LouseProgenitorNormal` encounter signature; synthesizes CurlUp(14) spawn-power if wire blob omits it (Q2-ADR-005 silent-drop pattern); sets `kind_=kLouseProgenitor` + `move_index_` via `find_move_index` |
+| **LouseProgenitor pinned seed** (wave-17) | `engine/cpp/tests/seeds/expected_values.h` | D3 fixture #5 (`LouseProgenitorNormal` seed=42) added; `algorithm_sha` regenerated; cultist values numerically unchanged |
 
 The wave-16 refactor generalizes the engine substrate from cultist-hardcoded to a data-driven framework where future encounters (LouseProgenitor in wave-17; remaining Phase-1 pool per ADR-029) are added as data table entries and per-`PowerKind` hook functions, not as new switch arms in transition code. Cultist behavior is preserved byte-for-byte at the oracle-value level; the structural representation rotates.
 
@@ -41,7 +44,7 @@ and produces these types. See Q2-ADR-001.
 
 ## 3. Substrate boundaries — honesty section
 
-Post-wave-16, the C++ substrate implements the Phase-1 mechanics framework with cultist as the proof-of-concept encounter. The former CULTISTS_NORMAL-only framing (Q2-ADR-002) is superseded by Q2-ADR-006; per-encounter coverage extends via Q2-ADR-007 data-table additions per the Path A campaign (ADR-029).
+Post-wave-17, the C++ substrate implements the Phase-1 mechanics framework with the first two encounters fully covered: CULTISTS_NORMAL (proof-of-concept, wave-16) and LouseProgenitorNormal (first non-cultist, wave-17). The former CULTISTS_NORMAL-only framing (Q2-ADR-002) is superseded by Q2-ADR-006; per-encounter coverage extends via Q2-ADR-007 data-table additions per the Path A campaign (ADR-029). Wave-17 completes the foundation (shape refactor + `CurlUpPower` + `FrailPower` hooks + LouseProgenitor encounter) — the remaining 14 encounters on the Path A queue proceed as data-only additions per wave-18+.
 
 Pre-wave-16 structural constraints (now resolved by the refactor):
 
@@ -52,7 +55,7 @@ Pre-wave-16 structural constraints (now resolved by the refactor):
 
 Remaining boundary (unresolved in wave-16; deferred to subsequent encounter waves):
 
-- Non-cultist encounters still reject with `UnsupportedEncounter` until the corresponding `MonsterMoveTable` entry and hook functions are populated. LouseProgenitor is wave-17; FossilStalker, KaiserCrab, SmallSlimes are wave-18+.
+- Non-cultist encounters still reject with `UnsupportedEncounter` until the corresponding `MonsterMoveTable` entry and hook functions are populated. LouseProgenitor is complete (wave-17, Q2-ADR-009). FossilStalker, KaiserCrab, SmallSlimes are wave-18+.
 - `CardCounts` 8-kind cap — Silent starter fits; future deck expansion is Phase-2 scope.
 - Ascension scaling — Phase-1A fixed at A0.
 
@@ -66,7 +69,7 @@ Of 6 fixtures shipped in `engine/headless/test/fixtures/state-blobs/`:
 | 2 | FossilStalkerElite seed 42 | NO (wave-18+) | reject with `UnsupportedEncounter` diagnostic |
 | 3 | FossilStalkerElite seed 1337 | NO (wave-18+) | reject with `UnsupportedEncounter` diagnostic |
 | 4 | KaiserCrabBoss (Crusher + Rocket) | NO (wave-18+) | reject + unknown-power diagnostic (Q2-ADR-005) |
-| 5 | LouseProgenitorNormal | NO (wave-17) | reject with `UnsupportedEncounter` diagnostic; unlocks wave-17 |
+| 5 | LouseProgenitorNormal | YES (wave-17) | adapter → expectimax → pinned `(action, value)` round-trip (Q2-ADR-009) |
 | 6 | SmallSlimes | NO (wave-18+) | reject (also B.1-ε DEFER per Q1 fixture README) |
 
 The reject-with-diagnostic path remains correct for encounters not yet in the engine. Wave-17 narrows the reject set by 1 (fixture #5). See §6 and ADR-029 for campaign roadmap.
@@ -337,3 +340,17 @@ Wave-16 executes the substrate refactor documented in the plan at `~/.claude/pla
 - **Framework reserves slots for wave-17.** `PowerKind` enum has `kCurlUp=3`, `kFrail=4`, `kVulnerable=5` reserved. `MonsterKind::kLouseProgenitor` slot reserved; `kMonsterMoveTables[kLouseProgenitor]` is zero-initialized (wave-17 populates). `MoveId` enum adds `kWebCannon`, `kCurlAndGrow`, `kPounce` (reserved; wave-17 uses them).
 
 - **Path A campaign open.** ADR-029 declares the multi-wave expansion roadmap. Wave-17 is the immediate follow-on: `CurlUpPower` + `FrailPower` hooks + LouseProgenitor encounter + D3 fixture #5 round-trip.
+
+## 14. Wave-17 cascade addendum (2026-05-17)
+
+Wave-17 completes the foundation laid by wave-16 and ships the first non-cultist encounter end-to-end. Key outcomes:
+
+- **Shape refactor landed.** `EnemyState` drops cultist-scalar fields (`dark_strike_base_`, `ritual_amount_`, `just_applied_ritual_`); carries `MonsterKind kind_`, `uint8_t move_index_`, `std::array<PowerInstance, 6> powers_`, `uint8_t power_count_`. `CompactState` gains `player_powers_` + `player_power_count_`. `enemies_` widened to `std::array<EnemyState, kMaxEnemies=4>` + `uint8_t enemy_count_`. `search.cc` `pack_enemy` / `pack_player` / `CompactStateHash` rewritten to hash generic power arrays.
+- **Cultist regression preserved.** All cultist oracle `solve()` values bit-identical post-shape-refactor (`kSeedC0ffeeExpectedHp = 40.90829202578665`, `kSeedC0ffeeExpectedRounds = 6.4579809748486445` — unchanged). `CultistSolveMatchesPreRefactor` regression test locks this invariant. `algorithm_sha` rotates (structural representation changed); numerical values do not.
+- **LouseProgenitor shipped.** `kMonsterMoveTables[kLouseProgenitor]` populated: 3-move rotation (WEB_CANNON→CURL_AND_GROW→POUNCE→WEB_CANNON), HP 134–136, spawn-power CurlUp(14). `hook_curl_up` (two-trigger per `CurlUpPower.cs:14-71`) + `hook_frail` (`ModifyBlockMultiplicative` + `AfterTurnEnd` tick-down per `FrailPower.cs:22-41`) implemented in `transition.cc`.
+- **CurlUp semantics.** `kAfterDamageReceived` records the card source on the first powered-attack hit; `kAfterCardPlayedFinished` triggers block gain (amount=stacks) + power removal when the stored card resolves. Triggers once per combat. Multi-hit cards count once.
+- **Frail semantics.** `kBeforeBlockGain` applies `(v * 3) / 4` floor when `gainer_frail && is_powered_source`. `kAtEnemyTurnEnd` decrements player Frail stacks by 1. STS2 semantics (block debuff), not STS1 semantics (attack debuff).
+- **Adapter projection.** `louse_progenitor_projection.cc` added; recognizes `LouseProgenitorNormal` encounter signature; synthesizes CurlUp(14) spawn-power per Q2-ADR-005 silent-drop pattern.
+- **D3 fixture #5 round-trip.** `LouseProgenitorNormal` seed=42 pinned-seed gtest added (DISABLED_ prefix; runs under `make q2-ci` slow regression). `expected_values.h` regenerated with new `algorithm_sha`; cultist entries numerically unchanged.
+- **Q2-ADR-009 ratified.** Documents LouseProgenitor port; consequences include Q1/Q2 CurlUp+Frail semantic divergence (acceptable — Q2 is verifier), `algorithm_sha` rotation, and q2-ci wall-clock growth to ~25–35 min.
+- **Path A queue.** 14 remaining Phase-1 encounters (FossilStalker, KaiserCrab, SmallSlimes, GremlinMerc, HauntedShip, ...) proceed per wave-18+ as data-only additions. The framework handles them without new transition-code changes.
