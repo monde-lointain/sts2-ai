@@ -5,11 +5,13 @@ substrate: n/a (derived from Q12 output)
 
 > Status legend: see ADR-023. Section badges = `[SHIPPED]` / `[PHASE-N]` / `[ASPIRATION]`.
 
+> **Phase-1 status: pre-boot.** Substrate is a 3-line service stub. All Responsibilities below describe target state under `[PHASE-1]`; none are SHIPPED. The `gate_check(...)` RPC is `[PHASE-1]` target, not current.
+
 # Module: Evaluation Reports (Q6)
 
 > Versioned eval reports. The truth source for "is the agent better?" Read by humans and CI gates; written only by Q12 (Evaluation Harness).
 
-## Responsibilities
+## Responsibilities [PHASE-1]
 
 - Store evaluation outputs in a queryable, versioned form: regression battery results, ascension-ladder rows, calibration buckets, exploit-detector incidents, latency distributions.
 - Enforce versioning by `(game_version, agent_version, eval_suite_version)`. Cross-version comparisons require explicit acknowledgment of all three (`scaling-strategy.md` §4.6).
@@ -18,7 +20,7 @@ substrate: n/a (derived from Q12 output)
 
 Out of scope: producing the evaluations (that is Q12); deciding what to evaluate (research-team policy); long-term metric storage in TSDB form (Q7's job).
 
-## Data Ownership
+## Data Ownership [PHASE-1]
 
 - **Report tables** — Parquet on object storage, partitioned by `(eval_suite_version, agent_version, run_date)`. One row per evaluated `(seed × character × ascension × encounter)` tuple, plus aggregated rollups.
 - **Report-version manifest** — `(report_id, eval_suite_version, agent_version, game_version, started_at, finished_at, owner, status)`.
@@ -26,24 +28,24 @@ Out of scope: producing the evaluations (that is Q12); deciding what to evaluate
 - **CI gate rules** — phase-gate criteria as machine-readable policy (e.g., `phase_1.gate.combat_win_rate ≥ 0.95`).
 - **Exploit-incident records** — flagged runs (combats >50 turns, gold/HP loops, repeated identical action sequences, infinite-block states) with replay pointers.
 
-## Communication
+## Communication [PHASE-1]
 
 - **Sync — write:** Q12 writes report rows and manifests via Q6's append API.
-- **Sync — read:** humans via dashboards (Q7-served Grafana panels backed by Q6 Parquet); CI via a `gate_check(artifact_id, phase) → pass/fail` RPC.
+- **Sync — read:** humans via dashboards (Q7-served Grafana panels backed by Q6 Parquet); CI via a `gate_check(artifact_id, phase) → pass/fail` RPC `[PHASE-1]` target, not current.
 - **Drilldown:** UI navigates from Q6 row → Q3 trajectory → Q1 replay reproduction.
 - **Pull — metrics:** Q7 surfaces some Q6 aggregates as time-series for live dashboards (separate from raw report storage).
 
 ## Coupling
 
 - **Afferent (in):** humans (research, eval, leadership), CI (gate enforcement).
-- **Efferent (out):** Q3 (drilldown pointers), Q5 (artifact metadata), Q1 (replay reproduction), Q7 (metric surfacing).
+- **Efferent (out):** Q3 (drilldown pointers), Q5 (artifact metadata) `[PHASE-1 — once both endpoints exist]`, Q1 (replay reproduction), Q7 (metric surfacing).
 - **Indirect:** dashboards (Grafana, Jupyter).
 
 ## Phase Expectations
 
-- **Phase 1.** Combat-only reports: A0 encounter-pool win rate, expectimax-agreement rate (denominator bounded by CULTISTS_NORMAL per Q2-ADR-002), inference-latency distribution. CI gate enforces Phase 1 numerical thresholds.
+- **Phase 1 `[PHASE-1]`.** Target: combat-only reports — A0 encounter-pool win rate, expectimax-agreement rate (denominator bounded by CULTISTS_NORMAL per Q2-ADR-002), inference-latency distribution. CI gate enforces Phase 1 numerical thresholds via `gate_check(...)`. Substrate is currently pre-boot — this is the Phase-1 delivery commitment, not current state.
 - **Phase 2.** Adds card-pick top-1 agreement, calibration deciles, deck-archetype entropy, run-value-vs-empirical-win-rate calibration. Adds **tradeoff-test rows** per ADR-014..018 (HP-spent-per-reward-value, potion shadow-price calibration, elite-vs-hallway, observable-input audits).
-- **Phase 3+.** Adds counterfactual map-decision evaluator output (observational only per ADR-017 — Q6 reports the data but no training loop consumes it), full ascension ladder rows, exploit-detector incidence, patch-adaptation timing.
+- **Phase 3+ `[PHASE-3+]`.** Adds counterfactual map-decision evaluator output (observational only per ADR-017 — Q6 reports the data but no training loop consumes it), full ascension ladder rows, exploit-detector incidence, patch-adaptation timing.
 
 ## Open Risks
 
