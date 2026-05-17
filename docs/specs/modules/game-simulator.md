@@ -8,6 +8,8 @@ substrate: engine/headless/
 # Module: Game Simulator (Q1)
 
 > Headless C# Slay the Spire 2 Core. The deterministic game-state machine the rest of the pipeline talks to. Per ADR-002.
+>
+> **Substrate baseline ratified at upstream v0.105.1** (buildid 23156356) per ADR-028 (Wave 15 close, 2026-05-17). Phase-1.5 (15-encounter per-step Godot parity fill-in) remains OPEN — see § Phase Expectations.
 
 ## Responsibilities [MIXED — see bullets]
 

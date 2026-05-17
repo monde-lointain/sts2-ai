@@ -28,6 +28,10 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-022 | Trajectory Protobuf Binding Homed at `pipeline/common/` | Accepted |
 | ADR-023 | Spec Status Badges + Module-Spec Frontmatter | Accepted |
 | ADR-024 | Spec-Edit Tracker + Re-Baseline Convention | Accepted |
+| ADR-025 | Spec-Edit Gate Promotion (warn → hard-block) | Reserved (per ADR-024 §1.4) |
+| ADR-026 | Upstream-Sync Pipeline | Accepted |
+| ADR-027 | Q4 Phase-1 Fixture Growth Policy | Accepted |
+| ADR-028 | Q1 Silent-Engine Baseline Ratified at Upstream v0.105.1 | Accepted |
 
 ---
 
@@ -654,3 +658,59 @@ Rationale (in priority order):
 **Implementation.** Per the bridge plan (Phase B.1 quantum-lead output): each bridge wave that adds upstream content also adds the corresponding token-table entries to `contracts/registry/phase1-silent.json` + `engine/headless/test/fixtures/q4-manifest-phase1.json` in the same commit. Token ID assignment per `content-registry.md` stability rules (ADR-003): new IDs for new content; deprecated content's IDs never reused. The bridge wave that finalizes Phase-1.5 close-out (pin-advance ceremony) audits both artifacts for parity + corrects any per-wave drift.
 
 **Cross-references.** ADR-003 (Token Registry as Patch-Adaptation Lever) — this ADR is the concrete first invocation of ADR-003's "patch adaptation" machinery. ADR-026 (Upstream-Sync Pipeline) — defines the bridge sequence + pin-advance ceremony that mechanizes this policy.
+
+---
+
+## ADR-028 — Q1 Silent-Engine Baseline Ratified at Upstream v0.105.1
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** `scaling-strategy.md` §3 Phase-1 ("Generalized Tactical Combat") lists five environment-modification prerequisites for the silent engine: (1) headless C# core build, (2) combat-only entry point, (3) branchable state with bit-identical save/restore, (4) `RichState` derivation with stable serialization, (5) hookpoint at every player-decision boundary. These are SUBSTRATE prerequisites — distinct from Phase-1's policy training OUTCOME criterion (≥95% A0 win rate, which lives downstream in Q10/Q12 once those quanta boot).
+
+As of Wave 15 close (commit `093cb37`, 2026-05-17) the substrate-side bridge from upstream v0.103.2 → v0.105.1 (Phase-B Waves 4 through 15, executed under ADR-026 + ADR-027) has cleared all green-gate signals simultaneously for the first time:
+
+- 831 Q1 domain tests pass.
+- 65 `BitIdenticalRoundtripTests` pass (#3 prerequisite — bit-identical save/restore).
+- 41 `DllSignatureGate` signatures match the live v0.105.1 DLL (reflection-call viability).
+- 160 `probe-upstream-initial-state` tests pass (full corpus initial-state Godot parity at v0.105.1; was 140 PASS + 20 SKIP pre-Wave-14).
+- 7 `Q4ManifestLoader` content-coverage tests pass (manifest at `phase1-silent.1`: 266 tokens — 98c/59r/45p/37m/21pot + 4 deprecated + 6 specials, per ADR-027 cap-growth policy).
+- `SyncStatePinGate.PinBuildId` flipped FAIL→PASS at the pin-advance ceremony (bridge in-progress signal cleared).
+
+Without an explicit anchor declaring "the Q1 silent-engine substrate is stable at upstream v0.105.1," downstream-quantum dispatch (Q2 oracle revival, Q3 experience-store boot, Q8 rollout workers, Q9 inference server) operates against an implicit baseline that can drift as further bridge or refactor work lands. Q1 has been the central dependency of every Phase-1 dispatch since project inception; absent a documented baseline, every downstream wave plan must re-derive "is Q1 ready?" from first principles. Phase-1.5 (per-step Godot parity across the 15 non-`CultistsNormal` encounters per `game-simulator.md` § Phase Expectations) remains OPEN and is out of scope of this ADR.
+
+**Decision.** Declare the Q1 silent-engine substrate baseline RATIFIED at upstream v0.105.1 (buildid 23156356; DLL sha tracked in `engine/headless/upstream-pin.json`).
+
+*Scope.* Substrate readiness only. This ADR ratifies:
+
+1. Phase-1 environment prerequisites #1, #2, #3, #5 (scaling-strategy §3.1 environment-modifications list) as SHIPPED against upstream v0.105.1.
+2. Prerequisite #4 (`RichState` derivation) — combat-side SHIPPED per existing `game-simulator.md` Data Ownership badges (M1 schema v3 operational); run-level `RichState` fields explicitly DEFERRED to Phase-2 with no change to that classification.
+3. Q1's role as the upstream-pinned substrate anchor against which Q2/Q3/Q8/Q9 plan dependencies during downstream dispatches.
+
+*Out of scope.*
+
+- Phase-1 policy training outcome (≥95% A0 win rate) — stays with Q10/Q12 when those quanta boot.
+- Phase-1.5 per-step Godot parity across the 15 non-`CultistsNormal` encounters — separate work track; this ADR does not advance Phase-1.5 badges.
+- Q2 dormancy resolution — a follow-up wave (the natural next critical-path item per ADR-014 oracle-target dependency).
+
+*Pin-advance discipline.* This ratification is single-version-scoped. Any subsequent upstream patch ≥ v0.106 re-opens substrate-readiness and runs through the standard upstream-sync pipeline (ADR-026) → bridge ceremony → fresh ADR (or amendment of this one). The ratification does NOT imply ongoing automatic re-pinning.
+
+*Phase-anchor semantics for downstream quanta.* Q2/Q3/Q8/Q9 dispatch prompts MAY treat Q1 at HEAD (currently `093cb37`) as a stable substrate-interface for planning purposes. Schema bumps (M1 / M2 / M3 / M4 / hook-protocol / replay format) still flow through the standard process per ADR-001 and the `bumping-a-schema-version` skill — this ADR freezes the SUBSTRATE, not the contracts.
+
+*Operational cleanup.* Open entries in `.claude/state/spec-edits-pending-resolution.json` from Phase-B (Waves 2–15) are acknowledged as resolved under ADR-024 § Consequences ("Resolved entries should be pruned by the gate or by a hand-rolled cleanup step at wave close"). Three stale `.claude/worktrees/agent-*/...` entries (whose worktrees no longer exist) are purged outright; two main-repo entries (`model-registry.md`, `content-registry.md`) carry `resolution.type = "wave-closed-acknowledgment"` with reference to this ADR. Bridge closure is the natural cleanup point envisioned by ADR-024.
+
+**Consequences.**
+
+- *Negative:* Single-version pin lock. Any new upstream patch ≥ v0.106 re-opens substrate-readiness; the project cannot incrementally re-sync without re-running the full bridge ceremony per ADR-026. Mitigation: drift gates (`SyncStatePinGate` + `DllSignatureGate`) catch the divergence immediately; the cost is bounded by ADR-026's pipeline mechanics, not by surprise.
+- *Negative:* Declaring Q1 ready creates implicit pressure to revive Q2 (dormant since pre-monorepo prototype import). Downstream dispatches can now plan against Q1, which exposes the Q2 gap as the next critical-path blocker (per ADR-014 oracle-target dependency for any RL training loop). This is intentional — surfacing the next critical-path item is the point — but the pressure is real.
+- *Negative:* Phase-1.5 remains OPEN: 15 encounters lack per-step Godot parity (`game-simulator.md` Responsibilities bullet 2; the live-Godot per-step blocker is upstream's 12 `SceneTree`-coupled singletons in `CombatManager.StartCombatInternal`). Future readers MUST NOT conflate substrate-baseline ratification with Phase-1.5 completion or with Phase-1 outcome ratification.
+- *Negative:* "Ratified at v0.105.1" anchors Phase-1 substrate to a moving target — Steam upstream advances independent of this project. If the user does not disable Steam auto-update for STS2 during Phase-1.5 work, drift risk persists (per ADR-026 mitigation note: "Recommendation: disable Steam auto-update for STS2 during bridge to prevent mid-bridge drift" — applies equally to substrate-baseline lifetime).
+- *Negative:* Wave 15 was a single-day execution of Waves 4–15 (per `git log` 2026-05-17). Compressed cadence means less elapsed soak time on the v0.105.1 pin before this ratification. Mitigation: gates are deterministic + extensive (831 + 65 + 41 + 160 + 7 = 1104 assertions all green); soak time substitutes for confidence here.
+- *Positive:* Downstream quanta gain a stable anchor. Q2/Q3/Q8/Q9 dispatch prompts can treat Q1 HEAD as fixed for planning. Removes implicit "is Q1 ready?" uncertainty that has been load-bearing in every Phase-1 wave plan to date.
+- *Positive:* `scaling-strategy.md` §3 phase ladder gains its first concrete progression flag *in the codebase* (this ADR), not just in aspirational documentation. Subsequent phase progressions (Phase-1.5 close, Phase-2 entry) can pattern-match on this ADR's shape.
+- *Positive:* Unblocks formal Phase-1.5 scoping. With substrate baseline ratified at v0.105.1, Phase-1.5 work (15-encounter per-step fill-in, X-cost evaluator, Lagavulin / FungalBoss multi-state rotations) can be scoped against a fixed substrate rather than a moving one.
+- *Positive:* Closes Wave 15 ceremony with a documented terminus, enabling a clean Phase-B retrospective and clearing the open spec-edit-tracker queue per ADR-024.
+- *Positive:* Validates the ADR-026 upstream-sync pipeline end-to-end on a real cross-version bridge (v0.103.2 → v0.105.1, 37-day upstream drift spanning 323 card + 110 monster + 148 power + 120 relic + 5 encounter changes). The pipeline survived its first non-trivial production exercise.
+
+**Cross-references.** ADR-001 (Service-Based Architecture) — Q1 is the central substrate this ADR anchors. ADR-002 (Headless C# Core) — defines what "Q1" means structurally. ADR-009 (AlphaZero at Combat Layer, Amended 2026-05-14) — names the layer this substrate supports. ADR-011 (Oracle Owns the Engine→CompactState Adapter) — Q2 revival follow-up depends on this contract. ADR-014 (Combat Oracle Output Uses Samples + Summary) — Q2's output shape that Q1 substrate must support. ADR-023 (Spec Status Badges) — informs what "SHIPPED vs PHASE-N" means in `game-simulator.md`. ADR-024 (Spec-Edit Tracker) — the operational-cleanup clause draws on ADR-024 § Consequences. ADR-026 (Upstream-Sync Pipeline) — the bridge ceremony this ADR closes. ADR-027 (Q4 Phase-1 Fixture Growth Policy) — the cap-growth policy executed across the bridge waves.
+
+**Origin.** Project-lead session 2026-05-17 (status report following Wave 15 close, commit `093cb37`). User directive: "Do #1-3" — ratify ADR-028 alongside push-to-origin + spec-edit-tracker cleanup as the three highest-priority post-bridge operational items.
