@@ -9,6 +9,7 @@ target_sources(sts2_simulator PRIVATE
     game/rng.cc
     game/powers.cc
     game/damage.cc
+    game/monster_moves.cc
     game/cards.cc
     game/enemies.cc
     game/deck.cc

@@ -17,6 +17,11 @@ namespace sts2::game::move_calc {
       return "INCANTATION_MOVE";
     case MoveId::kDarkStrike:
       return "DARK_STRIKE_MOVE";
+    // Wave-17 reserved MoveIds have no wire representation yet.
+    case MoveId::kWebCannon:
+    case MoveId::kCurlAndGrow:
+    case MoveId::kPounce:
+      return "";
   }
   return "";
 }
@@ -89,6 +94,12 @@ void act_on_intent(
       break;
     case MoveId::kDarkStrike:
       std::forward<OnDarkStrike>(on_dark_strike)();
+      break;
+    // Wave-17 reserved MoveIds are not dispatched by this function.
+    // Each will get its own act_on_intent overload when populated in wave-17.
+    case MoveId::kWebCannon:
+    case MoveId::kCurlAndGrow:
+    case MoveId::kPounce:
       break;
   }
 }

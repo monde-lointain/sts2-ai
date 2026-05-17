@@ -2,6 +2,15 @@
 // exists so sts2_oracle_adapter has at least one .cc source until S1-T1+
 // adds the real reader/parser/projection sources. The static-lib target
 // would otherwise build empty and trip linker warnings on some toolchains.
+//
+// Q2-ADR-005 algorithm-SHA source-file list (populated when S3+ SHA computation
+// lands; extend this list when adding semantically relevant source files):
+//   engine/cpp/src/ai/search.cc
+//   engine/cpp/src/ai/transition.cc
+//   engine/cpp/include/sts2/ai/state.h
+//   engine/cpp/include/sts2/game/damage_calc.h
+//   engine/cpp/src/game/damage.cc          -- wave-16: compute_outgoing_block
+//   engine/cpp/src/game/monster_moves.cc   -- wave-16: kMonsterMoveTables
 
 #include "sts2/oracle/adapter/manifest.h"
 

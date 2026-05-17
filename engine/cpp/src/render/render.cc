@@ -36,6 +36,13 @@ const char* power_name(sts2::game::PowerKind kind) {
       return "Str";
     case sts2::game::PowerKind::kRitual:
       return "Ritual";
+    // Wave-17 reserved PowerKinds: no display name yet.
+    case sts2::game::PowerKind::kCurlUp:
+      return "CurlUp";
+    case sts2::game::PowerKind::kFrail:
+      return "Frail";
+    case sts2::game::PowerKind::kVulnerable:
+      return "Vulnerable";
   }
   return "";
 }
@@ -67,6 +74,11 @@ std::string format_intent(const sts2::game::Enemy& e) {
          << sts2::damage::compute_outgoing(e.vitals.powers,
                                            e.dark_strike_base.value())
          << ansi::kReset;
+      break;
+    // Wave-17 reserved MoveIds: no display logic yet.
+    case sts2::game::MoveId::kWebCannon:
+    case sts2::game::MoveId::kCurlAndGrow:
+    case sts2::game::MoveId::kPounce:
       break;
   }
   return os.str();
