@@ -26,12 +26,20 @@ TEST(AdapterFacade, Fixture1_ReturnsCompactState) {
   EXPECT_TRUE(cs.get_enemy(1).get_alive());
 }
 
+TEST(AdapterFacade, Fixture5_LouseProgenitor_ReturnsCompactState) {
+  const auto bytes = load_fixture_blob("05-louse-progenitor-normal-seed42");
+  const AdapterResult r = from_blob_payload(bytes);
+  ASSERT_EQ(r.index(), 0U)
+      << "expected CompactState variant on LouseProgenitor";
+  const auto& cs = std::get<CompactState>(r);
+  EXPECT_TRUE(cs.get_enemy(0).get_alive());
+}
+
 TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {
   for (const auto& d : {
            "02-fossil-stalker-elite-seed42",
            "03-fossil-stalker-elite-seed1337",
            "04-kaiser-crab-boss-seed42",
-           "05-louse-progenitor-normal-seed42",
            "06-small-slimes-seed42",
        }) {
     const auto bytes = load_fixture_blob(d);

@@ -38,6 +38,15 @@ inline void PrintTo(PowerKind k, std::ostream* os) {
     case PowerKind::kRitual:
       *os << "Ritual";
       break;
+    case PowerKind::kCurlUp:
+      *os << "CurlUp";
+      break;
+    case PowerKind::kFrail:
+      *os << "Frail";
+      break;
+    case PowerKind::kVulnerable:
+      *os << "Vulnerable";
+      break;
   }
 }
 }  // namespace sts2::game

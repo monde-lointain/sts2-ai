@@ -12,6 +12,15 @@
 // Move sequence (enemies.cc + move_calc.h::next_move):
 //   kIncantation (first move) → kDarkStrike (repeated indefinitely).
 //   Initial move index = 0 (kIncantation).
+//
+// LouseProgenitor (wave-18):
+//   Source: engine/headless/src/.../Phase1Monsters.cs:157-190 (Q1 port)
+//   Upstream: src/Core/Models/Monsters/LouseProgenitor.cs:36-122
+//   HP: 134-136 (A0). Rotation: WEB_CANNON(0) → CURL_AND_GROW(1) → POUNCE(2).
+//   WEB_CANNON:    attack 9 + apply 2 Frail to player.
+//   CURL_AND_GROW: defend 14 block (self) + 5 Strength to self.
+//   POUNCE:        attack 16.
+//   Spawn power: CurlUp(14).
 
 #include "sts2/game/monster_moves.h"
 
@@ -64,12 +73,86 @@ constexpr MonsterMoveTable make_cultist_table(int16_t dark_strike_base,
   return t;
 }
 
+// Build the LouseProgenitor move table (wave-18).
+// Move indices: WEB_CANNON=0, CURL_AND_GROW=1, POUNCE=2.
+// follow_up_index chains: 0→1→2→0.
+constexpr MonsterMoveTable make_louse_progenitor_table() {
+  MonsterMoveTable t;
+
+  // Index 0: WEB_CANNON — attack 9 + apply 2 Frail to player.
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kWebCannon;
+    m.follow_up_index = 1;  // → CURL_AND_GROW
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 9,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
+        ._pad = 0,
+    };
+    m.effects[1] = MoveEffect{
+        .kind = MoveEffectKind::kDebuffPlayer,
+        .value = 2,
+        .power_kind = PowerKind::kFrail,
+        ._pad = 0,
+    };
+    m.effect_count = 2;
+  }
+
+  // Index 1: CURL_AND_GROW — defend 14 block (self) + 5 Strength to self.
+  {
+    MonsterMove& m = t.moves[1];
+    m.id = MoveId::kCurlAndGrow;
+    m.follow_up_index = 2;  // → POUNCE
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kDefend,
+        .value = 14,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kDefend
+        ._pad = 0,
+    };
+    m.effects[1] = MoveEffect{
+        .kind = MoveEffectKind::kBuffSelf,
+        .value = 5,
+        .power_kind = PowerKind::kStrength,
+        ._pad = 0,
+    };
+    m.effect_count = 2;
+  }
+
+  // Index 2: POUNCE — attack 16.
+  {
+    MonsterMove& m = t.moves[2];
+    m.id = MoveId::kPounce;
+    m.follow_up_index = 0;  // → WEB_CANNON
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 16,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+  }
+
+  t.move_count = 3;
+  t.initial_move_index = 0;  // WEB_CANNON is the first move
+  t.min_hp = 134;            // A0 min HP
+  t.max_hp = 136;            // A0 max HP
+  // Spawn power: CurlUp(14). Upstream AfterAddedToRoom applies CurlUpPower
+  // with CurlBlock=14 at A0.
+  t.spawn_powers[0] = SpawnPowerEntry{
+      .kind = PowerKind::kCurlUp,
+      .stacks = 14,
+      ._pad = 0,
+  };
+  t.spawn_power_count = 1;
+  return t;
+}
+
 }  // namespace
 
 // kMonsterMoveTables[MonsterKind::kCultistCalcified = 0]
 // kMonsterMoveTables[MonsterKind::kCultistDamp       = 1]
-// kMonsterMoveTables[MonsterKind::kLouseProgenitor   = 2] — zero-initialized
-// placeholder; wave-17 populates
+// kMonsterMoveTables[MonsterKind::kLouseProgenitor   = 2]
 const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     // kCultistCalcified (index 0)
     // Source: enemies.h kCultistArchetypes[0]
@@ -79,9 +162,8 @@ const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     // Source: enemies.h kCultistArchetypes[1]
     make_cultist_table(/*dark_strike_base=*/1, /*ritual_amount=*/5,
                        /*hp_min=*/51, /*hp_max=*/53),
-    // kLouseProgenitor (index 2) — zero-initialized placeholder; wave-17
-    // populates
-    MonsterMoveTable{},
+    // kLouseProgenitor (index 2) — wave-18
+    make_louse_progenitor_table(),
 }};
 
 uint8_t find_move_index(MonsterKind kind, MoveId id) noexcept {

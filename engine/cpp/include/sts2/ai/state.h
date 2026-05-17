@@ -363,6 +363,12 @@ class EnemyStateBuilder {
     state_.move_index_ = value;
     return *this;
   }
+  // Wave-18: generic power setter for powers not covered by typed builders.
+  EnemyStateBuilder& add_power(sts2::game::PowerKind k,
+                               int16_t stacks) noexcept {
+    powers::add_power(state_.powers_, state_.power_count_, k, stacks);
+    return *this;
+  }
 
   // cppcheck-suppress returnByReference -- builder is often a temporary;
   // returning const& would dangle when called on a temporary builder.

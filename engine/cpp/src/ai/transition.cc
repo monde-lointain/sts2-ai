@@ -1,15 +1,20 @@
 #include "sts2/ai/transition.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
+#include <cstdint>
 
 #include "sts2/game/card_effects.h"
+#include "sts2/game/damage.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/index_types.h"
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/turn_calc.h"
 #include "sts2/game/turn_flow.h"
+#include "sts2/game/types.h"
 
 namespace sts2::ai::transition {
 
@@ -39,17 +44,24 @@ class StateMutator {
     powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kWeak,
                       static_cast<int16_t>(delta));
   }
-  static void decrement_weak(EnemyState& e) noexcept {
-    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                          sts2::game::PowerKind::kWeak);
+  static void add_frail_to_enemy(EnemyState& e, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kFrail,
+                      static_cast<int16_t>(delta));
+  }
+  // Generic remove-power-instance (decrement stacks; remove if <= 0).
+  static void decrement_power(EnemyState& e,
+                              sts2::game::PowerKind kind) noexcept {
+    PowerInstance* p = powers::find_power(e.powers_, e.power_count_, kind);
     if (p == nullptr) {
       return;
     }
     --p->stacks;
     if (p->stacks <= 0) {
-      // Remove from array
       for (uint8_t i = 0; i < e.power_count_; ++i) {
-        if (e.powers_[i].kind == sts2::game::PowerKind::kWeak) {
+        if (e.powers_[i].kind == kind) {
           for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
             e.powers_[j] = e.powers_[j + 1];
           }
@@ -59,6 +71,21 @@ class StateMutator {
         }
       }
     }
+  }
+  static void remove_power(EnemyState& e, sts2::game::PowerKind kind) noexcept {
+    for (uint8_t i = 0; i < e.power_count_; ++i) {
+      if (e.powers_[i].kind == kind) {
+        for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
+          e.powers_[j] = e.powers_[j + 1];
+        }
+        --e.power_count_;
+        e.powers_[e.power_count_] = {};
+        break;
+      }
+    }
+  }
+  static void decrement_weak(EnemyState& e) noexcept {
+    decrement_power(e, sts2::game::PowerKind::kWeak);
   }
   // Ritual flag manipulation
   [[nodiscard]] static bool get_just_applied_ritual(
@@ -107,6 +134,23 @@ class StateMutator {
     }
   }
 
+  // CurlUp card-stamp: stored in _pad of the kCurlUp PowerInstance.
+  // _pad == 0 means no card stored. CardId enum values are 1..4.
+  [[nodiscard]] static uint8_t get_curl_up_stored_card(
+      const EnemyState& e) noexcept {
+    const PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                                sts2::game::PowerKind::kCurlUp);
+    return (p != nullptr) ? p->_pad : 0U;
+  }
+  static void set_curl_up_stored_card(EnemyState& e,
+                                      uint8_t card_stamp) noexcept {
+    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
+                                          sts2::game::PowerKind::kCurlUp);
+    if (p != nullptr) {
+      p->_pad = card_stamp;
+    }
+  }
+
   [[nodiscard]] static sts2::game::Stat& dark_strike_base(
       EnemyState& e) noexcept {
     return e.dark_strike_base_;
@@ -120,6 +164,9 @@ class StateMutator {
   [[nodiscard]] static sts2::game::MoveId& current_move(
       EnemyState& e) noexcept {
     return e.current_move_;
+  }
+  [[nodiscard]] static uint8_t& move_index(EnemyState& e) noexcept {
+    return e.move_index_;
   }
   [[nodiscard]] static bool& alive(EnemyState& e) noexcept { return e.alive_; }
 
@@ -146,6 +193,40 @@ class StateMutator {
     powers::add_power(s.player_powers_, s.player_power_count_,
                       sts2::game::PowerKind::kWeak,
                       static_cast<int16_t>(delta));
+  }
+  static void add_player_frail(CompactState& s, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(s.player_powers_, s.player_power_count_,
+                      sts2::game::PowerKind::kFrail,
+                      static_cast<int16_t>(delta));
+  }
+  static void decrement_player_power(CompactState& s,
+                                     sts2::game::PowerKind kind) noexcept {
+    PowerInstance* p =
+        powers::find_power(s.player_powers_, s.player_power_count_, kind);
+    if (p == nullptr) {
+      return;
+    }
+    --p->stacks;
+    if (p->stacks <= 0) {
+      for (uint8_t i = 0; i < s.player_power_count_; ++i) {
+        if (s.player_powers_[i].kind == kind) {
+          for (uint8_t j = i; j + 1 < s.player_power_count_; ++j) {
+            s.player_powers_[j] = s.player_powers_[j + 1];
+          }
+          --s.player_power_count_;
+          s.player_powers_[s.player_power_count_] = {};
+          break;
+        }
+      }
+    }
+  }
+  [[nodiscard]] static int16_t get_player_frail(
+      const CompactState& s) noexcept {
+    return powers::stacks_of(s.player_powers_, s.player_power_count_,
+                             sts2::game::PowerKind::kFrail);
   }
   [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
     return s.energy_;
@@ -180,11 +261,24 @@ namespace {
 
 using sts2::game::CardId;
 using sts2::game::EnemySlot;
+using sts2::game::MonsterKind;
+using sts2::game::PowerKind;
 using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
+using sts2::game::monster_moves::kMonsterMoveTables;
 using M = detail::StateMutator;
 
+// ---------------------------------------------------------------------------
+// Forward declarations (defined later in this anonymous namespace).
+// ---------------------------------------------------------------------------
+void do_enemy_act(CompactState& s, EnemyState& e);
+void do_enemy_tick_powers(CompactState& s, EnemyState& e);
+void do_roll_next_move(EnemyState& e);
+
+// ---------------------------------------------------------------------------
+// Damage helpers
+// ---------------------------------------------------------------------------
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
   const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
   (void)sts2::damage::apply_to_defender(M::hp(enemy), M::block(enemy), dmg);
@@ -193,10 +287,37 @@ void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
   }
 }
 
-void enemy_act(CompactState& s, EnemyState& e);
-void enemy_tick_powers(EnemyState& e);
-void roll_next_move(EnemyState& e);
+// ---------------------------------------------------------------------------
+// CurlUp AfterCardPlayed: if enemy has CurlUp with stored card matching
+// played_card, enemy gains block (stacks via compute_outgoing_block with
+// Unpowered semantics — no Frail tax) and CurlUp is removed.
+// ---------------------------------------------------------------------------
+void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
+  const uint8_t stored = M::get_curl_up_stored_card(e);
+  if (stored == 0) {
+    return;
+  }
+  if (static_cast<uint8_t>(played_card) != stored) {
+    return;
+  }
+  const PowerInstance* p = powers::find_power(
+      e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
+  if (p == nullptr) {
+    return;
+  }
+  const int stacks = p->stacks;
+  // Upstream AfterCardPlayed: CreatureCmd.GainBlock(base.Owner, base.Amount,
+  // ValueProp.Unpowered, null). IsPoweredCardOrMonsterMoveBlock = false
+  // → no Frail tax. Enemy dexterity = 0 in Phase-1.
+  const int block_gained =
+      sts2::damage::compute_outgoing_block(stacks, 0, false, false);
+  M::block(e) += block_gained;
+  M::remove_power(e, PowerKind::kCurlUp);
+}
 
+// ---------------------------------------------------------------------------
+// apply_player_action_in_place
+// ---------------------------------------------------------------------------
 bool apply_player_action_in_place(CompactState& state, const Action& action) {
   assert(state.get_phase() == Phase::kPlayerActing);
 
@@ -232,9 +353,28 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     EnemyState& e = action.target_idx.at(M::enemies(state));
     damage_enemy(e, state.get_player_strength().value(),
                  state.get_player_weak().value(), fx.base_damage);
+    // CurlUp AfterDamageReceived: if the target is still alive and has CurlUp
+    // with no card stored yet, store this card id.
+    // All card-sourced attacks are powered attacks in the Q2 Phase-1 model
+    // (ValueProp.Move set, Unpowered not set → IsPoweredAttack = true).
+    if (e.get_alive()) {
+      const uint8_t stored = M::get_curl_up_stored_card(e);
+      if (stored == 0) {
+        const PowerInstance* curl_p = powers::find_power(
+            e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
+        if (curl_p != nullptr) {
+          M::set_curl_up_stored_card(e, static_cast<uint8_t>(id));
+        }
+      }
+    }
   }
   if (fx.base_block) {
-    M::player_block(state) += fx.base_block;
+    // Block from a card play: IsPoweredCardOrMonsterMoveBlock = true.
+    // Player dexterity = 0 in Phase-1.
+    const bool frail = M::get_player_frail(state) > 0;
+    const int block =
+        sts2::damage::compute_outgoing_block(fx.base_block, 0, frail, true);
+    M::player_block(state) += block;
   }
   if (fx.weak_to_target) {
     EnemyState& e = action.target_idx.at(M::enemies(state));
@@ -258,9 +398,23 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   }
 
   ++M::discard(state)[id];
+
+  // CurlUp AfterCardPlayed: scan alive enemies for CurlUp with stored card
+  // matching this play; if found, enemy gains block and CurlUp is removed.
+  for (uint8_t i = 0; i < state.get_enemy_count(); ++i) {
+    EnemyState& e = M::enemies(state)[i];
+    if (!e.get_alive()) {
+      continue;
+    }
+    apply_curl_up_after_card(e, id);
+  }
+
   return true;
 }
 
+// ---------------------------------------------------------------------------
+// resolve_end_turn_pre_draw_in_place
+// ---------------------------------------------------------------------------
 void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   assert(state.get_phase() == Phase::kAtChanceDraw);
 
@@ -271,7 +425,8 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() {
-      // Player power tick is a no-op in v1.
+      // Player power tick is a no-op in v1 (Frail ticks at kAtEnemyTurnEnd
+      // side=Enemy in do_enemy_tick_powers below).
       M::discard(state) += state.get_hand();
       M::hand(state) = CardCounts{};
     }
@@ -285,20 +440,20 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
       M::block(M::enemies(state)[slot]) = sts2::game::Stat{0};
     }
     void enemy_act(std::size_t slot) {
-      transition::enemy_act(state, M::enemies(state)[slot]);
+      do_enemy_act(state, M::enemies(state)[slot]);
     }
     [[nodiscard]] bool terminal() const {
       return state.get_player_hp() == sts2::game::Stat{0};
     }
     void tick_enemy_powers(std::size_t slot) {
-      enemy_tick_powers(M::enemies(state)[slot]);
+      do_enemy_tick_powers(state, M::enemies(state)[slot]);
     }
     void increment_round() {
       M::round(state) = static_cast<uint16_t>(state.get_round() + 1);
     }
     [[nodiscard]] int round() const { return state.get_round(); }
     void roll_enemy_next_move(std::size_t slot) {
-      roll_next_move(M::enemies(state)[slot]);
+      do_roll_next_move(M::enemies(state)[slot]);
     }
     void reset_player_block() { M::player_block(state) = sts2::game::Stat{0}; }
     void refill_player_energy(int amount) {
@@ -311,6 +466,9 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   // Phase already kAtChanceDraw; the draw step is the chance node.
 }
 
+// ---------------------------------------------------------------------------
+// apply_draw_in_place
+// ---------------------------------------------------------------------------
 void apply_draw_in_place(CompactState& state, CardCounts drawn) {
   assert(state.get_phase() == Phase::kAtChanceDraw);
   assert(drawn.total() <= 10);
@@ -331,8 +489,152 @@ void apply_draw_in_place(CompactState& state, CardCounts drawn) {
   M::phase(state) = Phase::kPlayerActing;
 }
 
+// ---------------------------------------------------------------------------
+// do_enemy_act: kind-dispatched enemy action.
+// ---------------------------------------------------------------------------
+void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
+  using sts2::game::MoveId;
+  switch (e.get_current_move()) {
+    case MoveId::kWebCannon: {
+      // Attack 9 (strength/weak modifiers apply).
+      const int dmg = sts2::damage::compute_outgoing(
+          9, e.get_strength().value(), e.get_weak().value());
+      (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
+                                            dmg);
+      // Apply 2 Frail to player.
+      M::add_player_frail(s, 2);
+      break;
+    }
+    case MoveId::kCurlAndGrow: {
+      // Defend 14 block (self). Monster move block: powered (ValueProp.Move
+      // set, Unpowered not set) → IsPoweredCardOrMonsterMoveBlock = true. Enemy
+      // has no dexterity or Frail in Phase-1.
+      const int blk = sts2::damage::compute_outgoing_block(14, 0, false, true);
+      M::block(e) += blk;
+      // Apply 5 Strength to self.
+      M::add_strength(e, 5);
+      break;
+    }
+    case MoveId::kPounce: {
+      // Attack 16 (strength/weak modifiers apply).
+      const int dmg = sts2::damage::compute_outgoing(
+          16, e.get_strength().value(), e.get_weak().value());
+      (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
+                                            dmg);
+      break;
+    }
+    default:
+      break;
+  }
+}
+
+void do_enemy_act(CompactState& s, EnemyState& e) {
+  if (e.get_kind() == MonsterKind::kLouseProgenitor) {
+    do_enemy_act_louse_progenitor(s, e);
+    return;
+  }
+  // Cultist path (kCultistCalcified, kCultistDamp): SEMANTICS UNCHANGED.
+  // kSeedC0ffeeExpectedHp / kSeedC0ffeeExpectedRounds bit-identical invariant.
+  sts2::game::move_calc::act_on_intent(
+      e.get_current_move(),
+      [&]() {
+        // Mirrors powers::apply for kRitual: amount accumulates on the Power,
+        // but in v1 Ritual is applied once -> Power.amount stays at
+        // ritual_amount. We model the dynamic Ritual state purely via
+        // just_applied flag on the kRitual PowerInstance.
+        M::set_just_applied_ritual(e, true);
+      },
+      [&]() {
+        const int dmg = sts2::damage::compute_outgoing(
+            e.get_dark_strike_base().value(), e.get_strength().value(),
+            e.get_weak().value());
+        (void)sts2::damage::apply_to_defender(M::player_hp(s),
+                                              M::player_block(s), dmg);
+      });
+}
+
+// ---------------------------------------------------------------------------
+// do_enemy_tick_powers: generic hook dispatch at kAtEnemyTurnEnd.
+// Fires for each active power on the enemy and for player's Frail.
+// Cultist Ritual semantics are PRESERVED.
+// ---------------------------------------------------------------------------
+void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
+  // Ritual: driven by ritual_amount_ scalar (not by kRitual being in the
+  // powers array) so strength is granted even after the just_applied
+  // PowerInstance is removed. This preserves cultist semantics exactly:
+  //   spawn turn → just_applied set by Incantation → tick clears flag (no
+  //   strength gain); subsequent turns → ritual_amount_ > 0 but no kRitual
+  //   entry → grants strength each turn.
+  if (e.get_ritual_amount().value() > 0) {
+    const bool just_applied = M::get_just_applied_ritual(e);
+    if (just_applied) {
+      M::clear_just_applied_ritual(e);
+    } else {
+      M::add_strength(e, e.get_ritual_amount().value());
+    }
+  }
+
+  // Snapshot power kinds for the remaining hooks so we iterate a stable set
+  // even if powers are removed during iteration (e.g. Frail reaching 0).
+  // Each PowerKind appears at most once.
+  const uint8_t snap_count = e.get_power_count();
+  std::array<PowerKind, kMaxPowersPerCreature> snap{};
+  for (uint8_t i = 0; i < snap_count; ++i) {
+    snap[i] = e.get_powers()[i].kind;
+  }
+
+  for (uint8_t i = 0; i < snap_count; ++i) {
+    switch (snap[i]) {
+      case PowerKind::kRitual:
+        // Handled above via ritual_amount_ scalar; skip here.
+        break;
+      case PowerKind::kFrail:
+        // Frail on enemy ticks down at kAtEnemyTurnEnd (side=Enemy).
+        M::decrement_power(e, PowerKind::kFrail);
+        break;
+      case PowerKind::kWeak:
+        // Weak on enemy ticks down.
+        M::decrement_weak(e);
+        break;
+      case PowerKind::kCurlUp:
+        // No turn-end behavior for CurlUp.
+        break;
+      case PowerKind::kStrength:
+      case PowerKind::kVulnerable:
+        // No tick-down at turn end in Phase-1.
+        break;
+    }
+  }
+
+  // Player's Frail ticks down at kAtEnemyTurnEnd (side=Enemy) per upstream
+  // FrailPower.cs AfterTurnEnd(side=Enemy → PowerCmd.TickDownDuration).
+  if (M::get_player_frail(s) > 0) {
+    M::decrement_player_power(s, PowerKind::kFrail);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// do_roll_next_move: advance enemy intent to the next move.
+// ---------------------------------------------------------------------------
+void do_roll_next_move(EnemyState& e) {
+  if (e.get_kind() == MonsterKind::kLouseProgenitor) {
+    const auto kind_idx = static_cast<std::size_t>(e.get_kind());
+    const auto& table = kMonsterMoveTables[kind_idx];
+    sts2::game::move_calc::advance_intent_table(M::performed_first_move(e),
+                                                M::current_move(e),
+                                                M::move_index(e), table);
+    return;
+  }
+  // Cultist path: unchanged.
+  sts2::game::move_calc::advance_intent(M::performed_first_move(e),
+                                        M::current_move(e));
+}
+
 }  // namespace
 
+// ---------------------------------------------------------------------------
+// Public interface
+// ---------------------------------------------------------------------------
 std::vector<Action> legal_actions(const CompactState& state) {
   assert(state.get_phase() == Phase::kPlayerActing);
 
@@ -409,50 +711,6 @@ std::optional<CompactState> apply_player_action(const CompactState& state,
   }
   return next;
 }
-
-namespace {
-
-void enemy_act(CompactState& s, EnemyState& e) {
-  sts2::game::move_calc::act_on_intent(
-      e.get_current_move(),
-      [&]() {
-        // Mirrors powers::apply for kRitual: amount accumulates on the Power,
-        // but in v1 Ritual is applied once -> Power.amount stays at
-        // ritual_amount. We model the dynamic Ritual state purely via
-        // just_applied flag on the kRitual PowerInstance.
-        M::set_just_applied_ritual(e, true);
-      },
-      [&]() {
-        const int dmg = sts2::damage::compute_outgoing(
-            e.get_dark_strike_base().value(), e.get_strength().value(),
-            e.get_weak().value());
-        (void)sts2::damage::apply_to_defender(M::player_hp(s),
-                                              M::player_block(s), dmg);
-      });
-}
-
-void enemy_tick_powers(EnemyState& e) {
-  // ritual_should_grant_strength: if just_applied is true, clears it and
-  // returns false (skip strength this turn). If false, returns true (grant).
-  bool just_applied = M::get_just_applied_ritual(e);
-  if (just_applied) {
-    // Spawn-turn: skip strength grant, clear the just_applied flag.
-    M::clear_just_applied_ritual(e);
-  } else {
-    // Subsequent turns: grant Ritual → Strength.
-    M::add_strength(e, e.get_ritual_amount().value());
-  }
-  if (e.get_weak() > sts2::game::Stat{0}) {
-    M::decrement_weak(e);
-  }
-}
-
-void roll_next_move(EnemyState& e) {
-  sts2::game::move_calc::advance_intent(M::performed_first_move(e),
-                                        M::current_move(e));
-}
-
-}  // namespace
 
 bool is_terminal(const CompactState& s) noexcept {
   if (s.get_player_hp() == sts2::game::Stat{0}) {

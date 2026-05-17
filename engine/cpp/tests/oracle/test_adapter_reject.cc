@@ -29,11 +29,13 @@ struct RejectCase {
   bool expects_unknown_powers;
 };
 
-const std::array<RejectCase, 5>& reject_cases() {
+const std::array<RejectCase, 4>& reject_cases() {
   // Per engine/headless/test/fixtures/state-blobs/README.md canonical hash
   // table. KaiserCrabBoss spawn-power expectations per the same README
   // header note (Q2-ADR-005 unknown-power diagnostic).
-  static const std::array<RejectCase, 5> kCases = {{
+  // NOTE: fixture #5 (LouseProgenitorNormal) is now a success path — it is
+  // tested in test_louse_progenitor_projection.cc and test_adapter_facade.cc.
+  static const std::array<RejectCase, 4> kCases = {{
       {.dir = "02-fossil-stalker-elite-seed42",
        .expected_encounter_id = "FossilStalkerElite",
        .expected_canonical_hash =
@@ -49,11 +51,6 @@ const std::array<RejectCase, 5>& reject_cases() {
        .expected_canonical_hash =
            "9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
        .expects_unknown_powers = true},
-      {.dir = "05-louse-progenitor-normal-seed42",
-       .expected_encounter_id = "LouseProgenitorNormal",
-       .expected_canonical_hash =
-           "37e7517005a0a50c05240874a6e2969c490617711bdd4d2d04c3361eaaaab392",
-       .expects_unknown_powers = false},
       {.dir = "06-small-slimes-seed42",
        .expected_encounter_id = "SmallSlimes",
        .expected_canonical_hash =

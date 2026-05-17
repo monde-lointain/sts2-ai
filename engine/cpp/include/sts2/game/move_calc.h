@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 #include <utility>
 
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/types.h"
 
 // Canonical enemy move + ritual-tick primitives, shared by the production
@@ -17,11 +19,13 @@ namespace sts2::game::move_calc {
       return "INCANTATION_MOVE";
     case MoveId::kDarkStrike:
       return "DARK_STRIKE_MOVE";
-    // Wave-17 reserved MoveIds have no wire representation yet.
+    // Wave-18: LouseProgenitor moves.
     case MoveId::kWebCannon:
+      return "WEB_CANNON_MOVE";
     case MoveId::kCurlAndGrow:
+      return "CURL_AND_GROW_MOVE";
     case MoveId::kPounce:
-      return "";
+      return "POUNCE_MOVE";
   }
   return "";
 }
@@ -36,6 +40,18 @@ namespace sts2::game::move_calc {
     out = MoveId::kDarkStrike;
     return true;
   }
+  if (wire_id == "WEB_CANNON_MOVE") {
+    out = MoveId::kWebCannon;
+    return true;
+  }
+  if (wire_id == "CURL_AND_GROW_MOVE") {
+    out = MoveId::kCurlAndGrow;
+    return true;
+  }
+  if (wire_id == "POUNCE_MOVE") {
+    out = MoveId::kPounce;
+    return true;
+  }
   return false;
 }
 
@@ -47,7 +63,8 @@ namespace sts2::game::move_calc {
 }
 
 // Advance enemy intent through its move sequence. kIncantation -> kDarkStrike;
-// other moves are stable.
+// other moves are stable. For table-driven enemies, use advance_intent_table
+// instead.
 [[nodiscard]] inline MoveId next_move(MoveId current) noexcept {
   if (current == MoveId::kIncantation) {
     return MoveId::kDarkStrike;
@@ -66,9 +83,28 @@ namespace sts2::game::move_calc {
   return true;
 }
 
+// Advance the enemy's intent state for the next turn (table-driven).
+// Uses follow_up_index from the monster's move table to determine the next
+// move index and looks up the corresponding MoveId.
+// On the first call (performed_first_move == false) marks performed without
+// changing move; on subsequent calls advances via follow_up_index.
+inline void advance_intent_table(
+    bool& performed_first_move, MoveId& current_move, uint8_t& move_index,
+    const monster_moves::MonsterMoveTable& table) noexcept {
+  if (!performed_first_move) {
+    performed_first_move = true;
+    return;
+  }
+  // Follow up_index into the next move.
+  const uint8_t next_idx = table.moves[move_index].follow_up_index;
+  move_index = next_idx;
+  current_move = table.moves[next_idx].id;
+}
+
 // Advance the enemy's intent state for the next turn. On the first call
 // (performed_first_move == false) marks the intent as performed without
 // changing it; on subsequent calls advances current_move via next_move().
+// For cultist-style enemies; table-driven enemies use advance_intent_table.
 inline void advance_intent(bool& performed_first_move,
                            MoveId& current_move) noexcept {
   if (!performed_first_move) {
@@ -95,8 +131,7 @@ void act_on_intent(
     case MoveId::kDarkStrike:
       std::forward<OnDarkStrike>(on_dark_strike)();
       break;
-    // Wave-17 reserved MoveIds are not dispatched by this function.
-    // Each will get its own act_on_intent overload when populated in wave-17.
+    // LouseProgenitor moves are dispatched via act_on_table_move.
     case MoveId::kWebCannon:
     case MoveId::kCurlAndGrow:
     case MoveId::kPounce:

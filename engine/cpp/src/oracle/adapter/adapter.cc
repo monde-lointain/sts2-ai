@@ -14,6 +14,7 @@
 #include "sha256_internal.h"
 #include "sts2/oracle/adapter/cultists_projection.h"
 #include "sts2/oracle/adapter/diagnostic.h"
+#include "sts2/oracle/adapter/louse_progenitor_projection.h"
 #include "sts2/oracle/adapter/manifest.h"
 #include "sts2/oracle/adapter/state_blob.h"
 
@@ -56,15 +57,11 @@ const std::vector<EncounterEntry>& encounter_map() {
 // of source-declared PowerInstance.ModelId strings that Q1's content
 // classes register on this encounter's spawns. Used to detect Q1's
 // silent-fail-soft on KaiserCrabBoss spawn powers (per the fixture #4
-// README header note).
+// README header note) and LouseProgenitorNormal's CurlUp spawn power.
 //
-// Today: only KaiserCrabBoss has a non-empty expectation — its 4 spawn
-// powers (BackAttackLeftPower, BackAttackRightPower, CrabRagePower,
-// SurroundedPower) are documented in
-// engine/headless/test/fixtures/state-blobs/README.md and surface in
-// fixture #4 as absent from the wire (Q1 silent-drops at boot). Other
-// encounters declare no spawn powers (Phase-1A registry) so their map
-// entries are empty / absent.
+// LouseProgenitorNormal: upstream AfterAddedToRoom applies CurlUp(14) at
+// A0 (Phase1Monsters.cs spawnPowers). Q1 may silent-drop this at boot;
+// the projection synthesizes it if absent (Q2-ADR-005 pattern).
 const std::vector<std::string>& spawn_power_expectation_for(
     std::string_view encounter_id) {
   static const std::vector<std::string> kEmpty;
@@ -74,8 +71,14 @@ const std::vector<std::string>& spawn_power_expectation_for(
       "CrabRagePower",
       "SurroundedPower",
   };
+  static const std::vector<std::string> kLouseProgenitorNormal = {
+      "CurlUp",
+  };
   if (encounter_id == "KaiserCrabBoss") {
     return kKaiserCrabBoss;
+  }
+  if (encounter_id == "LouseProgenitorNormal") {
+    return kLouseProgenitorNormal;
   }
   return kEmpty;
 }
@@ -137,6 +140,9 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
 
   if (is_cultists_normal(blob.combat_state)) {
     return project_cultists_normal(blob.combat_state);
+  }
+  if (is_louse_progenitor_normal(blob.combat_state)) {
+    return project_louse_progenitor_normal(blob.combat_state);
   }
 
   // Reject path. Stamp the rejection with manifest + canonical hash, and

@@ -15,6 +15,7 @@ target_sources(sts2_oracle_adapter PRIVATE
     state_blob.cc
     envelope.cc
     cultists_projection.cc
+    louse_progenitor_projection.cc
     adapter.cc
 )
 

@@ -9,8 +9,10 @@
 //   engine/cpp/src/ai/transition.cc
 //   engine/cpp/include/sts2/ai/state.h
 //   engine/cpp/include/sts2/game/damage_calc.h
-//   engine/cpp/src/game/damage.cc          -- wave-16: compute_outgoing_block
-//   engine/cpp/src/game/monster_moves.cc   -- wave-16: kMonsterMoveTables
+//   engine/cpp/src/game/damage.cc                        -- wave-16
+//   engine/cpp/src/game/monster_moves.cc                 -- wave-16
+//   engine/cpp/src/oracle/adapter/louse_progenitor_projection.cc -- wave-18
+//   engine/cpp/include/sts2/oracle/adapter/project_powers.h      -- wave-18
 
 #include "sts2/oracle/adapter/manifest.h"
 
