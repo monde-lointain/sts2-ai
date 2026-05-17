@@ -11,10 +11,13 @@ then positives).
 | # | Title | Status |
 |---|---|---|
 | Q2-ADR-001 | Adapter location, namespace, CMake target, wire-parse strategy | Accepted |
-| Q2-ADR-002 | Phase-1A adapter encounter scope = CULTISTS_NORMAL only | Accepted (re-surface candidate) |
+| Q2-ADR-002 | Phase-1A adapter encounter scope = CULTISTS_NORMAL only | Superseded by Q2-ADR-006 |
 | Q2-ADR-003 | Verify-RPC transport = JSON-over-Unix-socket | Accepted |
 | Q2-ADR-004 | Oracle-agreement sink = Parquet on local filesystem | Accepted |
 | Q2-ADR-005 | Algorithm-version manifest stamping + unknown-power diagnostic | Accepted |
+| Q2-ADR-006 | Polymorphic Power-Hook Framework | Accepted (2026-05-17) |
+| Q2-ADR-007 | Data-Driven `MonsterMoveTable` | Accepted (2026-05-17) |
+| Q2-ADR-008 | STS-Canonical Damage/Block Formula Extraction | Accepted (2026-05-17) |
 
 ---
 
@@ -76,7 +79,9 @@ Unresolved #2 confirmed *negatively*.
 
 ## Q2-ADR-002 — Phase-1A adapter encounter scope = CULTISTS_NORMAL only
 
-**Status:** Accepted (re-surface candidate to project lead).
+**Status:** Superseded by Q2-ADR-006.
+
+> **Superseded by Q2-ADR-006 on 2026-05-17** — Phase-1A CULTISTS_NORMAL-only scope no longer applies; framework now supports arbitrary monster kinds.
 
 **Context.** Lead's S1 framing in the boot directive expects "each of 6 D3
 fixtures through adapter → existing expectimax → optimal-action value matches
@@ -427,3 +432,185 @@ Q1↔ground-truth divergences from this vantage point.
 - *Positive:* Q1 silent-fail-soft on KaiserCrabBoss spawn-powers becomes
   observable in Q2's data lineage. Diagnostic posture matches `oracle.md`
   role.
+
+---
+
+## Q2-ADR-006 — Polymorphic Power-Hook Framework
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Q2's `EnemyState` was hardcoded for cultist mechanics: dedicated fields `dark_strike_base_`, `ritual_amount_`, `just_applied_ritual_`, and `strength_`/`weak_` scalars. `transition.cc` contained cultist-only branch logic. Adding any future encounter required new fields on `EnemyState` and new switch arms in every transition function — O(encounters × transition-sites) code growth. Q2-ADR-002 scoped Phase-1A to CULTISTS_NORMAL only because the substrate provided no generic mechanism for other monsters.
+
+Wave-16 opens Path A: the substrate is generalized into a framework where future encounters land as data and per-`PowerKind` hook functions, not as new struct fields or new transition arms.
+
+**Decision.**
+
+1. **`PowerKind` enum** — stable order, never reorder. Values: `kStrength=0`, `kWeak=1`, `kRitual=2`, `kCurlUp=3`, `kFrail=4`, `kVulnerable=5`, future entries append at end. Cultist-relevant kinds appear first so existing cultist hash representation is preserved (strength/ritual fields map to the same logical positions).
+
+2. **`PowerInstance` POD** — `{kind: PowerKind, stacks: int16_t, flags: uint8_t, _pad: uint8_t}`. `sizeof(PowerInstance) == 4` (static_asserted). `flags` bit 0 = `just_applied` (formerly `just_applied_ritual_`). `stacks` is signed (some powers can transiently go negative). `operator==` defaulted.
+
+3. **Per-creature power array** — each creature carries `std::array<PowerInstance, kMaxPowersPerCreature=6>` + `uint8_t power_count`. Zero-stack powers are dropped from the array (not stored). Helpers: `find_power`, `add_power`, `remove_power`, `tick_down_power`.
+
+4. **`MonsterKind` byte on `EnemyState`** — distinguishes archetype at the state level (e.g. `kCultistCalcified`, `kCultistDamp`, `kLouseProgenitor`). Replaces the per-field cultist-archetype encoding. `EnemyState` carries no per-kind union — all kind-specific behavior lives in the `MonsterMoveTable` and hook functions.
+
+5. **`HookPoint` enum** and per-`PowerKind` dispatch — hooks fire at fixed transition boundaries via a switch on `PowerKind` in `transition.cc`. Each power gets a single `hook_<name>` function with an inner switch on `HookPoint`. No virtual dispatch; all types are POD. Adding a new power = one new case + one new hook function.
+
+   `HookPoint` values: `kOnSpawn`, `kBeforeAttackDamage`, `kBeforeBlockGain`, `kAfterDamageReceived`, `kAfterCardPlayedFinished`, `kAtEnemyTurnStart`, `kAtEnemyTurnEnd`, `kAtPlayerTurnStart`, `kAtPlayerTurnEnd`.
+
+6. **Player power array** — `CompactState` gains `std::array<PowerInstance, kMaxPowersPerCreature> player_powers_` + `uint8_t player_power_count_`. Old `player_strength_` / `player_weak_` become `find_power(player, kStrength).stacks` / `find_power(player, kWeak).stacks`; existing call sites preserved as accessor wrappers.
+
+**Cross-links.** ADR-004 (state representation — `CompactState` storage widens per the Amendment block). Q2-ADR-002 (superseded by this ADR).
+
+### §Canonical hook firing order
+
+Per plan §3a (locked; deviation requires Q2-ADR-006 amendment):
+
+```
+PLAYER TURN START:
+  1. Player block clears (set to 0)
+  2. Player draws cards (Phase-1 = 5/turn fixed; deterministic)
+  3. Player energy refills (3)
+  4. Fire kAtPlayerTurnStart hook for every active power (player + each enemy)
+     — order: player powers first, then enemies in slot order
+PLAYER ACTIONS (one per "action" step in expectimax):
+  For each card played:
+    a. Decrement player.energy by card.cost
+    b. Remove card from hand → discard (or exhaust if Exhaust keyword)
+    c. For each card effect in declared order:
+       - kAttack:    base_damage → compute_outgoing_attack(base, p_str, p_weak, target_vuln)
+                      → mitigated by target.block → remainder reduces target.hp
+                      → fire kAfterDamageReceived on target's powers (CurlUp records here)
+       - kDefend:    base_block → compute_outgoing_block(base, p_dex=0, p_frail, is_powered=true)
+                      → adds to player.block
+       - kBuff:      add_power(target=self_or_player, kind, stacks)
+       - kDebuff:    add_power(target, kind, stacks)
+    d. Fire kAfterCardPlayedFinished on every active power
+       (CurlUp's stored-card-match → block gain + power remove fires here)
+PLAYER TURN END:
+  4. Fire kAtPlayerTurnEnd hook for every active power
+ENEMY TURN START:
+  5. For each alive enemy in slot order:
+     a. Enemy block clears (set to 0)
+     b. Fire kAtEnemyTurnStart hooks for that enemy's powers
+        — Ritual fires here: if performed_first_move → add_power(self, kStrength, ritual_amount)
+                                                       AND set just_applied flag
+  6. For each alive enemy in slot order:
+     a. Resolve enemy.move[move_index] effects in declared order
+     b. Set performed_first_move = true
+     c. Advance move_index to follow_up_index
+ENEMY TURN END:
+  7. Fire kAtEnemyTurnEnd hook for every active power
+     — Frail decrement fires here (per STS2 FrailPower.AfterTurnEnd(side=Enemy)):
+        tick_down_power(player, kFrail, 1)
+  8. Loop back to PLAYER TURN START (round++)
+```
+
+`just_applied` flag: set when a power was applied THIS turn boundary; cleared at the next turn-start hook of the same side. Block clear timing is per-side: player block clears at PLAYER TURN START step 1; enemy block clears at ENEMY TURN START step 5a. This matches cultist behavior pre-refactor and is preserved post-refactor.
+
+**Consequences.**
+
+- *Negative:* `PowerKind` enum order is permanently frozen; reordering breaks the hash invariant for existing pinned seeds. Future powers must append — no insertion.
+- *Negative:* Fixed `kMaxPowersPerCreature=6` is a hard ceiling. If a future encounter requires >6 simultaneous powers on a single creature, the array must widen (ADR amendment required; all existing states re-hashed).
+- *Negative:* Per-`PowerKind` switch in `dispatch_enemy_power_hook` / `dispatch_player_power_hook` must be updated for every new power. Forgetting a case compiles silently (no exhaustiveness check without `-Wswitch` coverage). Mitigation: clang's `-Wswitch` enforced in build; test_power_hooks.cc covers dispatch for each registered power.
+- *Negative:* `algorithm_sha` flips (per Q2-ADR-005) because `transition.cc`, `state.h`, and the new framework headers all change. Existing cultist pinned seeds must be regenerated via `seed-pinner`. Values are numerically identical; only the stamp rotates.
+- *Positive:* Adding a new encounter (wave-17+) = one `MonsterKind` enum entry + one `MonsterMoveTable` entry + optional new `PowerKind` entries + hook functions. No changes to existing transition sites. Marginal cost per encounter drops dramatically from wave-16 onward.
+- *Positive:* All power semantics are localized to `hook_<power_name>` functions. Reading any power's behavior requires inspecting one function, not tracing through multiple transition sites.
+- *Positive:* Cultist behavior is byte-invariant at the value level: oracle `solve()` output for any cultist state is numerically identical pre/post refactor. Locked by `CompactStateValueInvariants.CultistSolveMatchesPreRefactor` regression test.
+- *Positive:* Player power generalization (player_powers_ array) unblocks all future player-side debuffs (Frail, Vulnerable) and buffs (Strength, Dexterity) at zero additional structural cost.
+
+**Origin.** Wave-16 plan §Framework design §1–3; plan §3a (hook firing order). Q2-ADR-002 Path A directive.
+
+---
+
+## Q2-ADR-007 — Data-Driven `MonsterMoveTable`
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Cultist move rotation was hardcoded in `transition.cc`: dedicated `MoveId` enum with only `kIncantation`/`kDarkStrike`, damage values burned into the transition logic, move-advancement logic cultist-specific. Adding LouseProgenitor (wave-17) required adding new enum values AND new switch arms in every transition site that looked at `current_move`. The hardcoded structure did not generalize.
+
+**Decision.**
+
+A `constexpr` table `kMonsterMoveTables[MonsterKind]` provides all per-monster move data:
+
+- `MonsterMove` — carries `MoveId id`, `uint8_t follow_up_index`, `std::array<MoveEffect, kMaxEffectsPerMove=3> effects`, `uint8_t effect_count`.
+- `MoveEffect` — `{kind: MoveEffectKind, value: int16_t, power_kind: PowerKind, _pad}`. `sizeof(MoveEffect) == 6`. `MoveEffectKind` values: `kNone`, `kAttack`, `kDefend`, `kBuffSelf`, `kDebuffPlayer`.
+- `MonsterMoveTable` — `std::array<MonsterMove, kMaxMovesPerMonster=6> moves`, `uint8_t move_count`, `uint8_t initial_move_index`, `uint8_t min_hp`, `uint8_t max_hp`, `std::array<SpawnPowerEntry, kMaxSpawnPowers=3> spawn_powers`, `uint8_t spawn_power_count`.
+- `SpawnPowerEntry` — `{kind: PowerKind, stacks: int16_t, _pad}`. `sizeof(SpawnPowerEntry) == 4`. Applied at `kOnSpawn` hook. Cultist has `spawn_power_count=0`; LouseProgenitor (wave-17) will have `{kCurlUp, 14}`.
+
+Constants: `kMaxEnemies=4`, `kMaxMovesPerMonster=6`, `kMaxEffectsPerMove=3`, `kMaxSpawnPowers=3`.
+
+`MonsterKind` indexes directly into `kMonsterMoveTables`. `move_index_` in `EnemyState` follows the table's `follow_up_index` chain. Adding a new monster = append one `MonsterMoveTable` entry; no changes to transition logic.
+
+Adapter helper `find_move_index(MonsterKind kind, MoveId id) → uint8_t` walks the table to map a wire-emitted `MoveId` to a table index. Returns `0xFF` (not-found sentinel) if the MoveId is absent from the monster's table.
+
+Cultist re-expression: `dark_strike_base` → `kMonsterMoveTables[kCultistCalcified/Damp].moves[DarkStrike].effects[0].value`. `ritual_amount` → `kMonsterMoveTables[...].moves[Incantation].effects[0].value`. The `cultist_archetype_from_wire_name` adapter returns `MonsterKind` directly.
+
+Wave-16 scope: only cultist entries are populated in `kMonsterMoveTables`. The `MonsterKind::kLouseProgenitor` enum slot is RESERVED; the table entry is zero-initialized until wave-17 populates it.
+
+**Consequences.**
+
+- *Negative:* `kMonsterMoveTables` is a `constexpr` array; compile-time size is `MonsterKind` enum cardinality. Adding a new `MonsterKind` value grows the array at compile time. Entries for reserved-but-unpopulated monsters must be zero-initialized (valid but not invoked until the wave that activates them).
+- *Negative:* `MoveEffect` layout has explicit `_pad` field. `static_assert(sizeof(MoveEffect) == 6)` enforces this, but the pad is wasted storage for moves with fewer than 3 effects. Accepted: array is small (≤6 moves × ≤3 effects = 18 entries per monster).
+- *Negative:* `kMaxEffectsPerMove=3` is a hard ceiling. Compound moves with >3 sub-effects require a constant bump + all existing table entries re-validated. Current Phase-1 survey shows max = 2 (CURL_AND_GROW, WEB_CANNON); 3 is a single-increment reserve.
+- *Positive:* Adding a new monster is one `MonsterMoveTable` entry. No changes to transition sites.
+- *Positive:* Compound moves (attack + debuff in one action, like WEB_CANNON) are first-class: `effect_count=2`, both effects in `effects[]`. No special-casing in transition.
+- *Positive:* Spawn-power synthesis (LouseProgenitor's CurlUp at spawn) is declared in the table rather than scattered across adapter + transition code. The adapter checks `spawn_powers` and applies them on `kOnSpawn` hook.
+- *Positive:* Adapter `find_move_index` provides a stable seam between wire-emitted `MoveId` and table-index; wave-17 adds new `MoveId` enum values without touching any table-iteration logic.
+
+**Origin.** Wave-16 plan §Framework design §4. Generalizes cultist `transition.cc` move-advance logic.
+
+---
+
+## Q2-ADR-008 — STS-Canonical Damage/Block Formula Extraction
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Damage and block computation was inlined at use-sites in `transition.cc`. The inline logic handled cultist-only cases (no Frail, no Vulnerable in Phase-1A). Generalizing to LouseProgenitor (Frail debuff; wave-17) and future encounters with Vulnerable, Dexterity, or Strength requires that the formulas be expressed once, correctly, and tested in isolation.
+
+Upstream canonical authority: `~/development/projects/godot/sts2/src/Core/Commands/DamageCmd.cs` + `BlockCmd.cs`. STS2 uses decimal arithmetic with `floor` at the final step for both damage and block.
+
+**Decision.**
+
+Extract two pure helpers (no side effects, no state mutation):
+
+```cpp
+// engine/cpp/include/sts2/game/damage.h
+namespace sts2::game::combat {
+
+int compute_outgoing_attack(int base, int attacker_strength,
+                            bool attacker_weak, int target_vulnerable);
+
+int compute_outgoing_block(int base, int gainer_dexterity,
+                           bool gainer_frail, bool is_powered_source);
+
+}  // namespace sts2::game::combat
+```
+
+Multiplication order for `compute_outgoing_attack` (locked — matches STS canonical):
+
+1. `v = base + attacker_strength`
+2. If `target_vulnerable > 0`: `v = (v * 3) / 2` (×1.5, integer floor)
+3. If `attacker_weak`: `v = (v * 3) / 4` (×0.75, integer floor)
+4. `return std::max(0, v)`
+
+For `compute_outgoing_block`:
+
+1. `v = base + gainer_dexterity`
+2. If `gainer_frail && is_powered_source`: `v = (v * 3) / 4` (×0.75, integer floor)
+3. `return std::max(0, v)`
+
+`is_powered_source` is `true` for card-based block (Defend, Survivor) and monster-move-based block (CURL_AND_GROW); `false` for baseline block from relics or other non-powered sources. Frail tax applies only to powered-source block per STS2 `FrailPower.ModifyBlockMultiplicative`.
+
+All transition call sites use these helpers; no inline formula duplication.
+
+**Cross-link.** Upstream `~/development/projects/godot/sts2/src/Core/Commands/DamageCmd.cs` is the canonical authority for multiplication order and rounding semantics.
+
+**Consequences.**
+
+- *Negative:* Multiplication order (strength → vulnerable → weak) is locked by this ADR; any upstream STS2 formula change requires an ADR amendment AND a regression-set rebuild (Q2-ADR-005 `algorithm_sha` flip).
+- *Negative:* `is_powered_source` flag must be threaded through all block-gain call sites. Incorrect flag (powered source passed as unpowered) silently produces wrong block values. Mitigation: test_damage_formula.cc covers all flag combinations.
+- *Positive:* Formula is testable in isolation without constructing full `CompactState`. `test_damage_formula.cc` covers ≥10 cases including boundary rounding (e.g., base=1, strength=0, vulnerable=true gives floor(1.5)=1 not 2).
+- *Positive:* Frail's block-tax is correctly scoped to powered sources only (matching STS2 semantics, not STS1). A single implementation site prevents per-call-site divergence.
+- *Positive:* Future encounter powers (Dexterity, additional Vulnerable stacking) extend the helpers at one site; all call sites benefit automatically.
+
+**Origin.** Wave-16 plan §Framework design §5. Upstream authority `DamageCmd.cs` + `BlockCmd.cs` (STS2 canonical floor-rounding).

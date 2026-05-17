@@ -32,6 +32,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-026 | Upstream-Sync Pipeline | Accepted |
 | ADR-027 | Q4 Phase-1 Fixture Growth Policy | Accepted |
 | ADR-028 | Q1 Silent-Engine Baseline Ratified at Upstream v0.105.1 | Accepted |
+| ADR-029 | Path A Engine-Expansion Campaign | Accepted (2026-05-17) |
 
 ---
 
@@ -104,6 +105,8 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 - *Negative:* cannot reuse `CompactState`'s TT for the deep network. The TT lives at the search layer; network caching, if any, is separate (see ADR-009 for how this is resolved at search time).
 - *Negative:* RichState schema is now a first-class versioned artifact alongside the trajectory schema. Two schema lifecycles.
 - *Positive:* verifier stays exact and fast; network sees a representation built for its job; neither pays the other's tax.
+
+**Amendment (2026-05-17).** Storage aggregate widens (per Q2-ADR-006/007). `CompactState.enemies_` becomes `std::array<EnemyState, kMaxEnemies=4>` plus `uint8_t enemy_count_`; `EnemyState` becomes polymorphic via a `MonsterKind` byte and a generic `std::array<PowerInstance, kMaxPowersPerCreature=6>` array with `uint8_t power_count`; `CompactState` gains `player_powers_` array (`std::array<PowerInstance, kMaxPowersPerCreature>` + `uint8_t player_power_count_`). The hashable + value-semantics + cheap-clone invariants are preserved: `CompactState` remains a POD aggregate with `operator==` and `CompactStateHash`. `RichState` is unaffected. `CompactState` remains Q2-internal; no `contracts/schemas/` change is required.
 
 ---
 
@@ -714,3 +717,39 @@ Without an explicit anchor declaring "the Q1 silent-engine substrate is stable a
 **Cross-references.** ADR-001 (Service-Based Architecture) — Q1 is the central substrate this ADR anchors. ADR-002 (Headless C# Core) — defines what "Q1" means structurally. ADR-009 (AlphaZero at Combat Layer, Amended 2026-05-14) — names the layer this substrate supports. ADR-011 (Oracle Owns the Engine→CompactState Adapter) — Q2 revival follow-up depends on this contract. ADR-014 (Combat Oracle Output Uses Samples + Summary) — Q2's output shape that Q1 substrate must support. ADR-023 (Spec Status Badges) — informs what "SHIPPED vs PHASE-N" means in `game-simulator.md`. ADR-024 (Spec-Edit Tracker) — the operational-cleanup clause draws on ADR-024 § Consequences. ADR-026 (Upstream-Sync Pipeline) — the bridge ceremony this ADR closes. ADR-027 (Q4 Phase-1 Fixture Growth Policy) — the cap-growth policy executed across the bridge waves.
 
 **Origin.** Project-lead session 2026-05-17 (status report following Wave 15 close, commit `093cb37`). User directive: "Do #1-3" — ratify ADR-028 alongside push-to-origin + spec-edit-tracker cleanup as the three highest-priority post-bridge operational items.
+
+---
+
+## ADR-029 — Path A Engine-Expansion Campaign
+
+**Status:** Accepted (2026-05-17).
+
+**Context.** Q2-ADR-002 identified Path A ("expand `engine/cpp/` to cover Phase-1 non-cultist encounter mechanics + polymorphic `EnemyState`") as the largest scope extension for Q2 but deferred it pending project-lead direction. With the Q1 substrate ratified at upstream v0.105.1 (ADR-028), Q2 is revived and Path A is now the natural next critical-path item: the remaining 15 non-cultist Phase-1 encounters cannot be oracle-verified without a generalized engine.
+
+Wave-16 executes the foundational substrate refactor that makes Path A viable at low marginal cost per future encounter. Q2-ADR-006 (polymorphic power-hook framework), Q2-ADR-007 (data-driven `MonsterMoveTable`), and Q2-ADR-008 (STS-canonical damage/block formula extraction) are the technical decisions that constitute this refactor. This ADR declares the campaign scope and roadmap at the pipeline level.
+
+**Decision.**
+
+Declare Path A as the active Q2 expansion campaign. The campaign is multi-wave, sequential, and encounter-ordered by Phase-1 encounter priority:
+
+- **Wave-16 (framework refactor):** Polymorphic `EnemyState` + generic `PowerInstance` system + per-`PowerKind` hook framework + data-driven `MoveStateMachine` + STS-canonical damage/block pipeline. Cultist re-expressed in the new framework — cultist oracle values numerically identical (regression-locked). No new encounter ported in this wave. Ratifies Q2-ADR-006/007/008.
+- **Wave-17 (LouseProgenitor):** `CurlUpPower` + `FrailPower` hook implementations per upstream STS2. Port `LouseProgenitor` monster (move table + spawn-power). One pinned-seed expected value (D3 fixture #5). Low marginal cost given the wave-16 framework.
+- **Wave-18..N (remaining encounters):** Each subsequent encounter (FossilStalker, KaiserCrab, SmallSlimes, and others from the Phase-1 pool) adds: data tables in `kMonsterMoveTables`, optional new `PowerKind` entries, optional new hook functions, adapter projection, and pinned seeds. Each wave is self-contained and file-disjoint from unrelated work.
+
+Campaign economics: wave-16 amortizes the framework cost (~1500 LOC churn + ~400 LOC new framework + ~400 LOC new tests). Each subsequent encounter wave is expected to cost ~500-700 LOC. This is the Path A "bounded effort" that Q2-ADR-002 flagged but deferred.
+
+Tracker: when a future ADR-029-roadmap encounter is shipped, the Q2 decisions-log entry for that encounter's ADR cross-references this ADR. Oracle-agreement scope widens per-encounter; `encounter_not_in_cpp_engine` reject set narrows.
+
+**Consequences.**
+
+- *Negative:* campaign is open-ended (Wave-18..N). The number of waves is determined by Phase-1 encounter count (~15 non-cultist encounters remaining post-LouseProgenitor). Without a firm close date, Path A competes with Phase-1.5 per-step Godot parity (ADR-028 open item) for Q2 engineer attention.
+- *Negative:* each new encounter wave widens the `MonsterKind` enum and `kMonsterMoveTables` array; `algorithm_sha` flips (Q2-ADR-005) with every new monster entry even if cultist behavior is unchanged. Downstream Q10/Q12 consumers must filter by `algorithm_sha` to avoid comparing oracle rows across campaign waves.
+- *Negative:* campaign depends on upstream STS2 behavioral authority (`Core/Models/Monsters/`, `Core/Models/Powers/`) being stable at v0.105.1. Any upstream patch that changes encounter mechanics mid-campaign requires a re-survey and potential ADR amendment.
+- *Positive:* oracle-agreement coverage grows per-wave. By campaign completion, all Phase-1 encounters are verifiable; `encounter_not_in_cpp_engine` reject rate drops to zero for Phase-1 states.
+- *Positive:* Q10's prioritized sampling benefits immediately: more labeled states → tighter oracle-agreement signal → more effective curriculum selection.
+- *Positive:* each encounter wave is independently mergeable and gate-green before the next wave begins. No mega-PR risk; clean rollback boundary per wave.
+- *Positive:* D3 fixture #5 (LouseProgenitorNormal), currently a reject-with-diagnostic, becomes a full round-trip after wave-17. Q1's 6-fixture corpus transitions from 1/6 round-trip to 2/6 after wave-17; further fixtures unlock as subsequent campaign waves land.
+
+**Cross-links.** Q2-ADR-006 (polymorphic power-hook framework — wave-16 foundation). Q2-ADR-007 (data-driven `MonsterMoveTable` — wave-16 foundation). Q2-ADR-008 (STS-canonical damage/block formula extraction — wave-16 foundation). Q2-ADR-002 (superseded by Q2-ADR-006; Path A is the extension path Q2-ADR-002 §"Extension paths reserved for later" identified). ADR-028 (Q1 substrate ratified — prerequisite for Path A dispatch).
+
+**Origin.** Wave-16 plan §Wave decomposition (baked); §§1–4 framework design. Triggered by ADR-028 Q1 ratification + project-lead directive to revive Q2 as next critical-path item.

@@ -11,14 +11,19 @@
 | Artifact | Path | State |
 |---|---|---|
 | Expectimax + TT search | `engine/cpp/include/sts2/ai/{search,state,transition,probability,recommend}.h` | operational |
-| Test battery | `engine/cpp/tests/` | 424 active, 100% green (lead's "252" figure is dated; substrate grew) |
-| Pinned regression | `engine/cpp/tools/seed-pinner/` + `tests/seeds/expected_values.h` | CULTISTS_NORMAL only; pins are STL-impl-specific |
+| Test battery | `engine/cpp/tests/` | 424+ active, 100% green (extended by wave-16 framework tests) |
+| Pinned regression | `engine/cpp/tools/seed-pinner/` + `tests/seeds/expected_values.h` | CULTISTS_NORMAL only; algorithm_sha rotated at wave-16 (values numerically unchanged) |
 | Build | top-level `CMakeLists.txt`, `CMakePresets.json`, single ALIAS target `sts2::simulator` | clean |
 | M1 binary state spec | `engine/headless/docs/specs/modules/state-codec.md` | locked, schema v3 minor |
 | StateBlobEnvelope v0.1 | `contracts/schemas/game-simulator/state_blob.proto` | locked per Q1-ADR-012 |
 | Generated cpp bindings | `contracts/generated/cpp/game-simulator/{state_blob,hook}_pb.h` | **STUB ONLY** — empty struct decls, no codegen |
 | D3 fixture corpus | `engine/headless/test/fixtures/state-blobs/` | 6 fixtures, byte-locked, canonical hashes pinned |
 | Monorepo data convention | `data/{eval-harness,experience-store,inference-server,model-registry,observability,rollout-workers,trainer}/` | per-service subdirs exist; `data/oracle/` open |
+| **Power-hook framework** (wave-16) | `engine/cpp/include/sts2/game/powers.h`, `engine/cpp/src/game/powers.cc` | `PowerKind` enum + `PowerInstance` POD + helpers; cultist re-expressed as data |
+| **Monster move tables** (wave-16) | `engine/cpp/include/sts2/game/monster_moves.h`, `engine/cpp/src/game/monster_moves.cc` | `constexpr kMonsterMoveTables[MonsterKind]`; cultist entries populated; `kLouseProgenitor` slot reserved for wave-17 |
+| **Damage/block pipeline** (wave-16) | `engine/cpp/include/sts2/game/damage.h`, `engine/cpp/src/game/damage.cc` | `compute_outgoing_attack` + `compute_outgoing_block`; pure helpers; STS-canonical floor-rounding |
+
+The wave-16 refactor generalizes the engine substrate from cultist-hardcoded to a data-driven framework where future encounters (LouseProgenitor in wave-17; remaining Phase-1 pool per ADR-029) are added as data table entries and per-`PowerKind` hook functions, not as new switch arms in transition code. Cultist behavior is preserved byte-for-byte at the oracle-value level; the structural representation rotates.
 
 ## 2. `oracle.md` responsibility → code mapping
 
@@ -36,17 +41,20 @@ and produces these types. See Q2-ADR-001.
 
 ## 3. Substrate boundaries — honesty section
 
-The C++ prototype is structurally CULTISTS_NORMAL-only. Three sources confirm:
+Post-wave-16, the C++ substrate implements the Phase-1 mechanics framework with cultist as the proof-of-concept encounter. The former CULTISTS_NORMAL-only framing (Q2-ADR-002) is superseded by Q2-ADR-006; per-encounter coverage extends via Q2-ADR-007 data-table additions per the Path A campaign (ADR-029).
 
-- `state.h:66-78` `EnemyState`: 5/10 fields are cultist mechanics
-  (`dark_strike_base`, `ritual_amount`, `just_applied_ritual`,
-  `performed_first_move`, `current_move = MoveId::kIncantation`).
-- `state.h:94` `enemies`: `std::array<EnemyState, 2>` hardcoded.
-- `state.h:23-26` `CardCounts`: `static_assert(kCountedCardIds.size() <= 8)`,
-  with 4 distinct kinds today (Strike, Defend, Neutralize, Survivor).
-- `game::enemies`: `make_calcified_cultist`, `make_damp_cultist` only.
-- `scaling-strategy.md` §1.3 enumerates all three as scaling breaks; refactor
-  cost flagged "bounded effort." Not Phase-1A work.
+Pre-wave-16 structural constraints (now resolved by the refactor):
+
+- `state.h` `EnemyState` cultist-specific fields (`dark_strike_base_`, `ritual_amount_`, `just_applied_ritual_`) → replaced by generic `MonsterKind` byte + `PowerInstance[]` array + `kMonsterMoveTables` data.
+- `enemies`: `std::array<EnemyState, 2>` hardcoded → widened to `std::array<EnemyState, kMaxEnemies=4>` + `uint8_t enemy_count_`.
+- `CardCounts`: `static_assert(kCountedCardIds.size() <= 8)` with 4 distinct kinds — unchanged (Silent starter fits; Phase-2 scope).
+- `game::enemies`: `make_calcified_cultist` / `make_damp_cultist` → rewritten to populate via `MonsterKind` + `kMonsterMoveTables`.
+
+Remaining boundary (unresolved in wave-16; deferred to subsequent encounter waves):
+
+- Non-cultist encounters still reject with `UnsupportedEncounter` until the corresponding `MonsterMoveTable` entry and hook functions are populated. LouseProgenitor is wave-17; FossilStalker, KaiserCrab, SmallSlimes are wave-18+.
+- `CardCounts` 8-kind cap — Silent starter fits; future deck expansion is Phase-2 scope.
+- Ascension scaling — Phase-1A fixed at A0.
 
 ### D3 fixture corpus implication
 
@@ -55,14 +63,13 @@ Of 6 fixtures shipped in `engine/headless/test/fixtures/state-blobs/`:
 | # | Encounter | Adapter feasible? | S1 path |
 |---|---|---|---|
 | 1 | CultistsNormal (Calcified + Damp) | YES | adapter → expectimax → pinned `(action, value)` round-trip |
-| 2 | FossilStalkerElite seed 42 | NO | reject with `UnsupportedEncounter` diagnostic |
-| 3 | FossilStalkerElite seed 1337 | NO | reject with `UnsupportedEncounter` diagnostic |
-| 4 | KaiserCrabBoss (Crusher + Rocket) | NO | reject + unknown-power diagnostic (Q2-ADR-005) |
-| 5 | LouseProgenitorNormal | NO | reject with `UnsupportedEncounter` diagnostic |
-| 6 | SmallSlimes | NO | reject (also B.1-ε DEFER per Q1 fixture README) |
+| 2 | FossilStalkerElite seed 42 | NO (wave-18+) | reject with `UnsupportedEncounter` diagnostic |
+| 3 | FossilStalkerElite seed 1337 | NO (wave-18+) | reject with `UnsupportedEncounter` diagnostic |
+| 4 | KaiserCrabBoss (Crusher + Rocket) | NO (wave-18+) | reject + unknown-power diagnostic (Q2-ADR-005) |
+| 5 | LouseProgenitorNormal | NO (wave-17) | reject with `UnsupportedEncounter` diagnostic; unlocks wave-17 |
+| 6 | SmallSlimes | NO (wave-18+) | reject (also B.1-ε DEFER per Q1 fixture README) |
 
-This is a material refinement of the lead's S1 framing. See §6 below and
-Q2-ADR-002.
+The reject-with-diagnostic path remains correct for encounters not yet in the engine. Wave-17 narrows the reject set by 1 (fixture #5). See §6 and ADR-029 for campaign roadmap.
 
 ## 4. Cpp proto bindings — substrate gap
 
@@ -79,6 +86,8 @@ No protobuf runtime in C++ build. Forward-compatible if real codegen lands —
 `sts2::oracle::adapter` is the seam.
 
 Surfaced to project lead as a contracts-generation gap (not Q2's to fix).
+
+**Wave-16 note.** The `CompactState` type widens (per ADR-004 Amendment + Q2-ADR-006/007) but remains Q2-internal. No change to `contracts/schemas/` is required. The `StateBlobEnvelope` wire format and `state-codec.md` M1 binary layout are unaffected. The adapter seam (`sts2::oracle::adapter`) remains the single point where Q1 wire bytes are translated to the new `CompactState` shape.
 
 ## 5. Refined 5-stage plan
 
@@ -137,16 +146,22 @@ Surfaced to project lead as a contracts-generation gap (not Q2's to fix).
 
 ## 6. Plan diff from starting framework
 
-| Stage | Starting | Refined | Driver |
+| Stage | Starting (S0) | Refined (post-wave-16) | Driver |
 |---|---|---|---|
-| S1 | "each of 6 D3 fixtures → expectimax → pinned value" | Fixture #1 round-trip; #2–#6 reject-with-diagnostic | C++ engine is CULTISTS_NORMAL-only; non-cultist fixtures have no engine mechanics |
-| S2 | "Q1's 16-encounter corpus (22+ post-Phase-1.5)" | CULTISTS_NORMAL only Phase-1A; per-encounter expansion deferred | same substrate boundary |
-| S0 | "3–5 Q2-ADRs" | 5 Q2-ADRs | within budget |
+| S1 | "each of 6 D3 fixtures → expectimax → pinned value" | Fixture #1 round-trip; #2–#6 reject-with-diagnostic (narrows per ADR-029 campaign) | Substrate boundary at S0; framework now extensible |
+| S2 | "Q1's 16-encounter corpus (22+ post-Phase-1.5)" | CULTISTS_NORMAL Phase-1A baseline; per-encounter extension via ADR-029 campaign | same substrate boundary at S0; wave-16 removes the structural block |
+| S0 | "3–5 Q2-ADRs" | 8 Q2-ADRs (Q2-ADR-001..005 original + Q2-ADR-006..008 wave-16) | wave-16 framework ratification |
 | S3, S4 | (no change) | (no change) | — |
 
-S1 and S2 diffs are **material**. Re-surface trigger #1 from boot directive
-fires. Status report flags this; lead ratifies or directs Path A (expand
-C++ engine into Q2 scope) before S1 work begins.
+Wave-16 vs. original S0 plan delta summary:
+
+- **Not in S0:** polymorphic `EnemyState` + generic `PowerInstance[]` + `HookPoint` dispatch framework (Q2-ADR-006). S0 had no mechanism for non-cultist powers.
+- **Not in S0:** `constexpr kMonsterMoveTables[MonsterKind]` data-driven rotation (Q2-ADR-007). S0 hardcoded cultist moves in `transition.cc`.
+- **Not in S0:** `compute_outgoing_attack` / `compute_outgoing_block` extracted pure helpers (Q2-ADR-008). S0 had inline formula at each use-site.
+- **Not in S0:** `kMaxEnemies=4` enemy slot widening. S0 had hardcoded `std::array<EnemyState, 2>`.
+- **Preserved from S0:** `CompactState` remains Q2-internal. `contracts/schemas/` unchanged. Hand-rolled adapter (Q2-ADR-001). Algorithm manifest (Q2-ADR-005). All S3 / S4 designs unchanged.
+
+S1 and S2 diffs from S0 were **material** and correctly flagged in the original §6. Wave-16 closes the structural block that made those diffs necessary; Path A campaign (ADR-029) is the follow-through.
 
 ## 7. Open questions for project lead (S0 → status)
 
@@ -276,6 +291,7 @@ direct cmake invocation closes the trap.
 
 ## 12. Architecture-note cascade addendum (2026-05-14)
 
+
 The pipeline-level architecture-note cascade
 (`docs/micro-macro-policy-architecture-note.md`, commit `92acc33`) added
 ADR-009 amendment + ADR-014..018 specifying a run-conditioned combat
@@ -303,3 +319,21 @@ outcome oracle interface. **Q2's scope is unaffected:**
 No Phase-1A code change required. This addendum exists so future readers
 do not conflate `verify()` with `evaluate_combat()` after reading the
 cascade documents.
+
+Note: the §12 statement "Q2-ADR-002 Phase-1A scope (CULTISTS_NORMAL only) holds; the cascade does not pressure the encounter scope" applied at the time of the cascade (2026-05-14). Wave-16 (2026-05-17) supersedes Q2-ADR-002 via Q2-ADR-006 — Path A campaign is now active. The cascade-vs-verify() orthogonality observation is unaffected.
+
+## 13. Refactor cascade addendum (2026-05-17)
+
+Wave-16 executes the substrate refactor documented in the plan at `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md`. Key outcomes ratified by this wave:
+
+- **Q2-ADR-006 ratified.** Polymorphic power-hook framework: `PowerKind` enum (stable order), `PowerInstance` POD, per-creature `std::array<PowerInstance, 6>` + `power_count`, per-`PowerKind` hook functions dispatched via `HookPoint` enum. `EnemyState` carries `MonsterKind` byte; no per-kind union. Player powers on `CompactState`.
+
+- **Q2-ADR-007 ratified.** Data-driven `MonsterMoveTable`: `constexpr kMonsterMoveTables[MonsterKind]`, `MonsterMove` with sub-effects array (`kMaxEffectsPerMove=3`), `SpawnPowerEntry[]` per monster, `find_move_index` adapter helper. Constants: `kMaxEnemies=4`, `kMaxMovesPerMonster=6`, `kMaxEffectsPerMove=3`, `kMaxSpawnPowers=3`.
+
+- **Q2-ADR-008 ratified.** `compute_outgoing_attack` + `compute_outgoing_block` extracted as pure helpers with STS-canonical floor-rounding. Multiplication order locked (strength → vulnerable → weak for attack; frail tax on powered-source block only).
+
+- **Cultist behavior preserved.** All cultist oracle `solve()` values are numerically identical pre/post refactor. The `CultistSolveMatchesPreRefactor` regression test locks this invariant. Cultist enemies are now represented as `MonsterKind::kCultistCalcified` / `kCultistDamp` with their move data in `kMonsterMoveTables` entries; the structural representation changed, the values did not.
+
+- **Framework reserves slots for wave-17.** `PowerKind` enum has `kCurlUp=3`, `kFrail=4`, `kVulnerable=5` reserved. `MonsterKind::kLouseProgenitor` slot reserved; `kMonsterMoveTables[kLouseProgenitor]` is zero-initialized (wave-17 populates). `MoveId` enum adds `kWebCannon`, `kCurlAndGrow`, `kPounce` (reserved; wave-17 uses them).
+
+- **Path A campaign open.** ADR-029 declares the multi-wave expansion roadmap. Wave-17 is the immediate follow-on: `CurlUpPower` + `FrailPower` hooks + LouseProgenitor encounter + D3 fixture #5 round-trip.
