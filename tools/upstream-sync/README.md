@@ -71,3 +71,14 @@ Alternate Steam install locations:
 - ADR-003 (Q4 patch-adaptation lever)
 - Q1-ADR-004 (T3 ledger discipline)
 - `engine/headless/docs/specs/02-encounter-port-decisions.md` (the de-facto template our output emulates)
+
+## State schema versions
+
+`.upstream-sync-state.json` is versioned via the `schema_version` field.
+
+| Version | Fields | Introduced |
+|---|---|---|
+| v0 | last_synced_at, last_synced_buildid, last_synced_version, tool_version, upstream_tree_path | 0.1.0 (initial) |
+| v1 | + last_synced_dll_sha256, gdre_version, schema_version | Wave 4 / Stream A.0 |
+
+Legacy v0 state files are auto-promoted to v1 on next write (new fields populated as null until next `make sync`).

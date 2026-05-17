@@ -81,10 +81,16 @@ class TestStateRoundTrip:
             "last_synced_version": "v0.103.2",
             "last_synced_at": "2026-05-14T10:00:00Z",
             "upstream_tree_path": "/tmp/sts2",
+            "last_synced_dll_sha256": "abc123",
+            "gdre_version": "v2.5.0-beta.5",
         }
         cli._write_state(monorepo, payload)
         result = cli._read_state(monorepo)
-        assert result == payload
+        # v1 round-trip: schema_version is added by _write_state.
+        assert result is not None
+        assert result["schema_version"] == "v1"
+        for key, val in payload.items():
+            assert result[key] == val
 
     def test_read_missing_returns_none(self, tmp_path: Path) -> None:
         monorepo = _make_monorepo(tmp_path)
@@ -104,6 +110,86 @@ class TestStateRoundTrip:
         assert (monorepo / ".upstream-sync-state.json").is_file()
         leftovers = [p for p in monorepo.iterdir() if p.name.endswith(".tmp")]
         assert leftovers == []
+
+    # ------------------------------------------------------------------ #
+    # Schema v0 → v1 migration tests (Wave 4 / Stream A.0)               #
+    # ------------------------------------------------------------------ #
+
+    def test_v0_state_promotes_to_v1_on_write(self, tmp_path: Path) -> None:
+        """v0 file (no schema_version) reads cleanly with new fields as None;
+        write promotes to v1."""
+        monorepo = _make_monorepo(tmp_path)
+        v0 = {
+            "last_synced_at": "2026-05-14T15:04:22Z",
+            "last_synced_buildid": "23156356",
+            "last_synced_version": "v0.105.1",
+            "tool_version": "0.1.0",
+            "upstream_tree_path": "/tmp/sts2",
+        }
+        (monorepo / ".upstream-sync-state.json").write_text(json.dumps(v0), encoding="utf-8")
+
+        # Read: new fields default to None; schema_version shows as "v0" (not-yet-promoted).
+        result = cli._read_state(monorepo)
+        assert result is not None
+        assert result.get("last_synced_dll_sha256") is None
+        assert result.get("gdre_version") is None
+
+        # Write back (simulating a `make sync`); expect promotion to v1.
+        cli._write_state(monorepo, result)
+        promoted = cli._read_state(monorepo)
+        assert promoted is not None
+        assert promoted["schema_version"] == "v1"
+
+    def test_v1_state_round_trips(self, tmp_path: Path) -> None:
+        """v1 file round-trips with all fields preserved."""
+        monorepo = _make_monorepo(tmp_path)
+        v1 = {
+            "last_synced_at": "2026-05-14T15:04:22Z",
+            "last_synced_buildid": "23156356",
+            "last_synced_version": "v0.105.1",
+            "last_synced_dll_sha256": "ab571bed",
+            "gdre_version": "v2.5.0-beta.5",
+            "schema_version": "v1",
+            "tool_version": "0.1.0",
+            "upstream_tree_path": "/tmp/sts2",
+        }
+        cli._write_state(monorepo, v1)
+        result = cli._read_state(monorepo)
+        assert result is not None
+        assert result["schema_version"] == "v1"
+        assert result["last_synced_dll_sha256"] == "ab571bed"
+        assert result["gdre_version"] == "v2.5.0-beta.5"
+        assert result["last_synced_buildid"] == "23156356"
+        assert result["upstream_tree_path"] == "/tmp/sts2"
+
+    def test_v0_state_does_not_lose_data(self, tmp_path: Path) -> None:
+        """v0 load + v1 field update preserves all original v0 fields."""
+        monorepo = _make_monorepo(tmp_path)
+        v0 = {
+            "last_synced_at": "2026-05-14T15:04:22Z",
+            "last_synced_buildid": "23156356",
+            "last_synced_version": "v0.105.1",
+            "tool_version": "0.1.0",
+            "upstream_tree_path": "/tmp/sts2",
+        }
+        (monorepo / ".upstream-sync-state.json").write_text(json.dumps(v0), encoding="utf-8")
+
+        state = cli._read_state(monorepo)
+        assert state is not None
+        # Set only new fields; leave originals untouched.
+        state["last_synced_dll_sha256"] = "abc123"
+        state["gdre_version"] = "v2.5.0-beta.5"
+        cli._write_state(monorepo, state)
+
+        result = cli._read_state(monorepo)
+        assert result is not None
+        # All original v0 fields preserved.
+        for key in v0:
+            assert result[key] == v0[key], f"field {key!r} lost after promotion"
+        # New fields written correctly.
+        assert result["last_synced_dll_sha256"] == "abc123"
+        assert result["gdre_version"] == "v2.5.0-beta.5"
+        assert result["schema_version"] == "v1"
 
 
 # --------------------------------------------------------------------------- #

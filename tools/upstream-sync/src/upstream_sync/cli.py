@@ -69,6 +69,10 @@ def _state_path(monorepo_root: Path) -> Path:
 def _read_state(monorepo_root: Path) -> dict | None:
     """Return parsed state dict, ``None`` if file absent.
 
+    Supports schema v0 (no ``schema_version`` field) and v1
+    (``schema_version`` = "v1"). v0 files are auto-promoted to v1 shape
+    on the next ``_write_state`` call; new fields default to ``None``.
+
     Raises ``RuntimeError`` on JSON parse failure (corrupted state demands
     operator attention; silent fallthrough would lose the prior buildid).
     """
@@ -76,15 +80,31 @@ def _read_state(monorepo_root: Path) -> dict | None:
     if not target.exists():
         return None
     try:
-        return json.loads(target.read_text(encoding="utf-8"))
+        data = json.loads(target.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"upstream-sync state file {target} is corrupted: {exc}") from exc
+    # Promote v0 → v1 in-memory (write happens on next _write_state call).
+    if "schema_version" not in data:
+        data.setdefault("last_synced_dll_sha256", None)
+        data.setdefault("gdre_version", None)
+        data["schema_version"] = "v0"  # mark as not-yet-promoted
+    return data
 
 
 def _write_state(monorepo_root: Path, state: dict) -> None:
-    """Atomically write state via tempfile + rename."""
+    """Atomically write state via tempfile + rename.
+
+    Always emits schema_version=v1; promotes legacy v0 files on first write.
+    New v1 fields that were absent from a v0 read default to ``None`` if
+    not supplied by the caller.
+    """
     target = _state_path(monorepo_root)
     target.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure v1 fields are present (may be None for legacy callers).
+    out = dict(state)
+    out.setdefault("last_synced_dll_sha256", None)
+    out.setdefault("gdre_version", None)
+    out["schema_version"] = "v1"
     with tempfile.NamedTemporaryFile(
         mode="w",
         dir=str(target.parent),
@@ -93,7 +113,7 @@ def _write_state(monorepo_root: Path, state: dict) -> None:
         delete=False,
         encoding="utf-8",
     ) as tmp:
-        json.dump(state, tmp, indent=2, sort_keys=True)
+        json.dump(out, tmp, indent=2, sort_keys=True)
         tmp.write("\n")
         tmp_path = Path(tmp.name)
     os.replace(tmp_path, target)

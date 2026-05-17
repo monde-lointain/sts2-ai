@@ -1,0 +1,9 @@
+{
+  "pinned_version": "v0.103.2",
+  "pinned_buildid": "22823976",
+  "pinned_dll_sha256": "ab571bed6e64a78b03149620ec5b3ac6762c2a5cbd3d11eeadda5e337e6e990b",
+  "pinned_commit": "d5e30a22",
+  "pinned_at": "2026-05-17T14:19:39Z",
+  "rationale": "Phase-1A baseline content. Engine content is byte-faithfully ported from upstream v0.103.2. Infrastructure files (UpstreamDriver, drift gates, tools/upstream-sync) MAY be ahead — see ADR-026 for pin semantics. Bridge to v0.105.1 in progress per docs/plans/2026-05-17-upstream-pipeline.md.",
+  "schema_version": "v1"
+}
