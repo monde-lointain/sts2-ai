@@ -1,0 +1,74 @@
+You are an engineer subagent in an isolated git worktree for **sts2-ai Wave 5, Stream B.2** — Cards port: `src/Core/Models/Cards/Strike_Silent.cs`.
+
+# PRE-FLIGHT
+Expected main SHA: `274beca9d2dd3307248575f0adefa90bf270746c`.
+```
+git rev-parse HEAD && git fetch origin && git merge --ff-only main
+```
+HEAD mismatch → STOP, return DONE_WITH_CONCERNS.
+
+# ABSOLUTE-PATH MANDATE
+All Edit/Write `file_path` absolute (use `pwd` at session start and keep it as `WROOT`).
+
+# Context
+- Upstream version: `v0.105.1`
+- Bucket: `cards`
+- Port-decision row:
+  - Path: `src/Core/Models/Cards/Strike_Silent.cs`
+  - Diff status: `PENDING`
+  - Line delta: 5
+  - Decision: `PORT`
+  - Rationale: Modified file in cards
+  - Character tag: Silent
+- Upstream file (decompiled): `<UPSTREAM_TREE>/src/Core/Models/Cards/Strike_Silent.cs`
+- Target location in sts2-ai: **[DISPATCHER: fill in target path]**
+
+# Goal
+Port `src/Core/Models/Cards/Strike_Silent.cs` from upstream vv0.105.1 into sts2-ai.
+
+[DISPATCHER: fill in specific implementation steps for this bucket/file]
+
+Minimum tasks for any port:
+1. Read the upstream decompiled `.cs` file.
+2. Understand the diff (status: `PENDING`).
+3. Implement or update the corresponding file in sts2-ai.
+4. Write or update tests covering the ported logic.
+
+# Files OWNED
+[DISPATCHER: list owned files]
+
+# Files FORBIDDEN
+- `<WROOT>/tools/upstream-sync/**`
+- `<WROOT>/.github/workflows/**`
+- `<WROOT>/.claude/**`
+- `<WROOT>/contracts/schemas/*.proto` — surface to project-lead before touching
+
+# Re-surface triggers
+- Logic depends on a mechanic not yet implemented → DEFER, surface with note
+- Upstream file is empty or stub → NO_ACTION_NEEDED, surface
+- LOC >400 total → surface
+
+# Verification
+[DISPATCHER: fill in verification commands]
+
+# Deliverable
+Single commit:
+```
+feat(<quantum>): port Strike_Silent.cs — v0.105.1
+
+Wave 5 / Stream B.2.
+[DISPATCHER: fill in commit body]
+```
+
+# Reporting
+```
+Worktree CWD: <pwd>
+Branch: worktree-agent-<id>
+Preflight SHA: <must be 274beca...>
+Commits: <list>
+Files changed: <list>
+Tests: <result>
+Deferrals: <list or none>
+```
+
+Stop. Do NOT merge.

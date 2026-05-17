@@ -22,6 +22,7 @@ entity_extract}``.
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -70,16 +71,46 @@ __all__ = [
     "PortRow",
     "Q4Advisory",
     "RenderInputs",
+    "SyncStatus",
     "assign_decision",
     "bucket_titles",
     "build_port_rows",
     "build_q4_advisory",
     "render",
+    "sync_status_for_decision",
     "write_doc",
+    "write_sidecar",
 ]
 
 
 DecisionKind = Literal["PORT", "DELETE", "DEFER", "IGNORE", "SURFACE-NO-ACTION"]
+
+# Workflow status for the JSON sidecar.  Represents the port-pipeline state of
+# a row — set at generation time; never auto-flipped by this tool.
+#
+#   PENDING          — awaits a subagent dispatch (PORT / DELETE decisions).
+#   DISPATCHED       — a subagent has been dispatched (set externally).
+#   MERGED           — the dispatch branch has been merged (set externally).
+#   DEFERRED         — work deferred to a future wave (DEFER decisions).
+#   NO_ACTION_NEEDED — terminal; no work will ever be done (SURFACE-NO-ACTION
+#                      or IGNORE decisions).
+SyncStatus = Literal["PENDING", "DISPATCHED", "MERGED", "DEFERRED", "NO_ACTION_NEEDED"]
+
+
+def sync_status_for_decision(decision: DecisionKind) -> SyncStatus:
+    """Map a :data:`DecisionKind` to its initial :data:`SyncStatus`.
+
+    Rules (set at generation time; never auto-flipped):
+    - ``SURFACE-NO-ACTION`` → ``NO_ACTION_NEEDED`` (terminal)
+    - ``IGNORE``             → ``NO_ACTION_NEEDED`` (terminal)
+    - ``DEFER``              → ``DEFERRED``
+    - ``PORT`` / ``DELETE``  → ``PENDING``
+    """
+    if decision in ("SURFACE-NO-ACTION", "IGNORE"):
+        return "NO_ACTION_NEEDED"
+    if decision == "DEFER":
+        return "DEFERRED"
+    return "PENDING"
 
 
 # --------------------------------------------------------------------------- #
@@ -604,4 +635,122 @@ def write_doc(rendered_markdown: str, monorepo_root: Path, version_range: str) -
     name = f"{next_prefix:02d}-{version_range}-port-decisions.md"
     target = specs_dir / name
     target.write_text(rendered_markdown, encoding="utf-8")
+    return target.resolve()
+
+
+# --------------------------------------------------------------------------- #
+# write_sidecar                                                               #
+# --------------------------------------------------------------------------- #
+
+
+def write_sidecar(
+    rows_by_bucket: dict[str, list[PortRow]],
+    monorepo_root: Path,
+    version_range: str,
+    generated_at: str,
+    tool_version: str,
+) -> Path:
+    """Write the machine-readable JSON sidecar alongside the markdown doc.
+
+    Output path:
+        ``engine/headless/docs/specs/0N-<version-range>-port-decisions.json``
+
+    The prefix (``0N``) matches the corresponding markdown doc so both
+    files share the same numeric slot.  Idempotent: if a JSON sidecar for
+    the same ``version_range`` already exists, it is overwritten.
+
+    Schema:
+        {
+          "schema_version": "v1",
+          "version_range": "<from>-to-<to>",
+          "generated_at": "ISO-8601",
+          "tool_version": "<semver>",
+          "rows": [
+            {
+              "path": "src/...",
+              "bucket": "<bucket>",
+              "git_status": "M|A|D|R<score>",
+              "line_delta": <int|null>,
+              "character_tag": "<str|null>",
+              "decision": "PORT|DELETE|DEFER|IGNORE|SURFACE-NO-ACTION",
+              "status": "PENDING|DISPATCHED|MERGED|DEFERRED|NO_ACTION_NEEDED",
+              "re_eval_trigger": "<str|null>",
+              "patch_notes_hint": "<str|null>",
+              "rationale": "<str>"
+            },
+            ...
+          ]
+        }
+    """
+    specs_dir = monorepo_root / _SPECS_REL
+    specs_dir.mkdir(parents=True, exist_ok=True)
+
+    # Determine numeric prefix — match the markdown file if it exists.
+    json_suffix = f"-{version_range}-port-decisions.json"
+    md_suffix = f"-{version_range}-port-decisions.md"
+
+    target: Path | None = None
+    for existing in specs_dir.iterdir():
+        if existing.is_file() and existing.name.endswith(json_suffix):
+            target = existing
+            break
+
+    if target is None:
+        # Try to reuse prefix from the markdown file.
+        prefix_num: int | None = None
+        for existing in specs_dir.iterdir():
+            if existing.is_file() and existing.name.endswith(md_suffix):
+                m = _DOC_PREFIX_RE.match(existing.name)
+                if m:
+                    try:
+                        prefix_num = int(m.group(1))
+                    except ValueError:
+                        pass
+                break
+
+        if prefix_num is None:
+            # No markdown yet — pick next free prefix.
+            max_prefix = 0
+            for existing in specs_dir.iterdir():
+                if not existing.is_file():
+                    continue
+                m = _DOC_PREFIX_RE.match(existing.name)
+                if m:
+                    try:
+                        num = int(m.group(1))
+                    except ValueError:
+                        continue
+                    max_prefix = max(max_prefix, num)
+            prefix_num = max_prefix + 1
+
+        target = specs_dir / f"{prefix_num:02d}{json_suffix}"
+
+    # Build rows list: flatten all buckets, preserving per-bucket order.
+    flat_rows = []
+    for bucket, rows in rows_by_bucket.items():
+        for row in rows:
+            flat_rows.append(
+                {
+                    "path": row.path,
+                    "bucket": bucket,
+                    "git_status": row.status,
+                    "line_delta": row.line_delta,
+                    "character_tag": row.character_tag,
+                    "decision": row.decision,
+                    "status": sync_status_for_decision(row.decision),
+                    "re_eval_trigger": row.re_eval_trigger,
+                    "patch_notes_hint": row.patch_notes_hint,
+                    "rationale": row.rationale,
+                }
+            )
+
+    sidecar = {
+        "schema_version": "v1",
+        "version_range": version_range,
+        "generated_at": generated_at,
+        "tool_version": tool_version,
+        "rows": flat_rows,
+    }
+
+    target.write_text(json.dumps(sidecar, indent=2, sort_keys=False) + "\n", encoding="utf-8")
     return target.resolve()

@@ -267,7 +267,7 @@ sanitize-clean:
 # tools/upstream-sync (per ~/.claude/plans/...).
 SYNC_ARGS ?=
 
-.PHONY: sync-check sync-extract sync-diff sync-port-decisions sync
+.PHONY: sync-check sync-extract sync-diff sync-port-decisions sync sync-prompts sync-dispatch
 
 sync-check:
 	@$(VENV)/bin/python -m upstream_sync.cli check $(SYNC_ARGS)
@@ -283,6 +283,20 @@ sync-port-decisions:
 
 sync:
 	@$(VENV)/bin/python -m upstream_sync.cli sync $(SYNC_ARGS)
+
+# Emit an engineer-dispatch prompt for a single port-decision row.
+# Output is a prompt artifact; paste into Claude session to dispatch the
+# actual subagent.  Does NOT spawn subagents.
+# Usage: make sync-prompts SYNC_ARGS="--version=v0.105.1 <row-path>"
+sync-prompts:
+	@$(VENV)/bin/python -m upstream_sync.cli prompt-for $(SYNC_ARGS)
+
+# Emit a quantum-lead briefing prompt summarising all PENDING rows.
+# Output is a prompt artifact; paste into Claude session to dispatch the
+# quantum-lead.  Does NOT spawn subagents.
+# Usage: make sync-dispatch SYNC_ARGS="--version=v0.105.1"
+sync-dispatch:
+	@$(VENV)/bin/python -m upstream_sync.cli dispatch-quantum-lead $(SYNC_ARGS)
 
 # ----- Python quality gates -----
 # Configs live in pyproject.toml. Tool versions pinned in requirements-dev.txt.

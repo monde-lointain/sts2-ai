@@ -1,0 +1,68 @@
+{
+  "schema_version": "v1",
+  "version_range": "v0.103.2-to-v0.105.1",
+  "generated_at": "2026-01-01T00:00:00Z",
+  "tool_version": "0.1.0",
+  "rows": [
+    {
+      "path": "src/Core/Models/Monsters/LeafSlime.cs",
+      "bucket": "monsters",
+      "git_status": "A",
+      "line_delta": 120,
+      "character_tag": null,
+      "decision": "PORT",
+      "status": "PENDING",
+      "re_eval_trigger": null,
+      "patch_notes_hint": "PCN: 'New slime variant' (gid 42)",
+      "rationale": "New file in monsters"
+    },
+    {
+      "path": "src/Core/Models/Cards/Strike_Silent.cs",
+      "bucket": "cards",
+      "git_status": "M",
+      "line_delta": 5,
+      "character_tag": "Silent",
+      "decision": "PORT",
+      "status": "PENDING",
+      "re_eval_trigger": null,
+      "patch_notes_hint": null,
+      "rationale": "Modified file in cards"
+    },
+    {
+      "path": "src/Core/Models/Cards/Strike_Ironclad.cs",
+      "bucket": "cards",
+      "git_status": "M",
+      "line_delta": 3,
+      "character_tag": "Ironclad",
+      "decision": "SURFACE-NO-ACTION",
+      "status": "NO_ACTION_NEEDED",
+      "re_eval_trigger": null,
+      "patch_notes_hint": null,
+      "rationale": "Future-character file: Ironclad"
+    },
+    {
+      "path": "src/Core/Models/Encounters/SlimeBoss.cs",
+      "bucket": "encounters",
+      "git_status": "M",
+      "line_delta": 10,
+      "character_tag": null,
+      "decision": "DEFER",
+      "status": "DEFERRED",
+      "re_eval_trigger": "pending B.1-ε encounter-RNG plumbing",
+      "patch_notes_hint": null,
+      "rationale": "Encounter uses Rng.NextItem/NextBool/NextInt; defer until B.1-ε"
+    },
+    {
+      "path": "src/Core/Multiplayer/Host.cs",
+      "bucket": "multiplayer",
+      "git_status": "M",
+      "line_delta": 2,
+      "character_tag": null,
+      "decision": "IGNORE",
+      "status": "NO_ACTION_NEEDED",
+      "re_eval_trigger": null,
+      "patch_notes_hint": null,
+      "rationale": "multiplayer per Q1-ADR-009/spec"
+    }
+  ]
+}

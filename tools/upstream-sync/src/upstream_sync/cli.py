@@ -42,9 +42,16 @@ from upstream_sync.git_ops import (
 from upstream_sync.patch_notes import fetch_patch_notes
 from upstream_sync.port_decisions import (
     RenderInputs,
+    build_port_rows,
     build_q4_advisory,
     render,
     write_doc,
+    write_sidecar,
+)
+from upstream_sync.prompt_generator import (
+    PromptInputs,
+    load_row_from_sidecar,
+    render_prompt,
 )
 from upstream_sync.steam_meta import parse_appmanifest
 from upstream_sync.version_args import parse_version_spec
@@ -380,14 +387,17 @@ def _cmd_port_decisions(args: argparse.Namespace) -> int:
     state = _read_state(monorepo)
     from_buildid = state.get("last_synced_buildid") if state else None
 
+    generated_at = _utc_now_iso()
+    tool_ver = _tool_version()
+
     inputs = RenderInputs(
         diff_report=report,
         correlation_map=correlation,
         q4_advisory=advisory,
         from_buildid=from_buildid,
         to_buildid="",
-        generated_at=_utc_now_iso(),
-        tool_version=_tool_version(),
+        generated_at=generated_at,
+        tool_version=tool_ver,
         priority_character="Silent",
     )
 
@@ -395,6 +405,17 @@ def _cmd_port_decisions(args: argparse.Namespace) -> int:
     version_range = f"{from_tag}-to-{to_tag}"
     path = write_doc(rendered, monorepo, version_range)
     print(f"Port-decision doc written: {path}")
+
+    # JSON sidecar — always emitted alongside the markdown.
+    rows_by_bucket = build_port_rows(report, correlation, inputs.priority_character)
+    sidecar_path = write_sidecar(
+        rows_by_bucket=rows_by_bucket,
+        monorepo_root=monorepo,
+        version_range=version_range,
+        generated_at=generated_at,
+        tool_version=tool_ver,
+    )
+    print(f"Port-decision sidecar written: {sidecar_path}")
     return 0
 
 
@@ -520,6 +541,160 @@ def _cmd_sync(args: argparse.Namespace) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# prompt-for / dispatch-quantum-lead                                          #
+# --------------------------------------------------------------------------- #
+
+# NOTE: These commands emit prompt TEXT to stdout.  They do NOT spawn
+# subagents.  The output is a prompt artifact the user pastes into a
+# Claude session to dispatch the actual engineer subagent.
+
+
+def _cmd_prompt_for(args: argparse.Namespace) -> int:
+    """Emit an engineer-dispatch prompt for a single port-decision row.
+
+    Reads the row from the JSON sidecar at ``--sidecar`` (or auto-discovers
+    the most recent sidecar in engine/headless/docs/specs/).  Writes the
+    prompt to stdout (or ``--out`` path).
+
+    Output is a prompt artifact; paste into a Claude session to dispatch
+    the actual subagent.  This command does NOT spawn subagents.
+    """
+    monorepo = _resolve_monorepo(args)
+    specs_dir = monorepo / "engine" / "headless" / "docs" / "specs"
+
+    # Resolve sidecar path.
+    sidecar_path: Path
+    if getattr(args, "sidecar", None):
+        sidecar_path = Path(args.sidecar)
+    else:
+        # Auto-discover: newest JSON sidecar in specs_dir.
+        candidates = sorted(
+            (f for f in specs_dir.glob("*-port-decisions.json") if f.is_file()),
+            key=lambda f: f.name,
+        )
+        if not candidates:
+            print(
+                "No port-decisions JSON sidecar found in "
+                f"{specs_dir}. Run `port-decisions` first or supply --sidecar.",
+                file=sys.stderr,
+            )
+            return 1
+        sidecar_path = candidates[-1]
+
+    row = load_row_from_sidecar(sidecar_path, args.row_path)
+
+    prompt_inputs = PromptInputs(
+        row=row,
+        version=args.version or "vUNKNOWN",
+        wave=getattr(args, "wave", "?"),
+        stream_id=getattr(args, "stream_id", "?"),
+        expected_sha=getattr(args, "expected_sha", "<SHA>"),
+    )
+    prompt_text = render_prompt(prompt_inputs)
+
+    out_path = getattr(args, "out", None)
+    if out_path:
+        Path(out_path).write_text(prompt_text, encoding="utf-8")
+        print(f"Prompt written to: {out_path}")
+    else:
+        print(prompt_text)
+    return 0
+
+
+def _cmd_dispatch_quantum_lead(args: argparse.Namespace) -> int:
+    """Emit a quantum-lead briefing prompt for the current port-decision doc.
+
+    Reads the most recent JSON sidecar and renders a summary briefing prompt
+    the quantum-lead pastes into a Claude session to orchestrate engineer
+    dispatch.  This command does NOT spawn subagents.
+
+    Output is a prompt artifact; paste into Claude session to dispatch the
+    quantum-lead subagent.
+    """
+    monorepo = _resolve_monorepo(args)
+    specs_dir = monorepo / "engine" / "headless" / "docs" / "specs"
+
+    sidecar_path: Path
+    if getattr(args, "sidecar", None):
+        sidecar_path = Path(args.sidecar)
+    else:
+        candidates = sorted(
+            (f for f in specs_dir.glob("*-port-decisions.json") if f.is_file()),
+            key=lambda f: f.name,
+        )
+        if not candidates:
+            print(
+                "No port-decisions JSON sidecar found. Run `port-decisions` first.",
+                file=sys.stderr,
+            )
+            return 1
+        sidecar_path = candidates[-1]
+
+    import json as _json
+
+    data = _json.loads(sidecar_path.read_text(encoding="utf-8"))
+    rows = data.get("rows", [])
+    version_range = data.get("version_range", "unknown")
+    version = args.version or "vUNKNOWN"
+
+    # Summarise by workflow status.
+    by_status: dict[str, list[dict]] = {}
+    for row in rows:
+        s = row.get("status", "UNKNOWN")
+        by_status.setdefault(s, []).append(row)
+
+    pending = by_status.get("PENDING", [])
+    deferred = by_status.get("DEFERRED", [])
+    no_action = by_status.get("NO_ACTION_NEEDED", [])
+
+    lines = [
+        f"# Quantum-Lead Briefing — {version} ({version_range})",
+        "",
+        "This is a prompt artifact. Paste into a Claude session to dispatch "
+        "the quantum-lead subagent. This command does NOT spawn subagents.",
+        "",
+        f"Sidecar: {sidecar_path}",
+        f"Total rows: {len(rows)}",
+        f"  PENDING: {len(pending)}",
+        f"  DEFERRED: {len(deferred)}",
+        f"  NO_ACTION_NEEDED: {len(no_action)}",
+        "",
+        "## PENDING rows (requires engineer dispatch)",
+        "",
+    ]
+    for row in pending:
+        lines.append(
+            f"  - [{row.get('decision')}] {row.get('bucket', '?')} | {row.get('path', '?')}"
+        )
+    lines += [
+        "",
+        "## Suggested dispatch strategy",
+        "",
+        "Group PENDING rows by bucket. Dispatch one engineer subagent per",
+        "file (or per logical group if files are trivially small). Each",
+        "subagent must:",
+        "  1. Run preflight SHA check.",
+        "  2. Use `upstream-sync prompt-for <row-path> --version=<v>` to",
+        "     generate the per-row dispatch prompt.",
+        "  3. Paste that prompt into a new Claude session to dispatch the",
+        "     engineer.",
+        "",
+        "Preflight expected SHA: <FILL IN from .claude/state/current-wave.json>",
+        f"Version: {version}",
+    ]
+
+    briefing = "\n".join(lines) + "\n"
+
+    out_path = getattr(args, "out", None)
+    if out_path:
+        Path(out_path).write_text(briefing, encoding="utf-8")
+        print(f"Briefing written to: {out_path}")
+    else:
+        print(briefing)
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # argparse                                                                    #
 # --------------------------------------------------------------------------- #
 
@@ -576,6 +751,63 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Skip GDRE/rsync; still produce diff + doc",
     )
 
+    # prompt-for — emit engineer-dispatch prompt for a single port-decision row.
+    # Output is a prompt artifact; paste into a Claude session. Does NOT spawn
+    # subagents.
+    p_pf = sub.add_parser(
+        "prompt-for",
+        help=(
+            "Emit an engineer-dispatch prompt for a port-decision row to stdout. "
+            "Output is a prompt artifact; paste into Claude session to dispatch "
+            "the actual subagent. Does NOT spawn subagents."
+        ),
+    )
+    _add_global_args(p_pf)
+    p_pf.add_argument(
+        "row_path",
+        metavar="<port-decision-row-path>",
+        help=(
+            "The 'path' value of the row in the JSON sidecar (e.g. src/Core/Models/Monsters/Foo.cs)"
+        ),
+    )
+    p_pf.add_argument("--version", required=True, help="Upstream version, e.g. v0.105.1")
+    p_pf.add_argument("--sidecar", help="Path to JSON sidecar (default: auto-discover)")
+    p_pf.add_argument(
+        "--out",
+        metavar="FILE",
+        help="Write prompt to FILE instead of stdout (e.g. /tmp/upstream-sync-prompt-<id>.txt)",
+    )
+    p_pf.add_argument("--wave", default="?", help="Wave number for prompt header")
+    p_pf.add_argument(
+        "--stream-id", dest="stream_id", default="?", help="Stream ID for prompt header"
+    )
+    p_pf.add_argument(
+        "--expected-sha",
+        dest="expected_sha",
+        default="<SHA>",
+        help="Expected HEAD SHA for preflight",
+    )
+
+    # dispatch-quantum-lead — emit a briefing prompt for the quantum-lead.
+    # Output is a prompt artifact; paste into a Claude session. Does NOT spawn
+    # subagents.
+    p_dql = sub.add_parser(
+        "dispatch-quantum-lead",
+        help=(
+            "Emit a quantum-lead briefing prompt summarising PENDING rows to stdout. "
+            "Output is a prompt artifact; paste into Claude session to dispatch "
+            "the quantum-lead. Does NOT spawn subagents."
+        ),
+    )
+    _add_global_args(p_dql)
+    p_dql.add_argument("--version", required=True, help="Upstream version, e.g. v0.105.1")
+    p_dql.add_argument("--sidecar", help="Path to JSON sidecar (default: auto-discover)")
+    p_dql.add_argument(
+        "--out",
+        metavar="FILE",
+        help="Write briefing to FILE instead of stdout",
+    )
+
     return parser
 
 
@@ -585,6 +817,8 @@ _DISPATCH_NAMES = {
     "diff": "_cmd_diff",
     "port-decisions": "_cmd_port_decisions",
     "sync": "_cmd_sync",
+    "prompt-for": "_cmd_prompt_for",
+    "dispatch-quantum-lead": "_cmd_dispatch_quantum_lead",
 }
 
 

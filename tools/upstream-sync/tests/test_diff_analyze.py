@@ -682,6 +682,7 @@ def test_module_stdlib_plus_entity_extract_only():
         "typing",
         "__future__",
         "upstream_sync",
+        "collections",  # collections.abc.Callable
     }
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
