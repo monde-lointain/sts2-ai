@@ -91,4 +91,24 @@ public abstract class EncounterModel : IEncounterModel
     /// </para>
     /// </summary>
     public virtual IReadOnlyList<string> GenerateMonsters(Rng rng) => MonsterIds;
+
+    /// <summary>
+    /// Wave-24/K.q1: additive virtual that returns the spawn list paired with
+    /// optional per-slot initial-move overrides. Default implementation wraps
+    /// <see cref="GenerateMonsters"/> with null overrides so legacy encounters
+    /// that override only <see cref="GenerateMonsters"/> continue to work
+    /// unchanged — the same <paramref name="rng"/> instance is threaded through
+    /// without any extra tick.
+    ///
+    /// <para>
+    /// Encounters with fixed per-slot initial moves (e.g. <c>NibbitsNormal</c>
+    /// where slot-0 starts SLICE and slot-1 starts HISS) override this method
+    /// instead of <see cref="GenerateMonsters"/>. The returned
+    /// <c>InitialMoveIdOverride</c> is <see langword="null"/> for slots that
+    /// use the monster model's own <c>InitialMoveId</c>.
+    /// </para>
+    /// </summary>
+    public virtual IReadOnlyList<(string MonsterId, string? InitialMoveIdOverride)>
+        GenerateMonstersWithMoves(Rng rng) =>
+        GenerateMonsters(rng).Select(id => (id, (string?)null)).ToList();
 }

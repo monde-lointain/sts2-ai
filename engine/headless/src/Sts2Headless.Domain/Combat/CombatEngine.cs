@@ -201,17 +201,20 @@ public static class CombatEngine
         int totalFloor
     )
     {
-        // B.1-ε Wave 14: derive per-encounter Rng and call GenerateMonsters so
+        // B.1-ε Wave 14: derive per-encounter Rng and call GenerateMonstersWithMoves so
         // RNG-driven encounters (SmallSlimes, MediumSlimes) produce the correct
         // seed-specific variant list instead of the static sentinel MonsterIds.
         // EncounterRngKey may differ from Id (e.g. SmallSlimes → "SLIMES_WEAK")
         // to match upstream's slugified type name used in the seed formula.
+        // Wave-24/K.q1: use GenerateMonstersWithMoves (additive; wraps GenerateMonsters
+        // for legacy encounters) so per-slot initial-move overrides are honoured.
         Rng encounterRng = runRng.ForEncounter(totalFloor, encounter.EncounterRngKey);
-        IReadOnlyList<string> spawnList = encounter.GenerateMonsters(encounterRng);
+        IReadOnlyList<(string MonsterId, string? InitialMoveIdOverride)> spawnList =
+            encounter.GenerateMonstersWithMoves(encounterRng);
 
         var enemies = ImmutableList.CreateBuilder<Creature>();
         uint nextEnemyId = FirstEnemyId;
-        foreach (string monsterId in spawnList)
+        foreach ((string monsterId, string? initialMoveIdOverride) in spawnList)
         {
             var monsterModel = (MonsterModel)monsters.Get(monsterId);
             int hp = monsterModel.RollInitialHp(runRng.Niche);
@@ -243,9 +246,10 @@ public static class CombatEngine
                     Powers: spawnPowerList,
                     // Stream-B-T3: stamp the initial move-id so multi-state monsters
                     // (Chomper et al.) start their per-creature cursor cleanly.
+                    // Wave-24/K.q1: honour per-slot override when non-null (NibbitsNormal).
                     Intent: MonsterIntent.FromContentIntent(
                         monsterModel.InitialIntent,
-                        monsterModel.InitialMoveId
+                        initialMoveIdOverride ?? monsterModel.InitialMoveId
                     ),
                     IsPlayer: false
                 )
