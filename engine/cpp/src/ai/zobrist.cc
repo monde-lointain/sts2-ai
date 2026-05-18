@@ -1,5 +1,5 @@
 // ============================================================================
-// Cardinality audit (wave-21/B.1-β; revises wave-19/B.2-α; 2026-05-17)
+// Cardinality audit (wave-22/C.2-α; revises wave-21/B.1-β; 2026-05-18)
 // ============================================================================
 // Per plan §1, each Zobrist key slot is sized to its feature's reachable
 // range. Out-of-range values trigger assertion+abort in zobrist_of(). Audit
@@ -12,8 +12,11 @@
 //                                  no in-combat gain in Phase-1; max = 3.
 //   Round:            [0, 256)   — round_ is uint16_t in CompactState;
 //                                  cultist solves in ≤ 20 rounds.
-//   Phase:            [0, 2)     — enum {kPlayerActing=0, kAtChanceDraw=1}.
-//                                  Wave-22 adds kAtEnemyMoveRng → widen to 3.
+//   Phase:            [0, 3)     — enum {kPlayerActing=0, kAtChanceDraw=1,
+//                                  kAtEnemyMoveRng=2}. Wave-22.α APPENDED
+//                                  kAtEnemyMoveRng with APPEND-only mt19937
+//                                  fill order (cultist hashes phase=0
+//                                  exclusively → byte identity preserved).
 //   PowerKind:        [0, 6)     — enum has 6 values
 //                                  {kWeak, kStrength, kRitual, kCurlUp,
 //                                   kFrail, kVulnerable}. No kPowerKindCount
@@ -54,11 +57,21 @@
 //   Enemy.power_count: [0, kMaxPowersPerCreature+1=7).
 //   kMaxEnemies = 4 (state.h; wave-21.β widened 2→4).
 //   kMaxPowersPerCreature = 6 (state.h).
-//   CardCounts: 4 card_ids × counts.
-//     CardCounts.counts.size() = kCountedCardIds.size() = 4
-//                                  (wave-22 adds kSlimed → 5).
+//   CardCounts: 5 card_ids × counts (wave-22.α widened 4 → 5).
+//     CardCounts.counts.size() = kCountedCardIds.size() = 5
+//                                  (wave-22.α APPENDED kSlimed at index 4).
 //     count per (zone × card_id): [0, 16) — Silent starter is 5+5+1+1 = 12
 //                                 cards; discard zone bounded by total.
+//                                 Cultist + LouseProgenitor decks contain 0
+//                                 Slimed cards. For byte-identity preservation,
+//                                 card_counts[z][cid=4][count=0] is LEFT AT
+//                                 ZERO in generate_table() (NOT consumed from
+//                                 mt19937). XOR'ing 0 against the cultist
+//                                 running hash is a no-op → bytes preserved.
+//                                 States that actually carry kSlimed (count>=1)
+//                                 read from PHASE-2-filled slots
+//                                 card_counts[z][4][1..15], which use fresh
+//                                 mt19937 output for collision resistance.
 //
 // Wave-21.β fill-order contract:
 //   * The cultist + LouseProgenitor ZobristKeys captured pre-wave-21
@@ -89,9 +102,12 @@
 //
 // Future widening required when:
 //   - kMaxEnemies bumps 4 → higher (no current encounter requires this).
-//   - kMonsterKindCardinality / kMoveIdCardinality bump (wave-22 slime port).
-//   - kCountedCardIds gains kSlimed (wave-22).
-//   - kPhaseCardinality 2 → 3 (wave-22 enemy-move RNG).
+//   - kMonsterKindCardinality bumps 3 → 7 (when slime kinds first see
+//     RUNTIME use; data flows through wave-22.β data population + wave-23
+//     SmallSlimes adapter — table widening must APPEND with the same
+//     phased fill discipline).
+//   - kMoveIdCardinality bumps 5 → 10 (same trigger as above; wave-22.β+).
+//   - kCountedCardIds gains a 6th card id (wave-23+).
 //   - SlimedBerserker HP > 255 (would force Stat::pack8 → pack16; deferred).
 //
 // Tables initialized once via Meyers singleton (thread-safe per C++11). Pure
@@ -124,7 +140,13 @@ constexpr std::size_t kMaxHp = 256;
 constexpr std::size_t kMaxBlock = 256;
 constexpr std::size_t kMaxEnergy = 8;
 constexpr std::size_t kMaxRound = 256;
-constexpr std::size_t kPhaseCardinality = 2;
+// Phase: pre-wave-22 cardinality was 2 (kPlayerActing=0, kAtChanceDraw=1).
+// Wave-22.α APPENDS kAtEnemyMoveRng=2 — kPhasePreWave22Cardinality is the
+// frozen pre-wave-22 slot count consumed during PHASE-1 mt19937 fill (slot
+// 2 is APPEND-only in PHASE 2). Cultist + LouseProgenitor states never set
+// phase=2, so byte identity holds.
+constexpr std::size_t kPhasePreWave22Cardinality = 2;
+constexpr std::size_t kPhaseCardinality = 3;
 // PowerKind enum tail = kVulnerable=5; count = 6. (No kPowerKindCount in
 // types.h — see audit block.)
 constexpr std::size_t kPowerKindCardinality = 6;
@@ -146,6 +168,15 @@ constexpr std::size_t kMaxRitualAmount = 32;
 constexpr std::size_t kMaxCountPerCardZone = 16;
 constexpr std::size_t kCardIdCardinality =
     sts2::game::card_effects::kCountedCardIds.size();
+// Pre-wave-22 CardId cardinality (kStrike,kDefend,kNeutralize,kSurvivor = 4
+// rows). Wave-22.α APPENDS kSlimed at index 4. PHASE 1 fills rows [0,4) per
+// pre-wave-22 mt19937 consumption order; PHASE 2 fills rows [4,5).
+// IMPORTANT: the count=0 slot of the new row (card_counts[z][4][0]) is left
+// AS ZERO (NOT consumed from mt19937) so cultist (kSlimed always 0) hashes
+// XOR-contribute 0 → byte identity holds.
+constexpr std::size_t kPreWave22CardIdCardinality = 4;
+static_assert(kPreWave22CardIdCardinality <= kCardIdCardinality,
+              "kPreWave22CardIdCardinality must not exceed kCardIdCardinality");
 // 3 card zones: hand, draw, discard.
 constexpr std::size_t kCardZoneCount = 3;
 // Pre-wave-21 kMaxEnemies (used by generate_table() to phase the mt19937 fill
@@ -250,34 +281,45 @@ void fill_slots(std::array<T, N>& a, std::size_t slot_lo, std::size_t slot_hi,
 // Generate one half-table seeded by the given 64-bit seed. Deterministic and
 // platform-independent (std::mt19937_64 is portable).
 //
-// Wave-21.β fill-order contract (see audit-block above for rationale):
+// Wave-21.β + wave-22.α fill-order contract (see audit-block for rationale):
 //
-//   PHASE 1 (preserve pre-wave-21 mt19937 consumption order):
-//     - All non-enemy tables (player_*, round, phase, player_power*).
+//   PHASE 1 (preserve pre-wave-21 + pre-wave-22 mt19937 consumption order):
+//     - All non-enemy tables (player_*, round, phase[0..1], player_power*).
 //     - enemy_* tables for slots [0, kPreWave21MaxEnemies) ONLY.
 //     - enemy_count entries [0, kPreWave21MaxEnemies] (3 entries: ec=0,1,2).
-//     - card_counts.
+//     - card_counts[z][cid][count] for cid in [0, kPreWave22CardIdCardinality)
+//       — manually iterated to AVOID consuming mt19937 outputs for the
+//       wave-22.α APPEND-only cid=4 (kSlimed) row.
 //
-//   PHASE 2 (APPEND new wave-21.β content):
+//   PHASE 2 (APPEND new wave-21.β + wave-22.α content):
 //     - enemy_* tables for slots [kPreWave21MaxEnemies, kMaxEnemies).
 //     - enemy_count entries [kPreWave21MaxEnemies+1, kMaxEnemies].
+//     - phase[2] (kAtEnemyMoveRng) — APPENDED.
+//     - card_counts[z][cid=4][count] for count in [1, kMaxCountPerCardZone).
+//       The count=0 slot (card_counts[z][4][0]) is LEFT AT ZERO so cultist
+//       (kSlimed always 0) XOR-contributes 0 → byte identity holds.
 //
-// Cultist (enemy_count=2) and LouseProgenitor (enemy_count=1) only consume
-// PHASE-1 outputs at hash time → pre-wave-21 byte identity preserved.
+// Cultist (enemy_count=2, phase∈{0,1}, kSlimed=0) and LouseProgenitor (same
+// phase + card constraints) only consume PHASE-1 outputs at hash time + the
+// zeroed cid=4/count=0 slot → pre-wave-21 + pre-wave-22 byte identity
+// preserved.
 //
-// IMPORTANT: any future widening (wave-22 kMoveIdCardinality 5→10, etc.)
+// IMPORTANT: any future widening (wave-22+ kMoveIdCardinality 5→10, etc.)
 // MUST follow the same discipline — fill the PRE-WIDENING bytes first, then
 // APPEND the new entries. Otherwise the cultist + LouseProgenitor pins drift.
 ZobristTables generate_table(uint64_t seed) noexcept {
   std::mt19937_64 rng(seed);
   ZobristTables t;
 
-  // ---- PHASE 1: pre-wave-21 layout (slots [0, kPreWave21MaxEnemies)) ----
+  // ---- PHASE 1: pre-wave-21 + pre-wave-22 layout ----
   fill_array(t.player_hp, rng);
   fill_array(t.player_block, rng);
   fill_array(t.player_energy, rng);
   fill_array(t.round, rng);
-  fill_array(t.phase, rng);
+  // phase[0..1] — pre-wave-22 entries. phase[2] APPENDED in PHASE 2.
+  for (std::size_t i = 0; i < kPhasePreWave22Cardinality; ++i) {
+    t.phase[i] = rng();
+  }
   fill_array(t.player_power, rng);
   fill_array(t.player_power_count, rng);
   // enemy_* tables — outer slot dimension iterates only [0,
@@ -297,7 +339,17 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   for (std::size_t i = 0; i <= kPreWave21MaxEnemies; ++i) {
     t.enemy_count[i] = rng();
   }
-  fill_array(t.card_counts, rng);
+  // card_counts[z][cid][count] — manually iterate over PRE-wave-22 cid range
+  // [0, kPreWave22CardIdCardinality) to preserve exact mt19937 consumption
+  // order. The wave-22.α-appended cid=4 row is filled in PHASE 2 (count>=1
+  // slots only; count=0 slots stay at zero).
+  for (std::size_t z = 0; z < kCardZoneCount; ++z) {
+    for (std::size_t cid = 0; cid < kPreWave22CardIdCardinality; ++cid) {
+      for (std::size_t count = 0; count < kMaxCountPerCardZone; ++count) {
+        t.card_counts[z][cid][count] = rng();
+      }
+    }
+  }
 
   // ---- PHASE 2: APPEND new enemy slots [kPreWave21MaxEnemies, kMaxEnemies)
   // --- Same table-fill order as PHASE 1 for symmetry / reviewability.
@@ -316,6 +368,23 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   for (std::size_t i = kPreWave21MaxEnemies + 1;
        i <= static_cast<std::size_t>(kMaxEnemies); ++i) {
     t.enemy_count[i] = rng();
+  }
+  // phase[2] = kAtEnemyMoveRng — APPENDED. Cultist + LouseProgenitor never
+  // see phase=2; this value is consumed only by RandomBranch-enemy hashes.
+  for (std::size_t p = kPhasePreWave22Cardinality; p < kPhaseCardinality; ++p) {
+    t.phase[p] = rng();
+  }
+  // card_counts[z][cid=kPreWave22..end][count=1..end] — APPENDED kSlimed row
+  // slots for count>=1. The count=0 slot stays at default-zero (see audit
+  // block) so cultist (kSlimed always 0) XOR-contributes 0 at this slot.
+  for (std::size_t z = 0; z < kCardZoneCount; ++z) {
+    for (std::size_t cid = kPreWave22CardIdCardinality;
+         cid < kCardIdCardinality; ++cid) {
+      // INTENTIONAL: skip count=0; it stays at zero-init for byte identity.
+      for (std::size_t count = 1; count < kMaxCountPerCardZone; ++count) {
+        t.card_counts[z][cid][count] = rng();
+      }
+    }
   }
 
   return t;

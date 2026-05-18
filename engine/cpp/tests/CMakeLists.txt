@@ -29,6 +29,7 @@ target_sources(sts2_simulator_tests PRIVATE
     input/test_input_internal.cc
     app/test_args.cc
     app/test_prompts.cc
+    ai/test_chance.cc                   # NEW per wave-22.α / C.2-α
     ai/test_outcome_calibration.cc
     ai/test_probability.cc
     ai/test_recommend_legality.cc

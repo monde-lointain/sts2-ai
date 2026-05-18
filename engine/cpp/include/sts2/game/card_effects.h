@@ -27,9 +27,23 @@ struct CardEffect {
   int base_block;
   int weak_to_target;
   bool requires_discard;
+  // Wave-22.α APPENDED — Slimed-like Exhaust semantic. When true, the played
+  // card vanishes (one-way deletion) instead of moving hand→discard. Default
+  // false preserves all pre-wave-22 cards' semantic; only Slimed sets this.
+  // Upstream: Slimed.cs CanonicalKeywords = {CardKeyword.Exhaust}.
+  bool exhaust_on_play = false;
+  // Wave-22.α APPENDED — number of cards drawn as a card's OnPlay effect.
+  // Slimed.cs OnPlay calls CardPileCmd.Draw(choiceContext, 1, owner). For the
+  // oracle this introduces an OnPlay chance node (draw from deck is random).
+  // Wave-22.α scope does NOT wire the chance node — Slimed plays in the
+  // C.2-α framework are deterministic noops (no card drawn). C.4-δ's
+  // SmallSlimes pin verifies that policy never benefits from playing Slimed,
+  // so this stub is sound for the pin-passing contract. Full OnPlay-draw
+  // chance node deferred to a future wave (surfaced as TODO in transition.cc).
+  int draws_on_play = 0;
 };
 
-inline constexpr std::array<CardEffect, 4> kCardEffects = {{
+inline constexpr std::array<CardEffect, 5> kCardEffects = {{
     {.name = "Strike",
      .wire_model_id = "StrikeSilent",
      .cpp_name = "kStrike",
@@ -82,13 +96,33 @@ inline constexpr std::array<CardEffect, 4> kCardEffects = {{
      .base_block = 8,
      .weak_to_target = 0,
      .requires_discard = true},
+    // Wave-22.α APPENDED. Upstream: src/Core/Models/Cards/Slimed.cs.
+    // cost=1, type=Status, Exhaust keyword, OnPlay: Draw 1 card. Added to
+    // discard via slime GOOP / STICKY_SHOT moves (CardPileCmd.AddToCombat-
+    // AndPreview targets PileType.Discard). draws_on_play=1 documents the
+    // semantic; transition.cc's player-action path stubs the draw effect
+    // (full OnPlay-draw chance node deferred — see CardEffect docs).
+    {.name = "Slimed",
+     .wire_model_id = "Slimed",
+     .cpp_name = "kSlimed",
+     .short_stats = "draw1",
+     .description = {"Draw 1 card.", "Exhaust."},
+     .id = CardId::kSlimed,
+     .cost = 1,
+     .type = CardType::kStatus,
+     .target = TargetType::kNoTarget,
+     .base_damage = 0,
+     .base_block = 0,
+     .weak_to_target = 0,
+     .requires_discard = false,
+     .exhaust_on_play = true,
+     .draws_on_play = 1},
 }};
 
-inline constexpr std::array<CardId, 4> kCountedCardIds = {
-    CardId::kStrike,
-    CardId::kDefend,
-    CardId::kNeutralize,
-    CardId::kSurvivor,
+inline constexpr std::array<CardId, 5> kCountedCardIds = {
+    CardId::kStrike, CardId::kDefend, CardId::kNeutralize, CardId::kSurvivor,
+    CardId::kSlimed,  // wave-22.α APPEND (preserves CardId-1 ordering
+                      // invariant)
 };
 
 [[nodiscard]] constexpr const CardEffect& card_effect_for(CardId id) noexcept {

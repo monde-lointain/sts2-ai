@@ -4,9 +4,25 @@
 
 namespace sts2::game {
 
-enum class CardType : int { kAttack, kSkill };
+// CardType: kAttack=0, kSkill=1 preserved from original.
+// Wave-22 APPENDED kStatus=2 for the Slimed status card port (must NOT
+// renumber — render.cc treats kAttack specially via ternary; new values
+// fall into the default "non-attack" rendering, which is the desired
+// behavior for status cards.).
+enum class CardType : int { kAttack = 0, kSkill = 1, kStatus = 2 };
 enum class TargetType : int { kSelf, kAnyEnemy, kNoTarget };
-enum class CardId : int { kNone, kStrike, kDefend, kNeutralize, kSurvivor };
+// CardId: kNone=0..kSurvivor=4 preserved from original.
+// Wave-22 APPENDED kSlimed=5 for the Slimed status card port. CardCounts
+// indexing depends on kCountedCardIds ordering matching CardId-1 (see
+// state.h::CardCounts::to_index static_assert).
+enum class CardId : int {
+  kNone = 0,
+  kStrike = 1,
+  kDefend = 2,
+  kNeutralize = 3,
+  kSurvivor = 4,
+  kSlimed = 5,  // wave-22.α
+};
 
 // Stable order: existing values fixed; new values append. NEVER reorder.
 // kWeak=0, kStrength=1, kRitual=2 preserved from original definition.
@@ -59,12 +75,17 @@ enum class HookPoint : uint8_t {
   kAtPlayerTurnEnd,
 };
 
+// Wave-21 schema for the slime port; data-driven enemy actions consume this
+// enum. Existing cultist + LouseProgenitor code paths bypass it (handcoded
+// dispatch). Wave-22.α APPENDS kAddStatusCard for slime GOOP / STICKY_SHOT
+// moves which place a Slimed card in the player's discard pile.
 enum class MoveEffectKind : uint8_t {
   kNone = 0,
-  kAttack,
-  kDefend,
-  kBuffSelf,
-  kDebuffPlayer,
+  kAttack = 1,
+  kDefend = 2,
+  kBuffSelf = 3,
+  kDebuffPlayer = 4,
+  kAddStatusCard = 5,  // wave-22.α (LeafSlimeS GOOP, TwigSlime* STICKY_SHOT)
 };
 
 }  // namespace sts2::game

@@ -389,7 +389,18 @@ class EnemyStateBuilder {
   return e.get_alive();
 }
 
-enum class Phase : uint8_t { kPlayerActing, kAtChanceDraw };
+// Phase: kPlayerActing=0, kAtChanceDraw=1 preserved from original definition
+// (zobrist.cc depends on these positions for cultist byte-identity pin).
+// Wave-22.α APPENDED kAtEnemyMoveRng=2 — chance node between
+// resolve_end_turn_pre_draw and the draw step, materialized when at least
+// one alive enemy's current move has a RandomBranch follow-up (slime POKEY
+// / GOOP cycles). Cultist + LouseProgenitor moves use kStrict follow-ups and
+// SKIP this phase entirely → cultist Zobrist hash unchanged.
+enum class Phase : uint8_t {
+  kPlayerActing = 0,
+  kAtChanceDraw = 1,
+  kAtEnemyMoveRng = 2,  // wave-22.α
+};
 
 // ---------------------------------------------------------------------------
 // CompactState — wave-17 shape

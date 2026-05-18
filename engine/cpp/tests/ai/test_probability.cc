@@ -134,7 +134,9 @@ TEST(Probability, EngineDistributionMonteCarlo) {
   const int k = 7;
   auto analytic = enumerate_draws(pool, k);
 
-  std::map<std::array<uint8_t, 4>, std::size_t> hist;
+  // Track type matches CardCounts::counts size; wave-22.α widened
+  // kCountedCardIds 4 → 5 (kSlimed appended).
+  std::map<std::array<uint8_t, 5>, std::size_t> hist;
   constexpr int k_trials = 5000;
   for (int seed = 1; seed <= k_trials; ++seed) {
     sts2::game::Combat c{static_cast<uint64_t>(seed)};

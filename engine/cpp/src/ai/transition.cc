@@ -51,6 +51,17 @@ class StateMutator {
     powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kFrail,
                       static_cast<int16_t>(delta));
   }
+  // Generic enemy-power mutator (wave-22.α): data-driven kBuffSelf path uses
+  // this for slime move tables. The kStrength / kFrail wrappers above remain
+  // for backward-compat with cultist + LouseProgenitor hooks.
+  static void add_enemy_power(EnemyState& e, sts2::game::PowerKind kind,
+                              int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    powers::add_power(e.powers_, e.power_count_, kind,
+                      static_cast<int16_t>(delta));
+  }
   // Generic remove-power-instance (decrement stacks; remove if <= 0).
   static void decrement_power(EnemyState& e,
                               sts2::game::PowerKind kind) noexcept {
@@ -397,7 +408,22 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     }
   }
 
-  ++M::discard(state)[id];
+  // Wave-22.α — Exhaust card semantics: the played card vanishes one-way
+  // (skip hand→discard). Upstream: CardKeyword.Exhaust on Slimed.cs:19;
+  // engine routes the played card to the Exhaust pile instead of Discard.
+  // The Q2 oracle's CompactState has no explicit Exhaust pile (exhausted
+  // cards are gone for the rest of the combat); modeling it as a one-way
+  // deletion matches play semantics and keeps the state shape unchanged.
+  if (!fx.exhaust_on_play) {
+    ++M::discard(state)[id];
+  }
+  // Wave-22.α TODO — draws_on_play OnPlay-draw chance node is NOT wired in
+  // C.2-α scope; Slimed's `Draw 1` effect is a deterministic noop here.
+  // C.4-δ's SmallSlimes pin verifies that the search policy never derives
+  // benefit from playing Slimed (Slimed costs 1 energy with no payoff in
+  // this stub, so it is strictly dominated by EndTurn). Full draw-from-deck
+  // chance-node integration deferred to a future wave.
+  (void)fx.draws_on_play;
 
   // CurlUp AfterCardPlayed: scan alive enemies for CurlUp with stored card
   // matching this play; if found, enemy gains block and CurlUp is removed.
@@ -413,7 +439,36 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
 }
 
 // ---------------------------------------------------------------------------
+// has_pending_random_move_roll: true iff slot's current move's follow-up
+// is a RandomBranch (kRandomBranchCannotRepeat or kWeightedRandomCannotRepeat
+// per FollowUpRule). Cultist + LouseProgenitor → all kStrict → always false.
+// Wave-22.α: drives the kAtEnemyMoveRng deferred-roll chance node.
+// ---------------------------------------------------------------------------
+[[nodiscard]] bool has_pending_random_move_roll(const EnemyState& e) noexcept {
+  if (!e.get_alive()) {
+    return false;
+  }
+  const auto kind_idx = static_cast<std::size_t>(e.get_kind());
+  if (kind_idx >= kMonsterMoveTables.size()) {
+    return false;
+  }
+  const auto& table = kMonsterMoveTables[kind_idx];
+  const uint8_t move_idx = e.get_move_index();
+  if (move_idx >= table.move_count) {
+    return false;
+  }
+  const auto rule = table.moves[move_idx].follow_up_rule;
+  return rule != sts2::game::monster_moves::FollowUpRule::kStrict;
+}
+
+// ---------------------------------------------------------------------------
 // resolve_end_turn_pre_draw_in_place
+//
+// Wave-22.α: when any alive enemy's current move has a RandomBranch
+// follow-up, the move-roll step is DEFERRED and phase advances to
+// kAtEnemyMoveRng (a chance node enumerated in chance.cc). Cultist +
+// LouseProgenitor moves are all kStrict → control flow + phase end-state
+// is BIT-IDENTICAL to pre-wave-22.
 // ---------------------------------------------------------------------------
 void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   assert(state.get_phase() == Phase::kAtChanceDraw);
@@ -422,6 +477,11 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     // NOLINTBEGIN(cppcoreguidelines-avoid-const-or-ref-data-members)
     // Local helper struct, never assigned; reference member is intentional.
     CompactState& state;
+    // Per-slot pending-RNG snapshot taken at start of turn_flow. Updated by
+    // roll_enemy_next_move() which DEFERS the roll for slots with
+    // RandomBranch follow-ups (those slots' move_idx is left unchanged for
+    // chance.cc to resolve via enumerate_enemy_move_outcomes).
+    bool any_pending_random_roll = false;
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() {
@@ -453,7 +513,17 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     }
     [[nodiscard]] int round() const { return state.get_round(); }
     void roll_enemy_next_move(std::size_t slot) {
-      do_roll_next_move(M::enemies(state)[slot]);
+      EnemyState& e = M::enemies(state)[slot];
+      if (has_pending_random_move_roll(e)) {
+        // Defer to kAtEnemyMoveRng chance node — leave move_idx unchanged so
+        // chance.cc can apply the branch outcome. performed_first_move is
+        // advanced here so the chance node only enumerates branches
+        // (initial_move_index logic is N/A on deferred rolls).
+        M::performed_first_move(e) = true;
+        any_pending_random_roll = true;
+        return;
+      }
+      do_roll_next_move(e);
     }
     void reset_player_block() { M::player_block(state) = sts2::game::Stat{0}; }
     void refill_player_energy(int amount) {
@@ -463,7 +533,14 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
 
   EndTurnOps ops{state};
   sts2::game::turn_flow::resolve_end_turn_pre_draw(ops);
-  // Phase already kAtChanceDraw; the draw step is the chance node.
+  // If any roll was deferred AND the state is not terminal, phase advances
+  // to kAtEnemyMoveRng so chance.cc enumerates the move-RNG outcomes.
+  // Otherwise phase stays kAtChanceDraw → card-draw chance enumeration.
+  if (ops.any_pending_random_roll &&
+      state.get_player_hp() != sts2::game::Stat{0}) {
+    M::phase(state) = Phase::kAtEnemyMoveRng;
+  }
+  // Else: phase already kAtChanceDraw; the draw step is the chance node.
 }
 
 // ---------------------------------------------------------------------------
@@ -528,9 +605,89 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Slime enemy_act path (wave-22.α framework). Data-driven: walks the
+// MonsterMove.effects[] array on kMonsterMoveTables[kind].moves[move_idx].
+// Slime move tables are zero-filled at C.2-α merge time (C.3-β populates
+// real data); the loop is a noop until then. Cultist + LouseProgenitor
+// paths bypass this entirely (handcoded above).
+// ---------------------------------------------------------------------------
+bool kind_is_slime(MonsterKind k) noexcept {
+  return k == MonsterKind::kLeafSlimeS || k == MonsterKind::kLeafSlimeM ||
+         k == MonsterKind::kTwigSlimeS || k == MonsterKind::kTwigSlimeM;
+}
+
+void do_enemy_act_slime(CompactState& s, EnemyState& e) {
+  const auto kind_idx = static_cast<std::size_t>(e.get_kind());
+  const auto& table = kMonsterMoveTables[kind_idx];
+  const uint8_t move_idx = e.get_move_index();
+  if (move_idx >= table.move_count) {
+    // C.2-α framework path: slime tables are zero-filled (move_count=0).
+    // Silent noop until C.3-β populates the data.
+    return;
+  }
+  const auto& move = table.moves[move_idx];
+  for (uint8_t i = 0; i < move.effect_count; ++i) {
+    const auto& fx = move.effects[i];
+    switch (fx.kind) {
+      case sts2::game::MoveEffectKind::kAttack: {
+        const int dmg = sts2::damage::compute_outgoing(
+            fx.value, e.get_strength().value(), e.get_weak().value());
+        (void)sts2::damage::apply_to_defender(M::player_hp(s),
+                                              M::player_block(s), dmg);
+        break;
+      }
+      case sts2::game::MoveEffectKind::kDefend: {
+        // Monster-move block is powered (IsPoweredCardOrMonsterMoveBlock=true);
+        // no enemy Frail/dexterity in Phase-1.
+        const int blk =
+            sts2::damage::compute_outgoing_block(fx.value, 0, false, true);
+        M::block(e) += blk;
+        break;
+      }
+      case sts2::game::MoveEffectKind::kBuffSelf: {
+        // Self-buff: route through StateMutator (no slime moves use this
+        // path in upstream LeafSlime / TwigSlime data — included for
+        // framework completeness).
+        M::add_enemy_power(e, fx.power_kind, fx.value);
+        break;
+      }
+      case sts2::game::MoveEffectKind::kDebuffPlayer: {
+        if (fx.power_kind == PowerKind::kFrail) {
+          M::add_player_frail(s, fx.value);
+        } else if (fx.power_kind == PowerKind::kWeak) {
+          M::add_player_weak(s, fx.value);
+        } else if (fx.power_kind == PowerKind::kVulnerable) {
+          // Phase-1 has no Vulnerable consumers; placeholder for future waves.
+        }
+        break;
+      }
+      case sts2::game::MoveEffectKind::kAddStatusCard: {
+        // Wave-22.α — slime GOOP / STICKY_SHOT path. Insert N Slimed cards
+        // into the player's DISCARD pile (upstream
+        // CardPileCmd.AddToCombatAndPreview targets PileType.Discard,
+        // CardPileCmd.cc:886-916). fx.value encodes the count (1 or 2).
+        // CardId is fixed at kSlimed for all slime status-card emissions.
+        const int count = fx.value;
+        for (int n = 0; n < count; ++n) {
+          ++M::discard(s)[CardId::kSlimed];
+        }
+        break;
+      }
+      case sts2::game::MoveEffectKind::kNone:
+        // Sentinel; no effect.
+        break;
+    }
+  }
+}
+
 void do_enemy_act(CompactState& s, EnemyState& e) {
   if (e.get_kind() == MonsterKind::kLouseProgenitor) {
     do_enemy_act_louse_progenitor(s, e);
+    return;
+  }
+  if (kind_is_slime(e.get_kind())) {
+    do_enemy_act_slime(s, e);
     return;
   }
   // Cultist path (kCultistCalcified, kCultistDamp): SEMANTICS UNCHANGED.
