@@ -586,3 +586,73 @@ HauntedShip, GremlinMerc, ThreeSlimes elite, SlimeBoss. Selection deferred to
 project-lead at next port-wave planning.
 
 **Cross-reference.** Q2-ADR-013 Amendment 4 (full rationale + Consequences).
+
+## 19. §19 — 2026-05-18 Wave-23 stat widening + LRU retirement
+
+### Stat-width architecture decision
+
+Wave-23 / J.β widened all stat-storage types to `int32_t` to match upstream
+STS2 (Godot/C# uses uniform `int` for all combat stats). The divergence was
+obscure and would silently truncate or assert for Phase-2+ encounters with
+larger values (e.g., SlimedBerserker A0 HP 261-281 exceeds the former
+Stat::pack8 [0,255] bound).
+
+**Stat wrapper retained.** Q2's `Stat` class (clamping + ostream semantics
+over int32_t backing) is not present in upstream — retained for oracle
+debugging clarity. The backing type is now `int32_t` throughout; pack8
+widened to pack16 (uint16_t; assert v ∈ [0, 65535]).
+
+**Zobrist dimensions widened correspondingly:**
+- `kMaxHp` / `kMaxBlock`: 256 → 1024 (covers SlimedBerserker 281 + headroom).
+- `kMaxStacks`: 100 → 256.
+- `kMaxCountPerCardZone`: 16 → 64 (Slimed cap=8 + Silent starter 12 + headroom).
+
+**Key table growth**: ~4 MB additional static memory — trivial vs TT working set.
+
+**CompactState size impact**: CardCounts.counts[] uint8→int32 (+15B per zone ×
+3 zones = +45B per state); recursion stack frames ~10-15% larger. The wave-23
+wall-clock recovery (~25%) was driven by J.α LRU revert, not J.β widening.
+Widening alone is a slight wash; acceptable per upstream-emulation directive.
+
+**pack_counts retired.** The `static_assert(std::size(kCountedCardIds) <= 8)`
+packing-limit guard was incompatible with 32-bit counts. Engineer audit found
+no consumers of pack_counts in src/ or tests/; the static_assert was deleted.
+
+**Cultist Zobrist BYTE rotated** (third rotation since pre-wave-21) to
+`Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80`. Pin VALUES bit-identical
+per Q2-ADR-010 §Recovery invariant. See Q2-ADR-014 for the full BYTE chain.
+
+### LRU retirement
+
+Wave-23 / J.α reverted the LRU eviction policy introduced by wave-22-fix-4 / H.β.
+
+**Why LRU was net-cost for retained encounters.** The LRU structure (std::list
+bookkeeping + iterator stored in map value) raised per-entry TT footprint to
+~96 B/entry — exceeding the 70 B projection at design time. For cultist +
+Louse (the only pinned encounters post-SmallSlimes deprecation), the TT never
+approaches the 200M cap (cultist tt_size ~85M). LRU bookkeeping was pure
+overhead for these encounters: +4 GB peak RSS, +22% wall-clock vs pre-fix-4
+baseline.
+
+**Hard-abort cap policy restored.** `tt_insert` hard-aborts at cap; sets
+`cap_hit_` flag; returns false. `kMaxTtEntries` restored to 370M
+(wave-22-fix-3 baseline). `SolveStatus::kCapExceeded` re-introduced as a
+possible solve outcome.
+
+**Encounter selection replaces LRU as safety net.** Future encounters must
+satisfy the 4-criterion screen from Q2-ADR-013 Amendment 4:
+1. Bounded combat duration (block-dominated encounters are tractability traps).
+2. No unbounded status-card accumulation.
+3. Player-block does NOT dominate enemy damage budget.
+4. Q1 has fixture support.
+
+If a future encounter triggers `kCapExceeded`, project-lead decides between
+re-introducing LRU vs encounter-side mitigation (Q2-ADR-013 Amendment 5).
+
+**Profile delta (cultist benchmark):**
+- Pre-(j) baseline @ 3d83d58: peak_rss_gb=10.323, wall_clock=62.84s.
+- Post-wave-23 @ 9a61937: peak_rss_gb=6.495, wall_clock=~47s (est.; J.δ profile pending).
+
+**Cross-references.** Q2-ADR-013 Amendment 5 (LRU revert rationale + full
+Consequences). Q2-ADR-014 (stat widening rationale + rotation chain).
+Q2-ADR-011 (TT cap-policy + lifecycle — kCapExceeded restored).

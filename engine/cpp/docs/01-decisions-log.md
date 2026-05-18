@@ -23,6 +23,7 @@ then positives).
 | Q2-ADR-011 | `absl::flat_hash_map` Container + Hard TT Entry Cap + Flag-and-Early-Return | Accepted (2026-05-18) |
 | Q2-ADR-012 | Slime prerequisites — kMaxEnemies 2→4 + MonsterKind/MoveId/FollowUpRule extensions + Zobrist table widening | Accepted (2026-05-18) |
 | Q2-ADR-013 | SmallSlimes port — Slimed card mechanics + Exhaust emulation + enemy-move RNG chance-node + CannotRepeat rule | Accepted (2026-05-18) |
+| Q2-ADR-014 | Restore upstream stat widths (wave-23 stat widening to int32 + Zobrist key table expansion) | Accepted (2026-05-18) |
 
 ---
 
@@ -470,6 +471,14 @@ Note: `card_effects.cc` is in the declared list but not yet present on disk; `cm
 **Determinism**: cross-platform LF line endings enforced via `.gitattributes`. Dual `cmake -B` on the same source tree produces identical `kAlgorithmSha`.
 
 **Effect**: every consumer of `current_manifest().algorithm_sha` (pinned test rows, verify-server response, oracle-agreement schema) now sees a real 64-char hex value that rotates on any algorithm-impacting source change. The generated constant lives in `build*/generated/manifest_constants.h` (excluded from git via existing `build*/` pattern).
+
+### Wave-23 amendment (2026-05-18) — stat.h added
+
+Per Q2-ADR-014 (wave-23 stat widening), `engine/cpp/include/sts2/game/stat.h`
+added to `ALGORITHM_SHA_SOURCES` in `cmake/AlgorithmSha.cmake`. Rationale:
+Stat::pack16 (and previously pack8) affects every Zobrist fold; the header
+is algorithm-impacting. Source-list inclusion ensures algorithm_sha rotates
+on Stat changes.
 
 ---
 
@@ -1332,3 +1341,168 @@ Q1 has fixture support.
 - Q2-ADR-011 (TT cap-policy + lifecycle — kCapExceeded retired by Amendment 4)
 - Q2-ADR-005 (algorithm_sha source-list audit)
 - Q2-ADR-029 (Q1-divergence-acknowledged philosophy; SmallSlimes row → DEPRECATED-IN-Q2)
+
+### Amendment 5 (2026-05-18) — LRU eviction reverted
+
+Wave-23 reverts the LRU eviction policy introduced by wave-22-fix-4 / H.β.
+Rationale: H.ε deprecated SmallSlimes from oracle support — the only
+encounter that would have benefited from eviction. For retained pinned
+encounters (cultist + Louse), the LRU bookkeeping introduced pure overhead:
+
+- Cultist peak RSS regressed 6.2 GB → 10.3 GB (+4 GB; per-entry footprint
+  measured ~96 B vs 70 B design projection — std::list node + iterator-
+  stored-in-map overhead).
+- Cultist wall-clock 46.5 s → 56.7 s (+22%).
+- TT never approaches the 200M cap for these encounters (cultist tt_size
+  ~85M).
+
+Restored:
+- `Search::TtData = absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash>`
+  (dropped `std::list<ZobristKey>` LRU structure + pair<Score, iterator>
+  value type).
+- `tt_insert` hard-abort: sets `cap_hit_` flag + returns false at cap.
+- kMaxTtEntries 200M → 370M (back to wave-22-fix-3 baseline).
+- `derive_best_action(const Search&, ...)` signature (was non-const Search&
+  for re-solve-on-miss).
+- `cap_hit_` flag + `cap_hit()` accessor; `SolveStatus::kCapExceeded`
+  re-instated as a possible solve outcome.
+- `action_value`'s peek_score-assert pattern (re-solve fallback deleted).
+
+Retired:
+- `eviction_count_` field + accessor.
+- `peek_score_by_key_for_testing` + `tt_insert_for_testing` public test
+  hooks.
+- `Search.LRU_EvictionFiresAtCap` + `Search.LRU_DeterminismDualRun` tests
+  (deleted; reference data structures that no longer exist).
+
+#### Consequences (lead with negatives)
+
+- *Negative*: `SolveStatus::kCapExceeded` re-introduced as a failure mode.
+  Mitigation: future encounter selection per Q2-ADR-013 Amendment 4
+  §SmallSlimes-deprecation + the 4-criterion screen (bounded combat
+  duration, no unbounded status-card accumulation, player-block does NOT
+  dominate enemy damage budget, Q1 fixture support). If a future encounter
+  triggers cap, project-lead decides between Amendment 5-rebuttal (re-
+  introduce LRU) vs encounter-side mitigation.
+- *Positive*: cultist peak RSS recovered (~6.5 GB at wave-23 close vs 10.3
+  GB at fix-4 close); ~25% wall-clock improvement; substrate simplicity
+  restored.
+
+#### Verification
+
+- Cultist pin VALUES BIT-IDENTICAL (`expected_hp=40.9083`,
+  `expected_rounds=6.45798`, `tt_size=84790480`).
+- Louse pin VALUES BIT-IDENTICAL (`expected_hp=0.0407931`,
+  `expected_rounds=10.152`).
+- `Search.LRU_*` filter returns 0 tests.
+- `Transition.SlimedCap_*` retained (3 PASS).
+- sts2_simulator_tests: 517 PASSED / 3 SKIPPED / 0 FAILED.
+- sts2_oracle_tests: 55 PASSED / 0 FAILED.
+
+#### Cross-references
+
+- Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation (motivating context).
+- Q2-ADR-011 (TT cap-policy + lifecycle — kCapExceeded restored).
+- `[[project-encounter-tractability]]` memory (encounter selection criteria).
+
+---
+
+## Q2-ADR-014 — Restore upstream stat widths (wave-23, 2026-05-18)
+
+**Status**: Accepted (2026-05-18).
+**Driver**: Q2 narrowed several stat-storage types (`int16_t` for damage +
+power stacks; `uint8_t` for HP via Stat::pack8 + card counts; `uint16_t` for
+round) vs upstream STS2 (Godot/C# at `/home/clydew372/development/projects/godot/sts2/src/Core/`)
+which uses uniform `int` (32-bit signed) for all combat stats. Phase-1
+encounters fit the narrow widths, but the divergence is obscure + would
+silently truncate or assert for Phase-2+ encounters with larger values
+(e.g., SlimedBerserker A0 HP 261-281 already exceeds Stat::pack8's [0,255]
+bound).
+
+### Decision
+
+Widen all stat-storage types to `int32_t` to match upstream `int` exactly.
+Widen Stat::pack8 → pack16 (uint16_t; assert v ∈ [0, 65535]). Widen Zobrist
+key tables correspondingly. The widening rotates the cultist Zobrist BYTE
+identity (third rotation since pre-wave-21; see chain below) but preserves
+all pin VALUES (search algorithm is invariant within reachable stat range).
+
+### Upstream audit (Phase-1 Explore against /home/clydew372/development/projects/godot/sts2/src/Core/)
+
+| Stat | Upstream type | Q2 pre-(j) | Q2 post-(j) | Divergence resolved? |
+|---|---|---|---|---|
+| HP (current + max) | int | Stat (int32 + pack8) | Stat (int32 + pack16) | YES |
+| Block | int | uint8_t direct | int32_t direct | YES |
+| Energy | int | int | int | (already aligned) |
+| Power stacks (Amount) | int | int16_t | int32_t | YES |
+| Card cost (energy) | int | int | int | (already aligned) |
+| Damage values | int | int16_t | int32_t | YES |
+| Round counter | int | uint16_t | int32_t | YES |
+| Status card count | int | uint8_t | int32_t | YES |
+
+No `uint*` types in upstream combat stats. No Stat wrapper class in
+upstream — Q2 retains its Stat wrapper (clamping + ostream semantics over
+int32_t backing).
+
+### Sites widened
+
+- `engine/cpp/include/sts2/game/stat.h`: `pack8() → pack16()`.
+- `engine/cpp/include/sts2/game/monster_moves.h`:
+  - `MoveEffect.value`: int16 → int32; sizeof 6B → 8B.
+  - `SpawnPowerEntry.stacks`: int16 → int32; sizeof 4B → 8B.
+  - `MonsterMoveTable.min_hp` / `max_hp`: uint8 → int32.
+- `engine/cpp/include/sts2/ai/state.h`:
+  - `PowerInstance.stacks`: int16 → int32; reordered for natural alignment;
+    sizeof 6B → 8B.
+  - `CardCounts.counts[]`: uint8 → int32; sizeof 5B → 20B (+15B per zone).
+  - `CompactState.round_`: uint16 → int32.
+- `engine/cpp/src/ai/zobrist.cc`:
+  - `kMaxHp` 256 → 1024 (covers SlimedBerserker 281 + headroom).
+  - `kMaxBlock` 256 → 1024 (symmetric).
+  - `kMaxStacks` 100 → 256 (modest headroom).
+  - `kMaxCountPerCardZone` 16 → 64 (Slimed cap=8 + Silent starter 12 + headroom).
+- `cmake/AlgorithmSha.cmake`: `engine/cpp/include/sts2/game/stat.h` ADDED to
+  `ALGORITHM_SHA_SOURCES` per Q2-ADR-005 amendment (this change).
+
+### pack_counts retirement
+
+`engine/cpp/include/sts2/ai/state.h`'s `static_assert(std::size(kCountedCardIds) <= 8, "pack_counts uint64 packing limit (8 bits per slot)")` was incompatible with int32 counts (32 bits × 5 slots = 160 bits > 64-bit pack target). Engineer audit found NO consumers of pack_counts in `src/` or `tests/` — the static_assert guarded a hypothetical packing helper that was never implemented. The static_assert was DELETED (no widening of a non-existent helper required).
+
+### Narrow-arithmetic audit
+
+J.β engineer ran `grep` audits for `static_cast<int16_t>(`, `static_cast<uint8_t>(`, `int16_t{`, `uint8_t{` across src/ + tests/ + include/. Findings:
+- Total hits: ~65 (22 static_cast + 43 brace-init).
+- STAT-ARITHMETIC widened: 19 (powers helpers in state.h, builder casts, transition mutators, projection casts in louse_progenitor_projection.cc + cultists_projection.cc, probability.cc, test_helpers.h, test_probability.cc, test_zobrist.cc, test_louse_progenitor_projection.cc, test_monster_moves_table.cc literals, test_stat.cc pack8→pack16).
+- INDEX/PROTOCOL/ENUM-CAST preserved: 31 (uint8_t bitmasks `~0x01U`, MoveId/MonsterKind/Phase/MoveEffectKind/CardId enum→uint8_t indexing for Zobrist + curl-up-stamp, `find_move_index` 0xFF sentinel, `follow_up_index`/`branch_weights` protocol fields, `enemy_count_` uint8_t).
+
+### Cultist Zobrist BYTE rotation chain (cite Q2-ADR-010 §Recovery)
+
+The wave-23 stat widening is the THIRD cultist Zobrist BYTE rotation in two weeks. Reviewers must distinguish BYTE drift (cosmetic; recoverable via re-stamp) from VALUE drift (regression; bisect):
+
+| Rotation event | kCultistZobristKeyLo | kCultistZobristKeyHi |
+|---|---|---|
+| Pre-wave-21 (initial pin) | 0xf812af56366b5548 | 0x2c51edb8b6bd404e |
+| Post-wave-22-fix-4 / H.γ (compression: dsb+ritual table drop + PowerKind uint8_t) | 0x471665c4838c298d | 0x770eab2147499e6c |
+| Post-wave-23 / J.β (stat widening: pack8→pack16 + kMax* widening) | **0x569115efa81a95dc** | **0x9a06f1e505846a80** |
+
+Each rotation re-stamped `engine/cpp/tests/seeds/cultist_zobrist_pin.h` via the `WaveDiagnostic.DISABLED_DumpCultistZobristKey` diagnostic. Per Q2-ADR-010 §Recovery, BYTE rotation is a recoverable event; VALUE invariance is the load-bearing regression baseline.
+
+### Consequences (lead with negatives)
+
+- *Negative*: `algorithm_sha` rotates AGAIN (third time in wave-22-fix-4/H.γ + wave-23/J.β); any consumer hardcoding the prior SHA breaks. Mitigation: per fix-4 grep findings, the sole consumer is the manifest stamp inside pin tests, which dereferences via `current_manifest().algorithm_sha` at runtime — no hardcoded value to update.
+- *Negative*: cultist Zobrist BYTE rotates AGAIN. Reviewer confusion risk (BYTE vs VALUE). Mitigation: this ADR section documents the rotation chain explicitly.
+- *Negative*: CardCounts size grows 5B → 20B; CompactState gains +45B per state (3 CardCounts × +15B); stack frames during recursion ~10-15% larger. Cultist's wall-clock recovery (~25% vs post-(h)) was driven by J.α LRU revert, not J.β widening — widening alone may be a slight wash. Acceptable tradeoff per upstream-emulation directive.
+- *Negative*: Zobrist key tables grow ~4 MB in static memory (still trivial vs TT working set).
+- *Positive*: Q2 stat storage now matches upstream byte-for-byte semantics; no risk of silent truncation for Phase-2+ encounters with larger stat values.
+- *Positive*: Stat::pack16 with assert [0, 65535] gives headroom up to 65535 (vs prior 255); covers SlimedBerserker + realistic Phase-2 bosses.
+- *Positive*: Cultist + Louse SOLVE VALUES BIT-IDENTICAL — zero risk to pinned regression baseline.
+- *Positive*: pack_counts retired (latent dead static_assert removed).
+- *Positive*: narrow-arithmetic audit found + classified ~65 sites cleanly; no silent truncations lurked.
+
+### Cross-references
+
+- Q2-ADR-005 (algorithm_sha source list; this ADR is the source of the stat.h addition).
+- Q2-ADR-010 (Zobrist hash-only TT + §Recovery for byte-identity rotation).
+- Q2-ADR-013 Amendment 4 §Compression (prior compression which rotated cultist BYTE for unrelated reasons).
+- Q2-ADR-013 Amendment 5 (LRU revert; concurrent wave-23 stream).
+- Upstream STS2 src at `/home/clydew372/development/projects/godot/sts2/src/Core/` (Phase-1 Explore audit source).
