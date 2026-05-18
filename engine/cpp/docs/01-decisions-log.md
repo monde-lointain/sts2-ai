@@ -667,6 +667,15 @@ All transition call sites use these helpers; no inline formula duplication.
 
 **Origin.** Wave-17. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §"Wave-17 absorbs the deferred work" + §"Wave-17 preview". Upstream authority: `~/development/projects/godot/sts2/src/Core/Models/Powers/CurlUpPower.cs:14-71`, `FrailPower.cs:22-41`, `Models/Monsters/LouseProgenitor.cs:36-122`.
 
+### Amendment 2026-05-18 — POUNCE damage corrected
+
+Wave-20.α corrected `kMonsterMoveTables[kLouseProgenitor].moves[POUNCE].effects[0].value` from `16` to `14`. Wave-18 picked the DeadlyEnemies (A11+) ascension value instead of the A0 baseline. Upstream source: `Models/Monsters/LouseProgenitor.cs:63`. Q2 ships Phase-1A = A0 per Q2-ADR-002.
+
+This fix:
+- Reduces oracle-agreement divergence with Q1 (Q1's LouseProgenitor port should have POUNCE = 14; converges post-fix).
+- Rotates `algorithm_sha` automatically (wave-20.β's CMake build-graph hash sees `monster_moves.cc` change).
+- Recovers the LouseProgenitor pinned-seed gtest deferred from wave-18 (added in wave-20.α; locks POST-FIX values).
+
 ---
 
 ## Q2-ADR-010 — Zobrist 128-bit Hash-Only Transposition Table

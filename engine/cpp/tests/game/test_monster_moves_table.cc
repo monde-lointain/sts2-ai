@@ -171,7 +171,7 @@ TEST(MonsterMovesTable, LouseProgenitor_Pounce_AttackEffect) {
   EXPECT_EQ(m.id, MoveId::kPounce);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{16});
+  EXPECT_EQ(m.effects[0].value, int16_t{14});  // A0 baseline; wave-20.α fix
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_InitialMove_IsWebCannon) {

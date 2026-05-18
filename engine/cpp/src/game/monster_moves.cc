@@ -19,8 +19,8 @@
 //   HP: 134-136 (A0). Rotation: WEB_CANNON(0) → CURL_AND_GROW(1) → POUNCE(2).
 //   WEB_CANNON:    attack 9 + apply 2 Frail to player.
 //   CURL_AND_GROW: defend 14 block (self) + 5 Strength to self.
-//   POUNCE:        attack 16.
-//   Spawn power: CurlUp(14).
+//   POUNCE:        attack 14.  (A0 baseline; 16 is A11+ per
+//   LouseProgenitor.cs:63) Spawn power: CurlUp(14).
 
 #include "sts2/game/monster_moves.h"
 
@@ -119,14 +119,17 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
     m.effect_count = 2;
   }
 
-  // Index 2: POUNCE — attack 16.
+  // Index 2: POUNCE — attack 14.
+  // POUNCE: 14 damage at A0 per upstream Models/Monsters/LouseProgenitor.cs:63
+  // (16 is the DeadlyEnemies/A11+ ascension value; Q2 Phase-1A ships A0 only
+  // per Q2-ADR-002).
   {
     MonsterMove& m = t.moves[2];
     m.id = MoveId::kPounce;
     m.follow_up_index = 0;  // → WEB_CANNON
     m.effects[0] = MoveEffect{
         .kind = MoveEffectKind::kAttack,
-        .value = 16,
+        .value = 14,
         .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
         ._pad = 0,
     };
