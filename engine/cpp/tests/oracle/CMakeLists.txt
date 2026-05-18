@@ -14,6 +14,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_cultists_projection.cc
     test_louse_progenitor_projection.cc
     test_louse_progenitor_search_pins.cc
+    test_small_slimes_projection.cc
     ../seeds/dump_cultist_zobrist_key.cc
     test_adapter_facade.cc
     test_adapter_roundtrip.cc

@@ -16,6 +16,7 @@ target_sources(sts2_oracle_adapter PRIVATE
     envelope.cc
     cultists_projection.cc
     louse_progenitor_projection.cc
+    small_slimes_projection.cc
     adapter.cc
 )
 

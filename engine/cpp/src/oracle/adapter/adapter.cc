@@ -16,6 +16,7 @@
 #include "sts2/oracle/adapter/diagnostic.h"
 #include "sts2/oracle/adapter/louse_progenitor_projection.h"
 #include "sts2/oracle/adapter/manifest.h"
+#include "sts2/oracle/adapter/small_slimes_projection.h"
 #include "sts2/oracle/adapter/state_blob.h"
 
 // Adapter facade: encounter detection + reject-with-diagnostic path
@@ -47,8 +48,13 @@ const std::vector<EncounterEntry>& encounter_map() {
       {{"Crusher", "Rocket"}, "KaiserCrabBoss"},
       // LouseProgenitorNormal — single-monster.
       {{"LouseProgenitor"}, "LouseProgenitorNormal"},
-      // SmallSlimes — AcidSlimeS + SpikeSlimeS pair.
-      {{"AcidSlimeS", "SpikeSlimeS"}, "SmallSlimes"},
+      // SmallSlimes — wave-22 wire signatures (sorted-alphabetical multi-sets)
+      // per upstream SlimesWeak.cs:48-59 spawn rules (2x2 = 4 RNG variants,
+      // reducing to 2 unique sorted multi-sets):
+      {{"LeafSlimeM", "LeafSlimeS", "TwigSlimeS"},
+       "SmallSlimes"},  // Leaf-medium
+      {{"LeafSlimeS", "TwigSlimeM", "TwigSlimeS"},
+       "SmallSlimes"},  // Twig-medium
   };
   return kMap;
 }
@@ -143,6 +149,9 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   }
   if (is_louse_progenitor_normal(blob.combat_state)) {
     return project_louse_progenitor_normal(blob.combat_state);
+  }
+  if (is_small_slimes(blob.combat_state)) {
+    return project_small_slimes(blob.combat_state);
   }
 
   // Reject path. Stamp the rejection with manifest + canonical hash, and

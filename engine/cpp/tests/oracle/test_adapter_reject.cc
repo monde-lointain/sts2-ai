@@ -51,8 +51,13 @@ const std::array<RejectCase, 4>& reject_cases() {
        .expected_canonical_hash =
            "9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
        .expects_unknown_powers = true},
+      // wave-22.γ: encounter_map entries for SmallSlimes were corrected from
+      // STS1 names {AcidSlimeS, SpikeSlimeS} to actual Q1 wire names
+      // {LeafSlimeM/S, TwigSlimeM/S}. Fixture #6 still carries the STS1 names
+      // (Q1 B.1-ε fixture port deferred), so detect_encounter_id returns
+      // "<unknown>" for {AcidSlimeS, SpikeSlimeS} — no longer in the map.
       {.dir = "06-small-slimes-seed42",
-       .expected_encounter_id = "SmallSlimes",
+       .expected_encounter_id = "<unknown>",
        .expected_canonical_hash =
            "d33371738949b606df7713b1b19c5645fb2e4d8c822c72c6224a6ce7c8cf1fbd",
        .expects_unknown_powers = false},
