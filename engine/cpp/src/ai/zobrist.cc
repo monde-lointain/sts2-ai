@@ -150,15 +150,18 @@ constexpr std::size_t kPhaseCardinality = 3;
 // PowerKind enum tail = kVulnerable=5; count = 6. (No kPowerKindCount in
 // types.h — see audit block.)
 constexpr std::size_t kPowerKindCardinality = 6;
-// MoveId enum tail = kPounce=4 in pre-wave-21 types.h. Wave-21.α extends the
-// enum (5 → 10 values); kMoveIdCardinality is PINNED at 5 here to preserve
-// byte identity of slot 0+1 entries through the α merge. Wave-22 widens.
-constexpr std::size_t kMoveIdCardinality = 5;
+// MoveId enum tail = kPokeyPounce=9 post-wave-21.α; cardinality 10.
+// Pre-wave-22 value was 5 (only cultist + Louse MoveIds used).
+// Wave-22 widens with APPEND fill order to make slime MoveIds hashable.
+constexpr std::size_t kMoveIdCardinality = 10;
+constexpr std::size_t kPreWave22MoveIdCardinality = 5;
+static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
 // MonsterKind cardinality DECOUPLED from monster_moves::kMonsterKindCount
-// (wave-21.β) — α extends the enum count 3 → 7 and an auto-derived value
-// would re-shape the per-slot table and break cultist byte identity.
-// Wave-22 widens with APPEND fill order.
-constexpr std::size_t kMonsterKindCardinality = 3;
+// (wave-21.β kept at 3 to preserve cultist byte identity). Wave-22 widens
+// to 7 to make slime MonsterKinds hashable.
+constexpr std::size_t kMonsterKindCardinality = 7;
+constexpr std::size_t kPreWave22MonsterKindCardinality = 3;
+static_assert(kPreWave22MonsterKindCardinality <= kMonsterKindCardinality);
 constexpr std::size_t kMaxStacks = 100;
 constexpr std::size_t kMaxFlags = 4;
 constexpr std::size_t kMaxMovesPerMonster =
@@ -326,9 +329,23 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   // kPreWave21MaxEnemies).
   fill_slots(t.enemy_hp, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_block, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_kind, 0, kPreWave21MaxEnemies, rng);
+  // enemy_kind: manual iteration over pre-wave-22 cardinality so wave-22's
+  // bump (3→7) doesn't shift mt19937 consumption. New kinds appended in
+  // PHASE 3 below.
+  for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
+    for (std::size_t k = 0; k < kPreWave22MonsterKindCardinality; ++k) {
+      t.enemy_kind[slot][k] = rng();
+    }
+  }
   fill_slots(t.enemy_move_idx, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_current_move, 0, kPreWave21MaxEnemies, rng);
+  // enemy_current_move: manual iteration over pre-wave-22 cardinality so
+  // wave-22's bump (5→10) doesn't shift mt19937 consumption. New MoveIds
+  // appended in PHASE 3 below.
+  for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
+    for (std::size_t m = 0; m < kPreWave22MoveIdCardinality; ++m) {
+      t.enemy_current_move[slot][m] = rng();
+    }
+  }
   fill_slots(t.enemy_alive, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_pfm, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_dsb, 0, kPreWave21MaxEnemies, rng);
@@ -355,9 +372,22 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   // --- Same table-fill order as PHASE 1 for symmetry / reviewability.
   fill_slots(t.enemy_hp, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_block, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_kind, kPreWave21MaxEnemies, kMaxEnemies, rng);
+  // enemy_kind: manual iteration over pre-wave-22 cardinality (new kinds
+  // appended in PHASE 3 below).
+  for (std::size_t slot = kPreWave21MaxEnemies;
+       slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
+    for (std::size_t k = 0; k < kPreWave22MonsterKindCardinality; ++k) {
+      t.enemy_kind[slot][k] = rng();
+    }
+  }
   fill_slots(t.enemy_move_idx, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_current_move, kPreWave21MaxEnemies, kMaxEnemies, rng);
+  // enemy_current_move: manual iteration over pre-wave-22 cardinality.
+  for (std::size_t slot = kPreWave21MaxEnemies;
+       slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
+    for (std::size_t m = 0; m < kPreWave22MoveIdCardinality; ++m) {
+      t.enemy_current_move[slot][m] = rng();
+    }
+  }
   fill_slots(t.enemy_alive, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_pfm, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_dsb, kPreWave21MaxEnemies, kMaxEnemies, rng);
@@ -384,6 +414,27 @@ ZobristTables generate_table(uint64_t seed) noexcept {
       for (std::size_t count = 1; count < kMaxCountPerCardZone; ++count) {
         t.card_counts[z][cid][count] = rng();
       }
+    }
+  }
+
+  // ---- PHASE 3: wave-22 cardinality widening for MonsterKind + MoveId ----
+  // Slime MonsterKinds (3..6) and MoveIds (5..9) become runtime-reachable.
+  // APPEND-only: pre-wave-22 cardinality entries already filled in PHASE
+  // 1+2; only the NEW entries [pre-wave-22, post-wave-22) consume mt19937
+  // here. Cultist + LouseProgenitor only index kinds 0..2 and MoveIds 0..4,
+  // so byte identity holds.
+  for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
+       ++slot) {
+    for (std::size_t k = kPreWave22MonsterKindCardinality;
+         k < kMonsterKindCardinality; ++k) {
+      t.enemy_kind[slot][k] = rng();
+    }
+  }
+  for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
+       ++slot) {
+    for (std::size_t m = kPreWave22MoveIdCardinality; m < kMoveIdCardinality;
+         ++m) {
+      t.enemy_current_move[slot][m] = rng();
     }
   }
 

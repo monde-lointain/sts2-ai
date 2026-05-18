@@ -57,19 +57,28 @@ constexpr double kSmallSlimesSyntheticExpectedHp = -1.0;      // PLACEHOLDER
 constexpr double kSmallSlimesSyntheticExpectedRounds = -1.0;  // PLACEHOLDER
 constexpr double kPinTolerance = 1e-6;
 
-// ZOBRIST_WIDENING_BLOCKED — wave-22/C.4-delta surface.
-// kMonsterKindCardinality must bump 3→7 and kMoveIdCardinality 5→10
-// in zobrist.cc before this test can run. The widening is an APPEND-ONLY
-// operation per the fill-order contract; must be done in a dedicated sub-stream
-// with the byte-identity assertion. GTEST_SKIP() guards CI (`*DISABLED_*`
-// filter) from running the crashing solve. Surface to project-lead for a
-// Zobrist-widening wave.
+// SECOND_BLOCKER — wave-22/C.4-δ surface (2026-05-18).
+//
+// Zobrist widening (kMonsterKindCardinality 3→7, kMoveIdCardinality 5→10)
+// done as project-lead fixup post-C.4-δ dispatch; APPEND-ONLY fill preserved
+// cultist + LouseProgenitor byte identity (Zobrist.CultistRootKey_*
+// passes; cultist + Louse pins bit-identical). HOWEVER, attempting to run
+// the SmallSlimes synthetic solve produces SIGSEGV (signal 11) within ~1 sec
+// wall-clock — peak RSS 529 MB suggests crash early in solve setup, not a
+// TT-cap overflow. Root cause is a runtime bug in the slime solve pipeline
+// (likely transition.cc handling of kAddStatusCard, chance.cc enumeration
+// of weighted RandomBranch, OR a missing dispatch in C.2-α's substrate).
+//
+// GTEST_SKIP() guards CI from the crash. Resolution requires a debugging
+// wave (gdb trace; bisect transition/chance/zobrist code paths) before
+// SmallSlimes can be regression-pinned.
 TEST(SmallSlimesSearchPins,
      DISABLED_SmallSlimesSyntheticVariantA_PinnedAgreement) {
-  GTEST_SKIP() << "BLOCKER: Zobrist table widening required before SmallSlimes "
-               << "pin can run. kMonsterKindCardinality 3→7 and "
-               << "kMoveIdCardinality 5→10 must be APPEND-filled in "
-               << "zobrist.cc. Surface to project-lead for widening wave.";
+  GTEST_SKIP() << "BLOCKER #2: SmallSlimes solve SIGSEGVs in Release (~1 sec; "
+               << "peak RSS 529 MB). Zobrist widening landed safely (byte "
+               << "identity preserved) but does NOT fix the solve crash. "
+               << "Surface to project-lead for debugging wave before C.4-δ "
+               << "pin can resume.";
 
   sts2::game::Combat combat =
       make_small_slimes_synthetic_combat(sts2::tests::seeds::kCombatTestSeed);
