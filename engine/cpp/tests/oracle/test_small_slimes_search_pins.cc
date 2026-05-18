@@ -142,13 +142,35 @@ TEST(SmallSlimesSearchPins,
   // termination (e.g. give LeafSlimeS a Strength buff per round).
   // Each is a substrate-semantic change that warrants Q2-ADR
   // ratification. Out of scope for wave-23-prep.
-  GTEST_SKIP() << "BLOCKER #3 (wave-23-prep): type-system fix landed (kind "
-               << "dispatch repaired) but algorithmic non-convergence of "
-               << "SmallSlimes search remains. Combat does not terminate "
-               << "in the all-defend sub-branch (slime damage below "
-               << "Defend-chain block budget). Resolution requires a "
-               << "search-horizon or cycle-aware expectimax design (Q2-"
-               << "ADR-013 amendment + new ADR). Surface to project-lead.";
+  // Wave-22-fix-2 findings (2026-05-18):
+  //
+  // Horizon cap (kSearchHorizonRounds=50) prevents infinite recursion in
+  // the all-Defend sub-branch (slime damage budget ~9.5/turn < 15 block/turn).
+  // However, the TT entry CAP is exceeded before convergence:
+  //   - entries_at_cap = 370,000,000 (kMaxTtEntries)
+  //   - wall-clock ~7m51s, peak RSS ~22.8 GB
+  //
+  // Root cause: kSearchHorizonRounds=50 bounds the DEPTH of each path but
+  // not the BREADTH of the state space. SmallSlimes has 3 slimes each with
+  // 2-move alternating intents + Slimed card accumulation in all 3 card zones,
+  // producing a state explosion that the 370M-entry TT cannot contain even
+  // with the horizon preventing individual paths from running forever.
+  //
+  // SURFACE TO PROJECT-LEAD: cap-bust contingency requires architectural
+  // intervention beyond a simple horizon cap. Options remain:
+  // (a) Reduce kSearchHorizonRounds further (e.g. 25) to shrink reachable
+  //     depth — may be sufficient if breadth is manageable at shallower depth.
+  // (b) Increase kMaxTtEntries — requires >22 GB RAM; infeasible on CI.
+  // (c) Add LRU eviction or a bounded TT with replacement policy.
+  // (d) State-space reduction: saturate Slimed card counts, compress card
+  //     zones, or restrict per-zone cardinality.
+  // Q2-ADR-013 Amendment 3+ required.
+  GTEST_SKIP() << "CAP-BUST (wave-22-fix-2): SmallSlimes solve hits "
+               << "kCapExceeded (entries_at_cap=370000000) even with "
+               << "kSearchHorizonRounds=50 horizon cap. State-space breadth "
+               << "(3 slimes × alternating intents × Slimed accumulation) "
+               << "exceeds 370M-entry TT. Q2-ADR-013 Amendment 3+ required. "
+               << "Surface to project-lead.";
 
   sts2::game::Combat combat =
       make_small_slimes_synthetic_combat(sts2::tests::seeds::kCombatTestSeed);

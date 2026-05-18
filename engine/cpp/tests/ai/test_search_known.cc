@@ -214,6 +214,67 @@ TEST(Search, PeekScore_UnvisitedReturnsNullopt) {
   EXPECT_TRUE(search.peek_score(s).has_value());
 }
 
+TEST(Search, HorizonCap_RoundOverLimit_ReturnsHorizonScore) {
+  // State at round 51 (> kSearchHorizonRounds=50). solve_player should
+  // return Score{player_hp, 0.0} without expanding legal actions.
+  // Cultist enemy with DarkStrike ensures the state is non-terminal and
+  // legal_actions() is non-empty if the horizon check were bypassed.
+  CardCounts hand;
+  hand[CardId::kStrike] = 1;
+
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{42})
+          .player_block(Stat{0})
+          .energy(Stat{3})
+          .round(51)  // > kSearchHorizonRounds (50)
+          .phase(Phase::kPlayerActing)
+          .enemy(0, EnemyStateBuilder{}
+                        .alive(true)
+                        .hp(Stat{30})
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .current_move(MoveId::kDarkStrike)
+                        .dark_strike_base(Stat{9})
+                        .performed_first_move(true)
+                        .build())
+          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .hand(hand)
+          .build();
+
+  Search search;
+  const SearchResult result = search.solve(s);
+
+  EXPECT_EQ(result.status, sts2::ai::SolveStatus::kConverged);
+  EXPECT_FALSE(result.terminal);
+  EXPECT_DOUBLE_EQ(result.score.expected_hp, 42.0);
+  EXPECT_DOUBLE_EQ(result.score.expected_rounds, 0.0);
+  // Horizon path skips TT insertion — TT stays empty.
+  EXPECT_EQ(search.tt_size(), 0U);
+}
+
+TEST(Search, HorizonCap_RoundAtLimit_DoesNotShortCircuit) {
+  // Boundary: state at round 50 (== kSearchHorizonRounds) must NOT trigger
+  // horizon cap (check is `>`, not `>=`). Use all-enemies-dead terminal so
+  // the solve finishes immediately via the terminal-at-root short-circuit.
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{50})
+          .energy(Stat{3})
+          .round(50)  // == kSearchHorizonRounds; NOT triggered (cap uses >)
+          .phase(Phase::kPlayerActing)
+          .enemy(0, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .build();
+
+  Search search;
+  const SearchResult result = search.solve(s);
+
+  EXPECT_EQ(result.status, sts2::ai::SolveStatus::kConverged);
+  EXPECT_TRUE(result.terminal);
+  EXPECT_DOUBLE_EQ(result.score.expected_hp, 50.0);
+  EXPECT_DOUBLE_EQ(result.score.expected_rounds, 0.0);
+}
+
 // Slow tractability probe (~3 min). Disabled by default; re-enable via:
 //   ctest --preset ninja-debug -- --gtest_also_run_disabled_tests
 // or directly:

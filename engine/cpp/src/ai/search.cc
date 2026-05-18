@@ -140,6 +140,16 @@ Score Search::solve_player(CompactState state) {
     return it->second;
   }
 
+  // Wave-22-fix-2 / Q2-ADR-013 Amendment 2: horizon-truncated Score for
+  // non-terminating defensive-play branches (e.g. SmallSlimes all-Defend).
+  // Not inserted into TT — horizon scores are state-specific by player_hp.
+  if (state.get_round() > kSearchHorizonRounds) [[unlikely]] {
+    return Score{
+        .expected_hp = static_cast<double>(state.get_player_hp().value()),
+        .expected_rounds = 0.0,
+    };
+  }
+
   const auto actions = transition::legal_actions(state);
   assert(!actions.empty());
 
@@ -184,6 +194,14 @@ Score Search::solve_chance(CompactState state) {
   const ZobristKey key = zobrist_of(state);
   if (const auto it = tt_->map.find(key); it != tt_->map.end()) {
     return it->second;
+  }
+
+  // Wave-22-fix-2 / Q2-ADR-013 Amendment 2: horizon cap.
+  if (state.get_round() > kSearchHorizonRounds) [[unlikely]] {
+    return Score{
+        .expected_hp = static_cast<double>(state.get_player_hp().value()),
+        .expected_rounds = 0.0,
+    };
   }
 
   state = transition::resolve_end_turn_pre_draw(state);

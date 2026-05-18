@@ -44,6 +44,18 @@ struct SearchResult {
 // Hard TT cap. constexpr for inlining; ~14 GB at 38 B/entry (Q2-ADR-011).
 constexpr std::size_t kMaxTtEntries = 370'000'000;
 
+// Maximum search depth in rounds. States with `state.get_round() >
+// kSearchHorizonRounds` return a horizon-truncated Score{expected_hp =
+// player_hp.value(), expected_rounds = 0.0} from Search::solve_player +
+// Search::solve_chance entry. Prevents non-termination on encounters where the
+// player can survive indefinitely (e.g. SmallSlimes all-Defend branch — slime
+// damage budget ~9.5/turn vs Silent's 15 block/turn).
+//
+// Conservative for Phase-1: cultist solves in ~6.5 rounds; LouseProgenitor in
+// ~10. Phase-2+ encounters may need raising via Q2-ADR-013 Amendment 3+.
+// Q2-ADR-013 Amendment 2 (2026-05-18) ratifies this cap.
+constexpr uint16_t kSearchHorizonRounds = 50;
+
 // Provably optimal expectimax search over CompactState.
 //
 // Transposition table is keyed by 128-bit Zobrist hash (Q2-ADR-010) and

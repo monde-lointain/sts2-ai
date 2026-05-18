@@ -1087,3 +1087,75 @@ Project-lead to ratify the approach choice + open a follow-up wave (wave-23 prop
 **Verification gate (wave-23-prep close).** Cultist Zobrist byte identity passes; cultist + LouseProgenitor search pins bit-identical; AiStateParity passes; SmallSlimes test SKIPs cleanly with BLOCKER #3 message. Net LOC delta ≈ 80 (under the 500-LOC "major substrate rewrite" re-surface threshold).
 
 **Cross-references.** Q2-ADR-002 (Path A scope). Q2-ADR-006 (polymorphic power-hook framework — wave-21 does not touch power hooks; only the `monster_moves` table shape). Q2-ADR-010 (Zobrist hash-only TT; §Recovery seed re-roll path remains the recourse if cultist hash byte identity ever needs re-capture). Q2-ADR-011 (`absl::flat_hash_map` + cap).
+
+### Q2-ADR-013 — Amendment 2 (2026-05-18) — Search horizon cap (resolves Blocker #3 recursion; surfaces cap-bust contingency)
+
+Wave-22-fix-2 ratifies resolution candidate (a) from Amendment 1: an explicit
+search horizon at `kSearchHorizonRounds = 50` rounds. States with
+`state.get_round() > 50` return a horizon-truncated Score
+`{expected_hp = state.player_hp.value(), expected_rounds = 0.0}` from
+`Search::solve_player` + `Search::solve_chance` entry.
+
+**Why option (a)** (chosen over (b) state saturation + cycle-aware expectimax
+OR (c) encounter reshape):
+- Simplest implementation (~10 LOC); minimal substrate disruption.
+- Matches chess-engine convention (depth-limited search with horizon score).
+- Preserves cultist + LouseProgenitor pins BIT-IDENTICAL (neither exceeds 50).
+- (b) was deemed too architecturally invasive — cycle-aware expectimax has
+  subtle correctness traps and would require its own ADR.
+- (c) diverges from STS2 upstream (no precedent for buffing LeafSlimeS
+  Strength per round) — would compromise Q2's role as a faithful oracle.
+
+**Horizon-score semantics**: `expected_hp = player_hp` (optimistic; "if
+you survive to round 50, you survive") + `expected_rounds = 0.0` (matches
+is_terminal short-circuit convention; the caller chance-node adds +1 if
+applicable). The implicit assumption is that defensive-block branches at
+horizon represent acceptable outcomes for the player. Not inserted into TT —
+horizon scores are state-specific by player_hp.
+
+**Cap-bust contingency (surfaced by wave-22-fix-2 empirical run)**:
+`kSearchHorizonRounds=50` bounds the DEPTH of each path but not the BREADTH
+of the SmallSlimes state space. Empirical run (2026-05-18):
+- `entries_at_cap = 370,000,000` (kMaxTtEntries exhausted)
+- Wall-clock: ~7m51s; peak RSS: ~22.8 GB
+- Status: `kCapExceeded`
+
+SmallSlimes pin test reverts to `DISABLED_` + `GTEST_SKIP()` with a CAP-BUST
+message. The horizon cap is correct and necessary (prevents infinite recursion)
+but insufficient alone for SmallSlimes pin convergence.
+
+**Consequences (lead with negatives)**:
+- *Negative*: SmallSlimes pin capture STILL BLOCKED — horizon cap prevents
+  non-termination but state-space breadth (3 slimes × alternating intents ×
+  Slimed card accumulation across 3 zones) exceeds the 370M-entry TT cap.
+  Q2-ADR-013 Amendment 3+ required to resolve pin capture.
+- *Negative*: oracle's `expected_rounds` for SmallSlimes is now an
+  underestimate for any defensive-play branch that would actually run
+  longer than 50 rounds.
+- *Negative*: future Phase-2+ encounters with legitimately deep search
+  needs (>50 rounds) must revisit kSearchHorizonRounds via further
+  amendment.
+- *Negative*: cap is hard-coded; not encounter-specific. Future flexibility
+  may need a per-encounter horizon parameter.
+- *Positive*: horizon cap resolves the infinite-recursion / SIGSEGV / stack-
+  overflow failure mode permanently for all encounters, not just SmallSlimes.
+- *Positive*: cultist + LouseProgenitor pins verified BIT-IDENTICAL post-cap
+  (both encounters solve in <50 rounds; horizon check is dead code for them).
+- *Positive*: two new unit tests `Search.HorizonCap_RoundOverLimit_*` +
+  `Search.HorizonCap_RoundAtLimit_*` lock the `>` vs `>=` boundary behavior.
+
+**Files touched in this amendment.**
+- `engine/cpp/include/sts2/ai/search.h` — `kSearchHorizonRounds = 50` constant.
+- `engine/cpp/src/ai/search.cc` — horizon-cap check at entry of `solve_player`
+  + `solve_chance` (AFTER cap_hit_ + TT lookup, BEFORE legal_actions / resolve).
+- `engine/cpp/tests/ai/test_search_known.cc` — two new horizon-cap unit tests.
+- `engine/cpp/tests/oracle/test_small_slimes_search_pins.cc` — GTEST_SKIP
+  message updated to CAP-BUST contingency with empirical measurements.
+
+**Verification gate (wave-22-fix-2 close).** Cultist Zobrist byte identity
+passes; cultist + LouseProgenitor search pins bit-identical; new horizon-cap
+unit tests pass; SmallSlimes test SKIPs cleanly with CAP-BUST message.
+
+**Cross-references.** Q2-ADR-011 (kMaxTtEntries cap policy + kCapExceeded
+flag-and-early-return). Q2-ADR-012 (slime prerequisites). Q2-ADR-013
+Amendment 1 (type-system fix + original algorithmic non-convergence analysis).
