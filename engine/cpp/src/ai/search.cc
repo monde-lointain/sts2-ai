@@ -19,7 +19,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <list>
 #include <memory>
 #include <utility>
 
@@ -32,20 +31,8 @@ namespace sts2::ai {
 
 // PIMPL impl: wraps absl::flat_hash_map so the absl header never leaks into
 // public consumers (which compile under -Wpedantic -Werror).
-//
-// Wave-22-fix-4/H.beta LRU layout (Q2-ADR-013 Amendment 4 §LRU-eviction):
-// `lru` is a doubly-linked list of ZobristKeys ordered front=LRU, back=MRU.
-// `map` stores (Score, list_iterator) so:
-//   - tt_insert at cap evicts lru.front() in O(1) and erases its map entry.
-//   - solve_*/derive_best_action TT-hits splice the hit iterator to lru.back()
-//     in O(1), keeping the LRU order honest.
-//   - peek_score is non-mutating (does NOT splice) by contract.
 struct Search::TtData {
-  std::list<ZobristKey> lru;
-  absl::flat_hash_map<ZobristKey,
-                      std::pair<Score, std::list<ZobristKey>::iterator>,
-                      ZobristKeyHash>
-      map;
+  absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash> map;
 };
 
 // FP determinism is load-bearing here (Q2-ADR-010 §FP-determinism): solve's
@@ -81,51 +68,26 @@ Search& Search::operator=(Search&&) noexcept = default;
 std::size_t Search::tt_size() const noexcept { return tt_->map.size(); }
 
 bool Search::tt_insert(ZobristKey k, Score s) {
-  const std::size_t cap =
-      (tt_cap_override_ != 0) ? tt_cap_override_ : kMaxTtEntries;
-  if (tt_->map.size() >= cap) [[unlikely]] {
-    // LRU eviction (Q2-ADR-013 Amendment 4 §LRU-eviction). Evict the
-    // least-recently-used entry — front of `lru` — and remove its map slot.
-    const ZobristKey victim = tt_->lru.front();
-    tt_->map.erase(victim);
-    tt_->lru.pop_front();
-    ++eviction_count_;
+  if (tt_->map.size() >= kMaxTtEntries) [[unlikely]] {
+    cap_hit_ = true;
+    return false;
   }
-  tt_->lru.push_back(k);
-  tt_->map.emplace(k, std::make_pair(s, std::prev(tt_->lru.end())));
-  return true;  // post-LRU: never returns false
+  tt_->map.emplace(k, s);
+  return true;
 }
 
 std::optional<Score> Search::peek_score(
     const CompactState& state) const noexcept {
-  // CONTRACT (see header): peek_score is a read-only diagnostic and MUST NOT
-  // splice the hit key. Mutating LRU order during a PV walk or other
-  // diagnostic traversal would couple eviction order to caller timing.
   const auto it = tt_->map.find(zobrist_of(state));
   if (it == tt_->map.end()) {
     return std::nullopt;
   }
-  return it->second.first;
-}
-
-std::optional<Score> Search::peek_score_by_key_for_testing(
-    ZobristKey k) const noexcept {
-  // Test-only: same read-only semantics as peek_score, but bypassing
-  // zobrist_of() so tests can inspect synthetic keys directly.
-  const auto it = tt_->map.find(k);
-  if (it == tt_->map.end()) {
-    return std::nullopt;
-  }
-  return it->second.first;
+  return it->second;
 }
 
 SearchResult Search::solve(const CompactState& state) {
-  // Wave-22-fix-4/H.beta: LRU eviction retires the hard-abort path.
-  // solve() always reports kConverged; entries_at_cap stays 0
-  // (cross-reference eviction_count() for LRU telemetry).
-  eviction_count_ = 0;
+  cap_hit_ = false;
   tt_->map.clear();  // retains capacity (absl::flat_hash_map::clear)
-  tt_->lru.clear();
 
   // Terminal-at-root short-circuit (matches pre-wave behavior).
   if (transition::is_terminal(state)) {
@@ -141,6 +103,16 @@ SearchResult Search::solve(const CompactState& state) {
   const Score score = (state.get_phase() == Phase::kPlayerActing)
                           ? solve_player(state)
                           : solve_chance(state);
+
+  if (cap_hit_) {
+    return SearchResult{
+        .score = score,  // UNSPECIFIED — caller MUST gate on status
+        .best_action = transition::Action{},
+        .terminal = false,
+        .status = SolveStatus::kCapExceeded,
+        .entries_at_cap = tt_->map.size(),
+    };
+  }
 
   // Converged. Re-derive root best_action via 1-ply argmax (TT no longer
   // caches it). For chance-node roots, recommendation is the default
@@ -159,12 +131,13 @@ SearchResult Search::solve(const CompactState& state) {
 }
 
 Score Search::solve_player(CompactState state) {
+  if (cap_hit_) [[unlikely]] {
+    return Score{};
+  }
+
   const ZobristKey key = zobrist_of(state);
   if (const auto it = tt_->map.find(key); it != tt_->map.end()) {
-    // TT-hit: splice this entry's lru node to the back (MRU). O(1).
-    // Wave-22-fix-4/H.beta (Q2-ADR-013 Amendment 4 §LRU-eviction).
-    tt_->lru.splice(tt_->lru.end(), tt_->lru, it->second.second);
-    return it->second.first;
+    return it->second;
   }
 
   // Wave-22-fix-2 / Q2-ADR-013 Amendment 2: horizon-truncated Score for
@@ -199,6 +172,9 @@ Score Search::solve_player(CompactState state) {
     } else {
       child = solve_player(next);
     }
+    if (cap_hit_) [[unlikely]] {
+      return Score{};
+    }
 
     if (!have_best || child.better_than(best)) {
       best = child;
@@ -206,16 +182,18 @@ Score Search::solve_player(CompactState state) {
     }
   }
 
-  tt_insert(key, best);  // post-LRU: never fails (evicts on cap)
+  tt_insert(key, best);  // may set cap_hit_; recursion unwinds via the check
   return best;
 }
 
 Score Search::solve_chance(CompactState state) {
+  if (cap_hit_) [[unlikely]] {
+    return Score{};
+  }
+
   const ZobristKey key = zobrist_of(state);
   if (const auto it = tt_->map.find(key); it != tt_->map.end()) {
-    // TT-hit: splice to MRU (see solve_player).
-    tt_->lru.splice(tt_->lru.end(), tt_->lru, it->second.second);
-    return it->second.first;
+    return it->second;
   }
 
   // Wave-22-fix-2 / Q2-ADR-013 Amendment 2: horizon cap.
@@ -246,6 +224,9 @@ Score Search::solve_chance(CompactState state) {
   double exp_rounds = 0.0;
   for (const auto& o : outcomes) {
     const Score child = solve_player(o.child_state);
+    if (cap_hit_) [[unlikely]] {
+      return Score{};
+    }
     exp_hp += o.probability * child.expected_hp;
     exp_rounds += o.probability * child.expected_rounds;
   }
@@ -261,13 +242,7 @@ namespace {
 // Compute the expected-value Score for a single action played at `state`,
 // reading children from the converged TT. Mirrors solve_player's per-action
 // child evaluation EXACTLY so derive_best_action's argmax matches solve's.
-//
-// Wave-22-fix-4/H.beta: on a TT miss (child was LRU-evicted) the helper
-// re-solves the child via solve_player / solve_chance. Re-solve is safe:
-// solve is a pure-function on (state, search-config) and deterministic; the
-// recovered Score is bit-identical to the value the original solve wrote.
-// Hence the parameter is `Search&` (non-const).
-Score action_value(Search& search, const CompactState& state,
+Score action_value(const Search& search, const CompactState& state,
                    const transition::Action& action) {
   const auto next_state = transition::apply_player_action(state, action);
   assert(next_state.has_value() &&
@@ -277,11 +252,11 @@ Score action_value(Search& search, const CompactState& state,
   if (action.kind == transition::ActionKind::kEndTurn) {
     // EndTurn child is a chance node; solve_chance cached its Score under
     // the pre-resolve_end_turn_pre_draw state (the chance node itself).
-    if (const auto cached = search.peek_score(next); cached.has_value()) {
-      return *cached;
-    }
-    // LRU-evicted child: re-solve (cost bounded by remaining state-space).
-    return search.solve_chance(next);
+    const auto cached = search.peek_score(next);
+    assert(cached.has_value() &&
+           "derive_best_action: EndTurn child missing from TT — converged "
+           "solve invariant violated");
+    return *cached;
   }
   if (transition::is_terminal(next)) {
     // Terminal play-card child: score computed inline by solve_player
@@ -291,16 +266,17 @@ Score action_value(Search& search, const CompactState& state,
         .expected_rounds = 0.0};
   }
   // Non-terminal play-card child is a player node; solve_player cached it.
-  if (const auto cached = search.peek_score(next); cached.has_value()) {
-    return *cached;
-  }
-  // LRU-evicted child: re-solve.
-  return search.solve_player(next);
+  const auto cached = search.peek_score(next);
+  assert(cached.has_value() &&
+         "derive_best_action: play-card child missing from TT — converged "
+         "solve invariant violated");
+  return *cached;
 }
 
 }  // namespace
 
-transition::Action derive_best_action(Search& search, const CompactState& state,
+transition::Action derive_best_action(const Search& search,
+                                      const CompactState& state,
                                       Score state_score) {
   assert(state.get_phase() == Phase::kPlayerActing &&
          "derive_best_action called on non-player-decision state");
