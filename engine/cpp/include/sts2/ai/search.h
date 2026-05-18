@@ -1,10 +1,13 @@
 #pragma once
 
 #include <cstddef>
-#include <unordered_map>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
+#include "sts2/ai/zobrist.h"
 
 namespace sts2::ai {
 
@@ -19,42 +22,93 @@ struct Score {
   static constexpr double kEps = 1e-9;
 };
 
-// Returned by Search::solve.
-struct SearchResult {
-  Score score;                     // expected outcome under optimal play
-  transition::Action best_action;  // valid only if !terminal
-  bool terminal = false;           // true iff input state is terminal
+// SolveStatus discriminates a converged result (score/action valid) from
+// a cap-aborted result (score/action UNSPECIFIED — caller MUST NOT consume).
+// Q2-ADR-011 §cap-policy.
+enum class SolveStatus : uint8_t {
+  kConverged = 0,
+  kCapExceeded = 1,
 };
 
-// Hash for CompactState (POD-like, but bool padding makes byte-hashing risky).
-// Implementation hashes field-by-field to avoid uninitialized-padding pitfalls.
-struct CompactStateHash {
-  [[nodiscard]] std::size_t operator()(const CompactState& s) const noexcept;
+// Returned by Search::solve. `best_action` is re-derived at root via 1-ply
+// argmax (TT is hash-only, doesn't cache best_action). `terminal` is
+// reconstructed from `transition::is_terminal(input_state)`.
+struct SearchResult {
+  Score score;
+  transition::Action best_action;
+  bool terminal = false;
+  SolveStatus status = SolveStatus::kConverged;
+  std::size_t entries_at_cap = 0;
 };
+
+// Hard TT cap. constexpr for inlining; ~14 GB at 38 B/entry (Q2-ADR-011).
+constexpr std::size_t kMaxTtEntries = 370'000'000;
 
 // Provably optimal expectimax search over CompactState.
 //
-// Internal TT is keyed on the *full* CompactState (round included). round-bit
-// affects future behavior (round 1 draws 7 cards via Ring of the Snake bonus,
-// 5 thereafter), so excluding round from the key would risk wrong cache hits.
-// Optimization opportunity for later: strip round to {0 if round==1, 1 else}.
+// Transposition table is keyed by 128-bit Zobrist hash (Q2-ADR-010) and
+// stores only Score (best_action re-derived via 1-ply argmax; terminal
+// reconstructed from state). Per-entry footprint drops from ~56 B
+// (std::unordered_map<CompactState, SearchResult>) to ~38 B
+// (absl::flat_hash_map<ZobristKey, Score>).
+//
+// Capacity is reserved ONCE at construction (kMaxTtEntries slots; ~14 GB
+// committed). solve() clear()s the TT between invocations — clear() retains
+// capacity, so no allocator churn across solves.
+//
+// PIMPL pattern: the absl::flat_hash_map lives in a .cc-only TtData impl
+// so absl headers don't leak into public consumers (absl int128 headers
+// fail this project's -Wpedantic -Werror build).
 class Search {
  public:
+  Search();
+  ~Search();
+  Search(const Search&) = delete;
+  Search& operator=(const Search&) = delete;
+  Search(Search&&) noexcept;
+  Search& operator=(Search&&) noexcept;
+
   [[nodiscard]] SearchResult solve(const CompactState& state);
 
-  // For inspection / PV reconstruction by callers (T7). Returns nullptr if the
-  // state hasn't been visited yet.
-  [[nodiscard]] const SearchResult* peek(
+  // Returns the Score cached for `state`, or nullopt if not in TT.
+  // Replaces pre-wave `peek()` (best_action/terminal no longer cached —
+  // re-derive via derive_best_action() in recommend.cc).
+  [[nodiscard]] std::optional<Score> peek_score(
       const CompactState& state) const noexcept;
 
   // Diagnostics.
-  [[nodiscard]] std::size_t tt_size() const noexcept { return tt_.size(); }
+  [[nodiscard]] std::size_t tt_size() const noexcept;
+  [[nodiscard]] bool cap_hit() const noexcept { return cap_hit_; }
 
  private:
-  SearchResult solve_player(CompactState state);
-  SearchResult solve_chance(CompactState state);
+  struct TtData;  // PIMPL — definition in search.cc.
 
-  std::unordered_map<CompactState, SearchResult, CompactStateHash> tt_;
+  Score solve_player(CompactState state);
+  Score solve_chance(CompactState state);
+
+  // Returns false (and sets cap_hit_) when at capacity; caller MUST stop
+  // recursing (returns Score{} which is the unspecified-on-cap sentinel).
+  bool tt_insert(ZobristKey k, Score s);
+
+  std::unique_ptr<TtData> tt_;
+  bool cap_hit_ = false;
 };
+
+// Re-derive the optimal player action at `state` given that its converged
+// expected-value is `state_score`. Walks legal_actions in canonical order
+// (transition::legal_actions); for each action computes the action's
+// expected value via 1-ply expansion + TT lookup of children; returns
+// the first action whose value matches `state_score` within Score::kEps.
+//
+// Precondition: `state` is a player-decision node (Phase::kPlayerActing)
+// and NOT terminal; `search` reflects a converged solve covering this
+// state's reachable subtree (all chance children in TT). Violations are
+// invariant bugs — function asserts.
+//
+// Sole source of truth for argmax recovery. Used by Search::solve() (root
+// re-derivation) and recommend.cc (PV walk).
+[[nodiscard]] transition::Action derive_best_action(const Search& search,
+                                                    const CompactState& state,
+                                                    Score state_score);
 
 }  // namespace sts2::ai

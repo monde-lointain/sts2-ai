@@ -1,63 +1,45 @@
 #include "sts2/ai/search.h"
 
+// Suppress warnings that absl headers trip under our -Werror build (Q2 owns
+// the project-wide warning flags; absl is a vendored dep):
+//   -Wpedantic — __int128 type-name use in int128.h
+//   -Woverflow — _mm_set1_epi8(0x80) signed/unsigned char overflow in
+//                hashtable_control_bytes.h
+// Both are well-defined GCC/Clang extensions on Q2's supported platforms
+// (Q2-ADR-011 §FP-determinism platform list).
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Woverflow"
+#endif
+#include "absl/container/flat_hash_map.h"
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
-#include <functional>
+#include <memory>
+#include <utility>
 
-#include "sts2/ai/probability.h"
+#include "sts2/ai/chance.h"
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
+#include "sts2/ai/zobrist.h"
 
 namespace sts2::ai {
 
-namespace {
+// PIMPL impl: wraps absl::flat_hash_map so the absl header never leaks into
+// public consumers (which compile under -Wpedantic -Werror).
+struct Search::TtData {
+  absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash> map;
+};
 
-constexpr std::size_t hash_combine(std::size_t a, std::size_t b) noexcept {
-  return a ^ (b + 0x9E3779B97F4A7C15ULL + (a << 6) + (a >> 2));
-}
-
-// Pack small integral fields into a single uint64 then hash that, so we never
-// bit-cast the struct (its bool/enum padding would feed uninitialized bytes
-// into a byte-wise hasher).
-std::size_t hash_u64(uint64_t v) noexcept { return std::hash<uint64_t>{}(v); }
-
-uint64_t pack_player(const CompactState& s) noexcept {
-  uint64_t v = 0;
-  v |= static_cast<uint64_t>(s.get_player_hp().pack8());
-  v |= static_cast<uint64_t>(s.get_player_block().pack8()) << 8;
-  v |= static_cast<uint64_t>(s.get_player_strength().pack8()) << 16;
-  v |= static_cast<uint64_t>(s.get_player_weak().pack8()) << 24;
-  v |= static_cast<uint64_t>(s.get_energy().pack8()) << 32;
-  v |= static_cast<uint64_t>(s.get_round()) << 40;
-  v |= static_cast<uint64_t>(static_cast<uint8_t>(s.get_phase())) << 56;
-  return v;
-}
-
-uint64_t pack_enemy(const EnemyState& e) noexcept {
-  uint64_t v = 0;
-  v |= static_cast<uint64_t>(e.get_hp().pack8());
-  v |= static_cast<uint64_t>(e.get_block().pack8()) << 8;
-  v |= static_cast<uint64_t>(e.get_strength().pack8()) << 16;
-  v |= static_cast<uint64_t>(e.get_weak().pack8()) << 24;
-  v |= static_cast<uint64_t>(e.get_dark_strike_base().pack8()) << 32;
-  v |= static_cast<uint64_t>(e.get_ritual_amount().pack8()) << 40;
-  v |= static_cast<uint64_t>(e.get_just_applied_ritual() ? 1U : 0U) << 48;
-  v |= static_cast<uint64_t>(e.get_performed_first_move() ? 1U : 0U) << 49;
-  v |= static_cast<uint64_t>(e.get_alive() ? 1U : 0U) << 50;
-  v |= static_cast<uint64_t>(static_cast<uint8_t>(e.get_current_move())) << 56;
-  return v;
-}
-
-uint64_t pack_counts(const CardCounts& c) noexcept {
-  uint64_t v = 0;
-  for (std::size_t i = 0; i < c.counts.size(); ++i) {
-    v |= static_cast<uint64_t>(c.counts[i]) << (8 * i);
-  }
-  return v;
-}
-
-}  // namespace
+// FP determinism is load-bearing here (Q2-ADR-010 §FP-determinism): solve's
+// argmax and recommend.cc's derive_best_action walk the same FP computation
+// graph; score equality is bit-exact so re-derivation finds the same winner.
+// Build flags audited free of -ffast-math / -ffinite-math-only /
+// -fassociative-math / -freciprocal-math / -march=native.
 
 bool Score::better_than(Score other) const noexcept {
   const double hp_diff = expected_hp - other.expected_hp;
@@ -71,55 +53,97 @@ bool Score::better_than(Score other) const noexcept {
   return (other.expected_rounds - expected_rounds) > kEps;
 }
 
-std::size_t CompactStateHash::operator()(const CompactState& s) const noexcept {
-  std::size_t h = hash_u64(pack_player(s));
-  const uint8_t count = s.get_enemy_count();
-  for (uint8_t i = 0; i < count; ++i) {
-    h = hash_combine(h, hash_u64(pack_enemy(s.get_enemy(i))));
+Search::Search() : tt_(std::make_unique<TtData>()) {
+  // Reserve once for the Search object's lifetime; subsequent solve() calls
+  // do clear() which retains capacity (Q2-ADR-011 §lifecycle). Avoids both
+  // per-solve allocator churn (~14 GB alloc+free) and the rehash spike that
+  // would transiently hold ~24 GB.
+  tt_->map.reserve(kMaxTtEntries);
+}
+
+Search::~Search() = default;
+Search::Search(Search&&) noexcept = default;
+Search& Search::operator=(Search&&) noexcept = default;
+
+std::size_t Search::tt_size() const noexcept { return tt_->map.size(); }
+
+bool Search::tt_insert(ZobristKey k, Score s) {
+  if (tt_->map.size() >= kMaxTtEntries) [[unlikely]] {
+    cap_hit_ = true;
+    return false;
   }
-  h = hash_combine(h, hash_u64(pack_counts(s.get_hand())));
-  h = hash_combine(h, hash_u64(pack_counts(s.get_draw())));
-  h = hash_combine(h, hash_u64(pack_counts(s.get_discard())));
-  h = hash_combine(h, static_cast<std::size_t>(count));
-  return h;
+  tt_->map.emplace(k, s);
+  return true;
+}
+
+std::optional<Score> Search::peek_score(
+    const CompactState& state) const noexcept {
+  const auto it = tt_->map.find(zobrist_of(state));
+  if (it == tt_->map.end()) {
+    return std::nullopt;
+  }
+  return it->second;
 }
 
 SearchResult Search::solve(const CompactState& state) {
-  // No depth/time limit: search relies on the state machine terminating.
-  // Production enemies' positive dark_strike_base + Ritual ramp force
-  // termination within finite rounds; default-zero-damage enemies would recurse
-  // forever (test fixtures use non-zero values).
+  cap_hit_ = false;
+  tt_->map.clear();  // retains capacity (absl::flat_hash_map::clear)
+
+  // Terminal-at-root short-circuit (matches pre-wave behavior).
   if (transition::is_terminal(state)) {
     SearchResult r;
     r.score =
         Score{.expected_hp = static_cast<double>(state.get_player_hp().value()),
               .expected_rounds = 0.0};
     r.terminal = true;
+    r.status = SolveStatus::kConverged;
     return r;
   }
+
+  const Score score = (state.get_phase() == Phase::kPlayerActing)
+                          ? solve_player(state)
+                          : solve_chance(state);
+
+  if (cap_hit_) {
+    return SearchResult{
+        .score = score,  // UNSPECIFIED — caller MUST gate on status
+        .best_action = transition::Action{},
+        .terminal = false,
+        .status = SolveStatus::kCapExceeded,
+        .entries_at_cap = tt_->map.size(),
+    };
+  }
+
+  // Converged. Re-derive root best_action via 1-ply argmax (TT no longer
+  // caches it). For chance-node roots, recommendation is the default
+  // kEndTurn (no player choice available; matches pre-wave behavior).
+  transition::Action best{};
   if (state.get_phase() == Phase::kPlayerActing) {
-    return solve_player(state);
+    best = derive_best_action(*this, state, score);
   }
-  return solve_chance(state);
+  return SearchResult{
+      .score = score,
+      .best_action = best,
+      .terminal = false,
+      .status = SolveStatus::kConverged,
+      .entries_at_cap = 0,
+  };
 }
 
-const SearchResult* Search::peek(const CompactState& state) const noexcept {
-  const auto it = tt_.find(state);
-  if (it == tt_.end()) {
-    return nullptr;
+Score Search::solve_player(CompactState state) {
+  if (cap_hit_) [[unlikely]] {
+    return Score{};
   }
-  return &it->second;
-}
 
-SearchResult Search::solve_player(CompactState state) {
-  if (const auto it = tt_.find(state); it != tt_.end()) {
+  const ZobristKey key = zobrist_of(state);
+  if (const auto it = tt_->map.find(key); it != tt_->map.end()) {
     return it->second;
   }
 
   const auto actions = transition::legal_actions(state);
   assert(!actions.empty());
 
-  SearchResult best;
+  Score best{};
   bool have_best = false;
 
   for (const auto& action : actions) {
@@ -128,96 +152,138 @@ SearchResult Search::solve_player(CompactState state) {
            "legal_actions returned an inapplicable action");
     const CompactState& next = *next_state;
 
-    SearchResult child;
+    Score child;
     if (action.kind == transition::ActionKind::kEndTurn) {
       child = solve_chance(next);
     } else if (transition::is_terminal(next)) {
-      child.score = Score{
+      child = Score{
           .expected_hp = static_cast<double>(next.get_player_hp().value()),
           .expected_rounds = 0.0};
     } else {
       child = solve_player(next);
     }
+    if (cap_hit_) [[unlikely]] {
+      return Score{};
+    }
 
-    if (!have_best || child.score.better_than(best.score)) {
-      best.score = child.score;
-      best.best_action = action;
-      best.terminal = false;
+    if (!have_best || child.better_than(best)) {
+      best = child;
       have_best = true;
     }
   }
 
-  const auto [it, _] = tt_.emplace(state, best);
-  return it->second;
+  tt_insert(key, best);  // may set cap_hit_; recursion unwinds via the check
+  return best;
 }
 
-SearchResult Search::solve_chance(CompactState state) {
-  if (const auto it = tt_.find(state); it != tt_.end()) {
-    return it->second;
+Score Search::solve_chance(CompactState state) {
+  if (cap_hit_) [[unlikely]] {
+    return Score{};
   }
 
-  const CompactState key = state;
+  const ZobristKey key = zobrist_of(state);
+  if (const auto it = tt_->map.find(key); it != tt_->map.end()) {
+    return it->second;
+  }
 
   state = transition::resolve_end_turn_pre_draw(state);
 
   if (transition::is_terminal(state)) {
-    SearchResult r;
-    r.score =
+    const Score r =
         Score{.expected_hp = static_cast<double>(state.get_player_hp().value()),
               .expected_rounds = 1.0};
-    r.terminal = false;
-    const auto [it, _] = tt_.emplace(key, r);
-    return it->second;
+    tt_insert(key, r);
+    return r;
   }
 
-  const int k = transition::draw_count(state);
-
+  // FP-order critical: enumerate_chance_outcomes returns outcomes in the
+  // same canonical order pre-wave solve_chance inlined (probability::
+  // enumerate_draws preserves iteration order). Weighted sum must walk
+  // outcomes in this order; reordering would drift the last few ULPs and
+  // break the cultist pin.
+  const auto outcomes = enumerate_chance_outcomes(state);
   double exp_hp = 0.0;
   double exp_rounds = 0.0;
-
-  const CardCounts& draw = state.get_draw();
-  const CardCounts& discard = state.get_discard();
-  const int draw_total = draw.total();
-  const int discard_total = discard.total();
-  if (draw_total >= k) {
-    const auto outcomes = probability::enumerate_draws(draw, k);
-    for (const auto& o : outcomes) {
-      CompactState next = transition::apply_draw(state, o.hand);
-      const SearchResult child = solve_player(next);
-      exp_hp += o.weight * child.score.expected_hp;
-      exp_rounds += o.weight * child.score.expected_rounds;
+  for (const auto& o : outcomes) {
+    const Score child = solve_player(o.child_state);
+    if (cap_hit_) [[unlikely]] {
+      return Score{};
     }
-  } else if (draw_total + discard_total <= k) {
-    // Engine semantics (Hand::draw_from): when both piles run dry, draw stops
-    // early. Player deterministically gets every remaining card.
-    const CardCounts everything = draw + discard;
-    CompactState next = transition::apply_draw(state, everything);
-    const SearchResult child = solve_player(next);
-    exp_hp = child.score.expected_hp;
-    exp_rounds = child.score.expected_rounds;
-  } else {
-    // Draw pile alone can't satisfy k but draw+discard can: take all of draw
-    // deterministically and mix in remainder from discard via reshuffle.
-    const CardCounts forced_from_draw = draw;
-    const int remaining = k - draw_total;
-    const auto outcomes = probability::enumerate_draws(discard, remaining);
-    for (const auto& o : outcomes) {
-      const CardCounts full_drawn = forced_from_draw + o.hand;
-      CompactState next = transition::apply_draw(state, full_drawn);
-      const SearchResult child = solve_player(next);
-      exp_hp += o.weight * child.score.expected_hp;
-      exp_rounds += o.weight * child.score.expected_rounds;
+    exp_hp += o.probability * child.expected_hp;
+    exp_rounds += o.probability * child.expected_rounds;
+  }
+  exp_rounds += 1.0;
+
+  const Score r = Score{.expected_hp = exp_hp, .expected_rounds = exp_rounds};
+  tt_insert(key, r);
+  return r;
+}
+
+namespace {
+
+// Compute the expected-value Score for a single action played at `state`,
+// reading children from the converged TT. Mirrors solve_player's per-action
+// child evaluation EXACTLY so derive_best_action's argmax matches solve's.
+Score action_value(const Search& search, const CompactState& state,
+                   const transition::Action& action) {
+  const auto next_state = transition::apply_player_action(state, action);
+  assert(next_state.has_value() &&
+         "legal_actions returned an inapplicable action");
+  const CompactState& next = *next_state;
+
+  if (action.kind == transition::ActionKind::kEndTurn) {
+    // EndTurn child is a chance node; solve_chance cached its Score under
+    // the pre-resolve_end_turn_pre_draw state (the chance node itself).
+    const auto cached = search.peek_score(next);
+    assert(cached.has_value() &&
+           "derive_best_action: EndTurn child missing from TT — converged "
+           "solve invariant violated");
+    return *cached;
+  }
+  if (transition::is_terminal(next)) {
+    // Terminal play-card child: score computed inline by solve_player
+    // (not TT-cached). Recompute the same way.
+    return Score{
+        .expected_hp = static_cast<double>(next.get_player_hp().value()),
+        .expected_rounds = 0.0};
+  }
+  // Non-terminal play-card child is a player node; solve_player cached it.
+  const auto cached = search.peek_score(next);
+  assert(cached.has_value() &&
+         "derive_best_action: play-card child missing from TT — converged "
+         "solve invariant violated");
+  return *cached;
+}
+
+}  // namespace
+
+transition::Action derive_best_action(const Search& search,
+                                      const CompactState& state,
+                                      Score state_score) {
+  assert(state.get_phase() == Phase::kPlayerActing &&
+         "derive_best_action called on non-player-decision state");
+  assert(!transition::is_terminal(state) &&
+         "derive_best_action called on terminal state");
+
+  const auto actions = transition::legal_actions(state);
+  assert(!actions.empty());
+
+  // Walk canonical-order actions; pick the FIRST whose value matches
+  // state_score. Score equality via mutual !better_than (kEps tolerance);
+  // matches solve_player's argmax tie-break (first-better-than wins,
+  // equivalent siblings keep the earlier one).
+  for (const auto& action : actions) {
+    const Score v = action_value(search, state, action);
+    if (!v.better_than(state_score) && !state_score.better_than(v)) {
+      return action;
     }
   }
 
-  exp_rounds += 1.0;
-
-  SearchResult r;
-  r.score = Score{.expected_hp = exp_hp, .expected_rounds = exp_rounds};
-  r.best_action = transition::Action{};  // EndTurn (default kind)
-  r.terminal = false;
-  const auto [it, _] = tt_.emplace(key, r);
-  return it->second;
+  // Unreachable on a converged solve: state_score IS the value of one of
+  // these actions. If we got here, either solve diverged from
+  // re-derivation (algorithm bug) or FP determinism was violated.
+  assert(false && "derive_best_action: no matching action — invariant bug");
+  return transition::Action{};
 }
 
 }  // namespace sts2::ai
