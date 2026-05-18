@@ -448,6 +448,27 @@ Algorithm-sha source list expanded to include:
 
 **Cross-references.** Q2-ADR-010 (Zobrist key design + seeds). Q2-ADR-011 (absl::flat_hash_map + ABSL_VERSION_TAG).
 
+### Amendment 2026-05-18 — Stub → CMake-computed algorithm_sha
+
+Wave-20.β replaced the stub `"phase1a-stub-algorithm-sha"` literal with a CMake build-time SHA-256 computed via `cmake/AlgorithmShaCompute.cmake` over a canonical source list (declared in `cmake/AlgorithmSha.cmake`). An `add_custom_command` with explicit file dependencies ensures the hash recomputes on every build where any listed file changes.
+
+**Canonical algorithm-SHA source list** (sorted, applied via `file(SHA256)` each, then concatenated + folded with seeds + absl version):
+- engine/cpp/include/sts2/ai/{state.h, search.h, chance.h, zobrist.h}
+- engine/cpp/include/sts2/game/damage_calc.h
+- engine/cpp/include/sts2/oracle/adapter/project_powers.h
+- engine/cpp/src/ai/{search.cc, transition.cc, recommend.cc, chance.cc, zobrist.cc}
+- engine/cpp/src/game/{damage.cc, monster_moves.cc, card_effects.cc}
+- engine/cpp/src/oracle/adapter/{cultists_projection.cc, louse_progenitor_projection.cc}
+- Plus constants: `kZobristSeedLo`, `kZobristSeedHi`, `ABSL_VERSION_TAG`
+
+Note: `card_effects.cc` is in the declared list but not yet present on disk; `cmake/AlgorithmSha.cmake` skips missing files at configure time and will include it automatically once added.
+
+**Exclusions**: `manifest.cc` itself (circular), CMake files (build-system not algorithm), tests (not runtime behavior).
+
+**Determinism**: cross-platform LF line endings enforced via `.gitattributes`. Dual `cmake -B` on the same source tree produces identical `kAlgorithmSha`.
+
+**Effect**: every consumer of `current_manifest().algorithm_sha` (pinned test rows, verify-server response, oracle-agreement schema) now sees a real 64-char hex value that rotates on any algorithm-impacting source change. The generated constant lives in `build*/generated/manifest_constants.h` (excluded from git via existing `build*/` pattern).
+
 ---
 
 ## Q2-ADR-006 — Polymorphic Power-Hook Framework

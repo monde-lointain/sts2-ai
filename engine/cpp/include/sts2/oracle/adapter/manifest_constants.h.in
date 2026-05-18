@@ -1,0 +1,7 @@
+// GENERATED at CMake build time by cmake/AlgorithmShaCompute.cmake. DO NOT EDIT.
+// Regenerates whenever any file in ALGORITHM_SHA_SOURCES changes (Q2-ADR-005).
+#pragma once
+#include <string_view>
+namespace sts2::oracle::adapter::generated {
+inline constexpr std::string_view kAlgorithmSha = "@ALGORITHM_SHA_HEX@";
+}  // namespace sts2::oracle::adapter::generated

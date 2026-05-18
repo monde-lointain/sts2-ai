@@ -1,5 +1,13 @@
 add_subdirectory(src)
 
+# Wave-20.β: build-time algorithm_sha computation via CMake custom_command.
+# Defines algorithm_sha_header target + sts2_algorithm_sha_header INTERFACE lib.
+# Must come after add_subdirectory(src) so sts2_oracle_adapter is already defined.
+include(${CMAKE_SOURCE_DIR}/cmake/AlgorithmSha.cmake)
+# PUBLIC so all consumers of sts2_oracle_adapter (e.g. verify_server_lib,
+# oracle_tests) get the generated include path for manifest_constants.h.
+target_link_libraries(sts2_oracle_adapter PUBLIC sts2_algorithm_sha_header)
+
 # S4-T5: sts2_oracle_verify_server (Q2-ADR-003) — verify-server executable.
 # Unconditional: deployable tool, not a test artifact. Links the same
 # adapter + AI stack as the existing tests but does NOT pull Arrow/Parquet,

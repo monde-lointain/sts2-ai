@@ -1,0 +1,8 @@
+# Cross-platform line-ending enforcement (Q2-ADR-005 wave-20.β).
+# Ensures algorithm_sha hash is deterministic across Linux/macOS/Windows.
+*.cc text eol=lf
+*.h text eol=lf
+*.cpp text eol=lf
+*.hpp text eol=lf
+*.cmake text eol=lf
+CMakeLists.txt text eol=lf
