@@ -46,7 +46,7 @@ void enumerate_recursive(const CardCounts& pool, int k_left,
   const int avail = pool[id];
   const int upper = std::min(avail, k_left);
   for (int take = 0; take <= upper; ++take) {
-    acc[id] = static_cast<uint8_t>(take);
+    acc[id] = take;
     enumerate_recursive(pool, k_left - take, card_idx + 1,
                         numerator * binom(avail, take), acc, out, inv_denom);
   }

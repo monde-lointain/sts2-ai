@@ -29,7 +29,7 @@ constexpr std::string_view kPowerIdCurlUp = "CurlUp";
 
 // Spawn-power expectation: CurlUp(14) at A0. If the wire blob omits it
 // (Q1 silent-drop pattern), synthesize it per Q2-ADR-005.
-constexpr int16_t kCurlUpSpawnStacks = 14;
+constexpr int32_t kCurlUpSpawnStacks = 14;
 
 // Map MoveId from wire; throws StateCodecError on unknown.
 sts2::game::MoveId map_move_id(std::string_view move_id) {
@@ -75,17 +75,16 @@ sts2::ai::EnemyState project_louse(const ParsedCreature& cr) {
       .performed_first_move(false);
 
   // CurlUp: read from wire; synthesize if absent (Q2-ADR-005 silent-drop).
+  // Wave-23/J.beta: stacks widened int16_t → int32_t (Q2-ADR-014).
   const std::int32_t wire_curl = parsed_power_stacks(cr, kPowerIdCurlUp);
-  const int16_t curl_stacks =
-      (wire_curl > 0) ? static_cast<int16_t>(wire_curl) : kCurlUpSpawnStacks;
+  const int32_t curl_stacks = (wire_curl > 0) ? wire_curl : kCurlUpSpawnStacks;
   builder.add_power(sts2::game::PowerKind::kCurlUp, curl_stacks);
 
   // Frail on the enemy (not expected at smoke boot but handle for
   // completeness).
   const std::int32_t wire_frail = parsed_power_stacks(cr, "Frail");
   if (wire_frail > 0) {
-    builder.add_power(sts2::game::PowerKind::kFrail,
-                      static_cast<int16_t>(wire_frail));
+    builder.add_power(sts2::game::PowerKind::kFrail, wire_frail);
   }
 
   return builder.build();
@@ -130,7 +129,7 @@ sts2::ai::CompactState project_louse_progenitor_normal(
       .player_weak(sts2::game::Stat{
           static_cast<int>(parsed_power_stacks(combat.player, "Weak"))})
       .energy(sts2::game::Stat{combat.energy})
-      .round(static_cast<std::uint16_t>(std::max(1, combat.turn_counter)))
+      .round(std::max(1, combat.turn_counter))
       .phase(sts2::ai::Phase::kPlayerActing);
 
   builder.enemy(0, project_louse(combat.enemies[0]));

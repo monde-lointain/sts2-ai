@@ -146,7 +146,7 @@ sts2::ai::CompactState project_cultists_normal(
   // first-action). The C++ prototype's `round` field is also 1-based at
   // combat start (round=1 enables Ring of the Snake's 7-card first-turn
   // draw). Map turn_counter -> round directly; floor at 1 for defense.
-  builder.round(static_cast<std::uint16_t>(std::max(1, combat.turn_counter)))
+  builder.round(std::max(1, combat.turn_counter))
       .phase(sts2::ai::Phase::kPlayerActing);
 
   builder.enemy(0, project_one_enemy(combat.enemies[0]))

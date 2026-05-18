@@ -263,8 +263,7 @@ TEST(Zobrist, PowerCombinationCoverage) {
                            .dark_strike_base(Stat{9})
                            .ritual_amount(Stat{2})
                            .alive(true)
-                           .add_power(static_cast<PowerKind>(kind),
-                                      static_cast<int16_t>(stacks))
+                           .add_power(static_cast<PowerKind>(kind), stacks)
                            .build();
         CompactState s = CompactStateBuilder()
                              .player_hp(Stat{70})

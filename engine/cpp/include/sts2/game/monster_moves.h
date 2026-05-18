@@ -32,17 +32,23 @@ enum class FollowUpRule : uint8_t {
 
 constexpr std::size_t kMaxFollowUps = 4;  // max RandomBranch options
 
-// Wave-22-fix-4/H.gamma: PowerKind backing is now uint8_t. Layout:
-// kind(1) + 1B pad + value(2) + power_kind(1) + _pad(1) = 6B (matches the
-// pre-wave-22-fix-4 spec target). `_pad` is preserved as an explicit slot for
-// reviewability; struct alignment is 2 (from int16_t value).
+// Wave-23/J.beta: value widened int16_t → int32_t to match upstream STS2's
+// uniform int storage for move effect values (Q2-ADR-014). Field order is
+// {value(int32_t), kind(1), power_kind(1), _pad(1), _pad2(1)} for natural
+// 4-byte alignment: value(4) + kind(1) + power_kind(1) + _pad(1) + _pad2(1)
+// = 8B, struct alignment 4 (from int32_t value). `_pad` retained as an
+// explicit slot for reviewability; `_pad2` is alignment fill.
 struct MoveEffect {
+  int32_t value = 0;
   MoveEffectKind kind = MoveEffectKind::kNone;
-  int16_t value = 0;
   PowerKind power_kind = PowerKind::kWeak;
   uint8_t _pad = 0;
+  uint8_t _pad2 = 0;
   bool operator==(const MoveEffect&) const = default;
 };
+static_assert(
+    sizeof(MoveEffect) == 8,
+    "Wave-23/J.beta: MoveEffect must be 8 B (int32 value + 4 B bytes)");
 
 struct MonsterMove {
   MoveId id = MoveId::kIncantation;
@@ -59,26 +65,30 @@ struct MonsterMove {
   bool operator==(const MonsterMove&) const = default;
 };
 
-// Wave-22-fix-4/H.gamma: PowerKind backing int → uint8_t shrinks this 8B → 4B.
-// Layout: kind(1) + 1B pad (compiler-inserted, since int16_t requires
-// 2-aligned)
-// + stacks(2) = 4B, naturally aligned. The pre-wave-22-fix-4 explicit `_pad`
-// field is removed (no consumer; was a wave-17 placeholder).
-// Q2-ADR-013 Amendment 4 §Compression.
+// Wave-23/J.beta: stacks widened int16_t → int32_t to match upstream's
+// uniform int stat storage (Q2-ADR-014). Field order is
+// {stacks(int32_t), kind(uint8_t), 3 B pad} for natural 4-byte alignment:
+// stacks(4) + kind(1) + 3B compiler pad = 8B, struct alignment 4.
 struct SpawnPowerEntry {
+  int32_t stacks = 0;
   PowerKind kind = PowerKind::kWeak;
-  int16_t stacks = 0;
   bool operator==(const SpawnPowerEntry&) const = default;
 };
-static_assert(sizeof(SpawnPowerEntry) == 4,
-              "Wave-22-fix-4/H.gamma: SpawnPowerEntry must compress to 4 B");
+static_assert(sizeof(SpawnPowerEntry) == 8,
+              "Wave-23/J.beta: SpawnPowerEntry must be 8 B (int32 stacks + "
+              "1 B kind + 3 B pad)");
 
+// Wave-23/J.beta: min_hp / max_hp widened uint8_t → int32_t to match
+// upstream's uniform int stat storage (Q2-ADR-014). SlimedBerserker (HP
+// 261-281) already exceeded the uint8 bound; widening here surfaces the
+// upstream contract directly. Field order kept readable (count + index
+// first, then HP, then spawn-power data).
 struct MonsterMoveTable {
   std::array<MonsterMove, kMaxMovesPerMonster> moves = {};
   uint8_t move_count = 0;
   uint8_t initial_move_index = 0;
-  uint8_t min_hp = 0;
-  uint8_t max_hp = 0;
+  int32_t min_hp = 0;
+  int32_t max_hp = 0;
   std::array<SpawnPowerEntry, kMaxSpawnPowers> spawn_powers = {};
   uint8_t spawn_power_count = 0;
 };

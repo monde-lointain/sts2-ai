@@ -127,7 +127,7 @@ TEST(LouseProgenitorProjection, Fixture5_CurlUpPower_PresentWithStacks14) {
   bool found = false;
   for (uint8_t i = 0; i < count; ++i) {
     if (powers[i].kind == PowerKind::kCurlUp) {
-      EXPECT_EQ(powers[i].stacks, int16_t{14});
+      EXPECT_EQ(powers[i].stacks, int32_t{14});
       found = true;
       break;
     }

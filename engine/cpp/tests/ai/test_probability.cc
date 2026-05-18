@@ -27,8 +27,7 @@ using sts2::tests::ai::make_counts;
 constexpr double kEps = 1e-12;
 
 CardCounts make_pool(int s, int d, int n, int v) {
-  return make_counts(static_cast<uint8_t>(s), static_cast<uint8_t>(d),
-                     static_cast<uint8_t>(n), static_cast<uint8_t>(v));
+  return make_counts(s, d, n, v);
 }
 
 double weight_sum(const std::vector<Outcome>& v) {
@@ -134,9 +133,10 @@ TEST(Probability, EngineDistributionMonteCarlo) {
   const int k = 7;
   auto analytic = enumerate_draws(pool, k);
 
-  // Track type matches CardCounts::counts size; wave-22.α widened
-  // kCountedCardIds 4 → 5 (kSlimed appended).
-  std::map<std::array<uint8_t, 5>, std::size_t> hist;
+  // Track type matches CardCounts::counts size + element type; wave-22.α
+  // widened kCountedCardIds 4 → 5 (kSlimed appended); wave-23/J.beta widened
+  // per-slot count uint8_t → int32_t (Q2-ADR-014).
+  std::map<std::array<int32_t, 5>, std::size_t> hist;
   constexpr int k_trials = 5000;
   for (int seed = 1; seed <= k_trials; ++seed) {
     sts2::game::Combat c{static_cast<uint64_t>(seed)};

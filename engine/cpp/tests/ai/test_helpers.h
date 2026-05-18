@@ -7,8 +7,11 @@
 
 namespace sts2::tests::ai {
 
-inline sts2::ai::CardCounts make_counts(uint8_t s, uint8_t d, uint8_t n,
-                                        uint8_t v) {
+// Wave-23/J.beta: CardCounts.counts widened uint8_t → int32_t to match
+// upstream STS2's uniform int storage (Q2-ADR-014). Parameter types widened
+// to match.
+inline sts2::ai::CardCounts make_counts(int32_t s, int32_t d, int32_t n,
+                                        int32_t v) {
   sts2::ai::CardCounts c;
   c[sts2::game::CardId::kStrike] = s;
   c[sts2::game::CardId::kDefend] = d;

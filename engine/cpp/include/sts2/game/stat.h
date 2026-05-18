@@ -23,12 +23,15 @@ class Stat {
 
   [[nodiscard]] constexpr int value() const noexcept { return v_; }
 
-  // Byte view for the search-hash packer. Caller guarantees [0, 255]; values
-  // outside that range indicate the search domain has expanded past what the
-  // 8-bit-per-stat hash layout assumes.
-  [[nodiscard]] constexpr uint8_t pack8() const noexcept {
-    assert(v_ >= 0 && v_ <= 255);
-    return static_cast<uint8_t>(v_);
+  // 16-bit view for the search-hash packer. Caller guarantees [0, 65535];
+  // values outside that range indicate the search domain has expanded past
+  // what the 16-bit-per-stat hash layout assumes. Q2-ADR-014 (wave-23) widened
+  // the prior pack8() to pack16() to match upstream STS2's uniform int (32-bit)
+  // stat storage; SlimedBerserker A0 HP (261-281) already exceeds the old
+  // [0, 255] bound. Search hash keys for stat-indexed slots widened in concert.
+  [[nodiscard]] constexpr uint16_t pack16() const noexcept {
+    assert(v_ >= 0 && v_ <= 65535);
+    return static_cast<uint16_t>(v_);
   }
 
   constexpr Stat& operator+=(int rhs) noexcept {

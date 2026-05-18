@@ -39,7 +39,7 @@ TEST(MonsterMovesTable, CalcifiedCultist_DarkStrike_DamageValue) {
                              .moves[idx];
   EXPECT_EQ(m.effect_count, 1U);
   // enemies.h kCultistArchetypes[0].dark_strike_base = 9
-  EXPECT_EQ(m.effects[0].value, int16_t{9});
+  EXPECT_EQ(m.effects[0].value, int32_t{9});
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
 }
 
@@ -57,7 +57,7 @@ TEST(MonsterMovesTable, DampCultist_DarkStrike_DamageValue) {
           .moves[idx];
   EXPECT_EQ(m.effect_count, 1U);
   // enemies.h kCultistArchetypes[1].dark_strike_base = 1
-  EXPECT_EQ(m.effects[0].value, int16_t{1});
+  EXPECT_EQ(m.effects[0].value, int32_t{1});
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
 }
 
@@ -84,7 +84,7 @@ TEST(MonsterMovesTable, CalcifiedCultist_Incantation_RitualEffect) {
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kBuffSelf);
   EXPECT_EQ(m.effects[0].power_kind, PowerKind::kRitual);
   // enemies.h kCultistArchetypes[0].ritual_amount = 2
-  EXPECT_EQ(m.effects[0].value, int16_t{2});
+  EXPECT_EQ(m.effects[0].value, int32_t{2});
 }
 
 // -------------------------------------------------------------------------
@@ -103,7 +103,7 @@ TEST(MonsterMovesTable, DampCultist_Incantation_RitualEffect) {
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kBuffSelf);
   EXPECT_EQ(m.effects[0].power_kind, PowerKind::kRitual);
   // enemies.h kCultistArchetypes[1].ritual_amount = 5
-  EXPECT_EQ(m.effects[0].value, int16_t{5});
+  EXPECT_EQ(m.effects[0].value, int32_t{5});
 }
 
 // -------------------------------------------------------------------------
@@ -147,10 +147,10 @@ TEST(MonsterMovesTable, LouseProgenitor_WebCannon_AttackAndFrailEffects) {
   EXPECT_EQ(m.id, MoveId::kWebCannon);
   ASSERT_EQ(m.effect_count, 2U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{9});
+  EXPECT_EQ(m.effects[0].value, int32_t{9});
   EXPECT_EQ(m.effects[1].kind, MoveEffectKind::kDebuffPlayer);
   EXPECT_EQ(m.effects[1].power_kind, PowerKind::kFrail);
-  EXPECT_EQ(m.effects[1].value, int16_t{2});
+  EXPECT_EQ(m.effects[1].value, int32_t{2});
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_CurlAndGrow_DefendAndStrengthEffects) {
@@ -159,10 +159,10 @@ TEST(MonsterMovesTable, LouseProgenitor_CurlAndGrow_DefendAndStrengthEffects) {
   EXPECT_EQ(m.id, MoveId::kCurlAndGrow);
   ASSERT_EQ(m.effect_count, 2U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kDefend);
-  EXPECT_EQ(m.effects[0].value, int16_t{14});
+  EXPECT_EQ(m.effects[0].value, int32_t{14});
   EXPECT_EQ(m.effects[1].kind, MoveEffectKind::kBuffSelf);
   EXPECT_EQ(m.effects[1].power_kind, PowerKind::kStrength);
-  EXPECT_EQ(m.effects[1].value, int16_t{5});
+  EXPECT_EQ(m.effects[1].value, int32_t{5});
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_Pounce_AttackEffect) {
@@ -171,7 +171,7 @@ TEST(MonsterMovesTable, LouseProgenitor_Pounce_AttackEffect) {
   EXPECT_EQ(m.id, MoveId::kPounce);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{14});  // A0 baseline; wave-20.α fix
+  EXPECT_EQ(m.effects[0].value, int32_t{14});  // A0 baseline; wave-20.α fix
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_InitialMove_IsWebCannon) {
@@ -186,14 +186,14 @@ TEST(MonsterMovesTable, LouseProgenitor_SpawnPower_CurlUp14) {
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
   ASSERT_EQ(t.spawn_power_count, 1U);
   EXPECT_EQ(t.spawn_powers[0].kind, PowerKind::kCurlUp);
-  EXPECT_EQ(t.spawn_powers[0].stacks, int16_t{14});
+  EXPECT_EQ(t.spawn_powers[0].stacks, int32_t{14});
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_HpRange_134_136) {
   const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLouseProgenitor);
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
-  EXPECT_EQ(t.min_hp, uint8_t{134});
-  EXPECT_EQ(t.max_hp, uint8_t{136});
+  EXPECT_EQ(t.min_hp, int32_t{134});
+  EXPECT_EQ(t.max_hp, int32_t{136});
 }
 
 TEST(MonsterMovesTable, LouseProgenitor_MoveRotation_WebToGrowToPounce) {
@@ -241,8 +241,8 @@ TEST(MonsterMovesTable, LeafSlimeS_HpRange) {
   // LeafSlimeS.cs:20 (A0 min=11), :22 (A0 max=15)
   const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
-  EXPECT_EQ(t.min_hp, uint8_t{11});
-  EXPECT_EQ(t.max_hp, uint8_t{15});
+  EXPECT_EQ(t.min_hp, int32_t{11});
+  EXPECT_EQ(t.max_hp, int32_t{15});
 }
 
 TEST(MonsterMovesTable, LeafSlimeS_TackleAttack3) {
@@ -252,7 +252,7 @@ TEST(MonsterMovesTable, LeafSlimeS_TackleAttack3) {
   EXPECT_EQ(m.id, MoveId::kTackleMove);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{3});
+  EXPECT_EQ(m.effects[0].value, int32_t{3});
 }
 
 TEST(MonsterMovesTable, LeafSlimeS_GoopStatus1) {
@@ -262,7 +262,7 @@ TEST(MonsterMovesTable, LeafSlimeS_GoopStatus1) {
   EXPECT_EQ(m.id, MoveId::kGoopMove);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
-  EXPECT_EQ(m.effects[0].value, int16_t{1});
+  EXPECT_EQ(m.effects[0].value, int32_t{1});
 }
 
 TEST(MonsterMovesTable, LeafSlimeS_RandomBranchAlternation) {
@@ -299,8 +299,8 @@ TEST(MonsterMovesTable, LeafSlimeM_HpRange) {
   // LeafSlimeM.cs:22 (A0 min=32), :24 (A0 max=35)
   const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
-  EXPECT_EQ(t.min_hp, uint8_t{32});
-  EXPECT_EQ(t.max_hp, uint8_t{35});
+  EXPECT_EQ(t.min_hp, int32_t{32});
+  EXPECT_EQ(t.max_hp, int32_t{35});
 }
 
 TEST(MonsterMovesTable, LeafSlimeM_ClumpShotAttack8) {
@@ -310,7 +310,7 @@ TEST(MonsterMovesTable, LeafSlimeM_ClumpShotAttack8) {
   EXPECT_EQ(m.id, MoveId::kClumpShot);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{8});
+  EXPECT_EQ(m.effects[0].value, int32_t{8});
 }
 
 TEST(MonsterMovesTable, LeafSlimeM_StickyShotStatus2) {
@@ -320,7 +320,7 @@ TEST(MonsterMovesTable, LeafSlimeM_StickyShotStatus2) {
   EXPECT_EQ(m.id, MoveId::kStickyShot);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
-  EXPECT_EQ(m.effects[0].value, int16_t{2});
+  EXPECT_EQ(m.effects[0].value, int32_t{2});
 }
 
 TEST(MonsterMovesTable, LeafSlimeM_StrictAlternation) {
@@ -352,8 +352,8 @@ TEST(MonsterMovesTable, TwigSlimeS_HpRange) {
   // TwigSlimeS.cs:15 (A0 min=7), :17 (A0 max=11)
   const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeS);
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
-  EXPECT_EQ(t.min_hp, uint8_t{7});
-  EXPECT_EQ(t.max_hp, uint8_t{11});
+  EXPECT_EQ(t.min_hp, int32_t{7});
+  EXPECT_EQ(t.max_hp, int32_t{11});
 }
 
 TEST(MonsterMovesTable, TwigSlimeS_TackleAttack4) {
@@ -363,7 +363,7 @@ TEST(MonsterMovesTable, TwigSlimeS_TackleAttack4) {
   EXPECT_EQ(m.id, MoveId::kTackleMove);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{4});
+  EXPECT_EQ(m.effects[0].value, int32_t{4});
 }
 
 TEST(MonsterMovesTable, TwigSlimeS_SelfLoopStrict) {
@@ -384,8 +384,8 @@ TEST(MonsterMovesTable, TwigSlimeM_HpRange) {
   // TwigSlimeM.cs:23 (A0 min=26), :25 (A0 max=28)
   const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
   const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
-  EXPECT_EQ(t.min_hp, uint8_t{26});
-  EXPECT_EQ(t.max_hp, uint8_t{28});
+  EXPECT_EQ(t.min_hp, int32_t{26});
+  EXPECT_EQ(t.max_hp, int32_t{28});
 }
 
 TEST(MonsterMovesTable, TwigSlimeM_PokeyPounceAttack11) {
@@ -395,7 +395,7 @@ TEST(MonsterMovesTable, TwigSlimeM_PokeyPounceAttack11) {
   EXPECT_EQ(m.id, MoveId::kPokeyPounce);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
-  EXPECT_EQ(m.effects[0].value, int16_t{11});
+  EXPECT_EQ(m.effects[0].value, int32_t{11});
 }
 
 TEST(MonsterMovesTable, TwigSlimeM_StickyShotStatus1) {
@@ -405,7 +405,7 @@ TEST(MonsterMovesTable, TwigSlimeM_StickyShotStatus1) {
   EXPECT_EQ(m.id, MoveId::kStickyShot);
   ASSERT_EQ(m.effect_count, 1U);
   EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
-  EXPECT_EQ(m.effects[0].value, int16_t{1});
+  EXPECT_EQ(m.effects[0].value, int32_t{1});
 }
 
 TEST(MonsterMovesTable, TwigSlimeM_WeightedRandomBranch) {

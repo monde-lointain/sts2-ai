@@ -1,17 +1,24 @@
 // ============================================================================
-// Cardinality audit (wave-22/C.2-α; revises wave-21/B.1-β; 2026-05-18)
+// Cardinality audit (wave-23/J.beta; revises wave-22/C.2-α; 2026-05-18)
 // ============================================================================
 // Per plan §1, each Zobrist key slot is sized to its feature's reachable
 // range. Out-of-range values trigger assertion+abort in zobrist_of(). Audit
-// results vs plan-baked bounds:
+// results vs plan-baked bounds — wave-23/J.beta widened to reflect upstream
+// STS2's uniform int (32-bit signed) stat storage. The cultist Zobrist BYTE
+// rotates (table sizes grow → mt19937_64 fill order shifts); cultist + Louse
+// search-pin VALUES remain BIT-IDENTICAL (search invariant). Q2-ADR-014.
 //
-//   Player HP:        [0, 256)   — Stat::pack8 asserts v in [0,255]; cultist
-//                                  max ≈ 70 (Silent starter 70 HP).
-//   Player Block:     [0, 256)   — Stat::pack8; cultist max ≈ 30.
+//   Player HP:        [0, 1024)  — Stat::pack16 asserts v in [0,65535];
+//                                  cultist max ≈ 70 (Silent starter 70 HP);
+//                                  SlimedBerserker (Phase-2+) HP 261-281
+//                                  already would exceed the pre-wave-23 [0,256)
+//                                  bound.
+//   Player Block:     [0, 1024)  — Stat::pack16; cultist max ≈ 30.
 //   Player Energy:    [0, 8)     — kPlayerStartingEnergy=3 (turn_calc.h);
 //                                  no in-combat gain in Phase-1; max = 3.
-//   Round:            [0, 256)   — round_ is uint16_t in CompactState;
-//                                  cultist solves in ≤ 20 rounds.
+//   Round:            [0, 256)   — round_ is int32_t in CompactState; cultist
+//                                  solves in ≤ 20 rounds. Bound kept at 256
+//                                  (per-search horizon).
 //   Phase:            [0, 3)     — enum {kPlayerActing=0, kAtChanceDraw=1,
 //                                  kAtEnemyMoveRng=2}. Wave-22.α APPENDED
 //                                  kAtEnemyMoveRng with APPEND-only mt19937
@@ -41,13 +48,16 @@
 //                                  per-slot table size is stable through the
 //                                  α-stream merge (cultist byte identity).
 //                                  Wave-22 widens to 7 with APPEND fill order.
-//   PowerInstance.stacks: [0, 100) — cultist Ritual = 2/5; Strength compounds
+//   PowerInstance.stacks: [0, 256) — int32_t backing post-wave-23/J.beta;
+//                                    cultist Ritual = 2/5; Strength compounds
 //                                    on Louse +5/cycle, observed ≤ 50.
-//                                    Bound 100 leaves comfortable headroom.
+//                                    Bound 256 absorbs larger Phase-2 stack
+//                                    growth.
 //   PowerInstance.flags:  [0, 4)   — bit 0 (just_applied) used; widened to 4
 //                                    (2 bits) for headroom per plan §1 table.
-//   Enemy.HP:         [0, 256)   — Louse max_hp = 136; cultist ≤ 53.
-//   Enemy.Block:      [0, 256)   — Stat::pack8.
+//   Enemy.HP:         [0, 1024)  — Louse max_hp = 136; cultist ≤ 53;
+//                                  SlimedBerserker A0 HP 261-281 fits in 1024.
+//   Enemy.Block:      [0, 1024)  — Stat::pack16.
 //   Enemy.move_index: [0, 6)     — kMaxMovesPerMonster = 6.
 //   Enemy.current_move: [0, 5)   — MoveId cardinality (see above).
 //   Enemy.alive:      [0, 2)     — bool.
@@ -68,18 +78,22 @@
 //   CardCounts: 5 card_ids × counts (wave-22.α widened 4 → 5).
 //     CardCounts.counts.size() = kCountedCardIds.size() = 5
 //                                  (wave-22.α APPENDED kSlimed at index 4).
-//     count per (zone × card_id): [0, 16) — Silent starter is 5+5+1+1 = 12
-//                                 cards; discard zone bounded by total.
-//                                 Cultist + LouseProgenitor decks contain 0
-//                                 Slimed cards. For byte-identity preservation,
+//     count per (zone × card_id): [0, 64) — int32_t backing
+//     post-wave-23/J.beta;
+//                                 Silent starter is 5+5+1+1 = 12 cards; discard
+//                                 zone bounded by total. Cultist +
+//                                 LouseProgenitor decks contain 0 Slimed cards.
+//                                 For byte-identity preservation,
 //                                 card_counts[z][cid=4][count=0] is LEFT AT
 //                                 ZERO in generate_table() (NOT consumed from
 //                                 mt19937). XOR'ing 0 against the cultist
 //                                 running hash is a no-op → bytes preserved.
 //                                 States that actually carry kSlimed (count>=1)
 //                                 read from PHASE-2-filled slots
-//                                 card_counts[z][4][1..15], which use fresh
+//                                 card_counts[z][4][1..63], which use fresh
 //                                 mt19937 output for collision resistance.
+//                                 Bound 64 absorbs Phase-2 Slimed accumulation
+//                                 + post-pack16 wider arithmetic.
 //
 // Wave-21.β fill-order contract:
 //   * The cultist + LouseProgenitor ZobristKeys captured pre-wave-21
@@ -121,20 +135,31 @@
 //     lands. Wave-22 (slime port) widens the table when slime monsters
 //     first see runtime use, with the same APPEND-only fill discipline.
 //
+// Wave-23/J.beta byte rotation (NEW pin):
+//   * Stat-table widening: kMaxHp 256→1024, kMaxBlock 256→1024,
+//     kMaxStacks 100→256, kMaxCountPerCardZone 16→64. Each enlarges the
+//     mt19937_64 consumption per slot → cultist + LouseProgenitor hashes
+//     ROTATE. Pin file `cultist_zobrist_pin.h` re-stamped post-edit; search
+//     semantics invariant within reachable stat ranges (cultist + Louse
+//     expectation pins still bit-identical). Q2-ADR-014.
+//
+//   * APPEND-only discipline is NOT REQUIRED for this widening (the cultist
+//     BYTE is re-stamped anyway). Future widenings to support larger Phase-2+
+//     stat ranges may also re-stamp; reserve append-only for cases where
+//     pin-stability is contractually required upstream.
+//
 // Future widening required when:
 //   - kMaxEnemies bumps 4 → higher (no current encounter requires this).
-//   - kMonsterKindCardinality bumps 3 → 7 (when slime kinds first see
-//     RUNTIME use; data flows through wave-22.β data population + wave-23
-//     SmallSlimes adapter — table widening must APPEND with the same
-//     phased fill discipline).
-//   - kMoveIdCardinality bumps 5 → 10 (same trigger as above; wave-22.β+).
-//   - kCountedCardIds gains a 6th card id (wave-23+).
-//   - SlimedBerserker HP > 255 (would force Stat::pack8 → pack16; deferred).
+//   - kMonsterKindCardinality bumps 7 → higher (Phase-2 monster additions).
+//   - kMoveIdCardinality bumps 10 → higher (new MoveIds).
+//   - kCountedCardIds gains a 6th card id (Phase-2 status cards).
+//   - Stat::pack16 saturates at 65535 (no current encounter; SlimedBerserker
+//     HP 281 fits comfortably in pack16).
 //
 // Tables initialized once via Meyers singleton (thread-safe per C++11). Pure
 // XOR-fold composition over state features per plan §1. Total static storage
-// for both halves: ~2.4 MB post-wave-21.β (+~1.2 MB vs. pre-wave-21; well
-// under 10 MB pathology threshold).
+// for both halves: ~6.6 MB post-wave-23/J.beta (+~4.2 MB vs. wave-22-fix-4;
+// dominated by 4x larger HP + Block tables and 2.6x larger stacks table).
 // ============================================================================
 
 #include "sts2/ai/zobrist.h"
@@ -156,9 +181,13 @@ namespace {
 
 // ---------------------------------------------------------------------------
 // Cardinality constants (audited above).
+// Wave-23/J.beta widened HP/Block/Stacks/Card-count tables to match upstream
+// STS2's wider stat domain (Q2-ADR-014). mt19937_64 fill order shifts; the
+// cultist Zobrist BYTE rotates and pin is re-stamped; cultist + Louse search
+// VALUES remain bit-identical (search invariant within reachable stat range).
 // ---------------------------------------------------------------------------
-constexpr std::size_t kMaxHp = 256;
-constexpr std::size_t kMaxBlock = 256;
+constexpr std::size_t kMaxHp = 1024;
+constexpr std::size_t kMaxBlock = 1024;
 constexpr std::size_t kMaxEnergy = 8;
 constexpr std::size_t kMaxRound = 256;
 // Phase: pre-wave-22 cardinality was 2 (kPlayerActing=0, kAtChanceDraw=1).
@@ -183,14 +212,14 @@ static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
 constexpr std::size_t kMonsterKindCardinality = 7;
 constexpr std::size_t kPreWave22MonsterKindCardinality = 3;
 static_assert(kPreWave22MonsterKindCardinality <= kMonsterKindCardinality);
-constexpr std::size_t kMaxStacks = 100;
+constexpr std::size_t kMaxStacks = 256;
 constexpr std::size_t kMaxFlags = 4;
 constexpr std::size_t kMaxMovesPerMonster =
     sts2::game::monster_moves::kMaxMovesPerMonster;
 // Wave-22-fix-4/H.gamma: kMaxDarkStrikeBase + kMaxRitualAmount removed
 // (constant-per-MonsterKind; enemy_kind XOR already distinguishes cultist
 // normal/elite). Q2-ADR-013 Amendment 4 §Cultist-byte-rotation.
-constexpr std::size_t kMaxCountPerCardZone = 16;
+constexpr std::size_t kMaxCountPerCardZone = 64;
 constexpr std::size_t kCardIdCardinality =
     sts2::game::card_effects::kCountedCardIds.size();
 // Pre-wave-22 CardId cardinality (kStrike,kDefend,kNeutralize,kSurvivor = 4
@@ -484,10 +513,12 @@ uint64_t at(const Arr& arr, Idx idx) noexcept {
   return arr[i];
 }
 
+// Wave-23/J.beta: stacks widened int16_t → int32_t to match upstream's
+// uniform int stat storage (Q2-ADR-014).
 uint64_t lookup_power(
     const std::array<std::array<std::array<uint64_t, kMaxFlags>, kMaxStacks>,
                      kPowerKindCardinality>& slot_table,
-    sts2::game::PowerKind kind, int16_t stacks, uint8_t flags) noexcept {
+    sts2::game::PowerKind kind, int32_t stacks, uint8_t flags) noexcept {
   const auto kind_idx = static_cast<std::size_t>(kind);
   assert(kind_idx < kPowerKindCardinality &&
          "PowerKind index out of cardinality bound");
@@ -507,9 +538,9 @@ uint64_t lookup_power(
 // ---------------------------------------------------------------------------
 void fold_player(uint64_t& h, const ZobristTables& t,
                  const CompactState& s) noexcept {
-  h ^= at(t.player_hp, s.get_player_hp().pack8());
-  h ^= at(t.player_block, s.get_player_block().pack8());
-  h ^= at(t.player_energy, s.get_energy().pack8());
+  h ^= at(t.player_hp, s.get_player_hp().pack16());
+  h ^= at(t.player_block, s.get_player_block().pack16());
+  h ^= at(t.player_energy, s.get_energy().pack16());
   h ^= at(t.round, s.get_round());
   h ^= at(t.phase, static_cast<uint8_t>(s.get_phase()));
 
@@ -526,8 +557,8 @@ void fold_player(uint64_t& h, const ZobristTables& t,
 void fold_enemy(uint64_t& h, const ZobristTables& t, std::size_t slot,
                 const EnemyState& e) noexcept {
   assert(slot < kMaxEnemies && "enemy slot out of bound");
-  h ^= at(t.enemy_hp[slot], e.get_hp().pack8());
-  h ^= at(t.enemy_block[slot], e.get_block().pack8());
+  h ^= at(t.enemy_hp[slot], e.get_hp().pack16());
+  h ^= at(t.enemy_block[slot], e.get_block().pack16());
   h ^= at(t.enemy_kind[slot], static_cast<uint8_t>(e.get_kind()));
   h ^= at(t.enemy_move_idx[slot], e.get_move_index());
   h ^= at(t.enemy_current_move[slot],

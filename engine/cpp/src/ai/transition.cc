@@ -28,28 +28,29 @@ class StateMutator {
   [[nodiscard]] static sts2::game::Stat& block(EnemyState& e) noexcept {
     return e.block_;
   }
-  // strength/weak now route through the powers_ array
+  // strength/weak now route through the powers_ array.
+  // Wave-23/J.beta: drop the int16_t narrow casts now that PowerInstance.stacks
+  // is int32_t (Q2-ADR-014).
   static void add_strength(EnemyState& e, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(e.powers_, e.power_count_,
-                      sts2::game::PowerKind::kStrength,
-                      static_cast<int16_t>(delta));
+                      sts2::game::PowerKind::kStrength, delta);
   }
   static void add_weak(EnemyState& e, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kWeak,
-                      static_cast<int16_t>(delta));
+                      delta);
   }
   static void add_frail_to_enemy(EnemyState& e, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kFrail,
-                      static_cast<int16_t>(delta));
+                      delta);
   }
   // Generic enemy-power mutator (wave-22.α): data-driven kBuffSelf path uses
   // this for slime move tables. The kStrength / kFrail wrappers above remain
@@ -59,8 +60,7 @@ class StateMutator {
     if (delta == 0) {
       return;
     }
-    powers::add_power(e.powers_, e.power_count_, kind,
-                      static_cast<int16_t>(delta));
+    powers::add_power(e.powers_, e.power_count_, kind, delta);
   }
   // Generic remove-power-instance (decrement stacks; remove if <= 0).
   static void decrement_power(EnemyState& e,
@@ -189,29 +189,28 @@ class StateMutator {
     return s.player_block_;
   }
   // player_strength / player_weak: route through player_powers_
+  // Wave-23/J.beta: drop the int16_t narrow casts now that PowerInstance.stacks
+  // is int32_t (Q2-ADR-014).
   static void add_player_strength(CompactState& s, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kStrength,
-                      static_cast<int16_t>(delta));
+                      sts2::game::PowerKind::kStrength, delta);
   }
   static void add_player_weak(CompactState& s, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kWeak,
-                      static_cast<int16_t>(delta));
+                      sts2::game::PowerKind::kWeak, delta);
   }
   static void add_player_frail(CompactState& s, int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kFrail,
-                      static_cast<int16_t>(delta));
+                      sts2::game::PowerKind::kFrail, delta);
   }
   static void decrement_player_power(CompactState& s,
                                      sts2::game::PowerKind kind) noexcept {
@@ -234,7 +233,8 @@ class StateMutator {
       }
     }
   }
-  [[nodiscard]] static int16_t get_player_frail(
+  // Wave-23/J.beta: return widened int16_t → int32_t (Q2-ADR-014).
+  [[nodiscard]] static int32_t get_player_frail(
       const CompactState& s) noexcept {
     return powers::stacks_of(s.player_powers_, s.player_power_count_,
                              sts2::game::PowerKind::kFrail);
@@ -242,7 +242,8 @@ class StateMutator {
   [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
     return s.energy_;
   }
-  [[nodiscard]] static uint16_t& round(CompactState& s) noexcept {
+  // Wave-23/J.beta: round widened uint16_t → int32_t (Q2-ADR-014).
+  [[nodiscard]] static int32_t& round(CompactState& s) noexcept {
     return s.round_;
   }
   [[nodiscard]] static Phase& phase(CompactState& s) noexcept {
@@ -508,9 +509,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     void tick_enemy_powers(std::size_t slot) {
       do_enemy_tick_powers(state, M::enemies(state)[slot]);
     }
-    void increment_round() {
-      M::round(state) = static_cast<uint16_t>(state.get_round() + 1);
-    }
+    void increment_round() { M::round(state) = state.get_round() + 1; }
     [[nodiscard]] int round() const { return state.get_round(); }
     void roll_enemy_next_move(std::size_t slot) {
       EnemyState& e = M::enemies(state)[slot];

@@ -64,7 +64,7 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
 
 CardCounts& CardCounts::operator+=(const CardCounts& o) noexcept {
   for (std::size_t i = 0; i < counts.size(); ++i) {
-    counts[i] = static_cast<uint8_t>(counts[i] + o.counts[i]);
+    counts[i] = counts[i] + o.counts[i];
   }
   return *this;
 }
@@ -72,7 +72,7 @@ CardCounts& CardCounts::operator+=(const CardCounts& o) noexcept {
 CardCounts& CardCounts::operator-=(const CardCounts& o) noexcept {
   for (std::size_t i = 0; i < counts.size(); ++i) {
     assert(counts[i] >= o.counts[i] && "CardCounts::operator-= underflow");
-    counts[i] = static_cast<uint8_t>(counts[i] - o.counts[i]);
+    counts[i] = counts[i] - o.counts[i];
   }
   return *this;
 }
@@ -106,8 +106,7 @@ CompactState from_combat(const sts2::game::Combat& combat) {
       .player_weak(sts2::game::Stat{0})
       .energy(sts2::game::Stat{p.energy});
   assert(combat.round() >= 0);
-  builder.round(static_cast<uint16_t>(combat.round()))
-      .phase(Phase::kPlayerActing);
+  builder.round(combat.round()).phase(Phase::kPlayerActing);
 
   const auto& es = combat.enemies();
   assert(es.size() <= kMaxEnemies);

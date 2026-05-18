@@ -37,30 +37,33 @@ constexpr bool counted_card_ids_are_ordered() noexcept {
 
 // ---------------------------------------------------------------------------
 // PowerInstance — generic per-creature power entry (wave-17+).
-// POD; 6 bytes (post-wave-22-fix-4/H.gamma); stable layout (static_assert).
+// POD; 8 bytes (post-wave-23/J.beta); stable layout (static_assert).
 //
-// Layout: kind(1) + compiler pad(1) + stacks(2) + flags(1) + _pad(1) = 6 B,
-// struct alignment 2 (from int16_t stacks). The `_pad` byte is LOAD-BEARING
-// — transition.cc stores the CurlUp card-stamp (CardId, 1..4) in this slot
-// to track which player card last triggered CurlUp. See
+// Layout: stacks(int32_t, 4) + kind(1) + flags(1) + _pad(1) + _reserved(1)
+// = 8 B, struct alignment 4 (from int32_t stacks). The `_pad` byte is
+// LOAD-BEARING — transition.cc stores the CurlUp card-stamp (CardId, 1..4)
+// in this slot to track which player card last triggered CurlUp. See
 // {get,set}_curl_up_stored_card in src/ai/transition.cc.
+//
+// Wave-23/J.beta widened stacks int16_t → int32_t to match upstream STS2's
+// uniform int stat storage (Q2-ADR-014). PowerKind backing remains uint8_t
+// (wave-22-fix-4/H.gamma). Net sizeof 6 → 8 (driven by int32 alignment).
 // ---------------------------------------------------------------------------
 struct PowerInstance {
+  int32_t stacks = 0;
   sts2::game::PowerKind kind = sts2::game::PowerKind::kWeak;
-  int16_t stacks = 0;
   // bit 0: just_applied (used by Ritual to skip strength grant on spawn turn)
   uint8_t flags = 0;
   // LOAD-BEARING: stores CurlUp card-stamp (see header comment +
   // transition.cc).
   uint8_t _pad = 0;
+  uint8_t _reserved = 0;
 
   bool operator==(const PowerInstance&) const = default;
 };
-// Wave-22-fix-4/H.gamma: PowerKind backing int → uint8_t shrinks sizeof
-// 8 → 6 (kept _pad load-bearing for card-stamp). Future waves could fold
-// card-stamp into `flags` bits 1..3 to compact to 4 B, but that's deferred.
-static_assert(sizeof(PowerInstance) == 6,
-              "Wave-22-fix-4/H.gamma: PowerInstance must compress to 6 B");
+static_assert(sizeof(PowerInstance) == 8,
+              "Wave-23/J.beta: PowerInstance must be 8 B (int32 stacks + "
+              "1 B kind + 1 B flags + 1 B _pad + 1 B _reserved)");
 
 // Max powers stored per creature (EnemyState or player slot in CompactState).
 // Sized for Phase-1 monsters; cultist uses 1 (Ritual), louse uses 1 (CurlUp),
@@ -115,35 +118,38 @@ namespace powers {
 }
 
 // Add stacks to an existing power, or insert a new entry. Returns ref.
+// Wave-23/J.beta: stacks widened int16_t → int32_t (Q2-ADR-014).
 inline PowerInstance& add_power(
     std::array<PowerInstance, kMaxPowersPerCreature>& arr, uint8_t& count,
-    sts2::game::PowerKind kind, int16_t stacks) noexcept {
+    sts2::game::PowerKind kind, int32_t stacks) noexcept {
   PowerInstance* existing = find_power(arr, count, kind);
   if (existing != nullptr) {
-    existing->stacks = static_cast<int16_t>(existing->stacks + stacks);
+    existing->stacks = existing->stacks + stacks;
     return *existing;
   }
   assert(count < kMaxPowersPerCreature && "powers array full");
-  arr[count] = PowerInstance{kind, stacks, 0, 0};
+  arr[count] = PowerInstance{stacks, kind, 0, 0, 0};
   return arr[count++];
 }
 
 // Set a power to an exact stack value (replaces existing or inserts).
+// Wave-23/J.beta: stacks widened int16_t → int32_t (Q2-ADR-014).
 inline PowerInstance& set_power(
     std::array<PowerInstance, kMaxPowersPerCreature>& arr, uint8_t& count,
-    sts2::game::PowerKind kind, int16_t stacks) noexcept {
+    sts2::game::PowerKind kind, int32_t stacks) noexcept {
   PowerInstance* existing = find_power(arr, count, kind);
   if (existing != nullptr) {
     existing->stacks = stacks;
     return *existing;
   }
   assert(count < kMaxPowersPerCreature && "powers array full");
-  arr[count] = PowerInstance{kind, stacks, 0, 0};
+  arr[count] = PowerInstance{stacks, kind, 0, 0, 0};
   return arr[count++];
 }
 
 // Return stack count for kind, or 0 if absent.
-[[nodiscard]] inline int16_t stacks_of(
+// Wave-23/J.beta: return widened int16_t → int32_t (Q2-ADR-014).
+[[nodiscard]] inline int32_t stacks_of(
     const std::array<PowerInstance, kMaxPowersPerCreature>& arr, uint8_t count,
     sts2::game::PowerKind kind) noexcept {
   const PowerInstance* p = find_power(arr, count, kind);
@@ -154,12 +160,17 @@ inline PowerInstance& set_power(
 
 // ---------------------------------------------------------------------------
 // CardCounts
+//
+// Wave-23/J.beta: per-slot count widened uint8_t → int32_t to match upstream
+// STS2's uniform int storage (Q2-ADR-014). pack_counts static_assert removed
+// (no consumers found; the prior uint64 packing helper never materialized as
+// a function or callsite in src/ or tests/). The Zobrist card_counts hash
+// table widens its per-slot count range accordingly (kMaxCountPerCardZone
+// 16 → 64).
 // ---------------------------------------------------------------------------
 struct CardCounts {
-  std::array<uint8_t, sts2::game::card_effects::kCountedCardIds.size()>
+  std::array<int32_t, sts2::game::card_effects::kCountedCardIds.size()>
       counts{};
-  static_assert(std::size(sts2::game::card_effects::kCountedCardIds) <= 8,
-                "pack_counts uint64 packing limit (8 bits per slot)");
 
   // to_index() relies on kCountedCardIds being ordered to match CardId enum
   // layout (kNone=0 implicit; entry i is CardId{i+1}). Without this, indexing
@@ -175,10 +186,10 @@ struct CardCounts {
     return static_cast<std::size_t>(id) - 1;
   }
 
-  uint8_t& operator[](sts2::game::CardId id) noexcept {
+  int32_t& operator[](sts2::game::CardId id) noexcept {
     return counts[to_index(id)];
   }
-  uint8_t operator[](sts2::game::CardId id) const noexcept {
+  int32_t operator[](sts2::game::CardId id) const noexcept {
     return counts[to_index(id)];
   }
 
@@ -298,8 +309,7 @@ class EnemyStateBuilder {
   EnemyStateBuilder& strength(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
       powers::set_power(state_.powers_, state_.power_count_,
-                        sts2::game::PowerKind::kStrength,
-                        static_cast<int16_t>(value.value()));
+                        sts2::game::PowerKind::kStrength, value.value());
     } else {
       // Zero strength: remove from array if present
       for (uint8_t i = 0; i < state_.power_count_; ++i) {
@@ -319,8 +329,7 @@ class EnemyStateBuilder {
   EnemyStateBuilder& weak(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
       powers::set_power(state_.powers_, state_.power_count_,
-                        sts2::game::PowerKind::kWeak,
-                        static_cast<int16_t>(value.value()));
+                        sts2::game::PowerKind::kWeak, value.value());
     } else {
       for (uint8_t i = 0; i < state_.power_count_; ++i) {
         if (state_.powers_[i].kind == sts2::game::PowerKind::kWeak) {
@@ -384,8 +393,9 @@ class EnemyStateBuilder {
     return *this;
   }
   // Wave-18: generic power setter for powers not covered by typed builders.
+  // Wave-23/J.beta: stacks widened int16_t → int32_t (Q2-ADR-014).
   EnemyStateBuilder& add_power(sts2::game::PowerKind k,
-                               int16_t stacks) noexcept {
+                               int32_t stacks) noexcept {
     powers::add_power(state_.powers_, state_.power_count_, k, stacks);
     return *this;
   }
@@ -444,7 +454,8 @@ class CompactState {
         player_powers_, player_power_count_, sts2::game::PowerKind::kWeak)};
   }
   [[nodiscard]] sts2::game::Stat get_energy() const noexcept { return energy_; }
-  [[nodiscard]] uint16_t get_round() const noexcept { return round_; }
+  // Wave-23/J.beta: round_ widened uint16_t → int32_t (Q2-ADR-014).
+  [[nodiscard]] int32_t get_round() const noexcept { return round_; }
   [[nodiscard]] Phase get_phase() const noexcept { return phase_; }
   // Returns the full kMaxEnemies array; valid entries are [0..enemy_count_-1].
   [[nodiscard]] const std::array<EnemyState, kMaxEnemies>& get_enemies()
@@ -484,7 +495,7 @@ class CompactState {
   std::array<PowerInstance, kMaxPowersPerCreature> player_powers_{};
   uint8_t player_power_count_ = 0;
   sts2::game::Stat energy_;
-  uint16_t round_ = 1;
+  int32_t round_ = 1;
   Phase phase_ = Phase::kPlayerActing;
   uint8_t enemy_count_ = 0;
   std::array<EnemyState, kMaxEnemies> enemies_{};
@@ -514,8 +525,7 @@ class CompactStateBuilder {
   CompactStateBuilder& player_strength(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
       powers::set_power(state_.player_powers_, state_.player_power_count_,
-                        sts2::game::PowerKind::kStrength,
-                        static_cast<int16_t>(value.value()));
+                        sts2::game::PowerKind::kStrength, value.value());
     } else {
       for (uint8_t i = 0; i < state_.player_power_count_; ++i) {
         if (state_.player_powers_[i].kind == sts2::game::PowerKind::kStrength) {
@@ -533,8 +543,7 @@ class CompactStateBuilder {
   CompactStateBuilder& player_weak(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
       powers::set_power(state_.player_powers_, state_.player_power_count_,
-                        sts2::game::PowerKind::kWeak,
-                        static_cast<int16_t>(value.value()));
+                        sts2::game::PowerKind::kWeak, value.value());
     } else {
       for (uint8_t i = 0; i < state_.player_power_count_; ++i) {
         if (state_.player_powers_[i].kind == sts2::game::PowerKind::kWeak) {
@@ -553,7 +562,8 @@ class CompactStateBuilder {
     state_.energy_ = value;
     return *this;
   }
-  CompactStateBuilder& round(uint16_t value) noexcept {
+  // Wave-23/J.beta: round widened uint16_t → int32_t (Q2-ADR-014).
+  CompactStateBuilder& round(int32_t value) noexcept {
     state_.round_ = value;
     return *this;
   }

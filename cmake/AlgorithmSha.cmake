@@ -15,6 +15,7 @@ set(ALGORITHM_SHA_SOURCES
     engine/cpp/include/sts2/ai/state.h
     engine/cpp/include/sts2/ai/zobrist.h
     engine/cpp/include/sts2/game/damage_calc.h
+    engine/cpp/include/sts2/game/stat.h
     engine/cpp/include/sts2/oracle/adapter/project_powers.h
     engine/cpp/src/ai/chance.cc
     engine/cpp/src/ai/recommend.cc

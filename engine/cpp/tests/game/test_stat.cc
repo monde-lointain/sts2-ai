@@ -1,7 +1,7 @@
 // Tests for include/sts2/game/stat.h.
 //
 // Covers: default construction, explicit int construction with +/-1e9
-// saturation, value(), pack8() byte view, operator+= / operator-= with
+// saturation, value(), pack16() 16-bit view, operator+= / operator-= with
 // saturating arithmetic (allows negative), and all six comparison operators.
 
 #include <gtest/gtest.h>
@@ -17,7 +17,7 @@ using sts2::game::Stat;
 TEST(Stat, DefaultConstruct_IsZero) {
   Stat s;
   EXPECT_EQ(s.value(), 0);
-  EXPECT_EQ(s.pack8(), 0U);
+  EXPECT_EQ(s.pack16(), 0U);
 }
 
 TEST(Stat, ExplicitInt_StoresCorrectValue) {
@@ -34,12 +34,14 @@ TEST(Stat, ConstructorClampsNegative) {
   EXPECT_EQ(Stat{-2'000'000'000}.value(), -Stat::kMaxClamp);
 }
 
-// --- pack8 byte view ---
+// --- pack16 16-bit view ---
 
-TEST(Stat, Pack8_InRange) {
-  EXPECT_EQ(Stat{50}.pack8(), static_cast<uint8_t>(50));
-  EXPECT_EQ(Stat{255}.pack8(), static_cast<uint8_t>(255));
-  EXPECT_EQ(Stat{0}.pack8(), static_cast<uint8_t>(0));
+TEST(Stat, Pack16_InRange) {
+  EXPECT_EQ(Stat{50}.pack16(), static_cast<uint16_t>(50));
+  EXPECT_EQ(Stat{255}.pack16(), static_cast<uint16_t>(255));
+  EXPECT_EQ(Stat{0}.pack16(), static_cast<uint16_t>(0));
+  EXPECT_EQ(Stat{1000}.pack16(), static_cast<uint16_t>(1000));
+  EXPECT_EQ(Stat{65535}.pack16(), static_cast<uint16_t>(65535));
 }
 
 // --- Arithmetic ---
