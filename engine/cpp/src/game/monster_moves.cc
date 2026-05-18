@@ -156,6 +156,10 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
 // kMonsterMoveTables[MonsterKind::kCultistCalcified = 0]
 // kMonsterMoveTables[MonsterKind::kCultistDamp       = 1]
 // kMonsterMoveTables[MonsterKind::kLouseProgenitor   = 2]
+// kMonsterMoveTables[MonsterKind::kLeafSlimeS        = 3] (wave-22.β populates)
+// kMonsterMoveTables[MonsterKind::kLeafSlimeM        = 4] (wave-22.β populates)
+// kMonsterMoveTables[MonsterKind::kTwigSlimeS        = 5] (wave-22.β populates)
+// kMonsterMoveTables[MonsterKind::kTwigSlimeM        = 6] (wave-22.β populates)
 const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     // kCultistCalcified (index 0)
     // Source: enemies.h kCultistArchetypes[0]
@@ -167,6 +171,14 @@ const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
                        /*hp_min=*/51, /*hp_max=*/53),
     // kLouseProgenitor (index 2) — wave-18
     make_louse_progenitor_table(),
+    // kLeafSlimeS (index 3) — wave-22.β populates real data
+    MonsterMoveTable{},
+    // kLeafSlimeM (index 4) — wave-22.β populates real data
+    MonsterMoveTable{},
+    // kTwigSlimeS (index 5) — wave-22.β populates real data
+    MonsterMoveTable{},
+    // kTwigSlimeM (index 6) — wave-22.β populates real data
+    MonsterMoveTable{},
 }};
 
 uint8_t find_move_index(MonsterKind kind, MoveId id) noexcept {

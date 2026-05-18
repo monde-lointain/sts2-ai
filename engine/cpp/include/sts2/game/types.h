@@ -21,18 +21,30 @@ enum class PowerKind : int {
 
 // kIncantation=0, kDarkStrike=1 preserved from original definition.
 // kWebCannon, kCurlAndGrow, kPounce reserved for wave-17 (LouseProgenitor).
+// Wave-21: slime moves appended (data populated in wave-22.β).
 enum class MoveId : int {
   kIncantation = 0,
   kDarkStrike = 1,
   kWebCannon = 2,    // reserved for wave-17
   kCurlAndGrow = 3,  // reserved for wave-17
   kPounce = 4,       // reserved for wave-17
+  // Wave-21 appended (slime moves; data populated in wave-22.β):
+  kTackleMove = 5,   // LeafSlimeS + TwigSlimeS
+  kGoopMove = 6,     // LeafSlimeS
+  kClumpShot = 7,    // LeafSlimeM
+  kStickyShot = 8,   // LeafSlimeM + TwigSlimeM
+  kPokeyPounce = 9,  // TwigSlimeM
 };
 
 enum class MonsterKind : uint8_t {
   kCultistCalcified = 0,
   kCultistDamp = 1,
   kLouseProgenitor = 2,  // reserved for wave-17
+  // Wave-21 appended (slime port; data populated in wave-22.β):
+  kLeafSlimeS = 3,
+  kLeafSlimeM = 4,
+  kTwigSlimeS = 5,
+  kTwigSlimeM = 6,
 };
 
 enum class HookPoint : uint8_t {

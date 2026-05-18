@@ -75,10 +75,15 @@ std::string format_intent(const sts2::game::Enemy& e) {
                                            e.dark_strike_base.value())
          << ansi::kReset;
       break;
-    // Wave-17 reserved MoveIds: no display logic yet.
+    // Wave-17/21 reserved MoveIds: no display logic yet.
     case sts2::game::MoveId::kWebCannon:
     case sts2::game::MoveId::kCurlAndGrow:
     case sts2::game::MoveId::kPounce:
+    case sts2::game::MoveId::kTackleMove:
+    case sts2::game::MoveId::kGoopMove:
+    case sts2::game::MoveId::kClumpShot:
+    case sts2::game::MoveId::kStickyShot:
+    case sts2::game::MoveId::kPokeyPounce:
       break;
   }
   return os.str();

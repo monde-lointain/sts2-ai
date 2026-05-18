@@ -60,6 +60,15 @@ cultist_archetype_from_internal_name(std::string_view internal_name) noexcept {
 game::Enemy make_calcified_cultist(game::Rng& rng);
 game::Enemy make_damp_cultist(game::Rng& rng);
 
+// Wave-21: slime factory stubs (HP only; move-table data deferred to
+// wave-22.β). HP ranges: A0 baselines per upstream
+// Models/Monsters/{LeafSlimeS,LeafSlimeM,
+//            TwigSlimeS,TwigSlimeM}.cs MinInitialHp/MaxInitialHp.
+game::Enemy make_leaf_slime_s(game::Rng& rng);  // HP 11-15 (A0)
+game::Enemy make_leaf_slime_m(game::Rng& rng);  // HP 32-35 (A0)
+game::Enemy make_twig_slime_s(game::Rng& rng);  // HP 7-11  (A0)
+game::Enemy make_twig_slime_m(game::Rng& rng);  // HP 26-28 (A0)
+
 void roll_next_move(game::Enemy& e);
 void act(game::Enemy& e, game::Combat& combat);
 

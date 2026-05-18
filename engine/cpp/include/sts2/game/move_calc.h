@@ -26,6 +26,24 @@ namespace sts2::game::move_calc {
       return "CURL_AND_GROW_MOVE";
     case MoveId::kPounce:
       return "POUNCE_MOVE";
+    // Wave-21: slime moves (canonical forward wire names per upstream .cs).
+    // kTackleMove: "TACKLE_MOVE" (LeafSlimeS.cs:31, TwigSlimeS.cs:26).
+    case MoveId::kTackleMove:
+      return "TACKLE_MOVE";
+    // kGoopMove: "GOOP_MOVE" (LeafSlimeS.cs:32).
+    case MoveId::kGoopMove:
+      return "GOOP_MOVE";
+    // kClumpShot: "CLUMP_SHOT" (LeafSlimeM.cs:33).
+    case MoveId::kClumpShot:
+      return "CLUMP_SHOT";
+    // kStickyShot: LeafSlimeM emits "STICKY_SHOT" (LeafSlimeM.cs:34);
+    // TwigSlimeM emits "STICKY_SHOT_MOVE" (TwigSlimeM.cs:35). Canonical
+    // forward = "STICKY_SHOT"; reverse also accepts "STICKY_SHOT_MOVE".
+    case MoveId::kStickyShot:
+      return "STICKY_SHOT";
+    // kPokeyPounce: "POKEY_POUNCE_MOVE" (TwigSlimeM.cs:34).
+    case MoveId::kPokeyPounce:
+      return "POKEY_POUNCE_MOVE";
   }
   return "";
 }
@@ -50,6 +68,29 @@ namespace sts2::game::move_calc {
   }
   if (wire_id == "POUNCE_MOVE") {
     out = MoveId::kPounce;
+    return true;
+  }
+  // Wave-21: slime moves.
+  if (wire_id == "TACKLE_MOVE") {
+    out = MoveId::kTackleMove;
+    return true;
+  }
+  if (wire_id == "GOOP_MOVE") {
+    out = MoveId::kGoopMove;
+    return true;
+  }
+  if (wire_id == "CLUMP_SHOT") {
+    out = MoveId::kClumpShot;
+    return true;
+  }
+  // Accept both upstream variants: LeafSlimeM→"STICKY_SHOT",
+  // TwigSlimeM→"STICKY_SHOT_MOVE".
+  if (wire_id == "STICKY_SHOT" || wire_id == "STICKY_SHOT_MOVE") {
+    out = MoveId::kStickyShot;
+    return true;
+  }
+  if (wire_id == "POKEY_POUNCE_MOVE") {
+    out = MoveId::kPokeyPounce;
     return true;
   }
   return false;
@@ -131,10 +172,15 @@ void act_on_intent(
     case MoveId::kDarkStrike:
       std::forward<OnDarkStrike>(on_dark_strike)();
       break;
-    // LouseProgenitor moves are dispatched via act_on_table_move.
+    // LouseProgenitor + slime moves are dispatched via act_on_table_move.
     case MoveId::kWebCannon:
     case MoveId::kCurlAndGrow:
     case MoveId::kPounce:
+    case MoveId::kTackleMove:
+    case MoveId::kGoopMove:
+    case MoveId::kClumpShot:
+    case MoveId::kStickyShot:
+    case MoveId::kPokeyPounce:
       break;
   }
 }
