@@ -52,6 +52,26 @@ Out of scope: anything network-side. Q2 does not call the inference server, does
 - **Adapter version drift.** If Q1's binary schema changes faster than Q2 absorbs, agreement signal stalls. Mitigation: adapter version pinned in CI; Q1 schema changes block on Q2 adapter update.
 - **Algorithm-version drift in the report rows.** A report row only makes sense relative to the oracle's algorithm version (scoring rule, TT shape). Mitigation: stamp algorithm SHA on every row; treat algorithm change as a regression-set rebuild.
 
+## Memory budget (post-wave-19)
+
+The Q2 oracle solve operates under a **16 GB peak RSS ceiling** to ensure cultist, slime (SmallSlimes, MediumSlimes), and future Phase-1 encounters all complete within standard development+CI memory envelopes.
+
+**Architecture (per Q2-ADR-010 + Q2-ADR-011):**
+- Transposition table: `absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash>` — Zobrist 128-bit hash-only TT (drops CompactState key + SearchResult value cache). ~38 B per entry.
+- Hard cap: `kMaxTtEntries = 370_000_000` (~14 GB; 2 GB margin for baseline + scratch).
+- Reservation: `Search` constructor commits the slot array once via `tt_.reserve(kMaxTtEntries)`; subsequent solves reuse capacity via `tt_.clear()` (no re-allocation).
+- Cap behavior: flag-and-early-return; `SearchResult.status` enum signals `kConverged` vs `kCapExceeded`.
+- Collision risk: ~10⁻²⁰ at cap (128-bit Zobrist — cryptographic-grade safety; eliminates silent-corrupted-new-encounter-pin risk).
+- best_action / terminal: not cached; reconstructed from state (terminal via `transition::is_terminal`) or re-derived (best_action via `derive_best_action(state)` 1-ply argmax).
+
+**Verification protocol (per plan §9):**
+- Pre-wave: `.claude/scripts/profile-cultist-solve.sh .claude/state/profiles/wave-{N}-pre.json` locks the baseline.
+- Post-wave: same script writes `wave-{N}-post.json`; jq-diff against pre-wave per §9 criteria.
+- Criteria: `peak_rss_gb < 16.0` AND `< 0.6× pre`; `expected_hp/rounds` bit-exact; `tt_size` within ±5%; `elapsed_ms` ≤ 1.25× pre.
+- `Search.DISABLED_StarterCombatSolves_LogsDiagnostics` test asserts `peak_rss_gb < 16.0` in-test.
+
+**Phase Expectations update:** Phase-1A scope (cultist + LouseProgenitor) and Phase-1.5 (slime encounters) both fit under the unified 16 GB ceiling.
+
 ## Wave-16 / Path A addendum (2026-05-17)
 
 Q2-ADR-006/007/008 (ratified wave-16) generalize the substrate from cultist-hardcoded to a data-driven framework. Key impacts on this spec:

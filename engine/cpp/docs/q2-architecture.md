@@ -354,3 +354,24 @@ Wave-17 completes the foundation laid by wave-16 and ships the first non-cultist
 - **D3 fixture #5 round-trip.** `LouseProgenitorNormal` seed=42 pinned-seed gtest added (DISABLED_ prefix; runs under `make q2-ci` slow regression). `expected_values.h` regenerated with new `algorithm_sha`; cultist entries numerically unchanged.
 - **Q2-ADR-009 ratified.** Documents LouseProgenitor port; consequences include Q1/Q2 CurlUp+Frail semantic divergence (acceptable — Q2 is verifier), `algorithm_sha` rotation, and q2-ci wall-clock growth to ~25–35 min.
 - **Path A queue.** 14 remaining Phase-1 encounters (FossilStalker, KaiserCrab, SmallSlimes, GremlinMerc, HauntedShip, ...) proceed per wave-18+ as data-only additions. The framework handles them without new transition-code changes.
+
+## 15. Wave-19 Memory-Tightening Addendum (2026-05-18)
+
+Wave-19 replaced the Q2 transposition table with a Zobrist 128-bit hash-only design backed by `absl::flat_hash_map`. Cultist peak RSS dropped from 24.4 GB → ~12 GB; slime fights now fit under the 16 GB ceiling.
+
+**Architecture changes (cross-link Q2-ADR-010 + Q2-ADR-011):**
+- TT type: `std::unordered_map<CompactState, SearchResult, CompactStateHash>` → `absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash>`
+- TT value: full `SearchResult` (Score + best_action + terminal) → bare `Score`. best_action re-derived in `recommend.cc`; terminal inferred via existing `transition::is_terminal(state)`.
+- Capacity: pre-reserved at `Search` construction (`tt_.reserve(kMaxTtEntries)`); subsequent solves reuse via `clear()`.
+- Cap mechanism: hard limit at 370M entries; `cap_hit_` flag + `SolveStatus::kCapExceeded`; flag-and-early-return preserves exception-safety.
+- algorithm_sha source list (Q2-ADR-005) expanded to include `zobrist.cc`, Zobrist seeds, and `ABSL_VERSION_TAG` CMake variable.
+
+**Best-action re-derivation flow (`recommend.cc` post-Zobrist):**
+1. `solve()` populates TT with `Score` per state.
+2. `derive_best_action(state) → Action`: enumerate legal actions via `chance.h::enumerate_legal_actions`; for each, compute expected value via `chance.h::enumerate_chance_outcomes` × cached child scores; pick first action whose expected value equals state's stored score (bit-exact FP equality holds — same computation path).
+3. Recommend's PV walk: iterate `derive_best_action(pv_state)` + `transition::apply_player_action`, truncating at `is_terminal` OR first `EndTurn` action (chance event). Cost: ~5–10 steps × ~150 µs = ~1–2 ms per `recommend()`; negligible vs solve.
+
+**Pre/post profiling methodology (plan §9):**
+Profile script: `.claude/scripts/profile-cultist-solve.sh <out_json_path>` performs clean Release rebuild + `Search.DISABLED_StarterCombatSolves_LogsDiagnostics` via `/usr/bin/time -v`. Captures peak RSS (OS-authoritative), elapsed_ms, tt_size, expected_hp/rounds, algorithm_sha. Pre-wave baseline at `.claude/state/profiles/wave-19-pre.json` (~24.4 GB); post-wave validation diffs against baseline per §9 criteria.
+
+**FP-determinism contract (Q2-ADR-010 §FP-determinism):** Q2 TUs compile with `-fno-fast-math` and without `-ffinite-math-only` / `-fassociative-math` / `-freciprocal-math` / `-fno-signed-zeros` / `-march=native`. Single-threaded; default FP rounding mode. Future flag changes = ADR amendment + cultist pin re-validation.

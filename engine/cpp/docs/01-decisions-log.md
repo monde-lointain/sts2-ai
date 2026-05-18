@@ -19,6 +19,8 @@ then positives).
 | Q2-ADR-007 | Data-Driven `MonsterMoveTable` | Accepted (2026-05-17) |
 | Q2-ADR-008 | STS-Canonical Damage/Block Formula Extraction | Accepted (2026-05-17) |
 | Q2-ADR-009 | LouseProgenitor Port — First Encounter via Q2-ADR-006 Framework | Accepted (2026-05-17) |
+| Q2-ADR-010 | Zobrist 128-bit Hash-Only Transposition Table | Accepted (2026-05-18) |
+| Q2-ADR-011 | `absl::flat_hash_map` Container + Hard TT Entry Cap + Flag-and-Early-Return | Accepted (2026-05-18) |
 
 ---
 
@@ -434,6 +436,18 @@ Q1↔ground-truth divergences from this vantage point.
   observable in Q2's data lineage. Diagnostic posture matches `oracle.md`
   role.
 
+### Amendment 2026-05-18 (wave-19 — Zobrist + absl)
+
+Algorithm-sha source list expanded to include:
+
+- `engine/cpp/src/ai/zobrist.cc` — NEW file; content (Zobrist tables + hash function implementation) is now part of the algorithm definition.
+- Zobrist seeds as algorithm constants: `kZobristSeedLo = 0xC0FFEE12345678ULL`, `kZobristSeedHi = 0xDEADBEEF20260517ULL`. Seed change → algorithm_sha rotation + full cultist pin re-validation.
+- `ABSL_VERSION_TAG` CMake variable (currently `20260107.1`) — absl LTS releases can change `flat_hash_map` iteration order or hash mixing, potentially yielding different solve trajectories. Algorithm_sha must rotate on any absl version bump.
+
+**Rationale.** Zobrist hashing replaces the CompactState-keyed TT with a hash-only TT. The hash function implementation, seed values, and the absl container version all influence search behavior (via TT hit/miss patterns and iteration order). Manifest conservatism — prefer false-positive regen over false-negative skip — requires folding all three into the algorithm_sha source list.
+
+**Cross-references.** Q2-ADR-010 (Zobrist key design + seeds). Q2-ADR-011 (absl::flat_hash_map + ABSL_VERSION_TAG).
+
 ---
 
 ## Q2-ADR-006 — Polymorphic Power-Hook Framework
@@ -652,3 +666,113 @@ All transition call sites use these helpers; no inline formula duplication.
 **Cross-references.** Q2-ADR-006 (polymorphic power-hook framework). Q2-ADR-007 (data-driven `MonsterMoveTable`). Q2-ADR-008 (damage/block formula). Pipeline ADR-029 (Path A campaign roadmap; LouseProgenitorNormal row checked off).
 
 **Origin.** Wave-17. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §"Wave-17 absorbs the deferred work" + §"Wave-17 preview". Upstream authority: `~/development/projects/godot/sts2/src/Core/Models/Powers/CurlUpPower.cs:14-71`, `FrailPower.cs:22-41`, `Models/Monsters/LouseProgenitor.cs:36-122`.
+
+---
+
+## Q2-ADR-010 — Zobrist 128-bit Hash-Only Transposition Table
+
+**Status:** Accepted (2026-05-18).
+
+**Context.** Cultist solve peaks at **24.4 GB RSS** (baseline locked at `.claude/state/profiles/wave-19-pre.json`). A 16 GB peak RSS ceiling is required to hold through future slime encounters: MediumSlimes = 4 enemies; state space projected 150–400M entries. Structural shrink alone cannot hold the budget after `kMaxEnemies` bumps from 2 → 4 (`CompactState` grows to ~232 B even aggressively shrunk → ~23 GB cultist). The per-state key footprint of the existing `std::unordered_map<CompactState, SearchResult, CompactStateHash>` is the dominant factor. Memory must come from key compression — Zobrist hash-only TT is the only approach that scales linearly enough to hold cultist AND slime under a single 16 GB ceiling.
+
+**Decision.** Replace `std::unordered_map<CompactState, SearchResult, CompactStateHash>` with `absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash>` (container choice per Q2-ADR-011). `ZobristKey` is a 128-bit composite of two independent 64-bit Zobrist halves. The collision probability at 370M entries is ~10⁻²⁰ — eliminates silent-corrupted-new-encounter-pin risk. `SearchResult.best_action` and `SearchResult.terminal` are dropped from the cached value; `best_action` is re-derived on demand in `recommend.cc` via shared `chance.h` helpers; terminal is inferred from state via existing `transition::is_terminal`. The `peek()` API is replaced by `peek_score()` returning `std::optional<Score>`.
+
+### §Key composition
+
+Every state feature gets a dedicated key slot, indexed by `(feature_value, position)` to prevent positional aliasing (e.g., "Strength=5 on enemy slot 0" must hash differently from "Strength=5 on enemy slot 1"). The table below is locked — engineer encodes exactly this; deviation requires ADR amendment.
+
+| Feature | Encoding | Keys | Bytes |
+|---|---|---|---|
+| Player HP | `key_player_hp[hp]`, hp ∈ [0, 255] | 256 | 2 KB |
+| Player Block | `key_player_block[block]` | 256 | 2 KB |
+| Player Energy | `key_player_energy[e]`, e ∈ [0, 7] | 8 | 64 B |
+| Round | `key_round[r]`, r ∈ [0, 255] | 256 | 2 KB |
+| Phase | `key_phase[p]`, p ∈ [0, 3] | 4 | 32 B |
+| Player PowerInstance (per slot) | `key_player_power[slot][kind][stacks][flags]`; slot ∈ [0, kMaxPowersPerCreature); kind ∈ [0, kPowerKindCount); stacks ∈ [0, 100); flags ∈ [0, 4) | 6×10×100×4 = 24,000 | 192 KB |
+| Player power_count | `key_player_power_count[n]`, n ∈ [0, 6] | 7 | 56 B |
+| Enemy HP (per enemy slot) | `key_enemy_hp[enemy_slot][hp]` | 2×256 = 512 | 4 KB |
+| Enemy Block (per enemy slot) | `key_enemy_block[enemy_slot][block]` | 512 | 4 KB |
+| Enemy MonsterKind | `key_enemy_kind[enemy_slot][kind]` | 2×16 = 32 | 256 B |
+| Enemy move_index | `key_enemy_move_idx[enemy_slot][idx]`; idx ∈ [0, 6] | 12 | 96 B |
+| Enemy current_move | `key_enemy_current_move[enemy_slot][move_id]`; move_id ∈ [0, 8) | 16 | 128 B |
+| Enemy alive bit | `key_enemy_alive[enemy_slot][bit]` | 4 | 32 B |
+| Enemy performed_first_move | `key_enemy_pfm[enemy_slot][bit]` | 4 | 32 B |
+| Enemy dark_strike_base | `key_enemy_dsb[enemy_slot][dsb]`; dsb ∈ [0, 32) | 64 | 512 B |
+| Enemy ritual_amount | `key_enemy_ritual[enemy_slot][r]`; r ∈ [0, 32) | 64 | 512 B |
+| Enemy PowerInstance (per enemy slot × per power slot) | `key_enemy_power[enemy_slot][power_slot][kind][stacks][flags]` | 2×6×10×100×4 = 48,000 | 384 KB |
+| Enemy power_count | `key_enemy_power_count[enemy_slot][n]` | 14 | 112 B |
+| Enemy count (kMaxEnemies) | `key_enemy_count[n]`, n ∈ [0, 3] | 3 | 24 B |
+| CardCounts hand | `key_hand[card_id][count]`; card_id ∈ [0, 4); count ∈ [0, 16) | 64 | 512 B |
+| CardCounts draw | same shape | 64 | 512 B |
+| CardCounts discard | same shape | 64 | 512 B |
+
+Total per hash table: ~600 KB. Two tables (lo, hi) = ~1.2 MB total. Static; allocated once.
+
+XOR composition: `zobrist_of(s)` iterates all features and XORs the corresponding key into the running hash. Pure function, deterministic, no incremental update. Out-of-range value → assertion + abort (state corruption; not a runtime path).
+
+### §Seeds
+
+Committed seeds: `kZobristSeedLo = 0xC0FFEE12345678ULL`, `kZobristSeedHi = 0xDEADBEEF20260517ULL`. Tables initialized via Meyers singleton (`static const ZobristTables& tables()` — C++11 thread-safe one-time init) using `std::mt19937_64{seed}` per half. Seeds are treated as algorithm inputs per Q2-ADR-005 — any seed change requires ADR amendment + full cultist pin re-validation.
+
+### §FP-determinism
+
+`-fno-fast-math` is required on all Q2 TUs. The following flags are forbidden: `-ffinite-math-only`, `-fassociative-math`, `-freciprocal-math`, `-fno-signed-zeros`, `-march=native` (SIMD that varies FP rounding across machines). Search is single-threaded. Default FP rounding mode (round-to-nearest, ties-to-even). This contract is load-bearing for `recommend.cc` re-derivation correctness: the re-derivation walks the same FP computation graph as solve's argmax, so bit-equal score comparison holds IFF FP flags are identical. Any future change to Q2 build FP flags = ADR amendment + cultist pin re-validation.
+
+### §Recovery
+
+On observed collision (vanishingly unlikely at ~10⁻²⁰): (a) seed re-roll + global re-pin of all encounters via `seed-pinner`. Maintains 16 GB ceiling math. 192-bit key widening = fallback only if seed re-roll fails to find a collision-free hash for some pinned state.
+
+**Consequences.**
+
+- *Negative:* `algorithm_sha` flips per Q2-ADR-005 — cultist pin re-stamped via `seed-pinner` (numerical values unchanged; SHA stamp rotates).
+- *Negative:* `recommend()` loses cached `SearchResult` — 1–2 ms re-derivation cost per call (1-ply argmax + PV walk via repeated `derive_best_action`); negligible vs solve (~3 min) but adds latency to every `recommend()` call.
+- *Negative:* `Search` constructor commits ~14 GB upfront (slot array `tt_.reserve(kMaxTtEntries)`) — even for small encounters (cultist at 85M entries reserves 370M slots).
+- *Negative:* `peek()` API replaced with `peek_score()` returning `std::optional<Score>` — breaking change for in-tree consumers (`recommend.cc`, `test_search_known.cc`); engineer audits + migrates all call sites.
+- *Negative:* FP-determinism contract becomes load-bearing; CMake flag audit + lockdown required before wave merges.
+- *Positive:* Cultist 24.4 GB → ~12 GB peak RSS; slime (MediumSlimes 4 enemies) fits under 16 GB ceiling with ~3–4× cap headroom.
+- *Positive:* 128-bit collision probability (~10⁻²⁰ at cap) eliminates silent-corrupted-new-encounter-pin risk that plagues shorter hashes at high entry counts.
+
+**Cross-references.** Q2-ADR-005 (algorithm-sha manifest; amended wave-19 to include `zobrist.cc` + seeds + `ABSL_VERSION_TAG`). Q2-ADR-011 (container choice + cap policy). ADR-029 (Path A roadmap; new encounters must add pin before merge).
+
+**Origin.** Wave-19. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §1 (key composition), §3 (best-action re-derivation), §3a (shared chance helper), §8 (FP-determinism), §Recovery.
+
+---
+
+## Q2-ADR-011 — `absl::flat_hash_map` Container + Hard TT Entry Cap + Flag-and-Early-Return
+
+**Status:** Accepted (2026-05-18).
+
+**Context.** With the Zobrist 128-bit key (Q2-ADR-010), TT entry payload is 16 B key + 16 B value = 32 B. Container choice determines per-entry overhead:
+
+- `std::unordered_map`: node-based — ~56 B/entry at 32 B payload (node ptrs + cached hash + bucket share) → 286M cap @ 16 GB.
+- `absl::flat_hash_map`: open-addressed — ~38 B/entry (32 B slot inline + 1 B control byte + ~5 B LF=7/8 slack) → 420M raw cap @ 16 GB.
+
+Open-addressing wins decisively at this payload size: 50% more headroom, one contiguous allocation, dramatically less allocator fragmentation at 100M+ entries. Additionally, `absl::flat_hash_map::clear()` retains the slot-array allocation — reusing capacity across `solve()` calls avoids ~14 GB alloc/free churn per solve.
+
+**Decision.** TT container = `absl::flat_hash_map<ZobristKey, Score, ZobristKeyHash>`. Hard cap `kMaxTtEntries = 370'000'000` (~14 GB at 38 B/entry; 2 GB margin for process baseline + scratch). Cap behavior: flag-and-early-return (NOT throw — deep expectimax recursion is not exception-safe; flag check per frame is cheap and preserves existing control flow). `SolveStatus` enum (`kConverged`, `kCapExceeded`) added; `SearchResult` gains `.status` + `.entries_at_cap` fields. Callers MUST check `.status == kConverged` before consuming `.score` or `.best_action`.
+
+### §absl version pin
+
+`20260107.1` (LTS). Version bumps require ADR amendment. Version is part of `algorithm_sha` input via `ABSL_VERSION_TAG` CMake variable propagated to `manifest.cc` (absl releases can change `flat_hash_map` iteration order or hash mixing, potentially affecting solve trajectories).
+
+### §TT lifecycle
+
+`Search()` constructor calls `tt_.reserve(kMaxTtEntries)` ONCE per `Search` object lifetime — commits ~14 GB slot array at construction. `solve()` calls `tt_.clear()` (absl retains capacity — no re-allocation); subsequent solves reuse the slot array without allocator churn. No rehash path is entered after construction: `absl::flat_hash_map` doubles on overflow, and a transient rehash from 256M → 512M slots holds both arrays (768M slots × 32 B = 24 GB — would violate ceiling). Reserving `kMaxTtEntries` upfront eliminates this spike.
+
+### §Cap-hit behavior
+
+When `tt_.size() >= kMaxTtEntries`: set `cap_hit_ = true`; insertion silently drops. Each recursion frame early-returns `Score{}` when `cap_hit_` is set. `solve()` returns `SearchResult{.status = kCapExceeded, .entries_at_cap = tt_.size()}`. `result.score` and `result.best_action` are **unspecified** when `status != kConverged`. Verification gates (D.1 / E.0) MUST check status before pin validation.
+
+**Consequences.**
+
+- *Negative:* Adds `absl` dependency (FetchContent at build; ~2–4 GB peak RAM during parallel absl compilation).
+- *Negative:* `Search` constructor commits 14 GB even if `solve()` is never called — acceptable for per-encounter `Search` object lifecycle, but precludes lightweight `Search` construction for testing purposes without a smaller-capacity constructor variant.
+- *Negative:* Cap-hit aborts solve; D.1 / E.0 verification gates must check `status` before pin validation; any consumer that ignores `status` silently gets unspecified values.
+- *Negative:* `peek()` API breaking change (handled in Q2-ADR-010 — replaced by `peek_score()`).
+- *Positive:* 50% more cap headroom vs `std::unordered_map` at the same RAM budget (420M raw vs 286M cap entries @ 16 GB).
+- *Positive:* Contiguous slot array reduces allocator fragmentation dramatically at 100M+ entries — lower effective RSS than node-based map.
+- *Positive:* `clear()` retains capacity → no ~14 GB alloc/free churn between solves on the same `Search` object.
+
+**Cross-references.** Q2-ADR-010 (Zobrist key type). Q2-ADR-005 (algorithm_sha incl. `ABSL_VERSION_TAG`).
+
+**Origin.** Wave-19. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §2 (container choice rationale), §4 (cap behavior), §4a (TT lifecycle).
