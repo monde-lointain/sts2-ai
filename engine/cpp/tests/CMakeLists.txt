@@ -3,6 +3,15 @@
 # ------------------------------------------------------------------
 add_executable(sts2_simulator_tests)
 
+# Pre-register C.2-stream test TUs (sources land in wave-19/B.2-alpha + C.2-gamma/delta).
+# GENERATED suppresses configure-time "cannot find source file" errors.
+set_source_files_properties(
+    ai/test_recommend_re_derivation.cc
+    ai/test_tt_cap.cc
+    ai/test_zobrist.cc
+    PROPERTIES GENERATED TRUE
+)
+
 target_sources(sts2_simulator_tests PRIVATE
     test_smoke.cc
     game/test_rng.cc
@@ -29,13 +38,16 @@ target_sources(sts2_simulator_tests PRIVATE
     input/test_input_internal.cc
     app/test_args.cc
     app/test_prompts.cc
-    ai/test_state.cc
-    ai/test_probability.cc
-    ai/test_transition.cc
-    ai/test_state_parity.cc
-    ai/test_search_known.cc
-    ai/test_recommend_legality.cc
     ai/test_outcome_calibration.cc
+    ai/test_probability.cc
+    ai/test_recommend_legality.cc
+    ai/test_recommend_re_derivation.cc  # NEW per C.2-delta
+    ai/test_search_known.cc
+    ai/test_state.cc
+    ai/test_state_parity.cc
+    ai/test_transition.cc
+    ai/test_tt_cap.cc                   # NEW per C.2-gamma
+    ai/test_zobrist.cc                  # NEW per B.2-alpha + C.2-gamma
     # headers — listed so IDEs surface them in the project view
     game/test_helpers.h
     ai/test_helpers.h

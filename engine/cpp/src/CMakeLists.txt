@@ -44,12 +44,23 @@ sts2_apply_warnings(sts2_simulator)
 add_library(sts2_ai STATIC)
 add_library(sts2::ai ALIAS sts2_ai)
 
+# Pre-register B.2-stream TUs (sources land in wave-19/B.2-alpha/beta).
+# GENERATED tells CMake these files will be created by a downstream step;
+# suppresses configure-time "cannot find source file" errors.
+set_source_files_properties(
+    ai/chance.cc
+    ai/zobrist.cc
+    PROPERTIES GENERATED TRUE
+)
+
 target_sources(sts2_ai PRIVATE
-    ai/state.cc
+    ai/chance.cc          # NEW per Q2-ADR-010
     ai/probability.cc
-    ai/transition.cc
-    ai/search.cc
     ai/recommend.cc
+    ai/search.cc
+    ai/state.cc
+    ai/transition.cc
+    ai/zobrist.cc         # NEW per Q2-ADR-010
 )
 
 target_compile_features(sts2_ai PUBLIC cxx_std_20)
@@ -58,7 +69,10 @@ target_include_directories(sts2_ai
     PUBLIC  $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/engine/cpp/include>
     PRIVATE ${PROJECT_SOURCE_DIR}/engine/cpp/src)
 
-target_link_libraries(sts2_ai PUBLIC sts2::simulator)
+target_link_libraries(sts2_ai
+    PUBLIC  sts2::simulator
+    PRIVATE absl::flat_hash_map
+)
 
 sts2_apply_warnings(sts2_ai)
 

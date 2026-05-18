@@ -28,4 +28,12 @@ target_include_directories(sts2_oracle_adapter
 
 target_link_libraries(sts2_oracle_adapter PUBLIC sts2::simulator)
 
+# Expose Abseil LTS pin to manifest.cc (C.2-beta reads ABSL_VERSION_TAG_STR
+# via #ifdef to fold into algorithm_sha; guarded so builds without absl still compile).
+if(DEFINED ABSL_VERSION_TAG)
+    target_compile_definitions(sts2_oracle_adapter PRIVATE
+        ABSL_VERSION_TAG_STR="${ABSL_VERSION_TAG}"
+    )
+endif()
+
 sts2_apply_warnings(sts2_oracle_adapter)
