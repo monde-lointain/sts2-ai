@@ -215,7 +215,7 @@ TEST(Search, PeekScore_UnvisitedReturnsNullopt) {
 }
 
 TEST(Search, HorizonCap_RoundOverLimit_ReturnsHorizonScore) {
-  // State at round 51 (> kSearchHorizonRounds=50). solve_player should
+  // State at round 26 (> kSearchHorizonRounds=25). solve_player should
   // return Score{player_hp, 0.0} without expanding legal actions.
   // Cultist enemy with DarkStrike ensures the state is non-terminal and
   // legal_actions() is non-empty if the horizon check were bypassed.
@@ -227,7 +227,7 @@ TEST(Search, HorizonCap_RoundOverLimit_ReturnsHorizonScore) {
           .player_hp(Stat{42})
           .player_block(Stat{0})
           .energy(Stat{3})
-          .round(51)  // > kSearchHorizonRounds (50)
+          .round(26)  // > kSearchHorizonRounds (25)
           .phase(Phase::kPlayerActing)
           .enemy(0, EnemyStateBuilder{}
                         .alive(true)
@@ -253,14 +253,14 @@ TEST(Search, HorizonCap_RoundOverLimit_ReturnsHorizonScore) {
 }
 
 TEST(Search, HorizonCap_RoundAtLimit_DoesNotShortCircuit) {
-  // Boundary: state at round 50 (== kSearchHorizonRounds) must NOT trigger
+  // Boundary: state at round 25 (== kSearchHorizonRounds) must NOT trigger
   // horizon cap (check is `>`, not `>=`). Use all-enemies-dead terminal so
   // the solve finishes immediately via the terminal-at-root short-circuit.
   CompactState s =
       CompactStateBuilder{}
           .player_hp(Stat{50})
           .energy(Stat{3})
-          .round(50)  // == kSearchHorizonRounds; NOT triggered (cap uses >)
+          .round(25)  // == kSearchHorizonRounds; NOT triggered (cap uses >)
           .phase(Phase::kPlayerActing)
           .enemy(0, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
           .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())

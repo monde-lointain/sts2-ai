@@ -51,10 +51,13 @@ constexpr std::size_t kMaxTtEntries = 370'000'000;
 // player can survive indefinitely (e.g. SmallSlimes all-Defend branch — slime
 // damage budget ~9.5/turn vs Silent's 15 block/turn).
 //
-// Conservative for Phase-1: cultist solves in ~6.5 rounds; LouseProgenitor in
-// ~10. Phase-2+ encounters may need raising via Q2-ADR-013 Amendment 3+.
-// Q2-ADR-013 Amendment 2 (2026-05-18) ratifies this cap.
-constexpr uint16_t kSearchHorizonRounds = 50;
+// Phase-1: cultist solves in ~6.5 rounds + LouseProgenitor in ~10 — both well
+// under 25. Reduced from 50 to 25 in wave-22-fix-3 / Q2-ADR-013 Amendment 3
+// to bound SmallSlimes state-space breadth (depth halved → ~√(state-space)
+// reachable distinct states). Phase-2+ encounters may need raising via further
+// amendment.
+// Q2-ADR-013 Amendment 3 (2026-05-18) ratifies this reduction.
+constexpr uint16_t kSearchHorizonRounds = 25;
 
 // Provably optimal expectimax search over CompactState.
 //

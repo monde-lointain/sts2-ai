@@ -1159,3 +1159,43 @@ unit tests pass; SmallSlimes test SKIPs cleanly with CAP-BUST message.
 **Cross-references.** Q2-ADR-011 (kMaxTtEntries cap policy + kCapExceeded
 flag-and-early-return). Q2-ADR-012 (slime prerequisites). Q2-ADR-013
 Amendment 1 (type-system fix + original algorithmic non-convergence analysis).
+
+### Amendment 3 (2026-05-18) — Horizon reduction 50 → 25 (Blocker #4 persists)
+
+Wave-22-fix-3 reduces `kSearchHorizonRounds` from 50 to 25 in response to
+SmallSlimes synthetic solve hitting `kCapExceeded` at horizon=50
+(370M TT entries; ~7m51s wall-clock; ~22.8 GB peak RSS — over the 16 GB
+ceiling via reserve + transient growth + recursion stack).
+
+**Rationale**: horizon-cap bounds search depth but not state-space breadth.
+3 enemies × 2-move alternation × Slimed accumulation produces exponential
+state-space growth with depth. Halving depth from 50 → 25 produces
+~√(state-space) reduction in reachable distinct states — heuristic, but
+likely fits under the 370M TT cap for SmallSlimes.
+
+**Safety**: cultist + LouseProgenitor solve in 7 + 10 rounds respectively;
+horizon=25 leaves comfortable headroom (18 + 15 round margins). Cultist
++ Louse pins remain BIT-IDENTICAL post-reduction; Zobrist byte identity
+preserved (Zobrist key tables unaffected by horizon constant).
+
+**Consequences (lead with negatives)**:
+- *Negative*: SmallSlimes oracle's `expected_rounds` is now an underestimate
+  for any defensive-play branch that would actually run longer than 25
+  rounds (more pronounced bias than Amendment 2's horizon=50).
+- *Negative*: Phase-2+ encounters with legitimate solve depth >25 rounds
+  must bump horizon (Amendment 4+).
+- *Negative*: Amendment 3 may STILL not unblock SmallSlimes if state-space
+  breadth at depth 25 still exceeds cap. Amendment 4 candidates remain
+  available: LRU eviction (c), CompactState compression (d), Slimed
+  count cap (e), encounter pruning (f), or alternate variant (g).
+- *Positive*: simplest possible fix (single constant change ~3 LOC);
+  preserves all existing regression baselines; defensible reduction given
+  cultist + Louse safety margins.
+
+**Empirical outcome** (Path B): cap-bust persists at horizon=25
+(entries_at_cap=370M, elapsed_wall=7m17s, peak_rss_gb=22.4). Amendment 4
+required.
+
+**Cross-references**: Q2-ADR-013 Amendment 1 (Blocker #3 surfacing);
+Amendment 2 (horizon=50 cap mechanism); Q2-ADR-010 (Zobrist hash-only TT
+cap interaction).
