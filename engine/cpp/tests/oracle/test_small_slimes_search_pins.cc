@@ -74,11 +74,81 @@ constexpr double kPinTolerance = 1e-6;
 // SmallSlimes can be regression-pinned.
 TEST(SmallSlimesSearchPins,
      DISABLED_SmallSlimesSyntheticVariantA_PinnedAgreement) {
-  GTEST_SKIP() << "BLOCKER #2: SmallSlimes solve SIGSEGVs in Release (~1 sec; "
-               << "peak RSS 529 MB). Zobrist widening landed safely (byte "
-               << "identity preserved) but does NOT fix the solve crash. "
-               << "Surface to project-lead for debugging wave before C.4-δ "
-               << "pin can resume.";
+  // Wave-23-prep findings (2026-05-18):
+  //
+  // ROOT CAUSE of the original SIGSEGV (signal 11, ~1 sec, RSS 529 MB): the
+  // C.2-α from_combat / build_enemy_state path did NOT populate EnemyState's
+  // kind_ field (sts2::game::Enemy struct had no `kind` member), so slime
+  // EnemyStates defaulted to MonsterKind::kCultistCalcified. With kind
+  // wrongly reported as cultist:
+  //   - do_enemy_act dispatched slimes through the cultist act_on_intent
+  //     path, which is a silent no-op for slime MoveIds (kTackleMove,
+  //     kStickyShot, etc.) → no damage to player.
+  //   - do_roll_next_move used the cultist advance_intent path, leaving
+  //     slime current_move stuck at the initial value forever.
+  // Combined effect: slime enemies were passive in CompactState. Combat
+  // never terminated from player death; the search recursed via
+  // solve_player → solve_chance until round exceeded the Zobrist
+  // kMaxRound=256 cap, triggering an OOB read of the round-key table
+  // (NDEBUG strips the assert) → SIGSEGV.
+  //
+  // FIX (wave-23-prep, this commit's type-system stream):
+  //   1. Added MonsterKind kind field to sts2::game::Enemy (enemy.h).
+  //   2. Slime factories (make_leaf_slime_s/m, make_twig_slime_s/m) set
+  //      e.kind correctly (enemies.cc).
+  //   3. build_enemy_state in state.cc copies e.kind into EnemyState +
+  //      derives move_index_ via monster_moves::find_move_index.
+  //   4. do_roll_next_move in transition.cc dispatches ALL kinds through
+  //      advance_intent_table (uniform table-driven semantics; cultist
+  //      cultist_table happens to encode the legacy advance_intent
+  //      sequence exactly, so cultist Zobrist + search pins are
+  //      bit-identical post-fix).
+  //
+  // VERIFIED post-fix:
+  //   - Zobrist.CultistRootKey_MatchesPreWave21Pin still passes
+  //     (lo=0xf812af56366b5548 hi=0x2c51edb8b6bd404e bit-identical).
+  //   - CultistsSearchPins.DISABLED_StarterCombatSeedC0ffee_PinnedAgreement
+  //     still passes (expected_hp=40.90829... expected_rounds=6.45798...
+  //     bit-identical).
+  //   - LouseProgenitorSearchPins.DISABLED_LouseProgenitorNormalFixture5_
+  //     PinnedAgreement still passes (expected_hp=0.0407931
+  //     expected_rounds=10.152 bit-identical).
+  //   - AiStateParity.RandomWalk_CompactStateMatchesCombat still passes
+  //     (do_roll_next_move now keeps move_index_ in sync with current_move_
+  //     so from_combat(combat) == compact state after each step).
+  //
+  // SECOND BLOCKER surfaced by the fix (algorithmic, not implementation):
+  // SmallSlimes Variant A search still does NOT terminate. The slime
+  // damage budget (TwigSlimeS Tackle 4 + LeafSlimeM Clump 8 alternating
+  // with STICKY 0 + LeafSlimeS Tackle 3 alternating with GOOP 0) is below
+  // player's chained-Defend block budget (3 × Defend 5 = 15 block/turn
+  // ≥ avg 9.5 dmg/turn). The "all-defend" sub-branch of the search tree
+  // has no terminal state — player blocks forever, slimes never die,
+  // round → ∞. Combined with kAddStatusCard accumulating Slimed cards
+  // each turn (CardCounts.uint8_t wraparound past 16 → Zobrist
+  // kMaxCountPerCardZone OOB), AND probability::enumerate_draws
+  // asserting pool.total() ≤ kMaxN=12 (Silent starter only), the
+  // search hits one of THREE assertion sites depending on which fires
+  // first: probability.cc:66 (pool > 12), zobrist.cc:518 (round > 256
+  // or count > 16), or stack overflow in solve_player (recursion depth
+  // exceeds rlimit). All three are downstream manifestations of the
+  // unbounded state-space issue.
+  //
+  // RESOLUTION REQUIRES: a wave-22-level architectural decision —
+  // either (a) add an explicit search horizon (return horizon-score
+  // when round > N), (b) saturate state.round + Slimed counts at the
+  // Zobrist cap (with cycle-aware expectimax to avoid re-visiting
+  // same state), or (c) reshape the SmallSlimes combat to guarantee
+  // termination (e.g. give LeafSlimeS a Strength buff per round).
+  // Each is a substrate-semantic change that warrants Q2-ADR
+  // ratification. Out of scope for wave-23-prep.
+  GTEST_SKIP() << "BLOCKER #3 (wave-23-prep): type-system fix landed (kind "
+               << "dispatch repaired) but algorithmic non-convergence of "
+               << "SmallSlimes search remains. Combat does not terminate "
+               << "in the all-defend sub-branch (slime damage below "
+               << "Defend-chain block budget). Resolution requires a "
+               << "search-horizon or cycle-aware expectimax design (Q2-"
+               << "ADR-013 amendment + new ADR). Surface to project-lead.";
 
   sts2::game::Combat combat =
       make_small_slimes_synthetic_combat(sts2::tests::seeds::kCombatTestSeed);

@@ -42,6 +42,7 @@ sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
 sts2::game::Enemy make_leaf_slime_s(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Leaf Slime (S)";
+  e.kind = sts2::game::MonsterKind::kLeafSlimeS;
   const int hp = rng.uniform_int(11, 15);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
@@ -56,6 +57,7 @@ sts2::game::Enemy make_leaf_slime_s(sts2::game::Rng& rng) {
 sts2::game::Enemy make_leaf_slime_m(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Leaf Slime (M)";
+  e.kind = sts2::game::MonsterKind::kLeafSlimeM;
   const int hp = rng.uniform_int(32, 35);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
@@ -70,6 +72,7 @@ sts2::game::Enemy make_leaf_slime_m(sts2::game::Rng& rng) {
 sts2::game::Enemy make_twig_slime_s(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Twig Slime (S)";
+  e.kind = sts2::game::MonsterKind::kTwigSlimeS;
   const int hp = rng.uniform_int(7, 11);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
@@ -84,6 +87,7 @@ sts2::game::Enemy make_twig_slime_s(sts2::game::Rng& rng) {
 sts2::game::Enemy make_twig_slime_m(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Twig Slime (M)";
+  e.kind = sts2::game::MonsterKind::kTwigSlimeM;
   const int hp = rng.uniform_int(26, 28);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};

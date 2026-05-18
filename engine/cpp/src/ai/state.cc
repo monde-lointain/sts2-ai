@@ -9,6 +9,7 @@
 #include "sts2/game/card.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemy.h"
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/player.h"
 #include "sts2/game/power.h"
 #include "sts2/game/powers.h"
@@ -28,8 +29,19 @@ void tally(CardCounts& counts, std::span<const sts2::game::Card> pile) {
 EnemyState build_enemy_state(const sts2::game::Enemy& e) {
   const sts2::game::Power* ritual =
       sts2::powers::find(e.vitals.powers, sts2::game::PowerKind::kRitual);
+  // Look up move_index from the kind's table; falls back to 0 for cultist
+  // moves (table lookup returns 0xFF for kIncantation/kDarkStrike on a
+  // non-cultist table, but cultists DO have those in their tables → index
+  // 0 or 1 resolves). For slimes, this resolves the table-driven move_index
+  // needed by chance.cc + transition.cc to dispatch enemy semantics.
+  const uint8_t move_idx =
+      sts2::game::monster_moves::find_move_index(e.kind, e.current_move);
   // Build via builder; strength/weak/just_applied_ritual route through powers_.
   // dark_strike_base and ritual_amount remain scalar fields.
+  // Wave-23-prep: kind + move_index must be set so do_enemy_act + chance.cc
+  // route slime states through their table-driven semantics instead of
+  // falling through to the cultist act_on_intent stub (which is a silent
+  // no-op for slime MoveIds → infinite recursion).
   return EnemyStateBuilder{}
       .alive(e.vitals.hp > sts2::game::Stat{0})
       .hp(e.vitals.hp)
@@ -43,6 +55,8 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
       .just_applied_ritual(ritual != nullptr && ritual->just_applied)
       .performed_first_move(e.performed_first_move)
       .current_move(e.current_move)
+      .kind(e.kind)
+      .move_index(move_idx == 0xFF ? 0U : move_idx)
       .build();
 }
 

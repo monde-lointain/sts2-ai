@@ -1046,4 +1046,44 @@ Informational interaction notes (not exercised in wave-22; no slime+Louse cross-
 
 **Cross-references.** Q2-ADR-002 (Path A scope), Q2-ADR-005 (algorithm_sha), Q2-ADR-009 (LouseProgenitor port; precedent for upstream-vs-Q1 divergence), Q2-ADR-010 (Zobrist hash-only TT; cap-recovery path), Q2-ADR-011 (absl + cap policy), Q2-ADR-012 (kMaxEnemies bump + slime prerequisites), ADR-029 (Path A roadmap).
 
+### Q2-ADR-013 — Amendment 1 (wave-23-prep, 2026-05-18) — Enemy.kind dispatch fix + algorithmic non-convergence surfaced
+
+**Trigger.** SmallSlimes synthetic solve SIGSEGVed in Release (~1 sec wall-clock, peak RSS 529 MB) blocking the C.4-δ pin capture in wave-22.
+
+**Root cause.** The wave-22.α C.2-α substrate keystone added `MonsterKind kind_` and `uint8_t move_index_` fields to `EnemyState` and routed `do_enemy_act` + `do_roll_next_move` dispatch through them, but the `sts2::game::Enemy` struct (the headless engine's per-enemy model) had no corresponding `kind` field. The slime factories (`make_leaf_slime_s/m`, `make_twig_slime_s/m`) only set `e.name = "Leaf Slime (S)"` etc. — never communicating MonsterKind to the AI projection. The `build_enemy_state` projector in `state.cc` consequently never called `.kind(...)` on the builder; `EnemyState.kind_` defaulted to `MonsterKind::kCultistCalcified` for all slime enemies coming through `from_combat`. With slime kind wrongly reported as cultist:
+- `do_enemy_act` skipped `kind_is_slime` → `kind_is_slime(MonsterKind::kCultistCalcified) == false` → fell through to `act_on_intent(current_move)`, which is a silent no-op for slime MoveIds (`kTackleMove`, `kStickyShot`, `kGoopMove`, `kClumpShot`, `kPokeyPounce`).
+- `do_roll_next_move` only dispatched LouseProgenitor through `advance_intent_table`; slimes fell through to cultist `advance_intent`, which is also a silent no-op for slime MoveIds.
+
+Net effect: slimes were entirely passive in `CompactState`. Combat never terminated from player death; the search recursed via `solve_player → solve_chance → solve_player → ...` indefinitely, incrementing `state.round_` each iteration. Once `round_` exceeded `kMaxRound=256`, the Zobrist `at(t.round, idx=round)` lookup read past the round-key table. In Debug this fired the cardinality-bound assertion at `zobrist.cc:518`; in Release (NDEBUG strips asserts) the OOB read produced garbage XOR contributions which eventually corrupted control-flow → SIGSEGV.
+
+**Fix (this amendment).**
+1. Added `MonsterKind kind = MonsterKind::kCultistCalcified;` field to `sts2::game::Enemy` (defaults preserve cultist Zobrist byte identity — cultist factories leave the field at the default).
+2. Slime factories set `e.kind` to the appropriate enum value (`make_leaf_slime_s` → `kLeafSlimeS`, etc.).
+3. `build_enemy_state` in `state.cc` passes `e.kind` to the builder via `.kind(e.kind)` and resolves `move_index_` via `monster_moves::find_move_index(e.kind, e.current_move)`. Falls back to 0 when the lookup returns the sentinel `0xFF` (defensive — should not happen in well-formed combats).
+4. `do_roll_next_move` in `transition.cc` dispatches ALL kinds through `advance_intent_table`. Cultist semantics are unchanged because cultist's MonsterMoveTable encodes the legacy `advance_intent` sequence exactly: `moves[0]` (Incantation) has `follow_up_index=1`, `moves[1]` (DarkStrike) has `follow_up_index=1` (self-loop). LouseProgenitor was already routed through `advance_intent_table`; slimes now route through it.
+
+**Verified bit-identical post-fix.** All three regression pins hold:
+- `Zobrist.CultistRootKey_MatchesPreWave21Pin` → `lo=0xf812af56366b5548 hi=0x2c51edb8b6bd404e`.
+- `CultistsSearchPins.DISABLED_StarterCombatSeedC0ffee_PinnedAgreement` → `expected_hp=40.90829202578665 expected_rounds=6.4579809748486445`.
+- `LouseProgenitorSearchPins.DISABLED_LouseProgenitorNormalFixture5_PinnedAgreement` → `expected_hp=0.040793122639484494 expected_rounds=10.151992676894496`.
+- `AiStateParity.RandomWalk_CompactStateMatchesCombat` still passes — `do_roll_next_move` now keeps `move_index_` in sync with `current_move_` so `from_combat(combat) == compact` after each step.
+
+**Second blocker surfaced by the fix (algorithmic, not implementation).** With slimes correctly dispatching, the SmallSlimes Variant A search still does not terminate. The slime damage budget at A0 (TwigSlimeS Tackle 4 deterministic + LeafSlimeM alternating CLUMP 8 / STICKY 0 + LeafSlimeS alternating TACKLE 3 / GOOP 0 → average ≈ 9.5 dmg/turn) is below the player's chained-Defend block budget (3 × Defend 5 = 15 block/turn). The "all-defend" sub-branch of the search tree has no terminal state: player blocks all damage, slimes never die, `round_ → ∞`. Combined with `kAddStatusCard` accumulating Slimed cards each turn (`CardCounts.uint8_t` wraparound past 16 → Zobrist `kMaxCountPerCardZone` OOB) AND `probability::enumerate_draws` asserting `pool.total() ≤ kMaxN=12` (sized for Silent starter only), the search hits one of three downstream failure sites depending on which fires first: `probability.cc:66`, `zobrist.cc:518`, or stack overflow in `solve_player`. All three are manifestations of the same unbounded state-space issue. Speculative widening of `kMaxN` / `kMaxRound` / `kMaxCountPerCardZone` with APPEND-only Zobrist fill discipline was prototyped during wave-23-prep but reverted: widening alone is insufficient because cycles emerge in the saturated state graph (expectimax post-order TT insertion can re-enter an un-inserted state via a chance-node child, blowing the stack before TT dedup kicks in).
+
+**Resolution out of scope for wave-23-prep.** Three approaches considered, all requiring substrate-semantic ratification (new Q2-ADR or amendment):
+- **(A) Explicit search horizon.** Add a `depth` parameter (or `Search::depth_` member) and a `kMaxDepth` constant; when exceeded, `solve_player`/`solve_chance` return a horizon-score (e.g. `Score{state.player_hp, 0}` interpreted as "combat ends in stalemate with current HP"). Trades exact expected-value guarantee for bounded recursion. Smallest LOC delta but breaks the `Score::better_than` ordering invariant for player-tank branches (horizon-score depends on entry HP, not optimal play).
+- **(B) State-space saturation + cycle-aware expectimax.** Saturate `state.round_` (cap at, say, 32) AND saturate per-zone `CardCounts` (cap at, say, 31) in the substrate's transition functions (not just at Zobrist lookup time). This bounds the state space finite. Then redesign `solve_player` to insert a sentinel into TT BEFORE recursing on children (instead of after), and return the sentinel score on re-entry. Treats cycles as "loop" outcomes with score equal to the current state's expected value. Larger LOC delta and changes the expectimax algorithm contract.
+- **(C) Encounter reshape.** Modify SmallSlimes data (e.g. give LeafSlimeS a Strength buff per round, or convert LeafSlimeM's STICKY to deal residual damage) to ensure the slime damage budget exceeds the maximum block budget in finite turns. Preserves the search algorithm but diverges from upstream STS1 data (and from the existing Q4 SmallSlimes fixture).
+
+Project-lead to ratify the approach choice + open a follow-up wave (wave-23 proper or wave-24). The SmallSlimes pin test stays `DISABLED_` with `GTEST_SKIP()` and a BLOCKER #3 message documenting the situation. Cultist + LouseProgenitor pins are NOT affected; only encounters with the "non-damaging move + sub-tank-budget total damage" pathology surface the blocker. Future encounters with similar profiles (e.g. Acid Slime Small in higher ascensions, where STS1 has a comparable Tank/Goop pattern) must check the encounter's damage budget against the worst-case block budget before pinning.
+
+**Files touched in this amendment.**
+- `engine/cpp/include/sts2/game/enemy.h` — added `MonsterKind kind` field.
+- `engine/cpp/src/game/enemies.cc` — slime factories set `e.kind`.
+- `engine/cpp/src/ai/state.cc` — `build_enemy_state` calls `.kind()` + `.move_index()`.
+- `engine/cpp/src/ai/transition.cc` — `do_roll_next_move` table-driven for all kinds.
+- `engine/cpp/tests/oracle/test_small_slimes_search_pins.cc` — GTEST_SKIP message updated.
+
+**Verification gate (wave-23-prep close).** Cultist Zobrist byte identity passes; cultist + LouseProgenitor search pins bit-identical; AiStateParity passes; SmallSlimes test SKIPs cleanly with BLOCKER #3 message. Net LOC delta ≈ 80 (under the 500-LOC "major substrate rewrite" re-surface threshold).
+
 **Cross-references.** Q2-ADR-002 (Path A scope). Q2-ADR-006 (polymorphic power-hook framework — wave-21 does not touch power hooks; only the `monster_moves` table shape). Q2-ADR-010 (Zobrist hash-only TT; §Recovery seed re-roll path remains the recourse if cultist hash byte identity ever needs re-capture). Q2-ADR-011 (`absl::flat_hash_map` + cap).

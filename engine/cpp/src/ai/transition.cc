@@ -772,19 +772,24 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
 
 // ---------------------------------------------------------------------------
 // do_roll_next_move: advance enemy intent to the next move.
+//
+// Wave-23-prep: all kinds (cultist, Louse, slime) dispatch through the
+// table-driven advance_intent_table. This keeps move_index_ in sync with
+// current_move_ so from_combat parity holds and slimes can advance their
+// move chains. Cultist semantics are unchanged: cultist table moves[0]
+// (Incantation) has follow_up_index=1 (DarkStrike), moves[1] (DarkStrike)
+// has follow_up_index=1 (self-loop) — identical to the legacy
+// advance_intent path for current_move, but now also updates move_index_
+// so AI<->engine state parity holds.
 // ---------------------------------------------------------------------------
 void do_roll_next_move(EnemyState& e) {
-  if (e.get_kind() == MonsterKind::kLouseProgenitor) {
-    const auto kind_idx = static_cast<std::size_t>(e.get_kind());
-    const auto& table = kMonsterMoveTables[kind_idx];
-    sts2::game::move_calc::advance_intent_table(M::performed_first_move(e),
-                                                M::current_move(e),
-                                                M::move_index(e), table);
+  const auto kind_idx = static_cast<std::size_t>(e.get_kind());
+  if (kind_idx >= kMonsterMoveTables.size()) {
     return;
   }
-  // Cultist path: unchanged.
-  sts2::game::move_calc::advance_intent(M::performed_first_move(e),
-                                        M::current_move(e));
+  const auto& table = kMonsterMoveTables[kind_idx];
+  sts2::game::move_calc::advance_intent_table(
+      M::performed_first_move(e), M::current_move(e), M::move_index(e), table);
 }
 
 }  // namespace
