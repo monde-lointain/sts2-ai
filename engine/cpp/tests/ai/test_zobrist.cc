@@ -122,10 +122,13 @@ TEST(Zobrist, DistinctStatesDistinctHashes) {
         EnemyStateBuilder(base.get_enemy(0)).hp(Stat{30}).build();
     mutations.push_back(CompactStateBuilder(base).enemy(0, e0_mut).build());
   }
-  // Mutate enemy 1 ritual_amount.
+  // Mutate enemy 1 block.
+  // Wave-22-fix-4/H.gamma dropped enemy_dsb + enemy_ritual Zobrist tables
+  // (constant-per-MonsterKind), so ritual_amount mutations are NO LONGER
+  // hash-distinct. Switched to block, which remains hashed.
   {
     EnemyState e1_mut =
-        EnemyStateBuilder(base.get_enemy(1)).ritual_amount(Stat{4}).build();
+        EnemyStateBuilder(base.get_enemy(1)).block(Stat{7}).build();
     mutations.push_back(CompactStateBuilder(base).enemy(1, e1_mut).build());
   }
   // Mutate hand: drop one Strike.

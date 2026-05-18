@@ -32,12 +32,13 @@ enum class FollowUpRule : uint8_t {
 
 constexpr std::size_t kMaxFollowUps = 4;  // max RandomBranch options
 
+// Wave-22-fix-4/H.gamma: PowerKind backing is now uint8_t. Layout:
+// kind(1) + 1B pad + value(2) + power_kind(1) + _pad(1) = 6B (matches the
+// pre-wave-22-fix-4 spec target). `_pad` is preserved as an explicit slot for
+// reviewability; struct alignment is 2 (from int16_t value).
 struct MoveEffect {
   MoveEffectKind kind = MoveEffectKind::kNone;
   int16_t value = 0;
-  // NOTE: PowerKind underlying type is int (4 bytes), not uint8_t; sizeof this
-  // struct is larger than the 6-byte spec target. Wave-17 may migrate PowerKind
-  // to uint8_t to hit the target layout.
   PowerKind power_kind = PowerKind::kWeak;
   uint8_t _pad = 0;
   bool operator==(const MoveEffect&) const = default;
@@ -58,13 +59,19 @@ struct MonsterMove {
   bool operator==(const MonsterMove&) const = default;
 };
 
+// Wave-22-fix-4/H.gamma: PowerKind backing int → uint8_t shrinks this 8B → 4B.
+// Layout: kind(1) + 1B pad (compiler-inserted, since int16_t requires
+// 2-aligned)
+// + stacks(2) = 4B, naturally aligned. The pre-wave-22-fix-4 explicit `_pad`
+// field is removed (no consumer; was a wave-17 placeholder).
+// Q2-ADR-013 Amendment 4 §Compression.
 struct SpawnPowerEntry {
-  // NOTE: PowerKind underlying type is int; sizeof is 8, not 4 as spec targets.
   PowerKind kind = PowerKind::kWeak;
   int16_t stacks = 0;
-  uint8_t _pad = 0;
   bool operator==(const SpawnPowerEntry&) const = default;
 };
+static_assert(sizeof(SpawnPowerEntry) == 4,
+              "Wave-22-fix-4/H.gamma: SpawnPowerEntry must compress to 4 B");
 
 struct MonsterMoveTable {
   std::array<MonsterMove, kMaxMovesPerMonster> moves = {};

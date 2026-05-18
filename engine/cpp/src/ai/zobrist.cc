@@ -52,11 +52,19 @@
 //   Enemy.current_move: [0, 5)   — MoveId cardinality (see above).
 //   Enemy.alive:      [0, 2)     — bool.
 //   Enemy.performed_first_move: [0, 2) — bool.
-//   Enemy.dark_strike_base: [0, 32) — cultist values 1 or 9.
-//   Enemy.ritual_amount:    [0, 32) — cultist values 2 or 5.
-//   Enemy.power_count: [0, kMaxPowersPerCreature+1=7).
+//   Enemy.dark_strike_base: REMOVED in wave-22-fix-4/H.gamma — dsb is
+//                                  constant-per-MonsterKind (cultist normal=1,
+//                                  elite=9; all others 0). enemy_kind XOR
+//                                  already distinguishes; per-state dsb hash
+//                                  contribution was redundant. Q2-ADR-013
+//                                  Amendment 4 §Compression.
+//   Enemy.ritual_amount:    REMOVED in wave-22-fix-4/H.gamma — same rationale:
+//                                  constant-per-MonsterKind (cultist normal=2,
+//                                  elite=5; all others 0). enemy_kind XOR
+//                                  carries the distinction.
+//   Enemy.power_count: [0, kMaxPowersPerCreature+1=5).
 //   kMaxEnemies = 4 (state.h; wave-21.β widened 2→4).
-//   kMaxPowersPerCreature = 6 (state.h).
+//   kMaxPowersPerCreature = 4 (state.h; wave-22-fix-4/H.gamma narrowed 6→4).
 //   CardCounts: 5 card_ids × counts (wave-22.α widened 4 → 5).
 //     CardCounts.counts.size() = kCountedCardIds.size() = 5
 //                                  (wave-22.α APPENDED kSlimed at index 4).
@@ -83,6 +91,19 @@
 //     new enemy_* slot 2+3 rows + the new enemy_count[3..4] entries.
 //     Cultist (enemy_count=2) only consumes phase-1 outputs → byte identity
 //     holds. See generate_table() body for the literal sequence.
+//
+// Wave-22-fix-4/H.gamma byte rotation (NEW pin):
+//   * enemy_dsb + enemy_ritual tables REMOVED (dsb + ritual_amount are
+//     constant-per-MonsterKind; enemy_kind XOR already separates cultist
+//     normal/elite). Dropping the two `fill_slots` calls REMOVES `2 *
+//     kPreWave21MaxEnemies * 32 = 128` mt19937_64 outputs from PHASE 1
+//     consumption (and `2 * (kMaxEnemies - kPreWave21MaxEnemies) * 32 = 128`
+//     from PHASE 2). Downstream tables (enemy_power, enemy_power_count,
+//     enemy_count, card_counts) SHIFT in the mt19937 stream by 128 outputs
+//     per phase → cultist + LouseProgenitor hashes ROTATE. Pin file
+//     `cultist_zobrist_pin.h` re-stamped post-edit; search semantics
+//     invariant to byte rotation (cultist + Louse expectation pins still
+//     bit-identical). Q2-ADR-013 Amendment 4 §Cultist-byte-rotation.
 //
 // Wave-21.β fold_enemy loop bound audit:
 //   * zobrist_half() iterates `for (i = 0; i < s.get_enemy_count(); ++i)`
@@ -166,8 +187,9 @@ constexpr std::size_t kMaxStacks = 100;
 constexpr std::size_t kMaxFlags = 4;
 constexpr std::size_t kMaxMovesPerMonster =
     sts2::game::monster_moves::kMaxMovesPerMonster;
-constexpr std::size_t kMaxDarkStrikeBase = 32;
-constexpr std::size_t kMaxRitualAmount = 32;
+// Wave-22-fix-4/H.gamma: kMaxDarkStrikeBase + kMaxRitualAmount removed
+// (constant-per-MonsterKind; enemy_kind XOR already distinguishes cultist
+// normal/elite). Q2-ADR-013 Amendment 4 §Cultist-byte-rotation.
 constexpr std::size_t kMaxCountPerCardZone = 16;
 constexpr std::size_t kCardIdCardinality =
     sts2::game::card_effects::kCountedCardIds.size();
@@ -221,9 +243,9 @@ struct ZobristTables {
       enemy_current_move{};
   std::array<std::array<uint64_t, 2>, kMaxEnemies> enemy_alive{};
   std::array<std::array<uint64_t, 2>, kMaxEnemies> enemy_pfm{};
-  std::array<std::array<uint64_t, kMaxDarkStrikeBase>, kMaxEnemies> enemy_dsb{};
-  std::array<std::array<uint64_t, kMaxRitualAmount>, kMaxEnemies>
-      enemy_ritual{};
+  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual tables removed
+  // (constant-per-MonsterKind; enemy_kind XOR already distinguishes cultist
+  // normal/elite). Saves ~2 KB static. Q2-ADR-013 Amendment 4 §Compression.
 
   // Enemy powers: [enemy_slot][power_slot][PowerKind][stacks][flags].
   std::array<
@@ -348,8 +370,7 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   }
   fill_slots(t.enemy_alive, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_pfm, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_dsb, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_ritual, 0, kPreWave21MaxEnemies, rng);
+  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
   fill_slots(t.enemy_power, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_power_count, 0, kPreWave21MaxEnemies, rng);
   // enemy_count[0..kPreWave21MaxEnemies] — 3 entries: ec=0, 1, 2.
@@ -390,8 +411,7 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   }
   fill_slots(t.enemy_alive, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_pfm, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_dsb, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_ritual, kPreWave21MaxEnemies, kMaxEnemies, rng);
+  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
   fill_slots(t.enemy_power, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_power_count, kPreWave21MaxEnemies, kMaxEnemies, rng);
   // enemy_count[kPreWave21MaxEnemies+1 .. kMaxEnemies] — entries ec=3, 4.
@@ -514,8 +534,10 @@ void fold_enemy(uint64_t& h, const ZobristTables& t, std::size_t slot,
           static_cast<uint8_t>(e.get_current_move()));
   h ^= at(t.enemy_alive[slot], e.get_alive() ? 1U : 0U);
   h ^= at(t.enemy_pfm[slot], e.get_performed_first_move() ? 1U : 0U);
-  h ^= at(t.enemy_dsb[slot], e.get_dark_strike_base().pack8());
-  h ^= at(t.enemy_ritual[slot], e.get_ritual_amount().pack8());
+  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual XOR contributions
+  // dropped. Both are constant-per-MonsterKind; enemy_kind XOR already
+  // separates cultist normal vs elite. Q2-ADR-013 Amendment 4
+  // §Cultist-byte-rotation.
 
   const uint8_t pc = e.get_power_count();
   assert(pc <= kMaxPowersPerCreature && "enemy power_count out of bound");

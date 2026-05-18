@@ -154,10 +154,10 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
   t.max_hp = 136;            // A0 max HP
   // Spawn power: CurlUp(14). Upstream AfterAddedToRoom applies CurlUpPower
   // with CurlBlock=14 at A0.
+  // SpawnPowerEntry post-wave-22-fix-4/H.gamma: 4B, no explicit _pad slot.
   t.spawn_powers[0] = SpawnPowerEntry{
       .kind = PowerKind::kCurlUp,
       .stacks = 14,
-      ._pad = 0,
   };
   t.spawn_power_count = 1;
   return t;

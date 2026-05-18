@@ -26,7 +26,15 @@ enum class CardId : int {
 
 // Stable order: existing values fixed; new values append. NEVER reorder.
 // kWeak=0, kStrength=1, kRitual=2 preserved from original definition.
-enum class PowerKind : int {
+//
+// Wave-22-fix-4/H.gamma: backing type int → uint8_t. Shrinks
+// SpawnPowerEntry 8B → 4B (kind 1 + 1B compiler pad + stacks 2, naturally
+// aligned; explicit `_pad` field removed). PowerInstance stays 8B because its
+// `_pad` byte is load-bearing (stores CurlUp card-stamp in transition.cc; see
+// {get,set}_curl_up_stored_card in src/ai/transition.cc).
+// Q2-ADR-013 Amendment 4 §Compression. Enum tail (kVulnerable=5) and all six
+// values fit in uint8_t [0,255].
+enum class PowerKind : uint8_t {
   kWeak = 0,
   kStrength = 1,
   kRitual = 2,

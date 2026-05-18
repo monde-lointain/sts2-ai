@@ -37,26 +37,39 @@ constexpr bool counted_card_ids_are_ordered() noexcept {
 
 // ---------------------------------------------------------------------------
 // PowerInstance — generic per-creature power entry (wave-17+).
-// POD; 4 bytes; stable layout (static_assert below).
+// POD; 6 bytes (post-wave-22-fix-4/H.gamma); stable layout (static_assert).
+//
+// Layout: kind(1) + compiler pad(1) + stacks(2) + flags(1) + _pad(1) = 6 B,
+// struct alignment 2 (from int16_t stacks). The `_pad` byte is LOAD-BEARING
+// — transition.cc stores the CurlUp card-stamp (CardId, 1..4) in this slot
+// to track which player card last triggered CurlUp. See
+// {get,set}_curl_up_stored_card in src/ai/transition.cc.
 // ---------------------------------------------------------------------------
 struct PowerInstance {
   sts2::game::PowerKind kind = sts2::game::PowerKind::kWeak;
   int16_t stacks = 0;
   // bit 0: just_applied (used by Ritual to skip strength grant on spawn turn)
   uint8_t flags = 0;
+  // LOAD-BEARING: stores CurlUp card-stamp (see header comment +
+  // transition.cc).
   uint8_t _pad = 0;
 
   bool operator==(const PowerInstance&) const = default;
 };
-// NOTE: PowerKind is int-backed (4 bytes), so sizeof(PowerInstance) = 8.
-// Wave-17 note in monster_moves.h suggests migrating PowerKind to uint8_t in a
-// future wave to shrink this to 4 bytes; deferred.
-static_assert(sizeof(PowerInstance) == 8);
+// Wave-22-fix-4/H.gamma: PowerKind backing int → uint8_t shrinks sizeof
+// 8 → 6 (kept _pad load-bearing for card-stamp). Future waves could fold
+// card-stamp into `flags` bits 1..3 to compact to 4 B, but that's deferred.
+static_assert(sizeof(PowerInstance) == 6,
+              "Wave-22-fix-4/H.gamma: PowerInstance must compress to 6 B");
 
 // Max powers stored per creature (EnemyState or player slot in CompactState).
-// Sized for Phase-1 monsters; cultist uses 1 (Ritual), louse uses 1 (CurlUp).
-constexpr uint8_t kMaxPowersPerCreature =
-    sts2::game::monster_moves::kMaxSpawnPowers * 2;  // = 6
+// Sized for Phase-1 monsters; cultist uses 1 (Ritual), louse uses 1 (CurlUp),
+// slimes use 0. Wave-22-fix-4/H.gamma narrowed 6→4: kMaxSpawnPowers=3 (spawn)
+// + worst-case mid-combat adds (Weak/Frail) ≤ 1 currently observed; 4 absorbs
+// up to spawn(1) + worst-case mid-combat(3) safely. Add_power asserts on
+// overflow so future content additions surface immediately.
+// Q2-ADR-013 Amendment 4 §Power-array-bound.
+constexpr uint8_t kMaxPowersPerCreature = 4;  // was 6 (pre-wave-22-fix-4)
 
 // Max enemies in a CompactState.
 // Wave-21.β widens 2 → 4 to unblock the SmallSlimes (N=3) port (wave-22). The
