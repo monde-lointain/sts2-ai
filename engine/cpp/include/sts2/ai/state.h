@@ -59,13 +59,20 @@ constexpr uint8_t kMaxPowersPerCreature =
     sts2::game::monster_moves::kMaxSpawnPowers * 2;  // = 6
 
 // Max enemies in a CompactState.
-// Wave-17 reduces from 4 → 2 to control transposition-table memory pressure:
-// sizeof(EnemyState) grew ~25 bytes with the power-array refactor; 4 enemy
-// slots × 85M TT entries projected ~17 GB extra memory → cultist regression
-// OOM-killed. kMaxEnemies=2 covers cultist (N=2) + LouseProgenitor (N=1).
-// Widen back to 4 when the first N≥3 encounter lands (BowlbugsTrio / slimes
-// — per ADR-029 Path A roadmap).
-constexpr uint8_t kMaxEnemies = 2;
+// Wave-21.β widens 2 → 4 to unblock the SmallSlimes (N=3) port (wave-22). The
+// wave-19 Zobrist hash-only TT path keeps per-entry size at 38 B regardless
+// of CompactState size, so the kMaxEnemies bump grows only the Zobrist key
+// tables themselves (~1.2 MB → ~2.4 MB total; trivial vs. TT working set).
+//
+// Historical note: wave-17 dropped 4 → 2 when the power-array refactor grew
+// sizeof(EnemyState) ~25 bytes and the pre-Zobrist TT keyed on raw bytes →
+// 4 enemy slots × 85M TT entries projected ~17 GB extra → cultist OOM-kill.
+// Wave-19's hash-only TT removed that coupling; wave-21 restores N=4.
+//
+// Zobrist table-fill order audit (wave-21.β): tables in zobrist.cc must
+// APPEND new slots 2+3 to the mt19937_64 consumption sequence — slots 0+1
+// preserve pre-wave-21 byte-identity (cultist + LouseProgenitor pins hold).
+constexpr uint8_t kMaxEnemies = 4;
 
 // ---------------------------------------------------------------------------
 // Power helpers (find/add/set flags)

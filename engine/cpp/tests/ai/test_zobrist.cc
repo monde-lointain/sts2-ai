@@ -10,8 +10,12 @@
 
 #include "sts2/ai/state.h"
 #include "sts2/ai/zobrist.h"
+#include "sts2/game/combat.h"
 #include "sts2/game/types.h"
 #include "tests/ai/test_helpers.h"
+#include "tests/game/test_helpers.h"
+#include "tests/seeds/cultist_zobrist_pin.h"
+#include "tests/seeds/expected_values.h"
 
 namespace sts2::ai {
 namespace {
@@ -291,6 +295,28 @@ TEST(Zobrist, SeedDeterminism) {
   const ZobristKey k_b = zobrist_of(s_again);
   EXPECT_EQ(k_a, k_b)
       << "Zobrist tables are not seed-deterministic across calls";
+}
+
+// ---------------------------------------------------------------------------
+// Wave-21.β byte-identity gate: cultist root ZobristKey must match the
+// constants captured pre-wave-21 (cultist_zobrist_pin.h). Asserts the
+// kMaxEnemies 2→4 widening + Zobrist table append-only fill order preserved
+// slot 0+1's mt19937_64 outputs. Failure = wave-21 rollback signal.
+// ---------------------------------------------------------------------------
+TEST(Zobrist, CultistRootKey_MatchesPreWave21Pin) {
+  sts2::game::Combat combat = sts2::tests::helpers::make_starter_combat(
+      sts2::tests::seeds::kCombatTestSeed);
+  const CompactState state = from_combat(combat);
+  const ZobristKey key = zobrist_of(state);
+
+  EXPECT_EQ(key.lo, sts2::tests::seeds::kCultistZobristKeyLo)
+      << "cultist Zobrist lo half drifted from pre-wave-21 pin — "
+         "mt19937_64 fill order regressed OR fold_enemy loop bound is "
+         "kMaxEnemies (must be enemy_count)";
+  EXPECT_EQ(key.hi, sts2::tests::seeds::kCultistZobristKeyHi)
+      << "cultist Zobrist hi half drifted from pre-wave-21 pin — "
+         "mt19937_64 fill order regressed OR fold_enemy loop bound is "
+         "kMaxEnemies (must be enemy_count)";
 }
 
 TEST(ZobristKeyHash, BucketSpreadSanity) {
