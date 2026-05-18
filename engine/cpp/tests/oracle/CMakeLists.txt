@@ -22,6 +22,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_registry_sha.cc
     test_pin_row.cc
     test_cultists_search_pins.cc
+    test_small_slimes_search_pins.cc
     test_agreement_row.cc
     test_verify_server.cc
     adapter_fixtures.h

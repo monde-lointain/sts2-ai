@@ -120,6 +120,29 @@ inline sts2::game::Combat make_starter_combat(uint64_t seed) {
   return c;
 }
 
+// Synthetic SmallSlimes Variant A combat for Q2-internal pinning. Not bound
+// to a Q1 wire fixture (Q1's fixture #6 still has STS1 names per B.1-ε DEFER;
+// project-lead BAKED a synthetic pin per C.3-γ surfacing).
+//
+// Variant A composition per upstream SlimesWeak.cs:48-59 (one of 4 possible
+// RNG variants; deterministic for this pin):
+//   Slot 0: TwigSlimeS  (HP randomised via Rng{seed}.uniform_int(7,11))
+//   Slot 1: LeafSlimeM  (HP randomised via Rng{seed}.uniform_int(32,35))
+//   Slot 2: LeafSlimeS  (HP randomised via Rng{seed}.uniform_int(11,15))
+// Player: Silent starter (HP 70, energy 3, hand drawn from kSilentStarterDeck).
+// pick-discard callback returns HandIndex{0} — mirrors cultist pin convention.
+inline sts2::game::Combat make_small_slimes_synthetic_combat(uint64_t seed) {
+  sts2::game::Combat c{seed};
+  sts2::game::Rng enemy_rng{seed};
+  c.add_enemy(sts2::enemies::make_twig_slime_s(enemy_rng));
+  c.add_enemy(sts2::enemies::make_leaf_slime_m(enemy_rng));
+  c.add_enemy(sts2::enemies::make_leaf_slime_s(enemy_rng));
+  c.set_pick_discard_callback(
+      [](const sts2::game::Combat&) { return sts2::game::HandIndex{0}; });
+  c.start(sts2::cards::make_silent_starter_deck());
+  return c;
+}
+
 // Kill an enemy through the public API by dealing massive damage.
 // Used in tests that need a "one dead enemy in middle/edge" precondition.
 inline void kill_enemy(sts2::game::Combat& c, int idx) {
