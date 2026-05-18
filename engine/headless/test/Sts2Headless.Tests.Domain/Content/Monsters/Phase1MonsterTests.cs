@@ -70,6 +70,8 @@ public class Phase1MonsterTests
     // FossilStalker opens with LATCH (Attack 12 — upstream's initial state).
     [InlineData(typeof(FossilStalker), "FossilStalker", 51, 53, "attack:12")]
     [InlineData(typeof(FrogKnight), "FrogKnight", 191, 191, "attack:15")]
+    // Wave-24/K.q1: Nibbit opens with BUTT_MOVE (Attack 12).
+    [InlineData(typeof(Nibbit), "Nibbit", 42, 46, "attack:12")]
     public void Monster_canonical_hp_and_intent(
         System.Type t,
         string expectedId,

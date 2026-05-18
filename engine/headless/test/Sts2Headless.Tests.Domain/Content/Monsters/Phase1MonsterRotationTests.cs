@@ -275,4 +275,62 @@ public sealed class Phase1MonsterRotationTests
             cb.AdvanceMoveId(CeremonialBeast.PlowMoveId, ctx, rng)
         );
     }
+
+    // ===== Nibbit: BUTT → SLICE → HISS → BUTT (deterministic 3-cycle) =====
+
+    [Fact]
+    public void Nibbit_cycle_from_BUTT_start()
+    {
+        Nibbit n = new();
+        Assert.Equal(Nibbit.ButtMoveId, n.InitialMoveId);
+        var ctx = new MoveBranchContext(44, 44, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("nibbit-butt-seed");
+
+        // BUTT → SLICE → HISS → BUTT (repeats)
+        string cursor = n.InitialMoveId;
+        Assert.Equal(Nibbit.ButtMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.SliceMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.HissMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.ButtMoveId, cursor);
+        // Confirm second cycle identical.
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.SliceMoveId, cursor);
+    }
+
+    [Fact]
+    public void Nibbit_cycle_from_SLICE_start()
+    {
+        Nibbit n = new();
+        var ctx = new MoveBranchContext(44, 44, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("nibbit-slice-seed");
+
+        // SLICE → HISS → BUTT → SLICE (repeats)
+        string cursor = Nibbit.SliceMoveId;
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.HissMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.ButtMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.SliceMoveId, cursor);
+    }
+
+    [Fact]
+    public void Nibbit_cycle_from_HISS_start()
+    {
+        Nibbit n = new();
+        var ctx = new MoveBranchContext(44, 44, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("nibbit-hiss-seed");
+
+        // HISS → BUTT → SLICE → HISS (repeats)
+        string cursor = Nibbit.HissMoveId;
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.ButtMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.SliceMoveId, cursor);
+        cursor = n.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(Nibbit.HissMoveId, cursor);
+    }
 }
