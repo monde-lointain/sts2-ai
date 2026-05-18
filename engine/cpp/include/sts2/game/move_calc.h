@@ -44,6 +44,13 @@ namespace sts2::game::move_calc {
     // kPokeyPounce: "POKEY_POUNCE_MOVE" (TwigSlimeM.cs:34).
     case MoveId::kPokeyPounce:
       return "POKEY_POUNCE_MOVE";
+    // Wave-24/K.β: Nibbit moves (Nibbit.cs:71-73 MoveState names).
+    case MoveId::kButtMove:
+      return "BUTT_MOVE";
+    case MoveId::kSliceMove:
+      return "SLICE_MOVE";
+    case MoveId::kHissMove:
+      return "HISS_MOVE";
   }
   return "";
 }
@@ -91,6 +98,19 @@ namespace sts2::game::move_calc {
   }
   if (wire_id == "POKEY_POUNCE_MOVE") {
     out = MoveId::kPokeyPounce;
+    return true;
+  }
+  // Wave-24/K.β: Nibbit moves (Nibbit.cs:71-73 MoveState canonical names).
+  if (wire_id == "BUTT_MOVE") {
+    out = MoveId::kButtMove;
+    return true;
+  }
+  if (wire_id == "SLICE_MOVE") {
+    out = MoveId::kSliceMove;
+    return true;
+  }
+  if (wire_id == "HISS_MOVE") {
+    out = MoveId::kHissMove;
     return true;
   }
   return false;
@@ -172,7 +192,8 @@ void act_on_intent(
     case MoveId::kDarkStrike:
       std::forward<OnDarkStrike>(on_dark_strike)();
       break;
-    // LouseProgenitor + slime moves are dispatched via act_on_table_move.
+    // LouseProgenitor + slime + Nibbit moves are dispatched via
+    // act_on_table_move.
     case MoveId::kWebCannon:
     case MoveId::kCurlAndGrow:
     case MoveId::kPounce:
@@ -181,6 +202,10 @@ void act_on_intent(
     case MoveId::kClumpShot:
     case MoveId::kStickyShot:
     case MoveId::kPokeyPounce:
+    // Wave-24/K.β: Nibbit moves.
+    case MoveId::kButtMove:
+    case MoveId::kSliceMove:
+    case MoveId::kHissMove:
       break;
   }
 }

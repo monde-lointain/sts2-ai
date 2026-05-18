@@ -11,8 +11,9 @@ constexpr uint8_t kMaxEffectsPerMove = 3;
 constexpr uint8_t kMaxMovesPerMonster = 6;
 constexpr uint8_t kMaxSpawnPowers = 3;
 // Wave-21: kLeafSlimeS=3, kLeafSlimeM=4, kTwigSlimeS=5, kTwigSlimeM=6 appended.
+// Wave-24/K.β: kNibbit=7 appended.
 constexpr std::size_t kMonsterKindCount =
-    7;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes
+    8;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes + Nibbit
 
 // Discriminates how kMonsterMoveTables resolves the next move.
 //   kStrict: deterministic single follow-up via follow_up_index.

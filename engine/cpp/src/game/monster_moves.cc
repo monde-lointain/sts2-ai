@@ -33,6 +33,15 @@
 //   STICKY_SHOT(Slimed×1).
 //                kWeightedRandomCannotRepeat; weights {2,1}; only STICKY
 //                CannotRepeat; initial=STICKY_SHOT.
+//
+// Nibbit (wave-24/K.β):
+//   Source: Nibbit.cs:26-36 (A0 baseline).
+//   HP 42-46 (A0). 3-move cycle: BUTT_MOVE(0) → SLICE_MOVE(1) → HISS_MOVE(2)
+//   → BUTT_MOVE(0). All kStrict. Initial move depends on encounter context
+//   (alone=BUTT, front=SLICE, back=HISS); factory sets appropriately.
+//   BUTT_MOVE:  attack 12 (Nibbit.cs:30, A0 ButtDamage).
+//   SLICE_MOVE: attack 6 + block-self 5 (Nibbit.cs:34,32, A0 values).
+//   HISS_MOVE:  +2 Strength to self (Nibbit.cs:36, A0 HissStrengthGain).
 
 #include "sts2/game/monster_moves.h"
 
@@ -375,6 +384,87 @@ constexpr MonsterMoveTable make_twig_slime_m_table() {
   return t;
 }
 
+// Nibbit (wave-24/K.β)
+// Source: Nibbit.cs:26-36 (A0 baseline cross-checked line-by-line).
+// 3-move strict cycle: BUTT_MOVE(0) → SLICE_MOVE(1) → HISS_MOVE(2) →
+// BUTT_MOVE(0). initial_move_index=0 (BUTT); encounter-specific init for
+// front/back overridden by factory (make_nibbit_front / make_nibbit_back
+// set current_move accordingly; build_enemy_state resolves move_index via
+// find_move_index).
+constexpr MonsterMoveTable make_nibbit_table() {
+  MonsterMoveTable t;
+
+  // Move 0: BUTT_MOVE — single attack 12 dmg.
+  // Nibbit.cs:30: ButtDamage A0 = 12 (GetValueIfAscension(DeadlyEnemies,13,12))
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kButtMove;
+    m.follow_up_index = 1;  // → SLICE_MOVE
+    m.effects[0] = MoveEffect{
+        .value = 12,
+        .kind = MoveEffectKind::kAttack,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
+        ._pad = 0,
+        ._pad2 = 0,
+    };
+    m.effect_count = 1;
+    m.follow_up_rule = FollowUpRule::kStrict;
+  }
+
+  // Move 1: SLICE_MOVE — attack 6 + block-self 5.
+  // Nibbit.cs:34: SliceDamage A0 = 6 (GetValueIfAscension(DeadlyEnemies,7,6))
+  // Nibbit.cs:32: SliceBlock  A0 = 5 (GetValueIfAscension(ToughEnemies,6,5))
+  {
+    MonsterMove& m = t.moves[1];
+    m.id = MoveId::kSliceMove;
+    m.follow_up_index = 2;  // → HISS_MOVE
+    m.effects[0] = MoveEffect{
+        .value = 6,
+        .kind = MoveEffectKind::kAttack,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
+        ._pad = 0,
+        ._pad2 = 0,
+    };
+    m.effects[1] = MoveEffect{
+        .value = 5,
+        .kind = MoveEffectKind::kBlockSelf,
+        .power_kind = PowerKind::kWeak,  // power_kind unused for kBlockSelf
+        ._pad = 0,
+        ._pad2 = 0,
+    };
+    m.effect_count = 2;
+    m.follow_up_rule = FollowUpRule::kStrict;
+  }
+
+  // Move 2: HISS_MOVE — self-Strength +2 (permanent stack).
+  // Nibbit.cs:36: HissStrengthGain A0 = 2
+  //   (GetValueIfAscension(DeadlyEnemies,3,2))
+  {
+    MonsterMove& m = t.moves[2];
+    m.id = MoveId::kHissMove;
+    m.follow_up_index = 0;  // → BUTT_MOVE (3-cycle)
+    m.effects[0] = MoveEffect{
+        .value = 2,
+        .kind = MoveEffectKind::kBuffEnemy,
+        .power_kind = PowerKind::kStrength,
+        ._pad = 0,
+        ._pad2 = 0,
+    };
+    m.effect_count = 1;
+    m.follow_up_rule = FollowUpRule::kStrict;
+  }
+
+  t.move_count = 3;
+  t.initial_move_index = 0;  // BUTT_MOVE (IsAlone default)
+  // Nibbit.cs:26: MinInitialHp A0 = 42
+  // (GetValueIfAscension(ToughEnemies,44,42)) Nibbit.cs:28: MaxInitialHp A0 =
+  // 46 (GetValueIfAscension(ToughEnemies,48,46))
+  t.min_hp = 42;
+  t.max_hp = 46;
+  t.spawn_power_count = 0;  // Nibbit has no spawn powers
+  return t;
+}
+
 }  // namespace
 
 // kMonsterMoveTables[MonsterKind::kCultistCalcified = 0]
@@ -384,6 +474,7 @@ constexpr MonsterMoveTable make_twig_slime_m_table() {
 // kMonsterMoveTables[MonsterKind::kLeafSlimeM        = 4]
 // kMonsterMoveTables[MonsterKind::kTwigSlimeS        = 5]
 // kMonsterMoveTables[MonsterKind::kTwigSlimeM        = 6]
+// kMonsterMoveTables[MonsterKind::kNibbit            = 7]  (wave-24/K.β)
 const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     // kCultistCalcified (index 0)
     // Source: enemies.h kCultistArchetypes[0]
@@ -403,6 +494,8 @@ const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     make_twig_slime_s_table(),
     // kTwigSlimeM (index 6) — wave-22.β
     make_twig_slime_m_table(),
+    // kNibbit (index 7) — wave-24/K.β
+    make_nibbit_table(),
 }};
 
 uint8_t find_move_index(MonsterKind kind, MoveId id) noexcept {

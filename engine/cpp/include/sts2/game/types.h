@@ -58,6 +58,10 @@ enum class MoveId : int {
   kClumpShot = 7,    // LeafSlimeM
   kStickyShot = 8,   // LeafSlimeM + TwigSlimeM
   kPokeyPounce = 9,  // TwigSlimeM
+  // Wave-24/K.β APPEND-ONLY: Nibbit moves.
+  kButtMove = 10,   // Nibbit BUTT_MOVE
+  kSliceMove = 11,  // Nibbit SLICE_MOVE
+  kHissMove = 12,   // Nibbit HISS_MOVE
 };
 
 enum class MonsterKind : uint8_t {
@@ -69,6 +73,7 @@ enum class MonsterKind : uint8_t {
   kLeafSlimeM = 4,
   kTwigSlimeS = 5,
   kTwigSlimeM = 6,
+  kNibbit = 7,  // wave-24/K.β APPEND-ONLY
 };
 
 enum class HookPoint : uint8_t {

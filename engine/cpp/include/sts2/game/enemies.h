@@ -69,6 +69,17 @@ game::Enemy make_leaf_slime_m(game::Rng& rng);  // HP 32-35 (A0)
 game::Enemy make_twig_slime_s(game::Rng& rng);  // HP 7-11  (A0)
 game::Enemy make_twig_slime_m(game::Rng& rng);  // HP 26-28 (A0)
 
+// Wave-24/K.β: Nibbit factories (Nibbit.cs:26-36, A0 baseline).
+// Three variants per encounter context (Nibbit.cs:74-88
+// ConditionalBranchState):
+//   alone  → starts BUTT_MOVE  (IsAlone=true)
+//   front  → starts SLICE_MOVE (IsFront=true)
+//   back   → starts HISS_MOVE  (IsFront=false, IsAlone=false)
+game::Enemy make_nibbit_alone(game::Rng& rng);  // HP 42-46 (A0); init BUTT_MOVE
+game::Enemy make_nibbit_front(
+    game::Rng& rng);                           // HP 42-46 (A0); init SLICE_MOVE
+game::Enemy make_nibbit_back(game::Rng& rng);  // HP 42-46 (A0); init HISS_MOVE
+
 void roll_next_move(game::Enemy& e);
 void act(game::Enemy& e, game::Combat& combat);
 

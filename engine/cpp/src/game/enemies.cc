@@ -96,6 +96,59 @@ sts2::game::Enemy make_twig_slime_m(sts2::game::Rng& rng) {
   return e;
 }
 
+// ---------------------------------------------------------------------------
+// Wave-24/K.β: Nibbit factories
+// ---------------------------------------------------------------------------
+// Source: Nibbit.cs:26,28 (A0 HP range 42-46).
+// Three variants per ConditionalBranchState (Nibbit.cs:74-88):
+//   alone  → init BUTT_MOVE  (IsAlone=true, Nibbit.cs:76-77)
+//   front  → init SLICE_MOVE (IsFront=true, Nibbit.cs:82)
+//   back   → init HISS_MOVE  (IsFront=false, Nibbit.cs:81)
+// move_index consistency: build_enemy_state resolves via find_move_index;
+//   kButtMove→0, kSliceMove→1, kHissMove→2 per make_nibbit_table().
+
+// make_nibbit_alone — NibbitsWeak encounter (IsAlone=true); starts BUTT_MOVE.
+// Nibbit.cs:26: MinInitialHp A0=42; :28: MaxInitialHp A0=46.
+sts2::game::Enemy make_nibbit_alone(sts2::game::Rng& rng) {
+  sts2::game::Enemy e;
+  e.name = "Nibbit";
+  e.kind = sts2::game::MonsterKind::kNibbit;
+  const int hp = rng.uniform_int(42, 46);
+  e.vitals.max_hp = sts2::game::Stat{hp};
+  e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kButtMove;  // Nibbit.cs:76-77 IsAlone
+  e.performed_first_move = false;
+  return e;
+}
+
+// make_nibbit_front — multi-Nibbit encounter front position; starts SLICE_MOVE.
+// Nibbit.cs:82: IsFront=true branch → moveState2 (SLICE_MOVE).
+sts2::game::Enemy make_nibbit_front(sts2::game::Rng& rng) {
+  sts2::game::Enemy e;
+  e.name = "Nibbit";
+  e.kind = sts2::game::MonsterKind::kNibbit;
+  const int hp = rng.uniform_int(42, 46);
+  e.vitals.max_hp = sts2::game::Stat{hp};
+  e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kSliceMove;  // Nibbit.cs:82 IsFront
+  e.performed_first_move = false;
+  return e;
+}
+
+// make_nibbit_back — multi-Nibbit encounter back position; starts HISS_MOVE.
+// Nibbit.cs:81: IsFront=false branch → moveState3 (HISS_MOVE).
+sts2::game::Enemy make_nibbit_back(sts2::game::Rng& rng) {
+  sts2::game::Enemy e;
+  e.name = "Nibbit";
+  e.kind = sts2::game::MonsterKind::kNibbit;
+  const int hp = rng.uniform_int(42, 46);
+  e.vitals.max_hp = sts2::game::Stat{hp};
+  e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kHissMove;  // Nibbit.cs:81 IsFront=false
+  e.performed_first_move = false;
+  return e;
+}
+
 void roll_next_move(sts2::game::Enemy& e) {
   sts2::game::move_calc::advance_intent(e.performed_first_move, e.current_move);
 }

@@ -39,6 +39,11 @@
 //                                  table when the new MoveIds first see runtime
 //                                  use; that bump is APPEND-ONLY (mt19937 fill
 //                                  order preserved for old kind 0..4).
+//                                  Wave-24/K.β APPENDS kButtMove(10),
+//                                  kSliceMove(11), kHissMove(12); cardinality
+//                                  10 → 13 (kMoveIdCardinality). APPEND-ONLY:
+//                                  new Phase-3 entries fill AFTER [0,10).
+//                                  Cultist + Louse + slime BYTE PRESERVED.
 //   MonsterKind:      [0, 3)     — table-pinned at pre-wave-21 cardinality
 //                                  (kCultistCalcified, kCultistDamp,
 //                                  kLouseProgenitor). Wave-21.α extends the
@@ -48,6 +53,11 @@
 //                                  per-slot table size is stable through the
 //                                  α-stream merge (cultist byte identity).
 //                                  Wave-22 widens to 7 with APPEND fill order.
+//                                  Wave-24/K.β APPENDS kNibbit(7); cardinality
+//                                  7 → 8 (kMonsterKindCardinality).
+//                                  APPEND-ONLY: new Phase-3 entry fills AFTER
+//                                  [0,7). Cultist + Louse + slime BYTE
+//                                  PRESERVED.
 //   PowerInstance.stacks: [0, 256) — int32_t backing post-wave-23/J.beta;
 //                                    cultist Ritual = 2/5; Strength compounds
 //                                    on Louse +5/cycle, observed ≤ 50.
@@ -160,8 +170,10 @@
 //
 // Future widening required when:
 //   - kMaxEnemies bumps 4 → higher (no current encounter requires this).
-//   - kMonsterKindCardinality bumps 7 → higher (Phase-2 monster additions).
-//   - kMoveIdCardinality bumps 10 → higher (new MoveIds).
+//   - kMonsterKindCardinality bumps 8 → higher (Phase-2 monster additions;
+//     wave-24/K.β updated 7→8 for kNibbit).
+//   - kMoveIdCardinality bumps 13 → higher (new MoveIds; wave-24/K.β
+//     updated 10→13 for kButtMove + kSliceMove + kHissMove).
 //   - kCountedCardIds gains a 6th card id (Phase-2 status cards).
 //   - Stat::pack16 saturates at 65535 (no current encounter; SlimedBerserker
 //     HP 281 fits comfortably in pack16).
@@ -213,13 +225,15 @@ constexpr std::size_t kPowerKindCardinality = 6;
 // MoveId enum tail = kPokeyPounce=9 post-wave-21.α; cardinality 10.
 // Pre-wave-22 value was 5 (only cultist + Louse MoveIds used).
 // Wave-22 widens with APPEND fill order to make slime MoveIds hashable.
-constexpr std::size_t kMoveIdCardinality = 10;
+// Wave-24/K.β APPENDS kButtMove(10), kSliceMove(11), kHissMove(12) → 13.
+constexpr std::size_t kMoveIdCardinality = 13;
 constexpr std::size_t kPreWave22MoveIdCardinality = 5;
 static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
 // MonsterKind cardinality DECOUPLED from monster_moves::kMonsterKindCount
 // (wave-21.β kept at 3 to preserve cultist byte identity). Wave-22 widens
 // to 7 to make slime MonsterKinds hashable.
-constexpr std::size_t kMonsterKindCardinality = 7;
+// Wave-24/K.β APPENDS kNibbit(7) → cardinality 8.
+constexpr std::size_t kMonsterKindCardinality = 8;
 constexpr std::size_t kPreWave22MonsterKindCardinality = 3;
 static_assert(kPreWave22MonsterKindCardinality <= kMonsterKindCardinality);
 constexpr std::size_t kMaxStacks = 256;

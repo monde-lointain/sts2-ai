@@ -84,6 +84,10 @@ std::string format_intent(const sts2::game::Enemy& e) {
     case sts2::game::MoveId::kClumpShot:
     case sts2::game::MoveId::kStickyShot:
     case sts2::game::MoveId::kPokeyPounce:
+    // Wave-24/K.β: Nibbit moves (no display logic yet).
+    case sts2::game::MoveId::kButtMove:
+    case sts2::game::MoveId::kSliceMove:
+    case sts2::game::MoveId::kHissMove:
       break;
   }
   return os.str();

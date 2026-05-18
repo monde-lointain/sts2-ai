@@ -441,4 +441,75 @@ TEST(MonsterMovesTable, TwigSlimeM_NoSpawnPowers) {
   EXPECT_EQ(kMonsterMoveTables[kind_idx].spawn_power_count, 0U);
 }
 
+// =========================================================================
+// Wave-24/K.β: Nibbit move table assertions
+// Sources cited per field from upstream Nibbit.cs (A0 baseline).
+// All values from GetValueIfAscension(AscensionLevel, AscensionVal, A0Val) —
+// the A0 (third) argument is used throughout for Q2 Phase-1A (A0 only).
+// =========================================================================
+
+// A0 upstream cross-check (Nibbit.cs lines cited inline):
+//   MinInitialHp A0 = 42  (Nibbit.cs:26)
+//   MaxInitialHp A0 = 46  (Nibbit.cs:28)
+//   ButtDamage   A0 = 12  (Nibbit.cs:30)
+//   SliceDamage  A0 = 6   (Nibbit.cs:34)
+//   SliceBlock   A0 = 5   (Nibbit.cs:32)
+//   HissStrGain  A0 = 2   (Nibbit.cs:36)
+//   Move cycle: BUTT→SLICE→HISS→BUTT (Nibbit.cs:84-86 FollowUpState chains)
+//   Wire names: "BUTT_MOVE","SLICE_MOVE","HISS_MOVE" (Nibbit.cs:71-73)
+
+TEST(MonsterMoves, NibbitTable_MatchesUpstream) {
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kNibbit);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+
+  // HP range — Nibbit.cs:26 (A0 min=42), :28 (A0 max=46)
+  EXPECT_EQ(t.min_hp, int32_t{42});
+  EXPECT_EQ(t.max_hp, int32_t{46});
+
+  // move_count and no spawn powers
+  EXPECT_EQ(t.move_count, uint8_t{3});
+  EXPECT_EQ(t.spawn_power_count, uint8_t{0});
+
+  // --- Move 0: BUTT_MOVE ---
+  // Nibbit.cs:71: MoveState("BUTT_MOVE", ...); :30 ButtDamage A0=12
+  // follow_up chain: BUTT→SLICE (Nibbit.cs:85
+  // moveState.FollowUpState=moveState2)
+  EXPECT_EQ(t.moves[0].id, MoveId::kButtMove);
+  ASSERT_EQ(t.moves[0].effect_count, uint8_t{1});
+  EXPECT_EQ(t.moves[0].effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(t.moves[0].effects[0].value, int32_t{12});
+  EXPECT_EQ(t.moves[0].follow_up_index, uint8_t{1});  // → SLICE_MOVE
+  EXPECT_EQ(t.moves[0].follow_up_rule, FollowUpRule::kStrict);
+
+  // --- Move 1: SLICE_MOVE ---
+  // Nibbit.cs:72: MoveState("SLICE_MOVE", ...); :34 SliceDamage A0=6;
+  //               :32 SliceBlock A0=5.
+  // follow_up chain: SLICE→HISS (Nibbit.cs:84
+  // moveState2.FollowUpState=moveState3)
+  EXPECT_EQ(t.moves[1].id, MoveId::kSliceMove);
+  ASSERT_EQ(t.moves[1].effect_count, uint8_t{2});
+  EXPECT_EQ(t.moves[1].effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(t.moves[1].effects[0].value, int32_t{6});  // SliceDamage A0
+  EXPECT_EQ(t.moves[1].effects[1].kind, MoveEffectKind::kBlockSelf);
+  EXPECT_EQ(t.moves[1].effects[1].value, int32_t{5});  // SliceBlock A0
+  EXPECT_EQ(t.moves[1].follow_up_index, uint8_t{2});   // → HISS_MOVE
+  EXPECT_EQ(t.moves[1].follow_up_rule, FollowUpRule::kStrict);
+
+  // --- Move 2: HISS_MOVE ---
+  // Nibbit.cs:73: MoveState("HISS_MOVE", ...); :36 HissStrengthGain A0=2.
+  // follow_up chain: HISS→BUTT (Nibbit.cs:86
+  // moveState3.FollowUpState=moveState)
+  EXPECT_EQ(t.moves[2].id, MoveId::kHissMove);
+  ASSERT_EQ(t.moves[2].effect_count, uint8_t{1});
+  EXPECT_EQ(t.moves[2].effects[0].kind, MoveEffectKind::kBuffEnemy);
+  EXPECT_EQ(t.moves[2].effects[0].value, int32_t{2});  // HissStrengthGain A0
+  EXPECT_EQ(t.moves[2].effects[0].power_kind, PowerKind::kStrength);
+  EXPECT_EQ(t.moves[2].follow_up_index, uint8_t{0});  // → BUTT_MOVE (cycle)
+  EXPECT_EQ(t.moves[2].follow_up_rule, FollowUpRule::kStrict);
+
+  // initial_move_index = 0 (BUTT; encounter-specific factories override
+  // current_move but build_enemy_state resolves move_index via find_move_index)
+  EXPECT_EQ(t.initial_move_index, uint8_t{0});
+}
+
 }  // namespace
