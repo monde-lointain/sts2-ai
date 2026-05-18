@@ -670,7 +670,12 @@ void do_enemy_act_slime(CompactState& s, EnemyState& e) {
         // CardId is fixed at kSlimed for all slime status-card emissions.
         const int count = fx.value;
         for (int n = 0; n < count; ++n) {
-          ++M::discard(s)[CardId::kSlimed];
+          if (M::discard(s)[CardId::kSlimed] <
+              sts2::game::card_effects::kMaxSlimedAccumulation) {
+            ++M::discard(s)[CardId::kSlimed];
+          }
+          // else: cap reached; additional Slimed drops silently
+          // (Q2-ADR-013 Amendment 4 §Slimed-cap)
         }
         break;
       }

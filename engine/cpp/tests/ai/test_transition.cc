@@ -6,6 +6,7 @@
 
 #include "sts2/ai/state.h"
 #include "sts2/ai/transition.h"
+#include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/types.h"
 #include "tests/ai/test_helpers.h"
@@ -563,6 +564,80 @@ TEST(Transition, IsTerminal_AllEnemiesDead) {
 TEST(Transition, IsTerminal_OngoingFalse) {
   CompactState s = make_test_state();
   EXPECT_FALSE(is_terminal(s));
+}
+
+// ---------------------------------------------------------------------------
+// SlimedCap — kAddStatusCard accumulation bound (wave-22-fix-4 / H.α)
+//
+// LeafSlimeM STICKY_SHOT fires kAddStatusCard with value=2 (move_index=1,
+// kStrict follow-up → phase stays kAtChanceDraw; no kAtEnemyMoveRng detour).
+// We call apply_player_action(end_turn) + resolve_end_turn_pre_draw per
+// standard pattern. Enemy[1] is dead to avoid interference.
+// ---------------------------------------------------------------------------
+
+using sts2::game::MonsterKind;
+
+// Helper: build a state with a LeafSlimeM at move_index=1 (STICKY_SHOT)
+// and a specified discard[kSlimed] count. Hand is empty (no hand-to-discard
+// noise); energy doesn't matter for the enemy-phase.
+CompactState make_slimed_test_state(uint8_t initial_slimed) {
+  // Slot 0: LeafSlimeM at STICKY_SHOT (move_index=1, performed_first_move=true
+  //   so the initial-move-index branch is skipped in do_roll_next_move).
+  const EnemyState slime = EnemyStateBuilder{}
+                               .kind(MonsterKind::kLeafSlimeM)
+                               .hp(sts2::game::Stat{32})
+                               .alive(true)
+                               .move_index(1)
+                               .current_move(sts2::game::MoveId::kStickyShot)
+                               .performed_first_move(true)
+                               .build();
+  // Slot 1: dead enemy — no interaction.
+  const EnemyState dead =
+      EnemyStateBuilder{}.hp(sts2::game::Stat{0}).alive(false).build();
+
+  CardCounts discard_pile{};
+  discard_pile[sts2::game::CardId::kSlimed] = initial_slimed;
+
+  return CompactStateBuilder{}
+      .player_hp(sts2::game::Stat{70})
+      .player_block(sts2::game::Stat{0})
+      .player_strength(sts2::game::Stat{0})
+      .player_weak(sts2::game::Stat{0})
+      .energy(sts2::game::Stat{3})
+      .round(1)
+      .phase(Phase::kPlayerActing)
+      .hand(CardCounts{})
+      .discard(discard_pile)
+      .enemy(0, slime)
+      .enemy(1, dead)
+      .build();
+}
+
+TEST(Transition, SlimedCap_AccumulationBoundedAt8) {
+  // Cap: 8 Slimed in discard + STICKY_SHOT(value=2) → still 8.
+  CompactState s = make_slimed_test_state(8);
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+  EXPECT_EQ(s.get_discard()[sts2::game::CardId::kSlimed], 8)
+      << "discard[kSlimed] must not exceed kMaxSlimedAccumulation";
+}
+
+TEST(Transition, SlimedCap_ClampedAtBoundaryWhenValueExceedsGap) {
+  // Edge: 7 Slimed + STICKY_SHOT(value=2) → clamped to 8 (not 9).
+  CompactState s = make_slimed_test_state(7);
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+  EXPECT_EQ(s.get_discard()[sts2::game::CardId::kSlimed], 8)
+      << "discard[kSlimed] must clamp at kMaxSlimedAccumulation, not overflow";
+}
+
+TEST(Transition, SlimedCap_BelowCapAddsNormally) {
+  // Sanity: 0 Slimed + STICKY_SHOT(value=2) → 2 (well below cap).
+  CompactState s = make_slimed_test_state(0);
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+  EXPECT_EQ(s.get_discard()[sts2::game::CardId::kSlimed], 2)
+      << "discard[kSlimed] below cap must accumulate normally";
 }
 
 }  // namespace

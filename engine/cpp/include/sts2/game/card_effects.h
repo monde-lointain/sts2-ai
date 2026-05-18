@@ -125,6 +125,12 @@ inline constexpr std::array<CardId, 5> kCountedCardIds = {
                       // invariant)
 };
 
+// Maximum number of Slimed cards that may accumulate in the player's discard
+// pile during a fight. Caps unbounded state-space growth in the oracle's TT
+// (Q2-ADR-013 Amendment 4 §Slimed-cap). Semantic divergence from upstream
+// STS2 (no canonical cap); Q1 catch-up tracked for round-trip parity.
+inline constexpr uint8_t kMaxSlimedAccumulation = 8;
+
 [[nodiscard]] constexpr const CardEffect& card_effect_for(CardId id) noexcept {
   const auto* const it = std::ranges::find_if(
       kCardEffects, [id](const CardEffect& e) { return e.id == id; });
