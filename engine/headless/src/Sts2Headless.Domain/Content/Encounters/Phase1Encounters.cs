@@ -281,5 +281,8 @@ public static class Phase1EncountersRegistration
         // B.1-final-T2c: added LouseProgenitorNormal (STS2 upstream encounter; monster
         // already present in Q1 from γ).
         encounters.Register(LouseProgenitorNormal.CanonicalId, new LouseProgenitorNormal());
+        // Wave-24/K.q1: Nibbit encounters ported from upstream.
+        encounters.Register(NibbitsWeak.CanonicalId, new NibbitsWeak());
+        encounters.Register(NibbitsNormal.CanonicalId, new NibbitsNormal());
     }
 }

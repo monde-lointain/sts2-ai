@@ -282,6 +282,8 @@ public static class Phase1Content
         monsters.Register(BowlbugSilk.CanonicalId, new BowlbugSilk());
         monsters.Register(FossilStalker.CanonicalId, new FossilStalker());
         monsters.Register(FrogKnight.CanonicalId, new FrogKnight());
+        // Wave-24/K.q1: Nibbit ported from upstream.
+        monsters.Register(Nibbit.CanonicalId, new Nibbit());
         return monsters;
     }
 
