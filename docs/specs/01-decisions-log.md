@@ -741,7 +741,7 @@ Path A encounter tracker (checked = shipped + pinned-seed gate green):
 | Encounter | Wave | ADR | Status |
 |---|---|---|---|
 | LouseProgenitor | 17 (waves 17–20) | Q2-ADR-009 | [x] SHIPPED (wave-20.α POUNCE fix + pin captured) |
-| SmallSlimes | 22 | Q2-ADR-013 | [x] SHIPPED (wave-22; Slimed mechanics + Exhaust + enemy-move RNG chance-node) |
+| SmallSlimes | 22 | Q2-ADR-013 | [~] SmallSlimes — DEPRECATED-IN-Q2 per Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation (2026-05-18) |
 | MediumSlimes | 23 | Q2-ADR-014 (pending) | [ ] pending |
 | FossilStalker | TBD | — | [ ] pending |
 | KaiserCrab | TBD | — | [ ] pending |

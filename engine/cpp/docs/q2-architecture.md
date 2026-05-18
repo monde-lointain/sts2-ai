@@ -538,3 +538,51 @@ Per-encounter contribution: only TwigSlimeM produces > 0 outcomes from `kAtEnemy
 Both route to `project_small_slimes(...)`, which dispatches on wire-name presence of `"LeafSlimeM"` vs `"TwigSlimeM"` to assign each slime to the correct `CompactState` enemy slot per the `SlimesWeak.cs:48-59` slot ordering (slot 0 = RNG-picked small, slot 1 = RNG-picked medium, slot 2 = other small).
 
 **Cross-reference.** Q2-ADR-012 contains the full design rationale, memory cost analysis, APPEND-ONLY contract, and consequence analysis for all wave-21 substrate changes.
+
+## 18. §18 — 2026-05-18 Wave-22-fix-4 TT cap-management evolution + SmallSlimes deprecation
+
+### TT cap-management evolution
+
+The transposition-table cap policy evolved across four fix waves:
+
+| Wave | Policy | Cap | Outcome |
+|---|---|---|---|
+| pre-fix-2 | hard-abort (`kCapExceeded`) | 370M | SmallSlimes SIGSEGV + abort |
+| fix-2 | search horizon=50 | 370M | kCapExceeded @ 370M; 7m51s; 22.8 GB |
+| fix-3 | horizon 50→25 | 370M | kCapExceeded @ 370M; 7m17s; 22.4 GB (breadth not depth) |
+| fix-4 | LRU eviction + compression + Slimed cap | 200M | No abort; 40m+; 19.2 GB — LRU thrashing |
+
+Conclusion: the SmallSlimes state-space breadth is the binding constraint in all
+scenarios. Reducing horizon (depth) has minimal effect; breadth reduction via
+Slimed cap + LRU helped correctness but not wall-clock.
+
+### Method (h) infrastructure retained
+
+The wave-22-fix-4 layered infrastructure remains on main:
+
+- **Slimed cap** (`kMaxSlimedAccumulation = 8`): bounds discard[kSlimed] dimension; applies to any future encounter with status-card injection.
+- **LRU eviction**: replaces hard-abort; `kCapExceeded` no longer a possible failure mode; TT miss triggers re-solve (correct for pure-function search).
+- **CompactState compression**: PowerKind `int → uint8_t`; PowerInstance 8B → 6B; kMaxPowersPerCreature 6→4; Zobrist table savings ~2 KB.
+
+Per-entry TT footprint empirically ~96 B (vs 70 B projected). `kMaxTtEntries` reduced 370M → 200M.
+
+### SmallSlimes deprecation outcome
+
+Per project-lead SECOND-decision (2026-05-18): SmallSlimes removed from the
+oracle's supported encounters. Adapter dispatch entries removed; projection
+module deleted; search-pin test tombstoned with GTEST_SKIP citing Amendment 4.
+Fixture #6 now routes through AdapterReject with `reason = "encounter_not_in_cpp_engine"`.
+
+### Future encounter selection criteria
+
+Encounters selected for future port waves must satisfy:
+
+1. **Bounded combat duration**: enemy damage budget (worst-case per-turn) exceeds player's chained-Defend block budget at A0. An encounter where the player can "all-Defend forever" without enemies dying is a tractability trap.
+2. **No unbounded status-card accumulation**: encounters that inject growing card counts into discard (e.g. Slimed with no cap) produce unbounded state-space if combined with an all-Defend branch.
+3. **Q1 has fixture support**: at minimum one wire fixture with STS2-era monster names (not STS1 aliases) must be available before pinning.
+
+Roadmap candidates meeting these criteria (pending Q1 fixture verification):
+HauntedShip, GremlinMerc, ThreeSlimes elite, SlimeBoss. Selection deferred to
+project-lead at next port-wave planning.
+
+**Cross-reference.** Q2-ADR-013 Amendment 4 (full rationale + Consequences).

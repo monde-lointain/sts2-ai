@@ -1199,3 +1199,136 @@ required.
 **Cross-references**: Q2-ADR-013 Amendment 1 (Blocker #3 surfacing);
 Amendment 2 (horizon=50 cap mechanism); Q2-ADR-010 (Zobrist hash-only TT
 cap interaction).
+
+### Amendment 4 (2026-05-18) — Layered Method (h) + SmallSlimes deprecation — partial resolution of Blocker #4
+
+Wave-22-fix-4 implemented Method (h) (layered c+d+e): Slimed accumulation
+cap, LRU eviction, CompactState compression. The fix RESOLVED the
+`kCapExceeded` failure mode (TT no longer hard-aborts; LRU evicts deterministic-
+ally) BUT exposed a residual wall-clock failure: SmallSlimes synthetic Variant
+A solve runs >40 min at 19.2 GB peak RSS with 99% sustained CPU (LRU thrashing)
+without converging. Per-entry TT footprint measured ~96 B/entry (vs 70 B
+projection at design time).
+
+#### §Empirical-cap-bust-analysis
+
+Wave-22-fix-3 reduced search horizon 50→25 and re-ran SmallSlimes synthetic:
+
+| Horizon | Wall-clock | Peak RSS | Status |
+|---|---|---|---|
+| 50 | 7m51s | 22.8 GB | kCapExceeded @ 370M |
+| 25 | 7m17s | 22.4 GB | kCapExceeded @ 370M |
+
+Conclusion: breadth (not depth) is the binding constraint. Method (h) tackled
+breadth via Slimed cap (e) + LRU safety net (c) + CompactState compression (d).
+
+#### §Slimed-cap (layer e)
+
+`kMaxSlimedAccumulation = 8` in `do_enemy_act` kAddStatusCard branch
+(transition.cc). Bounds `discard[CardId::kSlimed]` dimension. Semantic
+divergence from upstream STS2 (no cap canonically); minor oracle-correctness
+hit acceptable per Q2-ADR-029.
+
+#### §LRU-eviction (layer c)
+
+Replaces hard-abort cap policy. `tt_insert` at cap evicts oldest entry
+(deterministic LRU); `derive_best_action` re-solves children on TT miss
+(re-solve correct via pure-function search; cost bounded by remaining subtree).
+`Search.LRU_*` unit tests verify eviction + dual-run determinism.
+
+#### §LRU-memory-tradeoff
+
+Per-entry footprint design estimate 38B → 70B (list-node + iterator overhead).
+Empirical measurement ~96B/entry → exceeded the 70B projection. `kMaxTtEntries`
+reduced 370M → 200M to stay under 16 GB ceiling at projected footprint; actual
+RSS at 200M cap ≈ 19.2 GB. Future amendment may reduce cap further OR accept a
+larger ceiling.
+
+#### §Compression (layer d)
+
+PowerKind backing type `int → uint8_t`; PowerInstance 8B → 6B (the `_pad` field
+remains LOAD-BEARING — stores CurlUp card-stamp via transition.cc's
+get/set_curl_up_stored_card accessors; cannot be removed); SpawnPowerEntry 8B
+→ 4B (`_pad` dropped); kMaxPowersPerCreature 6→4. Zobrist key_enemy_dsb +
+key_enemy_ritual tables dropped (constant-per-MonsterKind dimensions; kind XOR
+already distinguishes; ~2 KB static table savings). Stack-frame reduction in
+recursion → ~5-10% solve speedup. Did NOT reduce state-space dimensionality for
+SmallSlimes (the dropped fields were constant-zero for slimes); cap-bust
+contribution marginal.
+
+#### §Power-array-bound
+
+`kMaxPowersPerCreature 6 → 4` ratified. Phase-1 monsters use ≤1 power (cultist
+Ritual; Louse CurlUp; slimes zero). Engineer audit of
+`monster_moves.cc::kSpawnPowers` data confirmed ≤4 max spawn count.
+
+#### §Cultist-byte-rotation
+
+Compression altered Zobrist mt19937_64 consumption order (key_enemy_dsb +
+key_enemy_ritual tables removed). Cultist Zobrist BYTE IDENTITY rotated per
+Q2-ADR-010 §Recovery. `cultist_zobrist_pin.h` re-stamped via
+`dump_cultist_zobrist_key` test:
+- Pre-fix-4: `kCultistZobristKeyLo = 0xf812af56366b5548`, `Hi = 0x2c51edb8b6bd404e`
+- Post-fix-4: `kCultistZobristKeyLo = 0x471665c4838c298d`, `Hi = 0x770eab2147499e6c`
+
+Cultist + Louse SOLVE values BIT-IDENTICAL (search algorithm invariant to hash
+byte values; Q2-ADR-010 invariant preserved).
+
+#### §SmallSlimes-deprecation
+
+H.δ pin-capture attempt empirically demonstrated that Method (h)'s breadth
+reductions are insufficient to make SmallSlimes Variant A synthetic solve
+tractable within the 16 GB / 30-min envelope. Per project-lead SECOND-decision,
+SmallSlimes is **REMOVED from the oracle's supported encounters** as of this
+ratification. Affected:
+- Adapter dispatch: SmallSlimes encounter_map entries + `is_small_slimes`
+  dispatch branch removed; fixtures (e.g., fixture #6) now route through the
+  AdapterReject path with `reason = "encounter_not_in_cpp_engine"`.
+- Projection module: `small_slimes_projection.{h,cc}` + projection test deleted.
+- Search-pin test: `test_small_slimes_search_pins.cc` tombstoned with GTEST_SKIP.
+- Q2-ADR-029 roadmap row updated to DEPRECATED-IN-Q2.
+
+The Method (h) infrastructure (Slimed cap + LRU + compression) is RETAINED on
+main — it remains correctness-preserving + applicable to future encounters
+that may benefit. The cap on LRU eviction count is informational; future
+encounters that don't exhibit SmallSlimes' all-Defend tractability trap should
+not trigger thrashing.
+
+A different Phase-1 encounter (TBD; HauntedShip, GremlinMerc, ThreeSlimes
+elite, or SlimeBoss are roadmap candidates) will be selected for the next
+port wave. Selection criteria: bounded combat duration; no unbounded status-card
+accumulation; player-defensive-block does NOT dominate the enemy damage budget;
+Q1 has fixture support.
+
+#### Consequences (lead with negatives)
+
+- *Negative*: SmallSlimes coverage removed from oracle. The 2-medium-variant
+  signature ({LeafSlimeM/S, LeafSlimeS/TwigSlimeM, TwigSlimeS}) now rejects
+  through the AdapterReject path; Q12 oracle-agreement rate for SmallSlimes
+  encounters drops to 0% (was already lagging per Q2-ADR-029).
+- *Negative*: Wave-22.γ adapter projection + wave-22-fix-3 horizon work +
+  wave-22-fix-4 layered (h) implementation are partially-credited investments:
+  the infrastructure ships + benefits future encounters, but the originating
+  SmallSlimes regression-pin coverage goal is unmet.
+- *Negative*: Cultist Zobrist BYTE IDENTITY rotation event; future reviewers
+  must verify SOLVE VALUES (not byte values) for cultist regression baseline.
+- *Negative*: LRU memory footprint ~96B/entry vs 70B projection — TT cap
+  budget tighter than expected.
+- *Positive*: Method (h) infrastructure (Slimed cap + LRU eviction +
+  compression) retained + correct; benefits future encounters.
+- *Positive*: Cultist + Louse SOLVE VALUES BIT-IDENTICAL — zero risk to
+  pinned regression baseline.
+- *Positive*: `kCapExceeded` no longer a possible failure mode in Search — LRU
+  is a safety net for any future encounter approaching the TT cap.
+- *Positive*: Sustainable encounter-selection criteria now documented: bounded
+  combat duration; no unbounded status-card accumulation; not-block-dominated.
+
+#### Cross-references
+
+- Q2-ADR-013 Amendment 1 (Blocker #3 surfacing)
+- Q2-ADR-013 Amendment 2 (horizon-cap mechanism)
+- Q2-ADR-013 Amendment 3 (horizon 50→25; empirical depth-cap-exhaustion)
+- Q2-ADR-010 (Zobrist hash-only TT + §Recovery for byte-identity rotation)
+- Q2-ADR-011 (TT cap-policy + lifecycle — kCapExceeded retired by Amendment 4)
+- Q2-ADR-005 (algorithm_sha source-list audit)
+- Q2-ADR-029 (Q1-divergence-acknowledged philosophy; SmallSlimes row → DEPRECATED-IN-Q2)
