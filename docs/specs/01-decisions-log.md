@@ -736,6 +736,17 @@ Declare Path A as the active Q2 expansion campaign. The campaign is multi-wave, 
 - **Wave-17 (LouseProgenitor):** `CurlUpPower` + `FrailPower` hook implementations per upstream STS2. Port `LouseProgenitor` monster (move table + spawn-power). One pinned-seed expected value (D3 fixture #5). Low marginal cost given the wave-16 framework.
 - **Wave-18..N (remaining encounters):** Each subsequent encounter (FossilStalker, KaiserCrab, SmallSlimes, and others from the Phase-1 pool) adds: data tables in `kMonsterMoveTables`, optional new `PowerKind` entries, optional new hook functions, adapter projection, and pinned seeds. Each wave is self-contained and file-disjoint from unrelated work.
 
+Path A encounter tracker (checked = shipped + pinned-seed gate green):
+
+| Encounter | Wave | ADR | Status |
+|---|---|---|---|
+| LouseProgenitor | 17 (waves 17–20) | Q2-ADR-009 | [x] SHIPPED (wave-20.α POUNCE fix + pin captured) |
+| SmallSlimes | 22 | Q2-ADR-013 | [x] SHIPPED (wave-22; Slimed mechanics + Exhaust + enemy-move RNG chance-node) |
+| MediumSlimes | 23 | Q2-ADR-014 (pending) | [ ] pending |
+| FossilStalker | TBD | — | [ ] pending |
+| KaiserCrab | TBD | — | [ ] pending |
+| (remaining Phase-1 pool) | TBD | — | [ ] pending |
+
 Campaign economics: wave-16 amortizes the framework cost (~1500 LOC churn + ~400 LOC new framework + ~400 LOC new tests). Each subsequent encounter wave is expected to cost ~500-700 LOC. This is the Path A "bounded effort" that Q2-ADR-002 flagged but deferred.
 
 Tracker: when a future ADR-029-roadmap encounter is shipped, the Q2 decisions-log entry for that encounter's ADR cross-references this ADR. Oracle-agreement scope widens per-encounter; `encounter_not_in_cpp_engine` reject set narrows.

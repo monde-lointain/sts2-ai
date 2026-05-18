@@ -22,6 +22,7 @@ then positives).
 | Q2-ADR-010 | Zobrist 128-bit Hash-Only Transposition Table | Accepted (2026-05-18) |
 | Q2-ADR-011 | `absl::flat_hash_map` Container + Hard TT Entry Cap + Flag-and-Early-Return | Accepted (2026-05-18) |
 | Q2-ADR-012 | Slime prerequisites — kMaxEnemies 2→4 + MonsterKind/MoveId/FollowUpRule extensions + Zobrist table widening | Accepted (2026-05-18) |
+| Q2-ADR-013 | SmallSlimes port — Slimed card mechanics + Exhaust emulation + enemy-move RNG chance-node + CannotRepeat rule | Accepted (2026-05-18) |
 
 ---
 
@@ -894,5 +895,155 @@ Wave-21.β's verification gate adds `Zobrist.CultistRootKey_MatchesPreWave21Pin`
 - *Negative:* Cultist and `LouseProgenitor` `MonsterMove` initializer syntax may require conversion to designated initializers when the `FollowUpRule` fields are added to the struct (engineer choice during wave-21.α implementation — aggregate initialisation order must be preserved or converted to named fields).
 - *Positive:* Unblocks slime encounter port: wave-22 can land `SmallSlimes` (`SlimesWeak`) data; wave-23 can land `MediumSlimes` (`SlimesNormal`) data.
 - *Positive:* `FollowUpRule` schema makes `RandomBranch` monster moves expressible in data without any new struct shape in wave-22; the branching plumbing is laid here.
+
+---
+
+## Q2-ADR-013 — SmallSlimes port — Slimed card mechanics + Exhaust emulation + enemy-move RNG chance-node + CannotRepeat rule
+
+**Status:** Accepted (2026-05-18).
+
+**Context.** Wave-21 (Q2-ADR-012) landed the structural prerequisites for slime encounters: `kMaxEnemies` raised to 4, four new `MonsterKind` values, five new `MoveId` values, and the `FollowUpRule` schema. Wave-22 ports the `SmallSlimes` (`SlimesWeak`) encounter, which introduces three new categories of substrate work: (1) a status card that is injected into the player's discard pile mid-combat (Slimed), requiring a card-injection pathway and an Exhaust emulation mechanism; (2) enemies whose next-move selection is RNG-resolved after the current move resolves, requiring a new chance phase; and (3) the `CannotRepeat` branching rule governing that RNG. All three are tightly coupled to the slime port and are ratified together in a single ADR.
+
+**Decision.**
+
+### §Slimed-card
+
+`CardId::kSlimed` is added at enum value 5, appended after `kStrike=1`, `kDefend=2`, `kNeutralize=3`, `kSurvivor=4`. The APPEND-ONLY constraint on `kCountedCardIds` is critical: the array grows from size 4 to size 5, with `kSlimed` at index 4. Inserting `kSlimed` at any lower index shifts existing entries and corrupts cultist + LouseProgenitor `CardCounts` Zobrist hashes.
+
+A new `MoveEffectKind::kAddStatusCard` enum value is appended (APPEND-ONLY; rationale: an explicit semantic rather than overloading `kDebuffPlayer`). Slime status-move effects use `kAddStatusCard` with `value = N` (number of Slimed cards to inject).
+
+Slimed card semantics per upstream `Slimed.cs:19,22,33`:
+- Cost: 1 energy (Slimed.cs:22: `base(1, CardType.Status, CardRarity.Status, TargetType.None)`).
+- Type: Status (non-upgradeable per Slimed.cs:15: `MaxUpgradeLevel => 0`).
+- Keyword: Exhaust (Slimed.cs:19: `CanonicalKeywords => CardKeyword.Exhaust`).
+- OnPlay: Draw 1 card (Slimed.cs:33: `CardPileCmd.Draw(choiceContext, base.DynamicVars.Cards.BaseValue, base.Owner)` where `DynamicVar` is `new CardsVar(1)`).
+
+Status cards are materialized in the player's discard pile via `CardPileCmd.AddToCombatAndPreview<Slimed>(targets, PileType.Discard, N, null)` (CardPileCmd.cs:886-916). In Q2, `do_enemy_act` increments `state.discard[kSlimed] += effect.value` when a move has `MoveEffectKind::kAddStatusCard`.
+
+### §Exhaust-emulation
+
+Slimed is the FIRST Exhaust-keyword card in Q2. Survivor only discards another hand card on play (not Exhaust); Slimed is the first card that is deleted from the game on play rather than moved to the discard pile.
+
+A `bool exhaust_on_play` flag is added at the END of the `CardEffect` struct, default `false`. All existing `CardEffect` entries pick up `exhaust_on_play = false` via the default, preserving their discard-on-play behaviour without modification.
+
+The one-way deletion in `do_play_card`:
+```
+hand[id]--;
+if (!effect.exhaust_on_play) discard[id]++;
+// (if exhaust_on_play: card is simply removed; no discard increment)
+```
+
+No exhaust pile state is tracked in `CompactState`. Rationale: the exhaust pile is dead state from the expectimax perspective. A card in the exhaust pile cannot be redrawn or replayed within a combat encounter in the scenarios covered by Phase-1A. Tracking exhaust-pile counts would add Zobrist key dimensions and state-space cardinality without any influence on search decisions. Future ADR required if a card or power depends on exhaust-pile contents.
+
+### §Enemy-move-RNG
+
+`Phase::kAtEnemyMoveRng` is a new phase value, appended at value `= 2` to the existing `{kPlayerActing=0, kAtChanceDraw=1}`. APPEND-ONLY constraint: inserting at a lower value shifts `kAtChanceDraw` from 1 to a new slot, corrupting cultist Zobrist phase hashes and breaking all pinned seeds.
+
+The chance node fires AFTER enemy resolution, BEFORE the player's next draw. Precise Phase ordering:
+
+```
+kPlayerActing
+  ↓ (end turn)
+resolve_end_turn_pre_draw
+  ├─ player block clears
+  ├─ enemy ticks (Ritual, Frail, etc.)
+  └─ enemy resolves current_move (deterministic effect application)
+  ↓
+kAtEnemyMoveRng       (CHANCE NODE — only if any enemy's next-move follow-up is RandomBranch)
+  ↓ (RNG enumerates next-move outcomes per enemy)
+kAtChanceDraw          (CHANCE NODE — player draws cards)
+  ↓ (draw enumeration)
+kPlayerActing          (next round)
+```
+
+Two consecutive chance nodes per round arise when any enemy's just-resolved move has a `RandomBranch` follow-up. When all enemies have deterministic follow-ups, `kAtEnemyMoveRng` is skipped; the transition goes directly to `kAtChanceDraw`.
+
+"Pending RNG" is DERIVED from the move table, not encoded as state. At `kAtEnemyMoveRng`, `chance.h::enumerate_chance_outcomes` walks alive enemies and looks up `kMonsterMoveTables[kind].moves[current_move_idx].follow_up_rule`. If the rule is a `RandomBranch` type, it enumerates per-branch outcomes. If `kStrict`, the next move is deterministic and was already assigned. No sentinel `MoveId` value; no additional fields in `CompactState`; no Zobrist key noise.
+
+### §CannotRepeat-rule
+
+The CannotRepeat exclusion-and-renormalization algorithm at `kAtEnemyMoveRng`:
+
+1. Filter branches: exclude any branch `i` where `branch_cannot_repeat[i] && branch_indices[i] == current_move_idx`.
+2. Sum remaining branch weights to get normalizer `N`.
+3. For each remaining branch `i`: probability `p_i = branch_weights[i] / N`.
+4. Yield outcome list: one `(p_i, child_state)` pair per remaining branch, with `enemies[e].current_move = branch_indices[i]`.
+
+Worked examples:
+
+- **LeafSlimeS post-TACKLE**: `kRandomBranchCannotRepeat`; both branches have `CannotRepeat`. CannotRepeat excludes TACKLE (current). Only GOOP_MOVE is eligible → `N = 1`, `p = 1.0`. Deterministic alternation.
+- **LeafSlimeS post-GOOP**: CannotRepeat excludes GOOP_MOVE. Only TACKLE_MOVE is eligible → `N = 1`, `p = 1.0`. Deterministic alternation.
+- **TwigSlimeM post-POKEY**: branches `{POKEY w=2, STICKY w=1+CannotRepeat}`. CannotRepeat on STICKY triggers only when `current = STICKY`; here `current = POKEY` → no exclusion → `N = 3` → POKEY `p = 2/3`, STICKY `p = 1/3`. 2 outcomes.
+- **TwigSlimeM post-STICKY**: CannotRepeat excludes STICKY. Only POKEY (w=2) eligible → `N = 2` → POKEY `p = 1.0`. 1 outcome (deterministic).
+
+### §Slime-monsters
+
+Upstream-verified HP ranges and move sets (A0 ascension baseline; ToughEnemies threshold applies at A7+, DeadlyEnemies at A11+; Q2 targets A0 per Q2-ADR-002/006):
+
+**LeafSlimeS** (LeafSlimeS.cs:20-39):
+- HP A0: 11–15 (MinInitialHp line 20: `GetValueIfAscension(ToughEnemies, 12, 11)` → A0=11; MaxInitialHp line 22: `GetValueIfAscension(ToughEnemies, 16, 15)` → A0=15).
+- Moves: TACKLE_MOVE — `kAttack`, 3 dmg (TackleDamage line 24: `GetValueIfAscension(DeadlyEnemies, 4, 3)` → A0=3); GOOP_MOVE — `kAddStatusCard`, 1 Slimed (LeafSlimeS.cs:55: `AddToCombatAndPreview<Slimed>(..., 1, null)`).
+- Resolver: `RandomBranchState` with `MoveRepeatType.CannotRepeat` on both branches (LeafSlimeS.cs:34-35). Initial state: `RandomBranch` (turn-1 move is RNG-resolved; no fixed start — state machine begins at the `randomBranchState` per line 39).
+
+**LeafSlimeM** (LeafSlimeM.cs:22-40):
+- HP A0: 32–35 (MinInitialHp line 22: `GetValueIfAscension(ToughEnemies, 33, 32)` → A0=32; MaxInitialHp line 24: `GetValueIfAscension(ToughEnemies, 36, 35)` → A0=35).
+- Moves: CLUMP_SHOT — `kAttack`, 8 dmg (ClumpDamage line 26: `GetValueIfAscension(DeadlyEnemies, 9, 8)` → A0=8); STICKY_SHOT — `kAddStatusCard`, 2 Slimed (LeafSlimeM.cs:73: `AddToCombatAndPreview<Slimed>(..., 2, null)`).
+- Resolver: strict alternation via `FollowUpState` chain (LeafSlimeM.cs:34-37: `moveState.FollowUpState = new MoveState("STICKY_SHOT") { FollowUpState = moveState }`). Initial: STICKY_SHOT (line 40: `MonsterMoveStateMachine(list, moveState2)`).
+
+**TwigSlimeS** (TwigSlimeS.cs:15-27):
+- HP A0: 7–11 (MinInitialHp line 15: `GetValueIfAscension(ToughEnemies, 8, 7)` → A0=7; MaxInitialHp line 17: `GetValueIfAscension(ToughEnemies, 12, 11)` → A0=11).
+- Moves: TACKLE_MOVE — `kAttack`, 4 dmg (TackleDamage line 19: `GetValueIfAscension(DeadlyEnemies, 5, 4)` → A0=4).
+- Resolver: self-loop (`moveState.FollowUpState = moveState` per TwigSlimeS.cs:27). Initial: TACKLE_MOVE.
+
+**TwigSlimeM** (TwigSlimeM.cs:23-42):
+- HP A0: 26–28 (MinInitialHp line 23: `GetValueIfAscension(ToughEnemies, 27, 26)` → A0=26; MaxInitialHp line 25: `GetValueIfAscension(ToughEnemies, 29, 28)` → A0=28).
+- Moves: POKEY_POUNCE_MOVE — `kAttack`, 11 dmg (ClumpDamage line 27: `GetValueIfAscension(DeadlyEnemies, 12, 11)` → A0=11); STICKY_SHOT_MOVE — `kAddStatusCard`, 1 Slimed (TwigSlimeM.cs:75: `AddToCombatAndPreview<Slimed>(..., 1, null)`).
+- Resolver: `RandomBranchState` weighted; POKEY weight=2, STICKY weight=1 with `CannotRepeat` (TwigSlimeM.cs:37-38: `randomBranchState.AddBranch(moveState, 2); randomBranchState.AddBranch(moveState2, MoveRepeatType.CannotRepeat)`). Initial: STICKY_SHOT_MOVE (line 42: `MonsterMoveStateMachine(list, moveState2)`).
+
+### §SmallSlimes-encounter
+
+Upstream `SlimesWeak.cs:48-59` defines the spawn logic for `SmallSlimes` (`SlimesWeak`). Three enemies; 2 consecutive `Rng.NextItem` calls produce 4 possible compositions (2 × 2 = 4 RNG variants):
+
+```
+_smallSlimes = [LeafSlimeS, TwigSlimeS]
+_mediumSlimes = [LeafSlimeM, TwigSlimeM]
+
+Slot 0: monsterModel  = Rng.NextItem(_smallSlimes)         // RNG #1: LeafSlimeS or TwigSlimeS
+Slot 1:               = Rng.NextItem(_mediumSlimes)         // RNG #2: LeafSlimeM or TwigSlimeM
+Slot 2: monsterModel2 = the OTHER small (not picked at slot 0)
+```
+
+Wire signatures for adapter detection (sorted alphabetical per existing `encounter_map` convention):
+
+| Variant | Wire signature (sorted) | encounter_id |
+|---|---|---|
+| Leaf-medium | `{LeafSlimeM, LeafSlimeS, TwigSlimeS}` | `SmallSlimes` |
+| Twig-medium | `{LeafSlimeS, TwigSlimeM, TwigSlimeS}` | `SmallSlimes` |
+
+Both wire signatures map to `encounter_id="SmallSlimes"` in `adapter.cc::encounter_map`. Two separate entries are required because the set of monster names differs between variants. The single `project_small_slimes(...)` function handles both variants: it dispatches on the wire-name presence of `"LeafSlimeM"` vs `"TwigSlimeM"` to assign each slime to the correct `CompactState` enemy slot.
+
+### §Q1-divergence-acknowledgment
+
+Q2 implements REAL upstream STS2 Slimed semantics: when a slime uses its status move, `CardPileCmd.AddToCombatAndPreview<Slimed>(targets, PileType.Discard, N, null)` (CardPileCmd.cs:886-916) materializes N Slimed cards in the player's discard pile mid-combat. In Q2, `do_enemy_act` mirrors this by incrementing `state.discard[kSlimed] += effect.value`.
+
+Q1's `Intent.Status(N)` is an intent-only stub (per Q2-ADR-009 precedent; `Phase1Monsters.cs:21` defines `Intent.Status(N)` as a display intent with no card injection). The Q1 stub does NOT materialize Slimed cards in the player's discard pile.
+
+Oracle-agreement gate will surface divergence for SmallSlimes fights where Slimed has been generated (Q1 discard contains no Slimed cards; Q2 discard contains N Slimed cards). Per Q2-ADR-029 and Q2-ADR-009, this divergence is acceptable and surfaced, not silent. Q12 evaluation harness's agreement-rate metric will trail until Q1 ports Slimed injection in a future Q1 wave.
+
+Informational interaction notes (not exercised in wave-22; no slime+Louse cross-encounter):
+- Slimed lacks the `ValueProp.Move` flag → `IsPoweredAttack()` returns false (ValuePropExtensions.cs:5-11) → Slimed-gained block does NOT trigger `CurlUpPower.AfterDamageReceived`.
+- Slimed-gained block also does NOT suffer `FrailPower`'s 0.75 multiplier (FrailPower.cs:22-31: `ModifyBlockMultiplicative` guards on `IsPoweredCardOrMonsterMoveBlock()` which also requires `ValueProp.Move`).
+
+**Consequences.**
+
+- *Negative:* `algorithm_sha` rotates per Q2-ADR-005. `transition.cc`, `chance.cc`, `card_effects.cc`, and `monster_moves.cc` are all in the canonical source list; all are touched by wave-22. All downstream Q10/Q12 consumers must filter oracle rows by `algorithm_sha` to avoid cross-wave comparisons.
+- *Negative:* Oracle-agreement DIVERGES for slime fights where Slimed has been generated. Q1 emits intent-only stubs; Q2 emits real discard mutations. Divergence rate increases as SmallSlimes fights accumulate in the Q3 experience store. Per Q2-ADR-029, this is acceptable and surfaced; it will remain until Q1 ports Slimed injection in a future wave.
+- *Negative:* `Phase`, `CardId`, and `MoveEffectKind` enums all gain new APPEND-ONLY entries. All future waves must respect the append constraint. Auditing new enum-dependent code sites (Zobrist table fills, switch statements) is mandatory at each wave dispatch.
+- *Negative:* Wave-22 LOC estimate ~1500–1800; substantial substrate change. If engineer reports complexity beyond session budget mid-dispatch, split into 22.α₁ (substrate types + Exhaust) → 22.α₂ (enemy-move RNG chance node). Both touch `transition.cc` → serialize on the same worktree branch, not parallel streams.
+- *Negative:* SmallSlimes pin solve has unknown state-space cost. If `Search::solve()` returns `SolveStatus::kCapExceeded` (state count exceeds 370M entry cap), the pin test commits as `DISABLED_DISABLED_...` and wave-22 closes with a documented gap. A cap-recovery wave (LRU eviction or structural shrink) follows.
+- *Positive:* First non-cultist, non-LouseProgenitor encounter shipping. SmallSlimes (3 enemies + Slimed mechanics) unblocks the slime campaign.
+- *Positive:* Q2-ADR-013 framework is reusable for future Phase-1+ encounters that emit status cards (Acid Slime variants in future ascensions; any encounter using `CardPileCmd.AddToCombatAndPreview`). The `exhaust_on_play` flag, `kAddStatusCard` effect kind, and `kAtEnemyMoveRng` chance phase generalize beyond slimes.
+
+**Cross-references.** Q2-ADR-002 (Path A scope), Q2-ADR-005 (algorithm_sha), Q2-ADR-009 (LouseProgenitor port; precedent for upstream-vs-Q1 divergence), Q2-ADR-010 (Zobrist hash-only TT; cap-recovery path), Q2-ADR-011 (absl + cap policy), Q2-ADR-012 (kMaxEnemies bump + slime prerequisites), ADR-029 (Path A roadmap).
 
 **Cross-references.** Q2-ADR-002 (Path A scope). Q2-ADR-006 (polymorphic power-hook framework — wave-21 does not touch power hooks; only the `monster_moves` table shape). Q2-ADR-010 (Zobrist hash-only TT; §Recovery seed re-roll path remains the recourse if cultist hash byte identity ever needs re-capture). Q2-ADR-011 (`absl::flat_hash_map` + cap).

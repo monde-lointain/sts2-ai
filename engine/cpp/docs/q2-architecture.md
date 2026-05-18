@@ -458,4 +458,83 @@ Future `FollowUpRule` values must append. `kStrict = 0` must never be reassigned
 
 Stub factories (`make_leaf_slime_s/m`, `make_twig_slime_s/m`) added in `enemies.cc` for wave-22 adapter projection to call. Each stub sets `kind_`, rolls HP per upstream A0 ranges, sets `alive = true`. Move-table population is deferred to wave-22.β; stubs are unreachable from any active adapter path until the wave-22 slime adapter projection lands.
 
+## 17. §17 — 2026-05-18 Wave-22 SmallSlimes + Slimed card mechanics addendum
+
+Wave-22 ports the `SmallSlimes` (`SlimesWeak`) encounter and introduces three substrate additions ratified in Q2-ADR-013: Slimed card injection mid-combat, Exhaust emulation, and a second chance phase for enemy-move RNG. See Q2-ADR-013 for full design rationale.
+
+### Slimed card injection mid-combat
+
+`CardId::kSlimed` is appended at value 5 (after `kStrike=1`, `kDefend=2`, `kNeutralize=3`, `kSurvivor=4`). APPEND-ONLY: inserting at a lower index corrupts cultist + LouseProgenitor `CardCounts` Zobrist hashes.
+
+`kCountedCardIds` grows from size 4 to size 5; `kSlimed` is at index 4. The Zobrist `key_hand`, `key_draw`, and `key_discard` tables each widen by one row in the card-id dimension; the mt19937 fills the new row at the END of the card-counts sequence (APPEND-ONLY; cultist hash byte identity preserved).
+
+`MoveEffectKind::kAddStatusCard` is a new APPEND-ONLY enum value. Slime status moves (GOOP_MOVE, STICKY_SHOT, STICKY_SHOT_MOVE) use this effect kind with `value = N`. When `do_enemy_act` processes a move with `kAddStatusCard`, it increments `state.discard[kSlimed] += effect.value`, mirroring `CardPileCmd.AddToCombatAndPreview<Slimed>(targets, PileType.Discard, N, null)` (CardPileCmd.cs:886-916).
+
+### Exhaust emulation
+
+Slimed is the first Exhaust-keyword card in Q2 (upstream `Slimed.cs:19`). A `bool exhaust_on_play` field is added at the END of the `CardEffect` struct, default `false`. All existing entries are unaffected.
+
+In `do_play_card`, the discard increment is gated on the flag:
+
+```cpp
+hand[id]--;
+if (!effect.exhaust_on_play) discard[id]++;
+// exhaust_on_play=true: card removed from game; no discard increment
+```
+
+No exhaust pile is tracked in `CompactState`. The exhaust pile is dead state from the expectimax perspective: no Phase-1A card or power reads exhaust-pile contents to influence search decisions. A future ADR is required if that assumption breaks.
+
+### Phase::kAtEnemyMoveRng + enumerate_chance_outcomes dispatch
+
+`Phase::kAtEnemyMoveRng = 2` is appended to `{kPlayerActing=0, kAtChanceDraw=1}`. APPEND-ONLY: inserting at a lower value shifts `kAtChanceDraw` and breaks all cultist + LouseProgenitor pinned seeds.
+
+The Zobrist phase table widens from 2 to 3 entries per half (~16 bytes; trivial); mt19937 fills the new entry at the END.
+
+`chance.h::enumerate_chance_outcomes` dispatches on `Phase`:
+
+- `kAtChanceDraw` → existing draw enumeration (wave-19 B.2-β; unchanged).
+- `kAtEnemyMoveRng` → walk alive enemies; for each, look up `kMonsterMoveTables[kind].moves[current_move_idx].follow_up_rule`; if `kStrict`, the next move was already deterministically assigned (no branch); if `kRandomBranchCannotRepeat` or `kWeightedRandomCannotRepeat`, enumerate per-branch outcomes respecting CannotRepeat exclusion + weighted re-normalization.
+
+Precise Phase ordering within a round:
+
+```
+kPlayerActing
+  ↓ (end turn)
+resolve_end_turn_pre_draw
+  ├─ player block clears
+  ├─ enemy ticks (Ritual, Frail, etc.)
+  └─ enemy resolves current_move (deterministic effect application)
+  ↓
+kAtEnemyMoveRng       (CHANCE NODE — only if any enemy's next-move follow-up is RandomBranch)
+  ↓ (RNG enumerates next-move outcomes per enemy)
+kAtChanceDraw          (CHANCE NODE — player draws cards)
+  ↓ (draw enumeration)
+kPlayerActing          (next round)
+```
+
+When all enemies have deterministic follow-ups, `kAtEnemyMoveRng` is skipped; the transition goes directly to `kAtChanceDraw`. "Pending RNG" is DERIVED from the move table — no sentinel state in `CompactState`, no Zobrist key noise.
+
+### CannotRepeat re-normalization rule
+
+At `kAtEnemyMoveRng`, for an enemy with `follow_up_rule == kWeightedRandomCannotRepeat`:
+
+1. Filter: exclude branch `i` if `branch_cannot_repeat[i] && branch_indices[i] == current_move_idx`.
+2. Normalizer: `N = sum of remaining branch_weights[i]`.
+3. Probability per remaining branch: `p_i = branch_weights[i] / N`.
+
+For `kRandomBranchCannotRepeat` (LeafSlimeS): all branches have CannotRepeat; current move excluded; one remaining branch → deterministic alternation (p=1.0). For `kWeightedRandomCannotRepeat` (TwigSlimeM): after POKEY both branches eligible, N=3, POKEY p=2/3 STICKY p=1/3 (2 outcomes); after STICKY only POKEY eligible, N=2, POKEY p=1.0 (1 outcome).
+
+Per-encounter contribution: only TwigSlimeM produces > 0 outcomes from `kAtEnemyMoveRng` (after POKEY only). SmallSlimes has at most 1 TwigSlimeM → cartesian product ≤ 2 outcomes per chance node. State-space growth bounded ~2× per round.
+
+### SmallSlimes wire signature dispatch
+
+`adapter.cc::encounter_map` carries TWO entries for SmallSlimes (one per medium-slime variant; sorted alphabetical per convention):
+
+| Wire signature | encounter_id |
+|---|---|
+| `{LeafSlimeM, LeafSlimeS, TwigSlimeS}` | `SmallSlimes` |
+| `{LeafSlimeS, TwigSlimeM, TwigSlimeS}` | `SmallSlimes` |
+
+Both route to `project_small_slimes(...)`, which dispatches on wire-name presence of `"LeafSlimeM"` vs `"TwigSlimeM"` to assign each slime to the correct `CompactState` enemy slot per the `SlimesWeak.cs:48-59` slot ordering (slot 0 = RNG-picked small, slot 1 = RNG-picked medium, slot 2 = other small).
+
 **Cross-reference.** Q2-ADR-012 contains the full design rationale, memory cost analysis, APPEND-ONLY contract, and consequence analysis for all wave-21 substrate changes.
