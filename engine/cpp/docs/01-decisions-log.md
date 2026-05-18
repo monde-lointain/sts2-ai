@@ -21,6 +21,7 @@ then positives).
 | Q2-ADR-009 | LouseProgenitor Port — First Encounter via Q2-ADR-006 Framework | Accepted (2026-05-17) |
 | Q2-ADR-010 | Zobrist 128-bit Hash-Only Transposition Table | Accepted (2026-05-18) |
 | Q2-ADR-011 | `absl::flat_hash_map` Container + Hard TT Entry Cap + Flag-and-Early-Return | Accepted (2026-05-18) |
+| Q2-ADR-012 | Slime prerequisites — kMaxEnemies 2→4 + MonsterKind/MoveId/FollowUpRule extensions + Zobrist table widening | Accepted (2026-05-18) |
 
 ---
 
@@ -806,3 +807,92 @@ When `tt_.size() >= kMaxTtEntries`: set `cap_hit_ = true`; insertion silently dr
 **Cross-references.** Q2-ADR-010 (Zobrist key type). Q2-ADR-005 (algorithm_sha incl. `ABSL_VERSION_TAG`).
 
 **Origin.** Wave-19. Plan `~/.claude/plans/plan-the-q2-oracle-glittery-pony.md` §2 (container choice rationale), §4 (cap behavior), §4a (TT lifecycle).
+
+---
+
+## Q2-ADR-012 — Slime prerequisites — kMaxEnemies 2→4 + MonsterKind/MoveId/FollowUpRule extensions + Zobrist table widening
+
+**Status:** Accepted (2026-05-18).
+
+**Context.** Wave-19 closed with `kMaxEnemies = 2` (reduced from the original wave-17 plan of 4 to control TT memory pressure prior to the Zobrist redesign). Post-Zobrist (wave-19), per-entry TT cost is 38 B regardless of `CompactState` size; the `kMaxEnemies` bump only widens the Zobrist key tables (~1.2 MB → ~2.4 MB static), not the TT itself. Slime encounters require `kMaxEnemies ≥ 4`: `SlimesNormal` (`MediumSlimes` wire name) is 4 enemies; `SlimesWeak` (`SmallSlimes` wire name) is 3 enemies. Porting these encounters is blocked until the substrate accommodates ≥4 enemy slots.
+
+Additionally, slime move-tables require new `MonsterKind` and `MoveId` enum values, and the Goop / sticky behaviour of slime moves requires a branching follow-up rule that the existing `follow_up_index` scalar cannot express. Wave-21 resolves all three prerequisites before the wave-22 slime data port.
+
+**Decision.**
+
+### kMaxEnemies 2 → 4
+
+`kMaxEnemies` raised from 2 to 4 in `engine/cpp/include/sts2/ai/state.h`. Enemy-slot-indexed Zobrist key tables (HP, Block, `MonsterKind`, `MoveId`, alive, `performed_first_move`, dark_strike_base, ritual_amount, PowerInstance arrays, power_count) widen from 2 slots per half to 4 slots per half. The mt19937_64 fill order is **APPEND-ONLY**: slots 0 and 1 consume the same PRNG outputs they did pre-wave-21, preserving cultist `ZobristKey` byte identity; slots 2 and 3 append at the end of the fill sequence.
+
+### MonsterKind enum extension (APPEND-ONLY)
+
+New values appended after existing entries:
+
+```
+kLeafSlimeS  = 3
+kLeafSlimeM  = 4
+kTwigSlimeS  = 5
+kTwigSlimeM  = 6
+```
+
+`kMonsterKindCount` advances 3 → 7. All existing values (`kCultistCalcified=0`, `kCultistDamp=1`, `kLouseProgenitor=2`) are unchanged.
+
+### MoveId enum extension (APPEND-ONLY)
+
+New values appended after existing entries:
+
+```
+kTackleMove    = 5
+kGoopMove      = 6
+kClumpShot     = 7
+kStickyShot    = 8
+kPokeyPounce   = 9
+```
+
+All existing values (`kIncantation=0`, `kDarkStrike=1`, `kWebCannon=2`, `kCurlAndGrow=3`, `kPounce=4`) are unchanged.
+
+### FollowUpRule schema extension (MonsterMove struct)
+
+`MonsterMove` gains a `FollowUpRule` enum and associated per-branch fields:
+
+```cpp
+enum FollowUpRule : uint8_t {
+  kStrict                    = 0,   // deterministic follow_up_index (existing behaviour)
+  kRandomBranchCannotRepeat  = 1,   // uniform random among branches; cannot repeat last
+  kWeightedRandomCannotRepeat = 2,  // weighted random among branches; cannot repeat last
+};
+```
+
+Per-branch fields added to `MonsterMove`:
+- `uint8_t branch_indices[kMaxBranchCount]` — move-table indices of candidate next moves.
+- `uint8_t branch_weights[kMaxBranchCount]` — weights (used when rule = `kWeightedRandomCannotRepeat`; uniform otherwise).
+- `uint8_t branch_cannot_repeat` — bit-mask of branch slots disallowed on repeat.
+- `uint8_t branch_count` — number of valid entries in the branch arrays.
+
+`kStrict = 0` MUST remain value 0. All existing `MonsterMove` entries for cultist and `LouseProgenitor` are zero-initialised for the new fields, which is semantically correct: `follow_up_rule = kStrict`, `branch_count = 0` — the existing `follow_up_index` scalar continues to govern advancement. No behaviour change for non-slime monsters.
+
+### Factory stubs
+
+`make_leaf_slime_s`, `make_leaf_slime_m`, `make_twig_slime_s`, `make_twig_slime_m` added in `engine/cpp/src/game/enemies.cc`. Each stub sets `kind_`, HP (rolled per upstream A0 ranges), and `alive = true`. Move-table population is deferred to wave-22.β; stubs are not reachable from any production path until the wave-22 adapter projection lands.
+
+**§Cultist hash byte identity (verification mechanism).**
+
+Wave-21 pre-flight (B.0) captured the cultist canonical-root `ZobristKey` at `engine/cpp/tests/seeds/cultist_zobrist_pin.h`:
+
+```cpp
+static constexpr uint64_t kCultistZobristKeyLo = 0xf812af56366b5548ULL;
+static constexpr uint64_t kCultistZobristKeyHi = 0x2c51edb8b6bd404eULL;
+```
+
+Wave-21.β's verification gate adds `Zobrist.CultistRootKey_MatchesPreWave21Pin` synthetic test, which asserts `zobrist_of(canonical_cultist_state) == ZobristKey{kCultistZobristKeyLo, kCultistZobristKeyHi}`. **Failure = wave-21 rollback** — either the mt19937_64 fill order regressed (slots 0+1 shifted), or the `fold_enemy` loop bound changed to include the new slots in positions previously occupied by slots 0+1. This assertion is the strongest possible guarantee that the table widening preserved cultist behaviour bit-for-bit; it is stronger than a numerical oracle-value pin alone, which could in principle tolerate a Zobrist collision (vanishingly unlikely at ~10⁻²⁰ but theoretically non-zero).
+
+**Consequences.**
+
+- *Negative:* `algorithm_sha` rotates per Q2-ADR-005 (`state.h` and `zobrist.cc` both modified; both are in the canonical source list). Verify-server response `algorithm_sha` changes. All pinned scenario rows pick up the new hex stamp at next test run.
+- *Negative:* Zobrist key tables grow ~1.2 MB → ~2.4 MB static. Expected peak_rss_gb post-wave-21 is ~6.3 GB (was 6.19 GB pre-wave-21); negligible delta relative to the 16 GB ceiling.
+- *Negative:* APPEND-ONLY constraints on `MonsterKind`, `MoveId`, and `FollowUpRule` must be maintained in all future waves. Reordering any of these enum values breaks cultist and `LouseProgenitor` regression by shifting the Zobrist table slots their features map to.
+- *Negative:* Cultist and `LouseProgenitor` `MonsterMove` initializer syntax may require conversion to designated initializers when the `FollowUpRule` fields are added to the struct (engineer choice during wave-21.α implementation — aggregate initialisation order must be preserved or converted to named fields).
+- *Positive:* Unblocks slime encounter port: wave-22 can land `SmallSlimes` (`SlimesWeak`) data; wave-23 can land `MediumSlimes` (`SlimesNormal`) data.
+- *Positive:* `FollowUpRule` schema makes `RandomBranch` monster moves expressible in data without any new struct shape in wave-22; the branching plumbing is laid here.
+
+**Cross-references.** Q2-ADR-002 (Path A scope). Q2-ADR-006 (polymorphic power-hook framework — wave-21 does not touch power hooks; only the `monster_moves` table shape). Q2-ADR-010 (Zobrist hash-only TT; §Recovery seed re-roll path remains the recourse if cultist hash byte identity ever needs re-capture). Q2-ADR-011 (`absl::flat_hash_map` + cap).

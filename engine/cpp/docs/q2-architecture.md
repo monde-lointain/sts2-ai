@@ -375,3 +375,87 @@ Wave-19 replaced the Q2 transposition table with a Zobrist 128-bit hash-only des
 Profile script: `.claude/scripts/profile-cultist-solve.sh <out_json_path>` performs clean Release rebuild + `Search.DISABLED_StarterCombatSolves_LogsDiagnostics` via `/usr/bin/time -v`. Captures peak RSS (OS-authoritative), elapsed_ms, tt_size, expected_hp/rounds, algorithm_sha. Pre-wave baseline at `.claude/state/profiles/wave-19-pre.json` (~24.4 GB); post-wave validation diffs against baseline per §9 criteria.
 
 **FP-determinism contract (Q2-ADR-010 §FP-determinism):** Q2 TUs compile with `-fno-fast-math` and without `-ffinite-math-only` / `-fassociative-math` / `-freciprocal-math` / `-fno-signed-zeros` / `-march=native`. Single-threaded; default FP rounding mode. Future flag changes = ADR amendment + cultist pin re-validation.
+
+## 16. §16 — 2026-05-18 Wave-21 slime prerequisites addendum
+
+Wave-21 widens the engine substrate to accommodate slime encounters. Three coordinated changes land together; none is independently mergeable without the others.
+
+### kMaxEnemies bump (2 → 4)
+
+`kMaxEnemies` raised to 4 in `state.h`. The rationale for deferring this bump to wave-21 (instead of wave-17 where it was originally planned) was TT memory pressure: pre-Zobrist, `CompactState` was the TT key, so widening the enemy array widened every TT entry. Post-Zobrist (wave-19), the TT stores only 128-bit `ZobristKey` → `Score` pairs at 38 B/entry; `CompactState` size no longer impacts TT memory. The only memory cost of the bump is the widening of the Zobrist key tables themselves.
+
+**Memory cost analysis.**
+
+| Component | Before wave-21 | After wave-21 |
+|---|---|---|
+| Zobrist key tables (static) | ~1.2 MB (2 enemy slots) | ~2.4 MB (4 enemy slots) |
+| TT entries (dynamic, at cap) | 370M × 38 B ≈ 14 GB | unchanged — 38 B/entry is key+value, not CompactState |
+| Expected peak_rss_gb | 6.19 GB (post-wave-20 profile) | ~6.3 GB (Zobrist table delta only) |
+
+The 16 GB ceiling from Q2-ADR-010 is unaffected. Slime encounters (`SlimesWeak` = 3 enemies, `SlimesNormal` = 4 enemies) now fit within the allocated enemy-slot count.
+
+### APPEND-ONLY constraint enforcement
+
+Widening the Zobrist key tables from 2 to 4 enemy slots must not shift the PRNG outputs consumed for existing slots (0 and 1). The mt19937_64 fill sequence for each half seeds the tables in a deterministic order: slots 0 and 1 are filled first (consuming the same PRNG outputs as pre-wave-21), then slots 2 and 3 are filled from the continuation of the same sequence.
+
+This APPEND-ONLY fill order is enforced by the **cultist ZobristKey byte-identity assertion** introduced in wave-21.β:
+
+```cpp
+// engine/cpp/tests/seeds/cultist_zobrist_pin.h
+static constexpr uint64_t kCultistZobristKeyLo = 0xf812af56366b5548ULL;
+static constexpr uint64_t kCultistZobristKeyHi = 0x2c51edb8b6bd404eULL;
+```
+
+The synthetic gtest `Zobrist.CultistRootKey_MatchesPreWave21Pin` asserts that `zobrist_of(canonical_cultist_state)` equals `ZobristKey{kCultistZobristKeyLo, kCultistZobristKeyHi}`. Failure means either the fill order regressed or the `fold_enemy` loop bound changed to include slots 2–3 for existing enemy features. Any failure is a rollback trigger for wave-21.
+
+The same APPEND-ONLY discipline applies to all enum types whose values index into Zobrist tables:
+
+### MonsterKind enum schema
+
+```
+kCultistCalcified = 0   // locked (wave-16)
+kCultistDamp      = 1   // locked (wave-16)
+kLouseProgenitor  = 2   // locked (wave-17)
+kLeafSlimeS       = 3   // wave-21 (APPEND-ONLY)
+kLeafSlimeM       = 4   // wave-21 (APPEND-ONLY)
+kTwigSlimeS       = 5   // wave-21 (APPEND-ONLY)
+kTwigSlimeM       = 6   // wave-21 (APPEND-ONLY)
+kMonsterKindCount = 7
+```
+
+All future monster kinds must append. Inserting a value between existing entries shifts the Zobrist table slot mapping for all higher-valued kinds and breaks all pinned seeds that include those monsters.
+
+### MoveId enum schema
+
+```
+kIncantation  = 0   // locked (wave-16)
+kDarkStrike   = 1   // locked (wave-16)
+kWebCannon    = 2   // locked (wave-17)
+kCurlAndGrow  = 3   // locked (wave-17)
+kPounce       = 4   // locked (wave-17)
+kTackleMove   = 5   // wave-21 (APPEND-ONLY)
+kGoopMove     = 6   // wave-21 (APPEND-ONLY)
+kClumpShot    = 7   // wave-21 (APPEND-ONLY)
+kStickyShot   = 8   // wave-21 (APPEND-ONLY)
+kPokeyPounce  = 9   // wave-21 (APPEND-ONLY)
+```
+
+### FollowUpRule enum schema
+
+`MonsterMove` gains a `FollowUpRule` discriminator governing how the next move is selected after the current move resolves:
+
+```
+kStrict                     = 0   // deterministic: follow_up_index scalar (existing behaviour)
+kRandomBranchCannotRepeat   = 1   // uniform random from branch_indices[]; no repeat of last move
+kWeightedRandomCannotRepeat = 2   // weighted random from branch_indices[]; no repeat of last move
+```
+
+`kStrict = 0` is zero-init default: all existing `MonsterMove` entries (cultist, `LouseProgenitor`) acquire `follow_up_rule = kStrict` via zero-initialisation with no semantic change. The per-branch fields (`branch_indices`, `branch_weights`, `branch_cannot_repeat`, `branch_count`) are also zero-initialised for existing entries and ignored when `follow_up_rule == kStrict`.
+
+Future `FollowUpRule` values must append. `kStrict = 0` must never be reassigned.
+
+### Factory stubs
+
+Stub factories (`make_leaf_slime_s/m`, `make_twig_slime_s/m`) added in `enemies.cc` for wave-22 adapter projection to call. Each stub sets `kind_`, rolls HP per upstream A0 ranges, sets `alive = true`. Move-table population is deferred to wave-22.β; stubs are unreachable from any active adapter path until the wave-22 slime adapter projection lands.
+
+**Cross-reference.** Q2-ADR-012 contains the full design rationale, memory cost analysis, APPEND-ONLY contract, and consequence analysis for all wave-21 substrate changes.
