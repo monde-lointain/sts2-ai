@@ -87,6 +87,15 @@ enum class HookPoint : uint8_t {
 // enum. Existing cultist + LouseProgenitor code paths bypass it (handcoded
 // dispatch). Wave-22.α APPENDS kAddStatusCard for slime GOOP / STICKY_SHOT
 // moves which place a Slimed card in the player's discard pile.
+// Wave-24/K.α APPENDS kBuffEnemy (Nibbit HISS) + kBlockSelf (Nibbit SLICE):
+//   kBuffEnemy: applies stacks of MoveEffect.power_kind to the acting enemy
+//     at MoveEffect.value. Targets SELF; buff-other-enemy needs a separate
+//     kind (not in scope). Dispatch uses generic powers::add_power — no
+//     Ritual side-effects (just_applied flag untouched).
+//   kBlockSelf: applies MoveEffect.value block to the acting enemy. Enemy
+//     block decays at end of each enemy's individual turn (added in
+//     do_enemy_act). NOT Zobrist-hashed (MoveEffectKind is a behavior tag,
+//     not state — see zobrist.cc cardinality audit).
 enum class MoveEffectKind : uint8_t {
   kNone = 0,
   kAttack = 1,
@@ -94,6 +103,8 @@ enum class MoveEffectKind : uint8_t {
   kBuffSelf = 3,
   kDebuffPlayer = 4,
   kAddStatusCard = 5,  // wave-22.α (LeafSlimeS GOOP, TwigSlime* STICKY_SHOT)
+  kBuffEnemy = 6,      // wave-24/K.α (Nibbit HISS — Strength self-buff)
+  kBlockSelf = 7,      // wave-24/K.α (Nibbit SLICE — block self)
 };
 
 }  // namespace sts2::game

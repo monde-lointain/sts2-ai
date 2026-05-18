@@ -6,6 +6,7 @@
 
 #include "sts2/ai/state.h"
 #include "sts2/game/index_types.h"
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/types.h"
 
 namespace sts2::ai::transition {
@@ -53,5 +54,25 @@ struct Action {
                                       CardCounts drawn);
 
 [[nodiscard]] bool is_terminal(const CompactState& state) noexcept;
+
+// ---------------------------------------------------------------------------
+// Test-only seam (wave-24/K.α). The data-driven MoveEffect dispatch loop in
+// do_enemy_act_slime is not directly callable from tests (anonymous
+// namespace). Since K.α adds kBuffEnemy + kBlockSelf MoveEffectKinds which
+// no existing monster_moves table exercises (Nibbit lands in K.β), tests for
+// the new dispatch paths need a seam. This function applies a single
+// MoveEffect to (s, e) using the same logic as do_enemy_act_slime's switch.
+// NOT for production use; the loop in do_enemy_act_slime is the real path.
+// ---------------------------------------------------------------------------
+namespace test_internals {
+void apply_single_move_effect_for_test(
+    CompactState& s, EnemyState& e,
+    const sts2::game::monster_moves::MoveEffect& fx) noexcept;
+
+// Drive end-of-enemy-turn block decay path directly (matches the trailing
+// `M::set_enemy_block(e, Stat{0})` in do_enemy_act). Tests use this to
+// assert decay behavior without needing a monster_moves table entry.
+void decay_enemy_block_for_test(EnemyState& e) noexcept;
+}  // namespace test_internals
 
 }  // namespace sts2::ai::transition

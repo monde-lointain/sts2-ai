@@ -54,13 +54,34 @@ class StateMutator {
   }
   // Generic enemy-power mutator (wave-22.α): data-driven kBuffSelf path uses
   // this for slime move tables. The kStrength / kFrail wrappers above remain
-  // for backward-compat with cultist + LouseProgenitor hooks.
+  // for backward-compat with cultist + LouseProgenitor hooks. Wave-24/K.α
+  // reuses for kBuffEnemy (Nibbit HISS): GENERIC stack-add, NO Ritual
+  // side-effects (just_applied flag untouched; ritual_amount_ unchanged).
   static void add_enemy_power(EnemyState& e, sts2::game::PowerKind kind,
                               int delta) noexcept {
     if (delta == 0) {
       return;
     }
     powers::add_power(e.powers_, e.power_count_, kind, delta);
+  }
+  // Wave-24/K.α: enemy block accumulation helper for kBlockSelf dispatch.
+  // Mirrors player block accumulation (no Frail/dexterity in Phase-1 enemy
+  // block; treated as raw add). Block decays at START of each enemy's turn
+  // via the existing turn_flow.h::EndTurnOps::reset_enemy_block scaffold
+  // (block persists across the player's intervening turn — upstream STS
+  // semantics; same path Louse's kCurlAndGrow block uses).
+  static void add_enemy_block(EnemyState& e, int delta) noexcept {
+    if (delta == 0) {
+      return;
+    }
+    e.block_ += delta;
+  }
+  // Wave-24/K.α: enemy block assignment helper. Direct setter (no
+  // accumulation); test-only seam uses this via
+  // test_internals::decay_enemy_block_for_test. The production
+  // pre-act decay path is turn_flow.h::EndTurnOps::reset_enemy_block.
+  static void set_enemy_block(EnemyState& e, sts2::game::Stat value) noexcept {
+    e.block_ = value;
   }
   // Generic remove-power-instance (decrement stacks; remove if <= 0).
   static void decrement_power(EnemyState& e,
@@ -678,6 +699,24 @@ void do_enemy_act_slime(CompactState& s, EnemyState& e) {
         }
         break;
       }
+      case sts2::game::MoveEffectKind::kBuffEnemy: {
+        // Wave-24/K.α — Nibbit HISS-equivalent: applies stacks of
+        // fx.power_kind to the acting enemy. Targets SELF (other-enemy buff
+        // requires a different MoveEffectKind; not in scope). Uses generic
+        // powers::add_power via M::add_enemy_power — no Ritual side-effects
+        // (just_applied flag untouched; ritual_amount_ unchanged).
+        M::add_enemy_power(e, fx.power_kind, fx.value);
+        break;
+      }
+      case sts2::game::MoveEffectKind::kBlockSelf: {
+        // Wave-24/K.α — Nibbit SLICE-equivalent: applies fx.value block to
+        // the acting enemy. Block persists across the player's intervening
+        // turn and decays at START of the enemy's NEXT turn via the
+        // existing turn_flow.h::EndTurnOps::reset_enemy_block scaffold
+        // (same path Louse's kCurlAndGrow self-block uses).
+        M::add_enemy_block(e, fx.value);
+        break;
+      }
       case sts2::game::MoveEffectKind::kNone:
         // Sentinel; no effect.
         break;
@@ -907,5 +946,75 @@ CompactState apply_draw(const CompactState& state, CardCounts drawn) {
   apply_draw_in_place(next, drawn);
   return next;
 }
+
+// ---------------------------------------------------------------------------
+// Test-only seam (wave-24/K.α). Mirrors the do_enemy_act_slime MoveEffect
+// dispatch switch — kept in lockstep manually (small surface). Used by
+// test_transition.cc to exercise kBuffEnemy / kBlockSelf paths without
+// requiring a monster_moves table entry (Nibbit lands in K.β).
+// ---------------------------------------------------------------------------
+namespace test_internals {
+
+void apply_single_move_effect_for_test(
+    CompactState& s, EnemyState& e,
+    const sts2::game::monster_moves::MoveEffect& fx) noexcept {
+  switch (fx.kind) {
+    case sts2::game::MoveEffectKind::kAttack: {
+      const int dmg = sts2::damage::compute_outgoing(
+          fx.value, e.get_strength().value(), e.get_weak().value());
+      (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
+                                            dmg);
+      break;
+    }
+    case sts2::game::MoveEffectKind::kDefend: {
+      const int blk =
+          sts2::damage::compute_outgoing_block(fx.value, 0, false, true);
+      M::block(e) += blk;
+      break;
+    }
+    case sts2::game::MoveEffectKind::kBuffSelf: {
+      M::add_enemy_power(e, fx.power_kind, fx.value);
+      break;
+    }
+    case sts2::game::MoveEffectKind::kDebuffPlayer: {
+      if (fx.power_kind == sts2::game::PowerKind::kFrail) {
+        M::add_player_frail(s, fx.value);
+      } else if (fx.power_kind == sts2::game::PowerKind::kWeak) {
+        M::add_player_weak(s, fx.value);
+      }
+      break;
+    }
+    case sts2::game::MoveEffectKind::kAddStatusCard: {
+      const int count = fx.value;
+      for (int n = 0; n < count; ++n) {
+        if (M::discard(s)[CardId::kSlimed] <
+            sts2::game::card_effects::kMaxSlimedAccumulation) {
+          ++M::discard(s)[CardId::kSlimed];
+        }
+      }
+      break;
+    }
+    case sts2::game::MoveEffectKind::kBuffEnemy: {
+      // Wave-24/K.α: generic stack-add via powers::add_power; NO Ritual
+      // side-effects.
+      M::add_enemy_power(e, fx.power_kind, fx.value);
+      break;
+    }
+    case sts2::game::MoveEffectKind::kBlockSelf: {
+      // Wave-24/K.α: accumulate enemy block. Decay at end of enemy turn (see
+      // decay_enemy_block_for_test).
+      M::add_enemy_block(e, fx.value);
+      break;
+    }
+    case sts2::game::MoveEffectKind::kNone:
+      break;
+  }
+}
+
+void decay_enemy_block_for_test(EnemyState& e) noexcept {
+  M::set_enemy_block(e, sts2::game::Stat{0});
+}
+
+}  // namespace test_internals
 
 }  // namespace sts2::ai::transition

@@ -148,6 +148,16 @@
 //     stat ranges may also re-stamp; reserve append-only for cases where
 //     pin-stability is contractually required upstream.
 //
+// Wave-24/K.α MoveEffectKind extension (NO byte impact):
+//   * MoveEffectKind enum APPENDED kBuffEnemy (6) + kBlockSelf (7) for the
+//     Nibbit port (HISS = Strength self-buff; SLICE = block self).
+//     MoveEffectKind is a BEHAVIOR TAG that drives dispatch in transition.cc;
+//     it is NOT a Zobrist key-table dimension (no `kMoveEffectKind*` table or
+//     fold in this file). Adding values does NOT rotate the cultist BYTE; the
+//     `0x569115efa81a95dc / 0x9a06f1e505846a80` pin is PRESERVED.
+//   * The new kinds are dead-path for cultist + Louse + slimes (no existing
+//     monster_moves table emits them); Nibbit emits them after K.β lands.
+//
 // Future widening required when:
 //   - kMaxEnemies bumps 4 → higher (no current encounter requires this).
 //   - kMonsterKindCardinality bumps 7 → higher (Phase-2 monster additions).

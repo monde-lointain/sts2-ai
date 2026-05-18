@@ -640,4 +640,180 @@ TEST(Transition, SlimedCap_BelowCapAddsNormally) {
       << "discard[kSlimed] below cap must accumulate normally";
 }
 
+// ---------------------------------------------------------------------------
+// Wave-24/K.α — new MoveEffectKind dispatch + enemy block decay
+//
+// kBuffEnemy + kBlockSelf are not yet referenced by any monster_moves table
+// (Nibbit lands in K.β), so we drive them via the test_internals seam in
+// transition.h. The seam mirrors do_enemy_act_slime's dispatch switch
+// (kept in lockstep manually). EnemyBlock_DecaysAtEndOfEnemyTurn drives the
+// full do_enemy_act path through resolve_end_turn_pre_draw using LeafSlimeM
+// (data-driven path), then asserts block decay.
+// ---------------------------------------------------------------------------
+
+TEST(Transition, BuffEnemy_AddsStrengthStack) {
+  // Synthesize a slime enemy with power_count=0 (no spawn powers). LeafSlimeM
+  // kind is used purely as a non-cultist carrier; the test does not exercise
+  // its move table.
+  CompactState s = make_test_state();
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(sts2::game::Stat{30})
+        .alive(true);
+  });
+  ASSERT_EQ(s.get_enemy(0).get_power_count(), 0U);
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect fx{
+      .value = 2,
+      .kind = sts2::game::MoveEffectKind::kBuffEnemy,
+      .power_kind = sts2::game::PowerKind::kStrength,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          fx);
+
+  EXPECT_EQ(e.get_strength(), Stat{2});
+  ASSERT_EQ(e.get_power_count(), 1U);
+  EXPECT_EQ(e.get_powers()[0].kind, sts2::game::PowerKind::kStrength);
+  EXPECT_EQ(e.get_powers()[0].stacks, 2);
+}
+
+TEST(Transition, BlockSelf_AccumulatesEnemyBlock) {
+  CompactState s = make_test_state();
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(sts2::game::Stat{30})
+        .block(Stat{0})
+        .alive(true);
+  });
+  ASSERT_EQ(s.get_enemy(0).get_block(), Stat{0});
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect fx{
+      .value = 5,
+      .kind = sts2::game::MoveEffectKind::kBlockSelf,
+      .power_kind = sts2::game::PowerKind::kWeak,  // unused for kBlockSelf
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          fx);
+
+  EXPECT_EQ(e.get_block(), Stat{5});
+}
+
+TEST(Transition, EnemyBlock_DecaysAtEndOfEnemyTurn) {
+  // Synthesize a LeafSlimeM enemy with residual block=10 from a prior turn.
+  // Drive one full end-of-turn through resolve_end_turn_pre_draw; assert
+  // block is 0 after the dispatch.
+  //
+  // Audit (wave-24/K.α): the upstream STS convention is "block decays at
+  // START of each side's turn" — implemented in turn_flow.h:33 as
+  // EndTurnOps::reset_enemy_block(slot) running BEFORE enemy_act(slot).
+  // The test name uses "AtEndOfEnemyTurn" for spec lineage; the observable
+  // semantic is identical (block is 0 by the time the next observation
+  // point arrives). Nibbit's kBlockSelf will follow the same path: block
+  // applied during do_enemy_act, persists across the player's turn, decays
+  // at the NEXT enemy turn's pre-act reset.
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.energy(Stat{0}).hand(CardCounts{});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(sts2::game::Stat{30})
+        .block(Stat{10})
+        .alive(true)
+        .move_index(1)  // STICKY_SHOT (kAddStatusCard; data-driven)
+        .current_move(sts2::game::MoveId::kStickyShot)
+        .performed_first_move(true);
+  });
+  // Slot 1: harmless cultist-default; not part of the assertion.
+  update_enemy(
+      s, 1, [](EnemyStateBuilder& enemy) { enemy.alive(false).hp(Stat{0}); });
+
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+
+  EXPECT_EQ(s.get_enemy(0).get_block(), Stat{0})
+      << "enemy block must decay before next observation point "
+         "(turn_flow.h reset_enemy_block runs pre-enemy-act)";
+}
+
+TEST(Transition, BuffEnemy_DoesNotTriggerRitualSideEffects) {
+  // Synthesize a cultist with kRitual (just_applied=false, stacks=5) +
+  // ritual_amount_=5. Apply kBuffEnemy(kStrength, +2) via test seam. Assert
+  // just_applied flag NOT set on kRitual, ritual_amount_ unchanged, kStrength
+  // stack accumulated to +2.
+  CompactState s = make_test_state();
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kCultistCalcified)
+        .hp(sts2::game::Stat{40})
+        .alive(true)
+        .ritual_amount(Stat{5})
+        .add_power(sts2::game::PowerKind::kRitual, 5)
+        .just_applied_ritual(false);
+  });
+  ASSERT_FALSE(s.get_enemy(0).get_just_applied_ritual());
+  ASSERT_EQ(s.get_enemy(0).get_ritual_amount(), Stat{5});
+  ASSERT_EQ(s.get_enemy(0).get_strength(), Stat{0});
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect fx{
+      .value = 2,
+      .kind = sts2::game::MoveEffectKind::kBuffEnemy,
+      .power_kind = sts2::game::PowerKind::kStrength,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          fx);
+
+  // Strength stack accumulated.
+  EXPECT_EQ(e.get_strength(), Stat{2});
+  // Ritual side-effects NOT triggered.
+  EXPECT_FALSE(e.get_just_applied_ritual())
+      << "kBuffEnemy must not set kRitual.just_applied (no Ritual coupling)";
+  EXPECT_EQ(e.get_ritual_amount(), Stat{5})
+      << "kBuffEnemy must not mutate ritual_amount_";
+  // Ritual stacks preserved.
+  EXPECT_EQ(sts2::ai::powers::stacks_of(e.get_powers(), e.get_power_count(),
+                                        sts2::game::PowerKind::kRitual),
+            5);
+}
+
+TEST(Transition, EnemyStrength_AppliesToNonCultistAttack) {
+  // Synthesize a non-cultist enemy (LeafSlimeM) with kStrength=5. Apply an
+  // attack MoveEffect{kAttack, value=10} via test seam. Player has 0 block,
+  // 70 hp. Expected: hp loss = 10 + 5 = 15 → player_hp = 55.
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.player_hp(Stat{70}).player_block(Stat{0});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(sts2::game::Stat{30})
+        .alive(true)
+        .add_power(sts2::game::PowerKind::kStrength, 5);
+  });
+  ASSERT_EQ(s.get_enemy(0).get_strength(), Stat{5});
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect fx{
+      .value = 10,
+      .kind = sts2::game::MoveEffectKind::kAttack,
+      .power_kind = sts2::game::PowerKind::kWeak,  // unused for kAttack
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          fx);
+
+  EXPECT_EQ(s.get_player_hp(), Stat{55})
+      << "enemy Strength must apply to non-cultist attack via "
+         "compute_outgoing(base, strength, weak)";
+}
+
 }  // namespace
