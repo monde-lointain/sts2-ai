@@ -3,15 +3,6 @@
 # ------------------------------------------------------------------
 add_executable(sts2_simulator_tests)
 
-# Pre-register C.2-stream test TUs (sources land in wave-19/B.2-alpha + C.2-gamma/delta).
-# GENERATED suppresses configure-time "cannot find source file" errors.
-set_source_files_properties(
-    ai/test_recommend_re_derivation.cc
-    ai/test_tt_cap.cc
-    ai/test_zobrist.cc
-    PROPERTIES GENERATED TRUE
-)
-
 target_sources(sts2_simulator_tests PRIVATE
     test_smoke.cc
     game/test_rng.cc
