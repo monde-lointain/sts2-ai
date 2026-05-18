@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sys/resource.h>
 
 #include <chrono>
 
@@ -205,12 +206,12 @@ TEST(Search, StarterPositionSolve_PopulatesTt) {
   EXPECT_GE(search.tt_size(), 1U);
 }
 
-TEST(Search, Peek_UnvisitedReturnsNull) {
+TEST(Search, PeekScore_UnvisitedReturnsNullopt) {
   CompactState s = make_lethal_position();
   Search search;
-  EXPECT_EQ(search.peek(s), nullptr);
+  EXPECT_FALSE(search.peek_score(s).has_value());
   (void)search.solve(s);
-  EXPECT_NE(search.peek(s), nullptr);
+  EXPECT_TRUE(search.peek_score(s).has_value());
 }
 
 // Slow tractability probe (~3 min). Disabled by default; re-enable via:
@@ -230,13 +231,21 @@ TEST(Search, DISABLED_StarterCombatSolves_LogsDiagnostics) {
   const auto elapsed_ms =
       std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
 
-  // Surface diagnostics; not asserting a hard ceiling here --
-  // DONE_WITH_CONCERNS applies if this is excessively slow (>~30s).
-  std::cerr << "[StarterCombat] solve elapsed_ms=" << elapsed_ms
+  // Wave-19/§5: peak RSS instrumentation.
+  // Linux: ru_maxrss in KB; macOS: ru_maxrss in bytes. Q2 CI is Linux-only.
+  struct rusage ru {};
+  getrusage(RUSAGE_SELF, &ru);
+  const double peak_rss_gb =
+      static_cast<double>(ru.ru_maxrss) / (1024.0 * 1024.0);
+
+  std::cout << "[StarterCombat] solve elapsed_ms=" << elapsed_ms
             << " tt_size=" << search.tt_size()
             << " expected_hp=" << r.score.expected_hp
-            << " expected_rounds=" << r.score.expected_rounds << "\n";
+            << " expected_rounds=" << r.score.expected_rounds
+            << " peak_rss_gb=" << peak_rss_gb << '\n';
   EXPECT_FALSE(r.terminal);
+  ASSERT_LT(peak_rss_gb, 16.0)
+      << "Cultist solve exceeded 16 GB ceiling (Q2-ADR-011)";
 }
 
 }  // namespace
