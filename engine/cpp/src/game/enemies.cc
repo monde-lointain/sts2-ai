@@ -31,42 +31,64 @@ sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
   return make_cultist(kCultistArchetypes[1], rng);
 }
 
-// Wave-21: slime factory stubs. HP only; move-table data deferred to wave-22.β.
+// Wave-22.β: slime factories — HP roll + initial move per upstream.
 // Upstream A0 HP ranges per Models/Monsters/{LeafSlimeS,LeafSlimeM,
 // TwigSlimeS,TwigSlimeM}.cs MinInitialHp/MaxInitialHp.
+// Initial moves match the MonsterMoveStateMachine start state in each .cs.
+
+// LeafSlimeS: HP 11-15 (A0). Source: LeafSlimeS.cs:20,22.
+// Initial move: TACKLE_MOVE (kTackleMove). Source: LeafSlimeS.cs:39
+// (randomBranchState start; TACKLE is list index 0).
 sts2::game::Enemy make_leaf_slime_s(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Leaf Slime (S)";
   const int hp = rng.uniform_int(11, 15);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kTackleMove;
+  e.performed_first_move = false;
   return e;
 }
 
+// LeafSlimeM: HP 32-35 (A0). Source: LeafSlimeM.cs:22,24.
+// Initial move: STICKY_SHOT (kStickyShot). Source: LeafSlimeM.cs:40
+// (MonsterMoveStateMachine initial=moveState2 = STICKY_SHOT).
 sts2::game::Enemy make_leaf_slime_m(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Leaf Slime (M)";
   const int hp = rng.uniform_int(32, 35);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kStickyShot;
+  e.performed_first_move = false;
   return e;
 }
 
+// TwigSlimeS: HP 7-11 (A0). Source: TwigSlimeS.cs:15,17.
+// Initial move: TACKLE_MOVE (kTackleMove). Source: TwigSlimeS.cs:26
+// (single move, self-loop).
 sts2::game::Enemy make_twig_slime_s(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Twig Slime (S)";
   const int hp = rng.uniform_int(7, 11);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kTackleMove;
+  e.performed_first_move = false;
   return e;
 }
 
+// TwigSlimeM: HP 26-28 (A0). Source: TwigSlimeM.cs:23,25.
+// Initial move: STICKY_SHOT_MOVE (kStickyShot). Source: TwigSlimeM.cs:42
+// (MonsterMoveStateMachine initial=moveState2 = STICKY_SHOT_MOVE).
 sts2::game::Enemy make_twig_slime_m(sts2::game::Rng& rng) {
   sts2::game::Enemy e;
   e.name = "Twig Slime (M)";
   const int hp = rng.uniform_int(26, 28);
   e.vitals.max_hp = sts2::game::Stat{hp};
   e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kStickyShot;
+  e.performed_first_move = false;
   return e;
 }
 

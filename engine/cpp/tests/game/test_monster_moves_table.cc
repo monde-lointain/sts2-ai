@@ -225,4 +225,220 @@ TEST(MonsterMovesTable, DampCultist_InitialMoveIndex_IsZero) {
   EXPECT_EQ(t.moves[0].id, MoveId::kIncantation);
 }
 
+// =========================================================================
+// Wave-22.β: Slime move table data assertions
+// Sources cited per field.
+// =========================================================================
+
+using sts2::game::monster_moves::FollowUpRule;
+
+// -------------------------------------------------------------------------
+// LeafSlimeS
+// Source: LeafSlimeS.cs:20-39
+// -------------------------------------------------------------------------
+
+TEST(MonsterMovesTable, LeafSlimeS_HpRange) {
+  // LeafSlimeS.cs:20 (A0 min=11), :22 (A0 max=15)
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.min_hp, uint8_t{11});
+  EXPECT_EQ(t.max_hp, uint8_t{15});
+}
+
+TEST(MonsterMovesTable, LeafSlimeS_TackleAttack3) {
+  // LeafSlimeS.cs:24 (TackleDamage A0=3), :31 (MoveState "TACKLE_MOVE")
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[0];
+  EXPECT_EQ(m.id, MoveId::kTackleMove);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(m.effects[0].value, int16_t{3});
+}
+
+TEST(MonsterMovesTable, LeafSlimeS_GoopStatus1) {
+  // LeafSlimeS.cs:32 ("GOOP_MOVE", StatusIntent(1)), :34-35
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[1];
+  EXPECT_EQ(m.id, MoveId::kGoopMove);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
+  EXPECT_EQ(m.effects[0].value, int16_t{1});
+}
+
+TEST(MonsterMovesTable, LeafSlimeS_RandomBranchAlternation) {
+  // LeafSlimeS.cs:33-35: RandomBranchState, both AddBranch with CannotRepeat
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  ASSERT_EQ(t.move_count, 2U);
+  // Both moves use kRandomBranchCannotRepeat
+  EXPECT_EQ(t.moves[0].follow_up_rule, FollowUpRule::kRandomBranchCannotRepeat);
+  EXPECT_EQ(t.moves[1].follow_up_rule, FollowUpRule::kRandomBranchCannotRepeat);
+  // Both branches CannotRepeat
+  EXPECT_EQ(t.moves[0].branch_count, 2U);
+  EXPECT_TRUE(t.moves[0].branch_cannot_repeat[0]);
+  EXPECT_TRUE(t.moves[0].branch_cannot_repeat[1]);
+  // Uniform weights
+  EXPECT_EQ(t.moves[0].branch_weights[0], uint8_t{1});
+  EXPECT_EQ(t.moves[0].branch_weights[1], uint8_t{1});
+}
+
+TEST(MonsterMovesTable, LeafSlimeS_InitialMove_IsTackle) {
+  // LeafSlimeS.cs:39: initial=randomBranchState; TACKLE is first in list
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeS);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.initial_move_index, 0U);
+  EXPECT_EQ(t.moves[0].id, MoveId::kTackleMove);
+}
+
+// -------------------------------------------------------------------------
+// LeafSlimeM
+// Source: LeafSlimeM.cs:22-40
+// -------------------------------------------------------------------------
+
+TEST(MonsterMovesTable, LeafSlimeM_HpRange) {
+  // LeafSlimeM.cs:22 (A0 min=32), :24 (A0 max=35)
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.min_hp, uint8_t{32});
+  EXPECT_EQ(t.max_hp, uint8_t{35});
+}
+
+TEST(MonsterMovesTable, LeafSlimeM_ClumpShotAttack8) {
+  // LeafSlimeM.cs:26 (ClumpDamage A0=8), :33 ("CLUMP_SHOT")
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[0];
+  EXPECT_EQ(m.id, MoveId::kClumpShot);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(m.effects[0].value, int16_t{8});
+}
+
+TEST(MonsterMovesTable, LeafSlimeM_StickyShotStatus2) {
+  // LeafSlimeM.cs:34 ("STICKY_SHOT", StatusIntent(2))
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[1];
+  EXPECT_EQ(m.id, MoveId::kStickyShot);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
+  EXPECT_EQ(m.effects[0].value, int16_t{2});
+}
+
+TEST(MonsterMovesTable, LeafSlimeM_StrictAlternation) {
+  // LeafSlimeM.cs:34,36: FollowUpState chains CLUMP→STICKY→CLUMP
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  ASSERT_EQ(t.move_count, 2U);
+  EXPECT_EQ(t.moves[0].follow_up_rule, FollowUpRule::kStrict);
+  EXPECT_EQ(t.moves[1].follow_up_rule, FollowUpRule::kStrict);
+  EXPECT_EQ(t.moves[0].follow_up_index, uint8_t{1});  // CLUMP → STICKY
+  EXPECT_EQ(t.moves[1].follow_up_index, uint8_t{0});  // STICKY → CLUMP
+}
+
+TEST(MonsterMovesTable, LeafSlimeM_InitialMove_IsStickyShot) {
+  // LeafSlimeM.cs:40: MonsterMoveStateMachine(list, moveState2);
+  // moveState2=STICKY_SHOT
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kLeafSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.initial_move_index, 1U);
+  EXPECT_EQ(t.moves[1].id, MoveId::kStickyShot);
+}
+
+// -------------------------------------------------------------------------
+// TwigSlimeS
+// Source: TwigSlimeS.cs:15-27
+// -------------------------------------------------------------------------
+
+TEST(MonsterMovesTable, TwigSlimeS_HpRange) {
+  // TwigSlimeS.cs:15 (A0 min=7), :17 (A0 max=11)
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeS);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.min_hp, uint8_t{7});
+  EXPECT_EQ(t.max_hp, uint8_t{11});
+}
+
+TEST(MonsterMovesTable, TwigSlimeS_TackleAttack4) {
+  // TwigSlimeS.cs:19 (TackleDamage A0=4), :26 ("TACKLE_MOVE")
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeS);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[0];
+  EXPECT_EQ(m.id, MoveId::kTackleMove);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(m.effects[0].value, int16_t{4});
+}
+
+TEST(MonsterMovesTable, TwigSlimeS_SelfLoopStrict) {
+  // TwigSlimeS.cs:27: moveState.FollowUpState = moveState (self-loop)
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeS);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  ASSERT_EQ(t.move_count, 1U);
+  EXPECT_EQ(t.moves[0].follow_up_rule, FollowUpRule::kStrict);
+  EXPECT_EQ(t.moves[0].follow_up_index, uint8_t{0});  // self-loop
+}
+
+// -------------------------------------------------------------------------
+// TwigSlimeM
+// Source: TwigSlimeM.cs:23-42
+// -------------------------------------------------------------------------
+
+TEST(MonsterMovesTable, TwigSlimeM_HpRange) {
+  // TwigSlimeM.cs:23 (A0 min=26), :25 (A0 max=28)
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.min_hp, uint8_t{26});
+  EXPECT_EQ(t.max_hp, uint8_t{28});
+}
+
+TEST(MonsterMovesTable, TwigSlimeM_PokeyPounceAttack11) {
+  // TwigSlimeM.cs:27 (ClumpDamage A0=11), :34 ("POKEY_POUNCE_MOVE")
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[0];
+  EXPECT_EQ(m.id, MoveId::kPokeyPounce);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAttack);
+  EXPECT_EQ(m.effects[0].value, int16_t{11});
+}
+
+TEST(MonsterMovesTable, TwigSlimeM_StickyShotStatus1) {
+  // TwigSlimeM.cs:35 ("STICKY_SHOT_MOVE", StatusIntent(1))
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  const MonsterMove& m = kMonsterMoveTables[kind_idx].moves[1];
+  EXPECT_EQ(m.id, MoveId::kStickyShot);
+  ASSERT_EQ(m.effect_count, 1U);
+  EXPECT_EQ(m.effects[0].kind, MoveEffectKind::kAddStatusCard);
+  EXPECT_EQ(m.effects[0].value, int16_t{1});
+}
+
+TEST(MonsterMovesTable, TwigSlimeM_WeightedRandomBranch) {
+  // TwigSlimeM.cs:37 (AddBranch(moveState, 2)), :38 (AddBranch(moveState2,
+  // CannotRepeat))
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  ASSERT_EQ(t.move_count, 2U);
+  EXPECT_EQ(t.moves[0].follow_up_rule,
+            FollowUpRule::kWeightedRandomCannotRepeat);
+  EXPECT_EQ(t.moves[1].follow_up_rule,
+            FollowUpRule::kWeightedRandomCannotRepeat);
+  // Branch count and weights
+  EXPECT_EQ(t.moves[0].branch_count, 2U);
+  EXPECT_EQ(t.moves[0].branch_weights[0], uint8_t{2});  // POKEY weight=2
+  EXPECT_EQ(t.moves[0].branch_weights[1], uint8_t{1});  // STICKY weight=1
+  // CannotRepeat flags: POKEY=false, STICKY=true
+  EXPECT_FALSE(t.moves[0].branch_cannot_repeat[0]);
+  EXPECT_TRUE(t.moves[0].branch_cannot_repeat[1]);
+}
+
+TEST(MonsterMovesTable, TwigSlimeM_InitialMove_IsStickyShot) {
+  // TwigSlimeM.cs:42: MonsterMoveStateMachine(list, moveState2);
+  // moveState2=STICKY_SHOT_MOVE
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  const MonsterMoveTable& t = kMonsterMoveTables[kind_idx];
+  EXPECT_EQ(t.initial_move_index, 1U);
+  EXPECT_EQ(t.moves[1].id, MoveId::kStickyShot);
+}
+
+TEST(MonsterMovesTable, TwigSlimeM_NoSpawnPowers) {
+  const auto kind_idx = static_cast<std::size_t>(MonsterKind::kTwigSlimeM);
+  EXPECT_EQ(kMonsterMoveTables[kind_idx].spawn_power_count, 0U);
+}
+
 }  // namespace

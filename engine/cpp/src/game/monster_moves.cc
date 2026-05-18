@@ -21,6 +21,18 @@
 //   CURL_AND_GROW: defend 14 block (self) + 5 Strength to self.
 //   POUNCE:        attack 14.  (A0 baseline; 16 is A11+ per
 //   LouseProgenitor.cs:63) Spawn power: CurlUp(14).
+//
+// Slime monsters (wave-22.β):
+//   LeafSlimeS:  LeafSlimeS.cs:20-39.  HP 11-15. TACKLE(3) / GOOP(Slimed×1).
+//                RandomBranchCannotRepeat; both branches CannotRepeat.
+//   LeafSlimeM:  LeafSlimeM.cs:22-40.  HP 32-35. CLUMP_SHOT(8) ↔
+//   STICKY_SHOT(Slimed×2).
+//                kStrict strict alternation; initial=STICKY_SHOT.
+//   TwigSlimeS:  TwigSlimeS.cs:15-27.  HP  7-11. TACKLE(4) self-loop kStrict.
+//   TwigSlimeM:  TwigSlimeM.cs:23-42.  HP 26-28. POKEY_POUNCE(11) /
+//   STICKY_SHOT(Slimed×1).
+//                kWeightedRandomCannotRepeat; weights {2,1}; only STICKY
+//                CannotRepeat; initial=STICKY_SHOT.
 
 #include "sts2/game/monster_moves.h"
 
@@ -151,15 +163,213 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
   return t;
 }
 
+// ---------------------------------------------------------------------------
+// Slime table builders (wave-22.β)
+// ---------------------------------------------------------------------------
+
+// LeafSlimeS (wave-22.β)
+// Source: LeafSlimeS.cs:20-39 (A0 baseline)
+// HP 11-15. Moves: TACKLE_MOVE(0)=kAttack/3, GOOP_MOVE(1)=kAddStatusCard/1.
+// Both share a RandomBranchState with CannotRepeat; post-turn-1 alternates.
+// follow_up_rule=kRandomBranchCannotRepeat on both moves (index into branch
+// table); initial=TACKLE_MOVE (first move in .cs move list, index 0).
+constexpr MonsterMoveTable make_leaf_slime_s_table() {
+  MonsterMoveTable t;
+
+  // Index 0: TACKLE_MOVE — attack 3.
+  // Source: LeafSlimeS.cs:24 (TackleDamage A0=3), :31 (MoveState name).
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kTackleMove;
+    m.follow_up_rule = FollowUpRule::kRandomBranchCannotRepeat;
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 3,
+        .power_kind = PowerKind::kWeak,  // unused for kAttack
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+    m.branch_indices = {0, 1, 0, 0};
+    m.branch_weights = {1, 1, 0, 0};
+    m.branch_cannot_repeat = {true, true, false, false};
+    m.branch_count = 2;
+  }
+
+  // Index 1: GOOP_MOVE — add 1 Slimed to player discard.
+  // Source: LeafSlimeS.cs:32 (MoveState "GOOP_MOVE", StatusIntent(1)), :34-35.
+  {
+    MonsterMove& m = t.moves[1];
+    m.id = MoveId::kGoopMove;
+    m.follow_up_rule = FollowUpRule::kRandomBranchCannotRepeat;
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAddStatusCard,
+        .value = 1,                      // 1 Slimed card added
+        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+    m.branch_indices = {0, 1, 0, 0};
+    m.branch_weights = {1, 1, 0, 0};
+    m.branch_cannot_repeat = {true, true, false, false};
+    m.branch_count = 2;
+  }
+
+  t.move_count = 2;
+  t.initial_move_index =
+      0;          // TACKLE_MOVE (LeafSlimeS.cs:39 randomBranch start)
+  t.min_hp = 11;  // LeafSlimeS.cs:20 A0 MinInitialHp
+  t.max_hp = 15;  // LeafSlimeS.cs:22 A0 MaxInitialHp
+  t.spawn_power_count = 0;
+  return t;
+}
+
+// LeafSlimeM (wave-22.β)
+// Source: LeafSlimeM.cs:22-40 (A0 baseline)
+// HP 32-35. Moves: CLUMP_SHOT(0)=kAttack/8, STICKY_SHOT(1)=kAddStatusCard/2.
+// kStrict strict alternation; CLUMP→STICKY→CLUMP... Initial=STICKY_SHOT.
+// Source: LeafSlimeM.cs:34 (FollowUpState chains), :40 (initial=moveState2).
+constexpr MonsterMoveTable make_leaf_slime_m_table() {
+  MonsterMoveTable t;
+
+  // Index 0: CLUMP_SHOT — attack 8.
+  // Source: LeafSlimeM.cs:26 (ClumpDamage A0=8), :33 (MoveState "CLUMP_SHOT").
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kClumpShot;
+    m.follow_up_rule = FollowUpRule::kStrict;
+    m.follow_up_index = 1;  // → STICKY_SHOT (LeafSlimeM.cs:34)
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 8,
+        .power_kind = PowerKind::kWeak,  // unused for kAttack
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+  }
+
+  // Index 1: STICKY_SHOT — add 2 Slimed to player discard.
+  // Source: LeafSlimeM.cs:34 (MoveState "STICKY_SHOT", StatusIntent(2)), :36.
+  {
+    MonsterMove& m = t.moves[1];
+    m.id = MoveId::kStickyShot;
+    m.follow_up_rule = FollowUpRule::kStrict;
+    m.follow_up_index = 0;  // → CLUMP_SHOT (LeafSlimeM.cs:36)
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAddStatusCard,
+        .value = 2,                      // 2 Slimed cards added
+        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+  }
+
+  t.move_count = 2;
+  t.initial_move_index =
+      1;          // STICKY_SHOT (LeafSlimeM.cs:40: initial=moveState2)
+  t.min_hp = 32;  // LeafSlimeM.cs:22 A0 MinInitialHp
+  t.max_hp = 35;  // LeafSlimeM.cs:24 A0 MaxInitialHp
+  t.spawn_power_count = 0;
+  return t;
+}
+
+// TwigSlimeS (wave-22.β)
+// Source: TwigSlimeS.cs:15-27 (A0 baseline)
+// HP 7-11. Single move: TACKLE_MOVE(0)=kAttack/4, self-loop (kStrict).
+// Source: TwigSlimeS.cs:26-27 (moveState.FollowUpState = moveState).
+constexpr MonsterMoveTable make_twig_slime_s_table() {
+  MonsterMoveTable t;
+
+  // Index 0: TACKLE_MOVE — attack 4.
+  // Source: TwigSlimeS.cs:19 (TackleDamage A0=4), :26 (MoveState
+  // "TACKLE_MOVE").
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kTackleMove;
+    m.follow_up_rule = FollowUpRule::kStrict;
+    m.follow_up_index = 0;  // self-loop (TwigSlimeS.cs:27)
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 4,
+        .power_kind = PowerKind::kWeak,  // unused for kAttack
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+  }
+
+  t.move_count = 1;
+  t.initial_move_index = 0;  // TACKLE_MOVE (only move)
+  t.min_hp = 7;              // TwigSlimeS.cs:15 A0 MinInitialHp
+  t.max_hp = 11;             // TwigSlimeS.cs:17 A0 MaxInitialHp
+  t.spawn_power_count = 0;
+  return t;
+}
+
+// TwigSlimeM (wave-22.β)
+// Source: TwigSlimeM.cs:23-42 (A0 baseline)
+// HP 26-28. Moves: POKEY_POUNCE(0)=kAttack/11, STICKY_SHOT(1)=kAddStatusCard/1.
+// kWeightedRandomCannotRepeat; weights {2,1}; only STICKY has CannotRepeat.
+// Initial=STICKY_SHOT_MOVE (TwigSlimeM.cs:42: initial=moveState2).
+constexpr MonsterMoveTable make_twig_slime_m_table() {
+  MonsterMoveTable t;
+
+  // Index 0: POKEY_POUNCE_MOVE — attack 11.
+  // Source: TwigSlimeM.cs:27 (ClumpDamage A0=11), :34 (MoveState
+  // "POKEY_POUNCE_MOVE").
+  {
+    MonsterMove& m = t.moves[0];
+    m.id = MoveId::kPokeyPounce;
+    m.follow_up_rule = FollowUpRule::kWeightedRandomCannotRepeat;
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAttack,
+        .value = 11,
+        .power_kind = PowerKind::kWeak,  // unused for kAttack
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+    m.branch_indices = {0, 1, 0, 0};
+    m.branch_weights = {2, 1, 0, 0};
+    m.branch_cannot_repeat = {false, true, false, false};
+    m.branch_count = 2;
+  }
+
+  // Index 1: STICKY_SHOT_MOVE — add 1 Slimed to player discard.
+  // Source: TwigSlimeM.cs:35 (MoveState "STICKY_SHOT_MOVE", StatusIntent(1)),
+  // :38.
+  {
+    MonsterMove& m = t.moves[1];
+    m.id = MoveId::kStickyShot;
+    m.follow_up_rule = FollowUpRule::kWeightedRandomCannotRepeat;
+    m.effects[0] = MoveEffect{
+        .kind = MoveEffectKind::kAddStatusCard,
+        .value = 1,                      // 1 Slimed card added
+        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
+        ._pad = 0,
+    };
+    m.effect_count = 1;
+    m.branch_indices = {0, 1, 0, 0};
+    m.branch_weights = {2, 1, 0, 0};
+    m.branch_cannot_repeat = {false, true, false, false};
+    m.branch_count = 2;
+  }
+
+  t.move_count = 2;
+  t.initial_move_index =
+      1;          // STICKY_SHOT_MOVE (TwigSlimeM.cs:42: initial=moveState2)
+  t.min_hp = 26;  // TwigSlimeM.cs:23 A0 MinInitialHp
+  t.max_hp = 28;  // TwigSlimeM.cs:25 A0 MaxInitialHp
+  t.spawn_power_count = 0;
+  return t;
+}
+
 }  // namespace
 
 // kMonsterMoveTables[MonsterKind::kCultistCalcified = 0]
 // kMonsterMoveTables[MonsterKind::kCultistDamp       = 1]
 // kMonsterMoveTables[MonsterKind::kLouseProgenitor   = 2]
-// kMonsterMoveTables[MonsterKind::kLeafSlimeS        = 3] (wave-22.β populates)
-// kMonsterMoveTables[MonsterKind::kLeafSlimeM        = 4] (wave-22.β populates)
-// kMonsterMoveTables[MonsterKind::kTwigSlimeS        = 5] (wave-22.β populates)
-// kMonsterMoveTables[MonsterKind::kTwigSlimeM        = 6] (wave-22.β populates)
+// kMonsterMoveTables[MonsterKind::kLeafSlimeS        = 3]
+// kMonsterMoveTables[MonsterKind::kLeafSlimeM        = 4]
+// kMonsterMoveTables[MonsterKind::kTwigSlimeS        = 5]
+// kMonsterMoveTables[MonsterKind::kTwigSlimeM        = 6]
 const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
     // kCultistCalcified (index 0)
     // Source: enemies.h kCultistArchetypes[0]
@@ -171,14 +381,14 @@ const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
                        /*hp_min=*/51, /*hp_max=*/53),
     // kLouseProgenitor (index 2) — wave-18
     make_louse_progenitor_table(),
-    // kLeafSlimeS (index 3) — wave-22.β populates real data
-    MonsterMoveTable{},
-    // kLeafSlimeM (index 4) — wave-22.β populates real data
-    MonsterMoveTable{},
-    // kTwigSlimeS (index 5) — wave-22.β populates real data
-    MonsterMoveTable{},
-    // kTwigSlimeM (index 6) — wave-22.β populates real data
-    MonsterMoveTable{},
+    // kLeafSlimeS (index 3) — wave-22.β
+    make_leaf_slime_s_table(),
+    // kLeafSlimeM (index 4) — wave-22.β
+    make_leaf_slime_m_table(),
+    // kTwigSlimeS (index 5) — wave-22.β
+    make_twig_slime_s_table(),
+    // kTwigSlimeM (index 6) — wave-22.β
+    make_twig_slime_m_table(),
 }};
 
 uint8_t find_move_index(MonsterKind kind, MoveId id) noexcept {
