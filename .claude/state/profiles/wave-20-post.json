@@ -1,0 +1,14 @@
+{
+  "profiled_at": "2026-05-18T04:02:51Z",
+  "git_sha": "c96ac6bcdd844a5dd416d3dd78cd61b1cec8b2ec",
+  "host": "clydew372-ThinkPad-T14-Gen-6",
+  "cpu_model": "AMD Ryzen AI 7 PRO 350 w/ Radeon 860M",
+  "peak_rss_kb": 6494200,
+  "peak_rss_gb": 6.193,
+  "wall_clock": "0:45.33",
+  "user_time": "43.40",
+  "tt_size": 84790480,
+  "expected_hp": 40.9083,
+  "expected_rounds": 6.45798,
+  "elapsed_ms": 45008
+}
