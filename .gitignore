@@ -13,6 +13,8 @@ out/
 .claude/**/__pycache__/
 .claude/state/**
 !.claude/state/SCHEMA.md
+!.claude/state/profiles/
+!.claude/state/profiles/**
 .worktrees/
 *.user
 
