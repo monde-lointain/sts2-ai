@@ -29,23 +29,26 @@ CompactState make_terminal_state(Stat player_hp = Stat{50}) {
 
 // ---------------------------------------------------------------------------
 
-TEST(TtCap, KMaxTtEntriesIs370M) {
-  // Sanity: lock the cap constant so silent changes are caught.
-  EXPECT_EQ(kMaxTtEntries, 370'000'000u);
-}
+// wave-22-fix-4/H.beta: kMaxTtEntries 370M → 200M (Q2-ADR-013 Amendment 4
+// §LRU-memory-tradeoff). LRU added ~32 B/entry; 200M × 70 B ≈ 14 GB stays
+// under the 16 GB ceiling.
+TEST(TtCap, KMaxTtEntriesIs200M) { EXPECT_EQ(kMaxTtEntries, 200'000'000u); }
 
+// wave-22-fix-4/H.beta: LRU retires kCapExceeded path; converged solves now
+// report eviction_count==0 (no LRU pressure) instead of cap_hit==false.
 TEST(TtCap, ConvergedSolveReportsKConverged) {
   Search search;
   const CompactState s = make_terminal_state();
   const SearchResult result = search.solve(s);
   EXPECT_EQ(result.status, SolveStatus::kConverged);
-  EXPECT_FALSE(search.cap_hit());
+  EXPECT_EQ(search.eviction_count(), 0u);
   EXPECT_EQ(result.entries_at_cap, 0u);
 }
 
-TEST(TtCap, CapHitFalseBeforeSolve) {
+// wave-22-fix-4/H.beta: replaces former cap_hit-false-before-solve check.
+TEST(TtCap, EvictionCountZeroBeforeSolve) {
   Search search;
-  EXPECT_FALSE(search.cap_hit());
+  EXPECT_EQ(search.eviction_count(), 0u);
 }
 
 TEST(TtCap, SearchReusableAfterClear) {
@@ -77,11 +80,12 @@ TEST(TtCap, TerminalSolveHasZeroRounds) {
   EXPECT_DOUBLE_EQ(r.score.expected_rounds, 0.0);
 }
 
-// Manual-run only: fills TT past kMaxTtEntries to verify the cap mechanism.
-// Disabled because it requires ~14 GB RAM and ~5+ minutes of compute.
-TEST(TtCap, DISABLED_OverCapSetsCapHitFlag) {
-  GTEST_SKIP()
-      << "DISABLED — manual run only; requires ~14 GB RAM and ~5 min compute";
+// wave-22-fix-4/H.beta: kCapExceeded path retired; the heavy over-cap probe
+// is now superseded by Search.LRU_EvictionFiresAtCap (tiny-cap synthetic in
+// test_search_known.cc) which exercises the eviction mechanism without 14 GB.
+TEST(TtCap, DISABLED_OverCapSetsCapHitFlag_Retired) {
+  GTEST_SKIP() << "RETIRED post wave-22-fix-4/H.beta: see "
+                  "Search.LRU_EvictionFiresAtCap for the LRU replacement.";
 }
 
 }  // namespace
