@@ -907,15 +907,23 @@ public static class CombatEngine
                 int modified = DamageModifier.Modify(ctx.State, enemyId, PlayerId, raw);
                 ctx.DealDamage(PlayerId, modified, enemyId);
             }
+            // Wave-24/K.q1: per-monster, per-moveId attack side-effects applied
+            // AFTER all damage hits. Nibbit's SLICE grants +5 self-block.
+            int selfBlock = ExtractAttackSelfBlock(model, moveId);
+            if (selfBlock > 0)
+            {
+                ctx.GainBlock(enemyId, selfBlock);
+            }
         }
         else if (move.Intent.Kind == IntentKind.Buff)
         {
-            // INCANTATION pattern: apply Ritual to self. Stack count comes from
-            // the concrete monster type (CalcifiedCultist=2, DampCultist=5).
-            int stacks = ExtractIncantationStacks(model, moveId);
+            // Buff pattern: apply a power to self. Power id + stack count come from
+            // the concrete monster type (CalcifiedCultist/DampCultist → Ritual;
+            // Nibbit → Strength). Wave-24/K.q1: generalised from Ritual-only.
+            (string powerId, int stacks) = ExtractBuffEffect(model, moveId);
             if (stacks > 0)
             {
-                ctx.ApplyPower(enemyId, PowerIds.Ritual, stacks, enemyId);
+                ctx.ApplyPower(enemyId, powerId, stacks, enemyId);
             }
         }
         // Defend / Debuff / Status: no engine-side payload yet. Defend would gain
@@ -926,25 +934,59 @@ public static class CombatEngine
     }
 
     /// <summary>
-    /// Returns the Ritual stack count an enemy's INCANTATION-shaped move
-    /// grants. Hard-coded for the smoke set; S12 generalises via a move
-    /// payload.
+    /// Returns the (powerId, stacks) pair a monster's Buff-intent move applies to
+    /// self. Wave-24/K.q1: generalised from ExtractIncantationStacks (Ritual-only)
+    /// to support Nibbit's HISS_MOVE → Strength:2.
+    /// Returns ("", 0) when the move has no buff payload.
     /// </summary>
-    private static int ExtractIncantationStacks(MonsterModel model, string moveId)
+    private static (string PowerId, int Stacks) ExtractBuffEffect(MonsterModel model, string moveId)
     {
         if (
             model is Sts2Headless.Domain.Content.Monsters.CalcifiedCultist
             && moveId == Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationMoveId
         )
         {
-            return Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationRitualStacks;
+            return (
+                PowerIds.Ritual,
+                Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationRitualStacks
+            );
         }
         if (
             model is Sts2Headless.Domain.Content.Monsters.DampCultist
             && moveId == Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationMoveId
         )
         {
-            return Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationRitualStacks;
+            return (
+                PowerIds.Ritual,
+                Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationRitualStacks
+            );
+        }
+        if (
+            model is Sts2Headless.Domain.Content.Monsters.Nibbit
+            && moveId == Sts2Headless.Domain.Content.Monsters.Nibbit.HissMoveId
+        )
+        {
+            return (
+                PowerIds.Strength,
+                Sts2Headless.Domain.Content.Monsters.Nibbit.HissStrengthStacks
+            );
+        }
+        return (string.Empty, 0);
+    }
+
+    /// <summary>
+    /// Returns the self-block an enemy gains after executing an Attack-intent move.
+    /// Wave-24/K.q1: Nibbit's SLICE_MOVE grants +5 self-block after damage.
+    /// Returns 0 when the move has no self-block side-effect.
+    /// </summary>
+    private static int ExtractAttackSelfBlock(MonsterModel model, string moveId)
+    {
+        if (
+            model is Sts2Headless.Domain.Content.Monsters.Nibbit
+            && moveId == Sts2Headless.Domain.Content.Monsters.Nibbit.SliceMoveId
+        )
+        {
+            return Sts2Headless.Domain.Content.Monsters.Nibbit.SliceSelfBlock;
         }
         return 0;
     }
