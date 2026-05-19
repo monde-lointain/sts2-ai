@@ -246,7 +246,7 @@ public static class CombatEngine
                     Powers: spawnPowerList,
                     // Stream-B-T3: stamp the initial move-id so multi-state monsters
                     // (Chomper et al.) start their per-creature cursor cleanly.
-                    // Wave-24/K.q1: honour per-slot override when non-null (NibbitsNormal).
+                    // Q1-ADR-014: honour per-slot override when non-null (NibbitsNormal).
                     Intent: MonsterIntent.FromContentIntent(
                         monsterModel.InitialIntent,
                         initialMoveIdOverride ?? monsterModel.InitialMoveId
@@ -935,8 +935,8 @@ public static class CombatEngine
 
     /// <summary>
     /// Returns the (powerId, stacks) pair a monster's Buff-intent move applies to
-    /// self. Wave-24/K.q1: generalised from ExtractIncantationStacks (Ritual-only)
-    /// to support Nibbit's HISS_MOVE → Strength:2.
+    /// self. Per Q1-ADR-014: generalised from ExtractIncantationStacks (Ritual-only)
+    /// to support Nibbit's HISS_MOVE → Strength:2 via per-monster dispatch.
     /// Returns ("", 0) when the move has no buff payload.
     /// </summary>
     private static (string PowerId, int Stacks) ExtractBuffEffect(MonsterModel model, string moveId)
@@ -976,7 +976,8 @@ public static class CombatEngine
 
     /// <summary>
     /// Returns the self-block an enemy gains after executing an Attack-intent move.
-    /// Wave-24/K.q1: Nibbit's SLICE_MOVE grants +5 self-block after damage.
+    /// Per Q1-ADR-014: Nibbit's SLICE_MOVE grants +5 self-block after damage via
+    /// per-monster Attack-branch side-effect dispatch.
     /// Returns 0 when the move has no self-block side-effect.
     /// </summary>
     private static int ExtractAttackSelfBlock(MonsterModel model, string moveId)

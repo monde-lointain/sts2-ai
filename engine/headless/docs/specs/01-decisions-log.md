@@ -19,6 +19,7 @@ These ADRs are **subordinate** to pipeline-level ADRs at `~/development/projects
 | Q1-ADR-011 | Parallel Sub-Streams Must Partition by File, Not Code Region | Accepted |
 | Q1-ADR-012 | Schema Lock for `contracts/schemas/game-simulator/` v0.1 (combat-only) | Accepted |
 | Q1-ADR-013 | Caller-Callee Contract Gap Mitigation (Q1-ADR-011 follow-up) | Accepted |
+| Q1-ADR-014 | EncounterModel Per-Slot Initial-Move Override + Per-Monster Move-Effect Dispatch in CombatEngine | Accepted |
 
 ---
 
@@ -320,3 +321,63 @@ Q1-ADR-011's partition-by-file rule does not catch caller-callee contract change
 **Cross-references.** Q1-ADR-011 (parent: partition-by-file rule). The D3/D6 incident is recorded in wave-2 status.
 
 **Origin.** Lead's directive 2026-05-12 after the D3/D6 caller-callee integration break (orchestrator fix at commit `30840c5`).
+
+## Q1-ADR-014 — EncounterModel Per-Slot Initial-Move Override + Per-Monster Move-Effect Dispatch in CombatEngine
+
+**Status:** Accepted.
+
+**Context.** Wave-24 K.q1 ported the Nibbit family (NibbitsWeak + NibbitsNormal) from upstream STS2 v0.105.1. Three Q1 substrate gaps surfaced that the existing substrate could not express:
+
+1. *Per-slot initial-move selection.* Upstream `Nibbit.cs:74-83` `ConditionalBranchState` picks the monster's first-turn move from `IsAlone` / `IsFront` flags supplied by the encounter at spawn. Q1 had no positional spawn-context surface (full-repo grep for `IsAlone` / `IsFront` / `ConditionalBranchState` returned zero hits). `MoveBranchContext` covers HP + powers only; `MonsterModel` ctor lacks a spawn-context parameter; `EncounterModel.GenerateMonsters(Rng) → IEnumerable<string>` returns only monster ids.
+
+2. *Per-monster Buff-effect dispatch.* CalcifiedCultist INCANTATION → Buff intent applied `(PowerIds.Ritual, IncantationRitualStacks)` via inline `ExtractIncantationStacks` at `CombatEngine.cs`. The lookup was cultist-only-hardcoded; Nibbit HISS_MOVE requires `(PowerIds.Strength, 2)` instead — a different power AND different stack count, both keyed off `(monster, moveId)`.
+
+3. *Multi-effect single-turn moves.* Upstream `SLICE_MOVE` carries TWO intents on one `MoveState` — `SingleAttackIntent(6)` AND `DefendIntent(5)` self-block. Q1's `MonsterMove.Intent` is singular; no existing monster move declares both attack + self-block on the same turn.
+
+All three gaps are Q1-substrate-internal: no wire-format change, no schema bump (per ADR-001), no cross-quantum coordination event. Approach A (minimal additive substrate) was elected over Approach B (heavier `MoveBranchContext` extension with positional spawn-context plumbing) by project-lead authorization. Approach B remains available as a future refactor option if per-turn positional branching is ever needed.
+
+**Decision.** Three additive surfaces, all in `engine/headless/src/Sts2Headless.Domain/`:
+
+1. **`EncounterModel.GenerateMonstersWithMoves(Rng rng) → IReadOnlyList<(string MonsterId, string? InitialMoveIdOverride)>`.** Virtual on `EncounterModel`; default implementation wraps the legacy `GenerateMonsters(rng)` with null overrides per slot. Legacy encounters override only `GenerateMonsters`; new encounters that need per-slot initial-move control override `GenerateMonstersWithMoves`. The default's Rng threading is identical to the legacy call (no extra tick added or skipped). `CombatEngine.SpawnEnemies` (sole caller, verified) threads each override into `MonsterIntent.FromContentIntent(monsterModel.InitialIntent, override ?? monsterModel.InitialMoveId)` at `CombatEngine.cs:246-253`. The override sets the Creature's initial cursor at spawn; turn-2+ rotations follow the standard `AdvanceMoveId(FollowUpMoveId)` chain unchanged.
+
+2. **`CombatEngine.ExtractBuffEffect(model, moveId) → (string PowerId, int Stacks)`** (renamed from the cultist-only `ExtractIncantationStacks`). Per-monster Buff-branch dispatch in `ResolveMove`'s Buff handler. Dispatch entries (citing constants per the actual implementation):
+   - `model is CalcifiedCultist && moveId == CalcifiedCultist.IncantationMoveId` → `(PowerIds.Ritual, CalcifiedCultist.IncantationRitualStacks)`
+   - `model is DampCultist && moveId == DampCultist.IncantationMoveId` → `(PowerIds.Ritual, DampCultist.IncantationRitualStacks)`
+   - `model is Nibbit && moveId == Nibbit.HissMoveId` → `(PowerIds.Strength, Nibbit.HissStrengthStacks)`
+   - default → `("", 0)` (caller skips application when stacks ≤ 0)
+
+   `Intent.Buff()` factory remains parameterless. Buff intent's stack value lives in the per-monster dispatch table, NOT on the wire (`MonsterIntent` encodes Buff with an empty `AppliesPowers` list).
+
+3. **`CombatEngine.ExtractAttackSelfBlock(model, moveId) → int`.** Per-monster Attack-branch side-effect dispatch in `ResolveMove`'s Attack handler (after damage application). Dispatch:
+   - `model is Nibbit && moveId == Nibbit.SliceMoveId` → `Nibbit.SliceSelfBlock`
+   - default → 0 (no self-block)
+
+   Returned int is applied via `ctx.GainBlock(enemyId, selfBlock)`. SLICE's MoveState declares only the Attack intent (`Intent.Attack(Nibbit.SliceDamage)`); the +5 self-block is engine-side, mirroring how the Buff branch already handles per-monster stack lookup.
+
+**Consequences.**
+
+- *Negative:* Three new per-monster dispatch points concentrate growth in `CombatEngine.ResolveMove`. Each new monster with a non-standard Buff effect requires an `ExtractBuffEffect` entry; each new monster with an Attack-side side-effect requires an `ExtractAttackSelfBlock` entry. If a SECOND Phase-1.5 port adds an Attack-side effect that is NOT a SelfBlock (e.g., self-debuff, card-draw, multi-attack tick), the helper must generalise to a richer return type (tuple or struct).
+
+- *Negative:* `Intent.Buff()` remains parameterless. The Buff-intent wire format encodes Buff with an empty `AppliesPowers` list — stack value is NOT carried on the wire. Downstream consumers that compute expected effects (Q2's `move_calc.cc`) must hardcode the `(monster, moveId) → (PowerId, Stacks)` table independently. Drift between Q1's `ExtractBuffEffect` and Q2's mapping is silent unless a regression test surfaces it.
+
+- *Negative:* SLICE-style "attack + self-block" uses engine-side dispatch rather than a declarative multi-Intent on `MonsterMove`. Adding similar patterns (attack + self-buff, attack + status injection) scales linearly per-monster-per-move. The alternative (extend `MonsterMove.Intent` to a list) was deferred and remains viable for a future refactor when 2+ multi-effect patterns exist.
+
+- *Negative:* The override mechanism only affects turn-1 cursor. If a future port requires per-turn positional branching (e.g., "back-slot monster's turn-3 move depends on whether front is alive"), generalisation to a positional `MoveBranchContext` extension would be required — Approach B from the K.q1 plan.
+
+- *Negative:* Fixture-side `Intent.Kind` quirk. At spawn time, `MonsterIntent.FromContentIntent(monsterModel.InitialIntent, override)` keeps `Intent.Kind` from `MonsterModel.InitialIntent` (e.g., `Attack` for Nibbit) while setting `MoveId` from the override (e.g., `SLICE_MOVE`). For NibbitsNormal slot 0 at fixture-capture time (turn 1, pre-player), the fixture shows `Kind=Attack` but `MoveId=SLICE_MOVE` — internally inconsistent for the duration of the player's first turn. `ResolveEnemyIntents` corrects `Kind` to match the move's intent on first player turn. Q2's wire-format read uses `MoveId` exclusively, so no downstream impact. Documented in fixture `08-nibbits-normal-seed42/README.md`. Future-proofing: `FromContentIntent` could be amended to also re-derive `Kind` from the override-pointed MoveState's Intent — deferred unless a downstream consumer reads `Kind` at spawn.
+
+- *Positive:* Minimal scope (~85 LOC substrate delta in K.q1). No `MoveBranchContext` extension; no `MonsterMove` signature change; cheap-clone invariant on `Creature` / `CombatState` preserved (no reference-typed mutable fields added).
+
+- *Positive:* Fully additive. Existing `GenerateMonsters` callers + existing CalcifiedCultist / DampCultist Buff users unchanged. State-codec schema stays at v3; no schema bump; no cross-quantum coordination event per ADR-001.
+
+- *Positive:* Wire format unchanged. `MonsterIntent.MoveId` length-prefixed string at `StateCodec.cs` continues to carry the canonical upstream move-id strings (e.g., `"SLICE_MOVE"`). Q2's K.β `move_calc.cc` knows the dual effect per its own table.
+
+- *Positive:* Precedent established for future Phase-1.5 ports needing per-slot initial-move overrides or per-monster Buff/Attack-side dispatches. Cleaner than ad-hoc subclasses (which would break Q2's `Enemy.Name == "Nibbit"` pattern-match contract).
+
+**Constraint-naming clarification (wave-24 K.0 context).** The K.0 ceremony commit's "Cultist + Louse pins should remain BIT-IDENTICAL; cultist Zobrist BYTE preserved (APPEND-ONLY)" refers to **Q2's cultist Zobrist BYTE** (Q2-internal state-hash, last rotated wave-23 J.beta). K.q1's fixture regen rotated **Q1's state-blob canonical hashes** (different artifact in `engine/headless/test/fixtures/state-blobs/`). These are distinct artifacts; the K.0 constraint is NOT violated by K.q1. Wave-24 close reviewer should not conflate the two.
+
+**Cross-references.** ADR-001 (cross-quantum schema versioning — no bump required). ADR-003 (Q4 token stability — fixture append). ADR-028 (Q1 substrate baseline at v0.105.1 — prerequisite). Q1-ADR-011 (parallel-by-file partitioning — wave-dispatch discipline upheld at K.q1).
+
+Implementation commits: `98e4fae` (substrate), `3dea36a` (Nibbit + Buff/Attack wiring), `41d1673` (encounters + catalog + Q4 fixture), `d02bea2` (tests), `5340227` (fixtures 07+08), `9a30f80` (fixture regen 01-06 post-catalog-expansion). Plan file: `~/.claude/plans/q1-nibbit-port-majestic-twilight.md`.
+
+**Origin.** K.q1 dispatch + merge 2026-05-18; this ADR authored post-merge per plan §13.

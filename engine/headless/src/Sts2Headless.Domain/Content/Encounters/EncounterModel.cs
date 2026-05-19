@@ -108,6 +108,8 @@ public abstract class EncounterModel : IEncounterModel
     /// use the monster model's own <c>InitialMoveId</c>.
     /// </para>
     /// </summary>
+    // Q1-ADR-014: per-slot initial-move override on encounters. Additive virtual;
+    // existing GenerateMonsters callers unchanged.
     public virtual IReadOnlyList<(string MonsterId, string? InitialMoveIdOverride)>
         GenerateMonstersWithMoves(Rng rng) =>
         GenerateMonsters(rng).Select(id => (id, (string?)null)).ToList();

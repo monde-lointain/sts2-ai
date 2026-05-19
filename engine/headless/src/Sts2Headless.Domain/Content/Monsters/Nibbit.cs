@@ -14,6 +14,12 @@ namespace Sts2Headless.Domain.Content.Monsters;
 ///   <item>InitialMoveId = BUTT_MOVE (NibbitsWeak uses this as-is;
 ///         NibbitsNormal overrides per slot).</item>
 /// </list>
+/// <remarks>
+/// Per Q1-ADR-014: HISS Strength is applied via <c>CombatEngine.ExtractBuffEffect</c>
+/// per-monster dispatch; SLICE self-block is applied via
+/// <c>CombatEngine.ExtractAttackSelfBlock</c> per-monster dispatch. NibbitsNormal's
+/// per-slot initial-move overrides flow through <c>EncounterModel.GenerateMonstersWithMoves</c>.
+/// </remarks>
 public sealed class Nibbit : MonsterModel
 {
     public const string CanonicalId = "Nibbit";
