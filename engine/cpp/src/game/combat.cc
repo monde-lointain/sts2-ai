@@ -167,6 +167,8 @@ void Combat::check_win_or_lose() {
 
 void Combat::add_enemy(Enemy e) { enemies_.push_back(std::move(e)); }
 
+void Combat::set_player_vitals(Vitals v) { player_.vitals = std::move(v); }
+
 void Combat::set_pick_discard_callback(
     std::function<HandIndex(const Combat&)> cb) {
   on_pick_discard_ = std::move(cb);

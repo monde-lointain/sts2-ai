@@ -1230,4 +1230,17 @@ TEST(CombatDisplayIndexOf, FrontDeadCollapsesIndex) {
             0);
 }
 
+// T-CMB-500 — BP — set_player_vitals applied pre-start() survives start().
+// Used by the scenario loader to inject custom player HP/max_hp before draw.
+TEST(CombatSetPlayerVitals, T_CMB_500_AppliesBeforeStart) {
+  Combat c{kCombatTestSeed};
+  c.set_player_vitals(sts2::game::Vitals{
+      sts2::game::Stat{50}, sts2::game::Stat{80}, sts2::game::Stat{0}, {}});
+  sts2::game::Rng enemy_rng{kCombatTestSeed};
+  c.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
+  c.start(sts2::cards::make_silent_starter_deck());
+  EXPECT_EQ(c.player().vitals.hp, sts2::game::Stat{50});
+  EXPECT_EQ(c.player().vitals.max_hp, sts2::game::Stat{80});
+}
+
 }  // namespace

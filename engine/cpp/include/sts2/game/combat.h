@@ -44,6 +44,10 @@ class Combat {
   [[nodiscard]] HandIndex find_card_in_hand(CardId id) const;
 
   void add_enemy(Enemy e);
+  // Overrides the player's vitals BEFORE start() is called. Used by the
+  // scenario loader to inject custom HP/max_hp/powers from JSON. start() will
+  // zero block via start_player_turn(); hp/max_hp/powers persist as set.
+  void set_player_vitals(Vitals v);
   void set_pick_discard_callback(std::function<HandIndex(const Combat&)> cb);
   void deal_damage_to_enemy(EnemySlot slot, int base_damage);
   void enemy_attack_player(const Enemy& source, int base_damage);
