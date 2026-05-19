@@ -12,10 +12,16 @@
 // Q2-ADR-014 (wave-23) + Q2-ADR-010 §Recovery (rotation discipline).
 //
 // History:
-//   pre-wave-21:  Lo=0xf812af56366b5548 Hi=0x2c51edb8b6bd404e (held through
-//                 wave-21.β + wave-22.α via APPEND-only mt19937 fill order)
-//   post-fix-4:   Lo=0x471665c4838c298d Hi=0x770eab2147499e6c
-//   post-J.beta:  Lo=0x569115efa81a95dc Hi=0x9a06f1e505846a80 (NEW)
+//   pre-wave-21:        Lo=0xf812af56366b5548 Hi=0x2c51edb8b6bd404e (held
+//   through
+//                       wave-21.β + wave-22.α via APPEND-only mt19937 fill
+//                       order)
+//   post-fix-4:         Lo=0x471665c4838c298d Hi=0x770eab2147499e6c
+//   post-J.beta:        Lo=0x569115efa81a95dc Hi=0x9a06f1e505846a80
+//   post-damp-kind-fix: Lo=0x2641e6057b9af53a Hi=0x4faed2f7f9f09086 (NEW)
+//     Cause: make_damp_cultist now sets e.kind=kCultistDamp (was defaulting
+//     to kCultistCalcified=0); kCultistDamp folds into the Zobrist hash,
+//     changing the key. Latent-bug fix; renderer prereq.
 //
 // Used by `Zobrist.CultistRootKey_MatchesPreWave21Pin` (test name preserved
 // for grep continuity, but now pins post-J.beta bytes). Failure = mt19937
@@ -29,7 +35,7 @@
 
 namespace sts2::tests::seeds {
 
-inline constexpr uint64_t kCultistZobristKeyLo = 0x569115efa81a95dcULL;
-inline constexpr uint64_t kCultistZobristKeyHi = 0x9a06f1e505846a80ULL;
+inline constexpr uint64_t kCultistZobristKeyLo = 0x2641e6057b9af53aULL;
+inline constexpr uint64_t kCultistZobristKeyHi = 0x4faed2f7f9f09086ULL;
 
 }  // namespace sts2::tests::seeds
