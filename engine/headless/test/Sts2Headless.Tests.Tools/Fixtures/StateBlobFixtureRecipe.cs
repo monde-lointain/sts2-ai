@@ -65,8 +65,9 @@ public static class StateBlobFixtureRecipe
     );
 
     /// <summary>
-    /// The six fixture slots, project-lead approved. Order is the catalog order
+    /// The eight fixture slots, project-lead approved. Order is the catalog order
     /// recorded in the README; do not reorder without updating the README.
+    /// Slots 07 + 08 added in Wave-24/K.q1 for the Nibbit port.
     /// </summary>
     public static IReadOnlyList<Slot> AllSlots { get; } =
         new Slot[]
@@ -112,6 +113,20 @@ public static class StateBlobFixtureRecipe
                 Seed: 42,
                 EncounterId: "SmallSlimes",
                 Role: "B.1-ε DEFER — encounter cannot run end-to-end in Q1 Phase-1A; encounter-RNG plumbing deferred. Initial-state only; stresses Q2 MissingUpstream path."
+            ),
+            new(
+                7,
+                "07-nibbits-weak-seed42",
+                Seed: 42,
+                EncounterId: "NibbitsWeak",
+                Role: "Wave-24/K.q1 Nibbit port. Single-Nibbit encounter; initial move BUTT_MOVE. Q2 K.γ_setup prerequisite."
+            ),
+            new(
+                8,
+                "08-nibbits-normal-seed42",
+                Seed: 42,
+                EncounterId: "NibbitsNormal",
+                Role: "Wave-24/K.q1 Nibbit port. 2-Nibbit encounter; slot-0=SLICE_MOVE, slot-1=HISS_MOVE. Q2 K.γ_setup prerequisite."
             ),
         };
 
