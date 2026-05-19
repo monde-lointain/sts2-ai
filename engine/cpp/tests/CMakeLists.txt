@@ -30,6 +30,7 @@ target_sources(sts2_simulator_tests PRIVATE
     input/test_input_internal.cc
     app/test_args.cc
     app/test_prompts.cc
+    app/test_scenario.cc
     ai/test_chance.cc                   # NEW per wave-22.α / C.2-α
     ai/test_outcome_calibration.cc
     ai/test_probability.cc
@@ -51,6 +52,7 @@ target_compile_features(sts2_simulator_tests PRIVATE cxx_std_20)
 target_link_libraries(sts2_simulator_tests PRIVATE
     sts2::simulator
     sts2::ai
+    sts2::app_scenario
     GTest::gtest_main
     GTest::gmock
 )
