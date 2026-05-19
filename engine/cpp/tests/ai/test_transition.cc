@@ -909,13 +909,13 @@ CompactState make_carrier_state(const EnemyState& carrier) noexcept {
 }  // namespace
 
 // 1. Surprise_OnDeath_SpawnsSneakyAndFat
-// GATE: M.β has not yet populated kMonsterMoveTables[kGremlinMerc].
-// on_death_spawns. Use the test seam (apply_surprise_spawn_for_test) to inject
-// the spawn array directly so the substrate can be verified before M.β lands.
-// M.β will un-prefix this test once on_death_spawns data is in place;
-// post-M.β an alternate "via production path" variant can drive damage through
-// apply_damage_to_enemy_with_ondeath_check_for_test and rely on the table
-// lookup.
+// Post-wave-26/M.β: kMonsterMoveTables[kGremlinMerc].on_death_spawns is now
+// populated with [Sneaky hp=12 SPAWNED, Fat hp=15 SPAWNED] via M.β's
+// make_gremlin_merc_table(). Lethal damage routed through
+// apply_damage_to_enemy_with_ondeath_check fires do_surprise_spawn which
+// reads the table directly — no test-seam injection required (the M.α
+// "un-prefix via production path" variant predicted by the M.α
+// "M.β will un-prefix" comment).
 TEST(Transition, Surprise_OnDeath_SpawnsSneakyAndFat) {
   const EnemyState merc = EnemyStateBuilder{}
                               .kind(sts2::game::MonsterKind::kGremlinMerc)
@@ -925,31 +925,15 @@ TEST(Transition, Surprise_OnDeath_SpawnsSneakyAndFat) {
                               .build();
   CompactState s = make_carrier_state(merc);
 
-  // Two-element spawn array matching the M.β-planned content:
-  //   slot 1: SneakyGremlin alive hp=12 current_move=kSpawnedMove
-  //   slot 2: FatGremlin    alive hp=15 current_move=kSpawnedMove
-  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
-      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
-      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
-  };
-
-  // Apply lethal damage via the OnDeath helper. The helper's spawn-table
-  // lookup is a no-op for kGremlinMerc (M.β data not landed); inject spawns
-  // via the test seam right after, simulating what production would do once
-  // M.β fills the table.
+  // Apply lethal damage via the OnDeath helper. Post-M.β, the helper's
+  // table lookup hits kMonsterMoveTables[kGremlinMerc].on_death_spawns and
+  // appends [Sneaky, Fat] directly — production path drives the spawn.
   EnemyState carrier = s.get_enemy(0);
   sts2::ai::transition::test_internals::
       apply_damage_to_enemy_with_ondeath_check_for_test(s, carrier, /*dmg=*/1);
-  // Persist the damaged carrier back to slot 0 (test seam mutates a local).
+  // Persist the damaged + kSurprise-removed carrier back to slot 0.
   update_state(
       s, [&](CompactStateBuilder& builder) { builder.enemy(0, carrier); });
-  // Drive the spawn substrate (substituting M.β data via the test seam).
-  EnemyState dead = s.get_enemy(0);
-  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
-      s, dead, spawns, /*spawn_count=*/2);
-  // Persist the post-spawn carrier (kSurprise removed) back to slot 0.
-  update_state(s,
-               [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
 
   EXPECT_FALSE(s.get_enemy(0).get_alive())
       << "GremlinMerc must be dead post-OnDeath-trigger";
@@ -957,12 +941,12 @@ TEST(Transition, Surprise_OnDeath_SpawnsSneakyAndFat) {
       << "OnDeath should append 2 spawns to the existing 1-enemy state";
   EXPECT_TRUE(s.get_enemy(1).get_alive());
   EXPECT_EQ(s.get_enemy(1).get_kind(), sts2::game::MonsterKind::kSneakyGremlin);
-  EXPECT_EQ(s.get_enemy(1).get_hp(), Stat{12});
+  EXPECT_EQ(s.get_enemy(1).get_hp(), Stat{12});  // B1 median of [10,14]
   EXPECT_EQ(s.get_enemy(1).get_current_move(),
             sts2::game::MoveId::kSpawnedMove);
   EXPECT_TRUE(s.get_enemy(2).get_alive());
   EXPECT_EQ(s.get_enemy(2).get_kind(), sts2::game::MonsterKind::kFatGremlin);
-  EXPECT_EQ(s.get_enemy(2).get_hp(), Stat{15});
+  EXPECT_EQ(s.get_enemy(2).get_hp(), Stat{15});  // B1 median of [13,17]
   EXPECT_EQ(s.get_enemy(2).get_current_move(),
             sts2::game::MoveId::kSpawnedMove);
 }
@@ -971,6 +955,10 @@ TEST(Transition, Surprise_OnDeath_SpawnsSneakyAndFat) {
 // Once kSurprise has fired, it must be removed so a hypothetical re-trigger
 // on the now-dead carrier (e.g., reapplying damage in a corrupt state) becomes
 // a no-op. find_power(kSurprise) returns nullptr post-trigger.
+// Post-wave-26/M.β: production path drives the spawn directly from
+// kMonsterMoveTables[kGremlinMerc].on_death_spawns; no seam injection
+// required (see Surprise_OnDeath_SpawnsSneakyAndFat for the un-prefix
+// rationale).
 TEST(Transition, Surprise_OneShot_DoesNotRetrigger) {
   const EnemyState merc = EnemyStateBuilder{}
                               .kind(sts2::game::MonsterKind::kGremlinMerc)
@@ -979,17 +967,11 @@ TEST(Transition, Surprise_OneShot_DoesNotRetrigger) {
                               .add_power(sts2::game::PowerKind::kSurprise, 1)
                               .build();
   CompactState s = make_carrier_state(merc);
-  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
-      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
-      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
-  };
 
-  // First trigger.
+  // First trigger: lethal damage fires the table-driven OnDeath spawn.
   EnemyState dead = s.get_enemy(0);
   sts2::ai::transition::test_internals::
       apply_damage_to_enemy_with_ondeath_check_for_test(s, dead, /*dmg=*/1);
-  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
-      s, dead, spawns, /*spawn_count=*/2);
   update_state(s,
                [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
   ASSERT_EQ(s.get_enemy_count(), 3U);
@@ -1262,6 +1244,10 @@ TEST(Transition, FleeDoesNotTriggerSurprise) {
 // block) triggers the OnDeath helper, dropping kSurprise and appending 2
 // spawns. Mirrors the production damage_enemy → OnDeath flow used by
 // apply_player_action_in_place for card-sourced attacks.
+// Post-wave-26/M.β: production path drives the spawn directly from
+// kMonsterMoveTables[kGremlinMerc].on_death_spawns; no seam injection
+// required (see Surprise_OnDeath_SpawnsSneakyAndFat for the un-prefix
+// rationale).
 TEST(Transition, Surprise_ViaNeutralize_TriggersSpawn) {
   const EnemyState merc = EnemyStateBuilder{}
                               .kind(sts2::game::MonsterKind::kGremlinMerc)
@@ -1270,20 +1256,11 @@ TEST(Transition, Surprise_ViaNeutralize_TriggersSpawn) {
                               .add_power(sts2::game::PowerKind::kSurprise, 1)
                               .build();
   CompactState s = make_carrier_state(merc);
-  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
-      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
-      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
-  };
   const uint8_t pre = s.get_enemy_count();
   EnemyState dead = s.get_enemy(0);
   sts2::ai::transition::test_internals::
       apply_damage_to_enemy_with_ondeath_check_for_test(s, dead, /*dmg=*/3);
   EXPECT_FALSE(dead.get_alive()) << "lethal damage must transition alive→false";
-  // The production OnDeath helper looks up kMonsterMoveTables for spawn data;
-  // M.β has not landed → lookup returns 0 spawns. Drive the substrate via
-  // the test seam to verify the spawn dispatch mechanic.
-  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
-      s, dead, spawns, /*spawn_count=*/2);
   update_state(s,
                [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
   EXPECT_EQ(s.get_enemy_count(), pre + 2U);
@@ -1377,13 +1354,18 @@ TEST(Transition, Flee_OnFatGremlinTurn_RemovesFromCombat) {
 // 15. GremlinMercDispatch_RoutesViaTableDriven
 // A GremlinMerc enemy with current_move=kGimmeMove invokes do_enemy_act:
 // kind_is_table_driven returns true for kGremlinMerc → dispatch enters
-// do_enemy_act_slime. Until M.β bumps kMonsterKindCount, the bounds check
-// inside do_enemy_act_slime short-circuits (kind_idx=8 >= size 8 → no-op)
-// → player HP unchanged. This DISTINGUISHES from the cultist-default path
+// do_enemy_act_slime, which post-M.β reads
+// kMonsterMoveTables[kGremlinMerc].moves[0] (GIMME) = 2 × kAttack(7) → 14
+// damage to the player. This DISTINGUISHES from the cultist-default path
 // which would invoke act_on_intent and (for kGimmeMove which has no
-// MoveId-switch case) silently no-op as well. The distinguishing observable
-// is that no Ritual side-effects fire (cultist Incantation path) → the
-// carrier's just_applied_ritual flag remains unset.
+// MoveId-switch case) silently no-op. The distinguishing observable is the
+// player HP delta (70 → 56) AND the absence of Ritual side-effects on the
+// carrier (just_applied_ritual remains unset).
+//
+// Pre-M.β this test asserted "player HP unchanged" because the bounds check
+// at kind_idx=8 short-circuited (kMonsterKindCount=8). M.β bumps to 11 → the
+// table lookup succeeds → GIMME's 2 × 7 attacks land. The "un-prefix via
+// production path" the M.α comment predicted.
 TEST(Transition, GremlinMercDispatch_RoutesViaTableDriven) {
   CompactState s = make_test_state();
   update_state(s, [](CompactStateBuilder& builder) {
@@ -1404,9 +1386,11 @@ TEST(Transition, GremlinMercDispatch_RoutesViaTableDriven) {
   apply_or_fail(s, end_turn());
   s = resolve_end_turn_pre_draw(s);
 
-  EXPECT_EQ(s.get_player_hp(), Stat{70})
-      << "kGremlinMerc routes via table-driven dispatch; pre-M.β data this "
-         "is a bounds-check no-op (NOT a cultist-path Ritual side-effect)";
+  // Post-M.β: GIMME fires 2 × kAttack(7) = 14 damage; player HP 70 → 56.
+  EXPECT_EQ(s.get_player_hp(), Stat{56})
+      << "kGremlinMerc routes via table-driven dispatch; post-M.β data "
+         "GIMME fires 2 × 7 attacks (cultist-path Ritual would be a Ritual "
+         "side-effect, not damage)";
   EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual())
       << "table-driven path must not engage cultist Ritual semantics";
 }

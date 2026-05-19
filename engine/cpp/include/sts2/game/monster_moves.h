@@ -8,20 +8,29 @@
 namespace sts2::game::monster_moves {
 
 constexpr uint8_t kMaxEffectsPerMove = 3;
+// DOUBLE_SMASH packs kAttack + kAttack + kDebuffPlayer(kWeak) = exactly 3
+// effects (GremlinMerc.cs:62,109). Guard so a future reduction of
+// kMaxEffectsPerMove won't silently truncate the Weak debuff.
+static_assert(kMaxEffectsPerMove >= 3,
+              "DOUBLE_SMASH packs 2 kAttack + 1 kDebuffPlayer = 3 effects "
+              "exactly (GremlinMerc.cs:62,109)");
 constexpr uint8_t kMaxMovesPerMonster = 6;
 constexpr uint8_t kMaxSpawnPowers = 3;
 // Wave-26/M.α APPEND-ONLY: max OnDeath spawn entries per MonsterMoveTable.
 // GremlinMerc spawns exactly 2 (SneakyGremlin + FatGremlin); sized to 3 for
 // headroom (matches kMaxSpawnPowers convention).
 constexpr uint8_t kMaxOnDeathSpawns = 3;
+static_assert(kMaxOnDeathSpawns >= 2,
+              "GremlinMerc spawns 2 via Surprise (SurprisePower.cs:22-23)");
 // Wave-21: kLeafSlimeS=3, kLeafSlimeM=4, kTwigSlimeS=5, kTwigSlimeM=6 appended.
 // Wave-24/K.β: kNibbit=7 appended.
 // Wave-26/M.β APPENDS kGremlinMerc=8, kSneakyGremlin=9, kFatGremlin=10 →
-// kMonsterKindCount bump 8→11 (data populated in M.β). M.α defines the enum
-// values + the SpawnEntry schema below (substrate-critical declarations);
-// kMonsterKindCount stays 8 in M.α so the table size matches the M.α data.
+// kMonsterKindCount bump 8→11. M.α defined the enum values + the SpawnEntry
+// schema (substrate-critical declarations); M.β bumps the count + populates
+// the table data.
 constexpr std::size_t kMonsterKindCount =
-    8;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes + Nibbit
+    11;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes +
+         // Nibbit + GremlinMerc + SneakyGremlin + FatGremlin
 
 // Discriminates how kMonsterMoveTables resolves the next move.
 //   kStrict: deterministic single follow-up via follow_up_index.

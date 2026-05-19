@@ -51,11 +51,17 @@ namespace sts2::game::move_calc {
       return "SLICE_MOVE";
     case MoveId::kHissMove:
       return "HISS_MOVE";
-    // Wave-26/M.α APPEND-ONLY: GremlinMerc moves. Wire-name canonicalization
-    // (cross-checked against upstream .cs files) lands in wave-26/M.β; M.α
-    // ships placeholder names matching the MoveId identifiers so the switch
-    // is total and -Werror=switch passes. M.β replaces these with the
-    // upstream canonical names + completes try_move_id_from_wire_id below.
+    // Wave-26/M.β: GremlinMerc encounter moves — canonical upstream names.
+    // Verified against upstream .cs files (3rd arg of GetValueIfAscension is
+    // A0; MoveState constructor first arg is the wire name).
+    //   kGimmeMove        "GIMME_MOVE"         (GremlinMerc.cs:61)
+    //   kDoubleSmashMove  "DOUBLE_SMASH_MOVE"  (GremlinMerc.cs:62)
+    //   kHeheMove         "HEHE_MOVE"          (GremlinMerc.cs:63)
+    //   kSpawnedMove      "SPAWNED_MOVE"       (SneakyGremlin.cs:49,
+    //                                            FatGremlin.cs:52)
+    //   kFleeMove         "FLEE_MOVE"          (FatGremlin.cs:53)
+    // Reverse mappings (wire → MoveId) live in try_move_id_from_wire_id
+    // below.
     case MoveId::kGimmeMove:
       return "GIMME_MOVE";
     case MoveId::kDoubleSmashMove:
@@ -128,6 +134,40 @@ namespace sts2::game::move_calc {
     out = MoveId::kHissMove;
     return true;
   }
+  // Wave-26/M.β: GremlinMerc encounter moves. Forward (MoveId → wire) was
+  // already populated in M.α with the canonical upstream strings; reverse
+  // (wire → MoveId) lands here. Citations match the MoveState construction
+  // sites in upstream .cs files.
+  // kGimmeMove: "GIMME_MOVE" (GremlinMerc.cs:61).
+  if (wire_id == "GIMME_MOVE") {
+    out = MoveId::kGimmeMove;
+    return true;
+  }
+  // kDoubleSmashMove: "DOUBLE_SMASH_MOVE" (GremlinMerc.cs:62).
+  if (wire_id == "DOUBLE_SMASH_MOVE") {
+    out = MoveId::kDoubleSmashMove;
+    return true;
+  }
+  // kHeheMove: "HEHE_MOVE" (GremlinMerc.cs:63).
+  if (wire_id == "HEHE_MOVE") {
+    out = MoveId::kHeheMove;
+    return true;
+  }
+  // kSpawnedMove: "SPAWNED_MOVE" (SneakyGremlin.cs:49, FatGremlin.cs:52).
+  if (wire_id == "SPAWNED_MOVE") {
+    out = MoveId::kSpawnedMove;
+    return true;
+  }
+  // kFleeMove: "FLEE_MOVE" (FatGremlin.cs:53).
+  if (wire_id == "FLEE_MOVE") {
+    out = MoveId::kFleeMove;
+    return true;
+  }
+  // Note: "TACKLE_MOVE" → kTackleMove is already wired above (wave-22 H.γ
+  // slime port). SneakyGremlin's TACKLE shares MoveId::kTackleMove with the
+  // slimes — per-monster move table stores the actual damage value (slime
+  // TACKLE damages 3-4; SneakyGremlin TACKLE damages 9). No new branch
+  // required; the existing mapping covers SneakyGremlin's wire-name decode.
   return false;
 }
 
