@@ -8,29 +8,45 @@
 // Mirrors the NibbitsWeak pin pattern (test_nibbits_weak_search_pins.cc),
 // but is DEFERRED — see status block below.
 //
-// STATUS: DEFERRED — Wave-24 K.gamma-pin-normal hit kCapExceeded (Case B
-// contingency). Pin attempt against fixture 08-nibbits-normal-seed42
+// STATUS: DEFERRED — Wave-25 L.β pin re-capture against post-L.α
+// canonical-form substrate STILL HIT kCapExceeded (Case B contingency
+// PERSISTS). Pin attempt against fixture 08-nibbits-normal-seed42
 // (2 Nibbits; slot 0 front SLICE_MOVE, slot 1 back HISS_MOVE) at the
 // 370M-entry transposition-table cap exhausted before convergence:
 //   entries_at_cap = 370,000,000
+//   peak_rss       = 22.37 GB (23,461,540 kB)
+//   wall_clock     = 4:15.27 (255.3s)
+//   captured       = 2026-05-18 against main @ e465b57 (post L.α
+//                    canonical-form pre-Zobrist swap, Q2-ADR-015
+//                    Amendment 1)
+//
+// PRIOR ATTEMPT — Wave-24 K.gamma-pin-normal (pre-canonical-form):
+//   entries_at_cap = 370,000,000
 //   peak_rss       = 22.16 GB (23,237,368 kB)
 //   wall_clock     = 4:31.71 (271.7s)
-//   captured       = 2026-05-18 against main @ 7bfcffa (post K.gamma_pin_weak)
+//   main @ 7bfcffa (post K.gamma_pin_weak)
+//
+// CANONICAL-FORM IMPACT: L.α reduced wall-clock by ~16s (-6%); RSS delta
+// trivial. State-space breadth IS halved for symmetric 2-Nibbit states,
+// but the asymmetric branches (slot 0 SLICE vs slot 1 HISS) plus rich
+// Nibbit-move sequencing at horizon=25 still saturate the 370M cap.
+// Canonical-form is necessary-but-insufficient; Amendment 2 needed.
 //
 // Test is DOUBLE-DISABLED (DISABLED_DISABLED_) so it does not run under
 // --gtest_also_run_disabled_tests. GTEST_SKIP() surfaces the cap-bust
 // diagnostic when invoked directly via narrow --gtest_filter.
 //
-// Wave-24 STILL SHIPS: NibbitsWeak pin (commit 7bfcffa) is independent
-// and unaffected. Adapter dispatch for NibbitsNormal STAYS LIVE (per
-// K.gamma_setup); only the pin regression-lock is deferred until the
-// Amendment lands.
+// Wave-25 STILL SHIPS: L.α canonical-form lands as a state-space
+// reduction primitive (BIT-IDENTICAL for Cultist/Louse/NibbitsWeak pins;
+// confirmed independently). Adapter dispatch for NibbitsNormal STAYS
+// LIVE; only the pin regression-lock remains deferred.
 //
-// Favored Amendment direction (G1): canonical-form pre-Zobrist swap.
-// Canonicalize 2-Nibbit slot ordering via lex-key on
-// (hp, current_move, strength) before computing the transposition-table
-// key. Symmetric 2-Nibbit states collapse to one TT entry, roughly
-// halving breadth at horizon=25.
+// Required Amendment 2 directions:
+//   G2 — Horizon reduction (25 → 15-20) bounded by SmallSlimes survival
+//        guard (Q2-ADR-013 Amendment 3 set 25 as the floor).
+//   G3 — LRU TT eviction policy at the cap boundary (revisit
+//        kMaxTtEntries policy; trades determinism for breadth).
+//   Other — Iterative deepening + alpha-beta pruning on Score lattice.
 
 namespace {
 
@@ -43,15 +59,16 @@ using sts2::oracle::adapter::tests::load_fixture_blob;
 // ---------------------------------------------------------------------------
 // PINNED EXPECTED VALUES — fixture #8 (NibbitsNormal, seed 42).
 // PLACEHOLDERS retained (never reached: GTEST_SKIP fires before any
-// EXPECT_NEAR would consume them). Amendment work that lifts the cap-bust
-// must overwrite these with captured values and re-enable the test.
+// EXPECT_NEAR would consume them). Amendment 2 work that lifts the
+// cap-bust must overwrite these with captured values and re-enable
+// the test.
 // ---------------------------------------------------------------------------
 inline constexpr double kFixture8NibbitsNormalExpectedHp = -1.0;
 inline constexpr double kFixture8NibbitsNormalExpectedRounds = -1.0;
 
-// DOUBLE-DISABLED tombstone — Wave-24 K.gamma-pin-normal Case B
-// contingency triggered. To re-enable post-Amendment, rename to single
-// DISABLED_ prefix, restore the full solve body (template from
+// DOUBLE-DISABLED tombstone — Wave-25 L.β Case B contingency PERSISTS
+// despite L.α canonical-form. To re-enable post-Amendment 2, rename to
+// single DISABLED_ prefix, restore the full solve body (template from
 // test_nibbits_weak_search_pins.cc), capture values, and replace the
 // kFixture8NibbitsNormal* placeholders.
 TEST(NibbitsNormalSearchPins,
@@ -74,14 +91,15 @@ TEST(NibbitsNormalSearchPins,
 
   GTEST_SKIP()
       << "NibbitsNormal solve hit kCapExceeded at 370000000 entries "
-      << "(peak_rss_gb=22.16 elapsed_wall=271.7s). "
-      << "Wave-24 K.gamma_pin_normal Case B contingency triggered. "
-      << "NibbitsWeak pin (commit 7bfcffa) ships independently. "
-      << "Favored Amendment direction: G1 canonical-form pre-Zobrist swap "
-      << "(canonicalize 2-Nibbit slot ordering via lex-key on hp/"
-      << "current_move/strength). Adapter dispatch for NibbitsNormal STAYS "
-      << "LIVE (K.gamma_setup); only the pin regression-lock is deferred "
-      << "until Amendment lands.";
+      << "(peak_rss_gb=22.37 elapsed_wall=255.3s) post wave-25/L.α "
+      << "canonical-form remediation. Case B contingency PERSISTS. "
+      << "Wave-25 L.α canonical-form pre-Zobrist swap (Q2-ADR-015 "
+      << "Amendment 1) ships independently and is BIT-IDENTICAL for "
+      << "Cultist/Louse/NibbitsWeak pins. Adapter dispatch for "
+      << "NibbitsNormal STAYS LIVE; only the pin regression-lock is "
+      << "deferred until Amendment 2 lands. Required directions: G2 "
+      << "horizon reduction (25→15-20, floored by SmallSlimes survival) "
+      << "or G3 LRU TT eviction at cap boundary.";
 
   // Unreachable — PLACEHOLDER constants intentionally never consumed.
   (void)kFixture8NibbitsNormalExpectedHp;
