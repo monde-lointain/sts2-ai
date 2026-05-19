@@ -51,6 +51,21 @@ namespace sts2::game::move_calc {
       return "SLICE_MOVE";
     case MoveId::kHissMove:
       return "HISS_MOVE";
+    // Wave-26/M.α APPEND-ONLY: GremlinMerc moves. Wire-name canonicalization
+    // (cross-checked against upstream .cs files) lands in wave-26/M.β; M.α
+    // ships placeholder names matching the MoveId identifiers so the switch
+    // is total and -Werror=switch passes. M.β replaces these with the
+    // upstream canonical names + completes try_move_id_from_wire_id below.
+    case MoveId::kGimmeMove:
+      return "GIMME_MOVE";
+    case MoveId::kDoubleSmashMove:
+      return "DOUBLE_SMASH_MOVE";
+    case MoveId::kHeheMove:
+      return "HEHE_MOVE";
+    case MoveId::kSpawnedMove:
+      return "SPAWNED_MOVE";
+    case MoveId::kFleeMove:
+      return "FLEE_MOVE";
   }
   return "";
 }
@@ -206,6 +221,13 @@ void act_on_intent(
     case MoveId::kButtMove:
     case MoveId::kSliceMove:
     case MoveId::kHissMove:
+    // Wave-26/M.α: GremlinMerc moves — table-driven dispatch via
+    // do_enemy_act_slime / act_on_table_move; no cultist hardcoded path.
+    case MoveId::kGimmeMove:
+    case MoveId::kDoubleSmashMove:
+    case MoveId::kHeheMove:
+    case MoveId::kSpawnedMove:
+    case MoveId::kFleeMove:
       break;
   }
 }

@@ -43,6 +43,10 @@ const char* power_name(sts2::game::PowerKind kind) {
       return "Frail";
     case sts2::game::PowerKind::kVulnerable:
       return "Vulnerable";
+    // Wave-26/M.α: OnDeath trigger power; rendered as "Surprise" for parity
+    // with upstream STS conventions.
+    case sts2::game::PowerKind::kSurprise:
+      return "Surprise";
   }
   return "";
 }
@@ -88,6 +92,12 @@ std::string format_intent(const sts2::game::Enemy& e) {
     case sts2::game::MoveId::kButtMove:
     case sts2::game::MoveId::kSliceMove:
     case sts2::game::MoveId::kHissMove:
+    // Wave-26/M.α: GremlinMerc moves (display logic deferred to M.δ).
+    case sts2::game::MoveId::kGimmeMove:
+    case sts2::game::MoveId::kDoubleSmashMove:
+    case sts2::game::MoveId::kHeheMove:
+    case sts2::game::MoveId::kSpawnedMove:
+    case sts2::game::MoveId::kFleeMove:
       break;
   }
   return os.str();

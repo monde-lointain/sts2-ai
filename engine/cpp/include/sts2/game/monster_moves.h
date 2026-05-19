@@ -10,8 +10,16 @@ namespace sts2::game::monster_moves {
 constexpr uint8_t kMaxEffectsPerMove = 3;
 constexpr uint8_t kMaxMovesPerMonster = 6;
 constexpr uint8_t kMaxSpawnPowers = 3;
+// Wave-26/M.α APPEND-ONLY: max OnDeath spawn entries per MonsterMoveTable.
+// GremlinMerc spawns exactly 2 (SneakyGremlin + FatGremlin); sized to 3 for
+// headroom (matches kMaxSpawnPowers convention).
+constexpr uint8_t kMaxOnDeathSpawns = 3;
 // Wave-21: kLeafSlimeS=3, kLeafSlimeM=4, kTwigSlimeS=5, kTwigSlimeM=6 appended.
 // Wave-24/K.β: kNibbit=7 appended.
+// Wave-26/M.β APPENDS kGremlinMerc=8, kSneakyGremlin=9, kFatGremlin=10 →
+// kMonsterKindCount bump 8→11 (data populated in M.β). M.α defines the enum
+// values + the SpawnEntry schema below (substrate-critical declarations);
+// kMonsterKindCount stays 8 in M.α so the table size matches the M.α data.
 constexpr std::size_t kMonsterKindCount =
     8;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes + Nibbit
 
@@ -79,11 +87,43 @@ static_assert(sizeof(SpawnPowerEntry) == 8,
               "Wave-23/J.beta: SpawnPowerEntry must be 8 B (int32 stacks + "
               "1 B kind + 3 B pad)");
 
+// Wave-26/M.α APPEND-ONLY: SpawnEntry — OnDeath spawn descriptor.
+// Read by transition.cc::do_surprise_spawn when a kSurprise-bearing enemy
+// dies. Each entry describes a single spawned enemy:
+//   kind                  — MonsterKind of the spawned enemy.
+//   deterministic_hp      — B1 median HP (B1 mode is deterministic; M.β picks
+//                           the median of each spawn's HP range to avoid an
+//                           extra chance node).
+//   initial_current_move  — starting MoveId; intended to be kSpawnedMove
+//                           (effect_count=0 no-op) so the spawn does not act
+//                           in the same enemy phase it spawned, then rolls
+//                           into its real first move next turn.
+// Field order places the 4-byte MoveId after deterministic_hp for natural
+// 4-byte alignment without internal padding. M.α writes the SCHEMA; M.β fills
+// the DATA in kMonsterMoveTables[kGremlinMerc].on_death_spawns.
+struct SpawnEntry {
+  int32_t deterministic_hp = 0;
+  MoveId initial_current_move = MoveId::kIncantation;  // 4B (enum:int)
+  MonsterKind kind = MonsterKind::kCultistCalcified;
+  uint8_t _pad = 0;
+  uint8_t _pad2 = 0;
+  uint8_t _pad3 = 0;
+  bool operator==(const SpawnEntry&) const = default;
+};
+static_assert(sizeof(SpawnEntry) == 12,
+              "Wave-26/M.α: SpawnEntry must be 12 B "
+              "(int32 hp 4B + MoveId 4B + MonsterKind 1B + 3B pad)");
+
 // Wave-23/J.beta: min_hp / max_hp widened uint8_t → int32_t to match
 // upstream's uniform int stat storage (Q2-ADR-014). SlimedBerserker (HP
 // 261-281) already exceeded the uint8 bound; widening here surfaces the
 // upstream contract directly. Field order kept readable (count + index
 // first, then HP, then spawn-power data).
+//
+// Wave-26/M.α APPENDS on_death_spawns + on_death_spawn_count. Existing
+// kMonsterMoveTables entries zero-init these fields (no OnDeath behavior;
+// matches pre-M.α semantics for cultist/Louse/slime/Nibbit). M.β populates
+// the GremlinMerc entry with [SneakyGremlin + FatGremlin].
 struct MonsterMoveTable {
   std::array<MonsterMove, kMaxMovesPerMonster> moves = {};
   uint8_t move_count = 0;
@@ -92,6 +132,12 @@ struct MonsterMoveTable {
   int32_t max_hp = 0;
   std::array<SpawnPowerEntry, kMaxSpawnPowers> spawn_powers = {};
   uint8_t spawn_power_count = 0;
+  // Wave-26/M.α APPEND-ONLY: OnDeath spawn schema. Read by
+  // transition.cc::do_surprise_spawn after a kSurprise-bearing enemy's HP
+  // drops to ≤ 0 via damage. on_death_spawn_count > 0 implies the carrier
+  // should also be tagged with PowerKind::kSurprise so the trigger fires.
+  std::array<SpawnEntry, kMaxOnDeathSpawns> on_death_spawns = {};
+  uint8_t on_death_spawn_count = 0;
 };
 
 extern const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables;

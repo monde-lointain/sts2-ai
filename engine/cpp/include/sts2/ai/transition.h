@@ -73,6 +73,29 @@ void apply_single_move_effect_for_test(
 // `M::set_enemy_block(e, Stat{0})` in do_enemy_act). Tests use this to
 // assert decay behavior without needing a monster_moves table entry.
 void decay_enemy_block_for_test(EnemyState& e) noexcept;
+
+// Wave-26/M.α — drive apply_damage_to_enemy_with_ondeath_check directly.
+// Lets tests verify the OnDeath substrate (alive transition, kSurprise
+// removal, do_surprise_spawn dispatch) without routing through a full
+// player-action transition. Production path is damage_enemy() in
+// transition.cc, called from apply_player_action_in_place for card-sourced
+// attacks. dmg is the post-strength/weak-modifier value (caller applies any
+// compute_outgoing adjustments).
+void apply_damage_to_enemy_with_ondeath_check_for_test(CompactState& s,
+                                                       EnemyState& e,
+                                                       int dmg) noexcept;
+
+// Wave-26/M.α — drive do_surprise_spawn directly with a caller-provided
+// spawn array. Bypasses the kMonsterMoveTables[kind].on_death_spawns lookup
+// so tests can verify the spawn mechanic before M.β populates table data.
+// The `dead_enemy` is mutated in place: kSurprise PowerInstance removed
+// (one-shot enforcement); `s` gains spawn_count new enemies appended at
+// indices [enemy_count_, enemy_count_+spawn_count). spawn_count + existing
+// enemy_count_ MUST be <= kMaxEnemies (assert).
+void apply_surprise_spawn_for_test(
+    CompactState& s, EnemyState& dead_enemy,
+    const sts2::game::monster_moves::SpawnEntry* spawns,
+    uint8_t spawn_count) noexcept;
 }  // namespace test_internals
 
 }  // namespace sts2::ai::transition

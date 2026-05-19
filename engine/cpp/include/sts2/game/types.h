@@ -41,6 +41,12 @@ enum class PowerKind : uint8_t {
   kCurlUp = 3,      // reserved for wave-17
   kFrail = 4,       // reserved for wave-17
   kVulnerable = 5,  // reserved for future use
+  // Wave-26/M.α APPEND-ONLY: kSurprise — GremlinMerc OnDeath trigger. Single
+  // stack on spawn; consumed (removed) the first time the carrier's HP reaches
+  // 0 via damage. Triggers do_surprise_spawn (transition.cc) which inserts
+  // monster_moves::on_death_spawns entries into the CompactState's enemy
+  // array. Hashed by Zobrist only after M.β bumps kPowerKindCardinality 6→7.
+  kSurprise = 6,
 };
 
 // kIncantation=0, kDarkStrike=1 preserved from original definition.
@@ -53,7 +59,8 @@ enum class MoveId : int {
   kCurlAndGrow = 3,  // reserved for wave-17
   kPounce = 4,       // reserved for wave-17
   // Wave-21 appended (slime moves; data populated in wave-22.β):
-  kTackleMove = 5,   // LeafSlimeS + TwigSlimeS
+  kTackleMove = 5,   // LeafSlimeS + TwigSlimeS (REUSED for SneakyGremlin TACKLE
+                     // in wave-26/M.β; per-monster move table stores damage.)
   kGoopMove = 6,     // LeafSlimeS
   kClumpShot = 7,    // LeafSlimeM
   kStickyShot = 8,   // LeafSlimeM + TwigSlimeM
@@ -62,6 +69,19 @@ enum class MoveId : int {
   kButtMove = 10,   // Nibbit BUTT_MOVE
   kSliceMove = 11,  // Nibbit SLICE_MOVE
   kHissMove = 12,   // Nibbit HISS_MOVE
+  // Wave-26/M.α APPEND-ONLY: GremlinMerc encounter moves. Data populated in
+  // M.β; Zobrist cardinality bumped to include these in M.β.
+  kGimmeMove = 13,        // GremlinMerc GIMME (2-hit attack)
+  kDoubleSmashMove = 14,  // GremlinMerc DOUBLE_SMASH (2-hit attack)
+  kHeheMove = 15,         // GremlinMerc HEHE (attack + Strength self-buff,
+                          // pre-buff damage; see HeheAttack_UsesPreBuffStrength
+                          // transition test).
+  kSpawnedMove = 16,      // Initial move for OnDeath-spawned enemies; effect
+                          // count 0 (no-op) until they roll into their real
+                          // first move on the next turn.
+  kFleeMove = 17,         // FatGremlin FLEE — uses kFleeSelf effect, removes
+                          // the carrier from combat without triggering
+                          // OnDeath/kSurprise (Flee is not damage-death).
 };
 
 enum class MonsterKind : uint8_t {
@@ -74,6 +94,15 @@ enum class MonsterKind : uint8_t {
   kTwigSlimeS = 5,
   kTwigSlimeM = 6,
   kNibbit = 7,  // wave-24/K.β APPEND-ONLY
+  // Wave-26/M.α APPEND-ONLY: GremlinMerc encounter kinds. monster_moves table
+  // entries + kMonsterKindCount bump land in wave-26/M.β. Until M.β lands,
+  // do_enemy_act_slime defensively bounds-checks kMonsterMoveTables.size()
+  // before indexing — same guard already in find_move_index +
+  // has_pending_random_move_roll — so an enemy with one of these kinds
+  // dispatches as a no-op (table-driven) rather than UB.
+  kGremlinMerc = 8,
+  kSneakyGremlin = 9,
+  kFatGremlin = 10,
 };
 
 enum class HookPoint : uint8_t {
@@ -110,6 +139,10 @@ enum class MoveEffectKind : uint8_t {
   kAddStatusCard = 5,  // wave-22.α (LeafSlimeS GOOP, TwigSlime* STICKY_SHOT)
   kBuffEnemy = 6,      // wave-24/K.α (Nibbit HISS — Strength self-buff)
   kBlockSelf = 7,      // wave-24/K.α (Nibbit SLICE — block self)
+  // Wave-26/M.α APPEND-ONLY: kFleeSelf — FatGremlin FLEE semantic. Sets
+  // M::alive(e) = false directly (NO damage routed through the OnDeath helper
+  // → kSurprise does NOT fire). Dispatch lives in do_enemy_act_slime's switch.
+  kFleeSelf = 8,
 };
 
 }  // namespace sts2::game

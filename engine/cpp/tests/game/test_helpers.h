@@ -47,6 +47,9 @@ inline void PrintTo(PowerKind k, std::ostream* os) {
     case PowerKind::kVulnerable:
       *os << "Vulnerable";
       break;
+    case PowerKind::kSurprise:
+      *os << "Surprise";
+      break;
   }
 }
 }  // namespace sts2::game

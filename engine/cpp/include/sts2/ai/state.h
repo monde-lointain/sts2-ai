@@ -156,6 +156,26 @@ inline PowerInstance& set_power(
   return (p != nullptr) ? p->stacks : 0;
 }
 
+// Wave-26/M.α: remove a PowerInstance entirely (slot-shift), regardless of
+// stack count. Sibling to add_power; the existing add/set/stacks_of helpers
+// in this namespace operate on the same arr+count refs. Intended for
+// one-shot powers like kSurprise that must be consumed on trigger
+// (do_surprise_spawn removes kSurprise from the dead enemy so a hypothetical
+// re-trigger on the same slot is a no-op).
+inline void remove_power(std::array<PowerInstance, kMaxPowersPerCreature>& arr,
+                         uint8_t& count, sts2::game::PowerKind kind) noexcept {
+  for (uint8_t i = 0; i < count; ++i) {
+    if (arr[i].kind == kind) {
+      for (uint8_t j = i; j + 1 < count; ++j) {
+        arr[j] = arr[j + 1];
+      }
+      --count;
+      arr[count] = {};
+      return;
+    }
+  }
+}
+
 }  // namespace powers
 
 // ---------------------------------------------------------------------------

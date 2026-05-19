@@ -201,6 +201,24 @@ class StateMutator {
     return e.move_index_;
   }
   [[nodiscard]] static bool& alive(EnemyState& e) noexcept { return e.alive_; }
+  // Wave-26/M.α: expose powers_ + power_count_ refs so production code can
+  // invoke powers::remove_power (sibling to add_power) without re-rolling
+  // slot-shift logic. Friend-class wraps the private fields uniformly.
+  [[nodiscard]] static std::array<PowerInstance, kMaxPowersPerCreature>&
+  powers_array(EnemyState& e) noexcept {
+    return e.powers_;
+  }
+  [[nodiscard]] static uint8_t& power_count_ref(EnemyState& e) noexcept {
+    return e.power_count_;
+  }
+  // Wave-26/M.α: set a new EnemyState into a CompactState slot. Used by
+  // do_surprise_spawn to append spawned enemies at index >= enemy_count_.
+  // Caller MUST bump enemy_count separately (no implicit increment).
+  static void set_enemy_at(CompactState& s, std::size_t index,
+                           const EnemyState& value) noexcept {
+    assert(index < s.enemies_.size());
+    s.enemies_[index] = value;
+  }
 
   [[nodiscard]] static sts2::game::Stat& player_hp(CompactState& s) noexcept {
     return s.player_hp_;
@@ -295,11 +313,13 @@ namespace {
 using sts2::game::CardId;
 using sts2::game::EnemySlot;
 using sts2::game::MonsterKind;
+using sts2::game::MoveId;
 using sts2::game::PowerKind;
 using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
 using sts2::game::monster_moves::kMonsterMoveTables;
+using sts2::game::monster_moves::SpawnEntry;
 using M = detail::StateMutator;
 
 // ---------------------------------------------------------------------------
@@ -308,16 +328,109 @@ using M = detail::StateMutator;
 void do_enemy_act(CompactState& s, EnemyState& e);
 void do_enemy_tick_powers(CompactState& s, EnemyState& e);
 void do_roll_next_move(EnemyState& e);
+void do_surprise_spawn(CompactState& s, EnemyState& dead_enemy);
 
 // ---------------------------------------------------------------------------
 // Damage helpers
 // ---------------------------------------------------------------------------
-void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
-  const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
-  (void)sts2::damage::apply_to_defender(M::hp(enemy), M::block(enemy), dmg);
-  if (enemy.get_hp() == sts2::game::Stat{0}) {
-    M::alive(enemy) = false;
+
+// Wave-26/M.α: route enemy damage through a single OnDeath-aware helper so the
+// kSurprise → do_surprise_spawn substrate fires from EVERY damage-to-enemy
+// call site. After wave-26/M.α, transition.cc has ONE damage-to-enemy site
+// (line in damage_enemy, the only `apply_to_defender(M::hp(...), ...)` call;
+// audited via `grep -n 'apply_to_defender(M::hp(' transition.cc`). Routing
+// damage_enemy through this helper covers it; future damage-to-enemy paths
+// added in later waves MUST use apply_damage_to_enemy_with_ondeath_check.
+//
+// Behavior:
+//   1. apply_to_defender (block-absorbing damage onto HP + block scalars).
+//   2. If HP ≤ 0 AND enemy was previously alive: set alive=false. Then check
+//      for kSurprise and trigger do_surprise_spawn if present.
+//
+// Pre-wave-26 enemies (cultist/Louse/slime/Nibbit) carry no kSurprise → step 2
+// short-circuits to `alive=false` only, matching legacy damage_enemy semantics
+// byte-for-byte → cultist + Louse + NibbitsWeak pin values BIT-IDENTICAL.
+void apply_damage_to_enemy_with_ondeath_check(CompactState& s, EnemyState& e,
+                                              int dmg) {
+  const bool was_alive = e.get_alive();
+  (void)sts2::damage::apply_to_defender(M::hp(e), M::block(e), dmg);
+  if (e.get_hp().value() <= 0 && was_alive) {
+    M::alive(e) = false;
+    if (powers::stacks_of(e.get_powers(), e.get_power_count(),
+                          PowerKind::kSurprise) > 0) {
+      do_surprise_spawn(s, e);
+    }
   }
+}
+
+void damage_enemy(CompactState& s, EnemyState& enemy, int strength, int weak,
+                  int base) {
+  const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
+  apply_damage_to_enemy_with_ondeath_check(s, enemy, dmg);
+}
+
+// Wave-26/M.α: OnDeath spawn helper. Reads kMonsterMoveTables[kind].
+// on_death_spawns; appends each entry as a new EnemyState at the current
+// enemy_count_; bumps enemy_count_; defensively zero-fills the new slot's
+// powers_ (the array slot's prior occupant — if any — was dead and may carry
+// stale power instances).
+//
+// Defensive guards:
+//   * kind out-of-range (e.g., kGremlinMerc=8 before M.β bumps
+//     kMonsterKindCount 8→11) → silent no-op. Mirrors the
+//     has_pending_random_move_roll + find_move_index defensive idiom.
+//   * spawn_count + enemy_count exceeds kMaxEnemies → assert. M.β picks
+//     spawn counts that respect the existing kMaxEnemies=4 ceiling
+//     (GremlinMerc spawns 2 → 1 carrier + 2 spawns = 3 alive; fits).
+//
+// kSurprise removal: kSurprise is one-shot. Removing it here lets a
+// hypothetical re-trigger on the now-dead enemy be a no-op (covered by the
+// Transition.Surprise_OneShot_DoesNotRetrigger unit test). Removal uses the
+// public powers::remove_power helper (state.h, sibling to add_power).
+void do_surprise_spawn(CompactState& s, EnemyState& dead_enemy) {
+  const auto kind_idx = static_cast<std::size_t>(dead_enemy.get_kind());
+  if (kind_idx >= kMonsterMoveTables.size()) {
+    return;
+  }
+  const auto& table = kMonsterMoveTables[kind_idx];
+  const uint8_t spawn_count = table.on_death_spawn_count;
+  if (spawn_count == 0) {
+    return;
+  }
+  const uint8_t pre_count = s.get_enemy_count();
+  assert(static_cast<std::size_t>(pre_count) +
+                 static_cast<std::size_t>(spawn_count) <=
+             static_cast<std::size_t>(sts2::ai::kMaxEnemies) &&
+         "do_surprise_spawn: enemy_count + spawn_count would exceed "
+         "kMaxEnemies (table data or M.β content violates the spawn-budget "
+         "invariant)");
+  for (uint8_t i = 0; i < spawn_count; ++i) {
+    const SpawnEntry& spawn = table.on_death_spawns[i];
+    EnemyState fresh{};
+    // Mutate the fresh enemy via StateMutator to set its fields. Defensive
+    // zero-fill of powers_ is handled by value-init of EnemyState{} (the
+    // powers_ array is std::array<PowerInstance, kMaxPowersPerCreature>
+    // which value-initializes to default PowerInstance{}).
+    M::powers_array(fresh).fill(PowerInstance{});
+    M::power_count_ref(fresh) = 0;
+    M::hp(fresh) = sts2::game::Stat{spawn.deterministic_hp};
+    M::block(fresh) = sts2::game::Stat{0};
+    M::alive(fresh) = true;
+    M::current_move(fresh) = spawn.initial_current_move;
+    M::move_index(fresh) = 0;
+    // Reach into the EnemyStateBuilder-equivalent for kind. The friend class
+    // exposes alive/hp/block/current_move/move_index/powers_array/
+    // power_count_ref but not kind directly; reuse EnemyStateBuilder to set
+    // kind so the construction goes through the documented setter path.
+    fresh = EnemyStateBuilder{fresh}.kind(spawn.kind).build();
+    const std::size_t slot = static_cast<std::size_t>(pre_count + i);
+    M::set_enemy_at(s, slot, fresh);
+  }
+  M::enemy_count(s) = static_cast<uint8_t>(pre_count + spawn_count);
+  // One-shot enforcement: drop the kSurprise PowerInstance from the dead
+  // carrier so re-triggering against the same slot becomes a no-op.
+  powers::remove_power(M::powers_array(dead_enemy),
+                       M::power_count_ref(dead_enemy), PowerKind::kSurprise);
 }
 
 // ---------------------------------------------------------------------------
@@ -384,7 +497,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
 
   if (fx.base_damage) {
     EnemyState& e = action.target_idx.at(M::enemies(state));
-    damage_enemy(e, state.get_player_strength().value(),
+    damage_enemy(state, e, state.get_player_strength().value(),
                  state.get_player_weak().value(), fx.base_damage);
     // CurlUp AfterDamageReceived: if the target is still alive and has CurlUp
     // with no card stored yet, store this card id.
@@ -642,12 +755,25 @@ bool kind_is_slime(MonsterKind k) noexcept {
 // do_enemy_act_slime (table-driven dispatch) rather than the cultist default.
 // Wave-24/K.β-fix: kNibbit appended; all slime kinds covered via
 // kind_is_slime().
+// Wave-26/M.α APPENDS GremlinMerc/SneakyGremlin/FatGremlin. Until M.β bumps
+// kMonsterKindCount 8→11 and populates kMonsterMoveTables[8..10],
+// do_enemy_act_slime's kind_idx >= kMonsterMoveTables.size() bounds-check
+// makes the dispatch a safe no-op for the new kinds.
 bool kind_is_table_driven(MonsterKind k) noexcept {
-  return kind_is_slime(k) || k == MonsterKind::kNibbit;
+  return kind_is_slime(k) || k == MonsterKind::kNibbit ||
+         k == MonsterKind::kGremlinMerc || k == MonsterKind::kSneakyGremlin ||
+         k == MonsterKind::kFatGremlin;
 }
 
 void do_enemy_act_slime(CompactState& s, EnemyState& e) {
   const auto kind_idx = static_cast<std::size_t>(e.get_kind());
+  // Wave-26/M.α: defensive bounds check (mirrors find_move_index +
+  // has_pending_random_move_roll). Allows kind_is_table_driven to include
+  // GremlinMerc/SneakyGremlin/FatGremlin (kind 8/9/10) BEFORE M.β bumps
+  // kMonsterKindCount 8→11; dispatch is a safe no-op until M.β lands.
+  if (kind_idx >= kMonsterMoveTables.size()) {
+    return;
+  }
   const auto& table = kMonsterMoveTables[kind_idx];
   const uint8_t move_idx = e.get_move_index();
   if (move_idx >= table.move_count) {
@@ -724,6 +850,15 @@ void do_enemy_act_slime(CompactState& s, EnemyState& e) {
         // existing turn_flow.h::EndTurnOps::reset_enemy_block scaffold
         // (same path Louse's kCurlAndGrow self-block uses).
         M::add_enemy_block(e, fx.value);
+        break;
+      }
+      case sts2::game::MoveEffectKind::kFleeSelf: {
+        // Wave-26/M.α — FatGremlin FLEE semantic: the carrier removes itself
+        // from combat WITHOUT taking damage. Sets alive=false directly so the
+        // OnDeath helper (apply_damage_to_enemy_with_ondeath_check) is NOT
+        // invoked → kSurprise PowerInstance persists → no spawns triggered.
+        // This is the Transition.FleeDoesNotTriggerSurprise invariant.
+        M::alive(e) = false;
         break;
       }
       case sts2::game::MoveEffectKind::kNone:
@@ -810,6 +945,10 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
         break;
       case PowerKind::kStrength:
       case PowerKind::kVulnerable:
+      // Wave-26/M.α: kSurprise has no turn-end tick (one-shot OnDeath trigger;
+      // consumed by do_surprise_spawn at the moment of death damage). If a
+      // carrier survives to its turn-end, kSurprise persists unchanged.
+      case PowerKind::kSurprise:
         // No tick-down at turn end in Phase-1.
         break;
     }
@@ -1015,9 +1154,53 @@ void apply_single_move_effect_for_test(
       M::add_enemy_block(e, fx.value);
       break;
     }
+    case sts2::game::MoveEffectKind::kFleeSelf: {
+      // Wave-26/M.α: FLEE semantic — set alive=false WITHOUT routing damage
+      // through the OnDeath helper. kSurprise persists; no spawns trigger.
+      M::alive(e) = false;
+      break;
+    }
     case sts2::game::MoveEffectKind::kNone:
       break;
   }
+}
+
+// Wave-26/M.α test seams — drive apply_damage_to_enemy_with_ondeath_check
+// and the do_surprise_spawn substrate directly so unit tests can verify the
+// OnDeath path without routing through a full player-action transition AND
+// without depending on M.β-populated kMonsterMoveTables data.
+void apply_damage_to_enemy_with_ondeath_check_for_test(CompactState& s,
+                                                       EnemyState& e,
+                                                       int dmg) noexcept {
+  apply_damage_to_enemy_with_ondeath_check(s, e, dmg);
+}
+
+void apply_surprise_spawn_for_test(
+    CompactState& s, EnemyState& dead_enemy,
+    const sts2::game::monster_moves::SpawnEntry* spawns,
+    uint8_t spawn_count) noexcept {
+  const uint8_t pre_count = s.get_enemy_count();
+  assert(static_cast<std::size_t>(pre_count) +
+                 static_cast<std::size_t>(spawn_count) <=
+             static_cast<std::size_t>(sts2::ai::kMaxEnemies) &&
+         "apply_surprise_spawn_for_test: spawn_count would exceed kMaxEnemies");
+  for (uint8_t i = 0; i < spawn_count; ++i) {
+    const sts2::game::monster_moves::SpawnEntry& spawn = spawns[i];
+    EnemyState fresh{};
+    M::powers_array(fresh).fill(PowerInstance{});
+    M::power_count_ref(fresh) = 0;
+    M::hp(fresh) = sts2::game::Stat{spawn.deterministic_hp};
+    M::block(fresh) = sts2::game::Stat{0};
+    M::alive(fresh) = true;
+    M::current_move(fresh) = spawn.initial_current_move;
+    M::move_index(fresh) = 0;
+    fresh = EnemyStateBuilder{fresh}.kind(spawn.kind).build();
+    const std::size_t slot = static_cast<std::size_t>(pre_count + i);
+    M::set_enemy_at(s, slot, fresh);
+  }
+  M::enemy_count(s) = static_cast<uint8_t>(pre_count + spawn_count);
+  powers::remove_power(M::powers_array(dead_enemy),
+                       M::power_count_ref(dead_enemy), PowerKind::kSurprise);
 }
 
 void decay_enemy_block_for_test(EnemyState& e) noexcept {

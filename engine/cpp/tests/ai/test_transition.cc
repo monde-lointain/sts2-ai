@@ -8,6 +8,8 @@
 #include "sts2/ai/transition.h"
 #include "sts2/game/card_effects.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/damage.h"
+#include "sts2/game/damage_calc.h"
 #include "sts2/game/types.h"
 #include "tests/ai/test_helpers.h"
 #include "tests/game/test_helpers.h"
@@ -857,6 +859,556 @@ TEST(Transition, NibbitBuff_ResolvesViaTableDispatch) {
   EXPECT_EQ(s.get_player_hp(), Stat{58})
       << "Nibbit BUTT_MOVE (kAttack,12) must land via table-driven dispatch "
          "(pre-fix: fell through to cultist default → silent no-op → HP=70)";
+}
+
+// ---------------------------------------------------------------------------
+// Wave-26/M.α — OnDeath substrate (kSurprise + kFleeSelf + multi-hit damage).
+//
+// The OnDeath substrate adds a do_surprise_spawn primitive that inserts new
+// enemies into the CompactState when a kSurprise-bearing enemy dies via
+// damage. M.β populates kMonsterMoveTables[kGremlinMerc].on_death_spawns;
+// these tests verify the substrate mechanics independently of M.β data by
+// driving the helper directly via test_internals::apply_surprise_spawn_for_test
+// (caller-provided spawn array) or apply_damage_to_enemy_with_ondeath_check.
+//
+// Tests gated on M.β table data (kMonsterMoveTables[kGremlinMerc] lookup) are
+// DISABLED_ prefixed and call out the gate in the comment. M.β cherry-picks
+// the un-prefix in its commit.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Helper: build a SpawnEntry. Keeps test sites compact.
+sts2::game::monster_moves::SpawnEntry spawn_entry(
+    sts2::game::MonsterKind kind, int hp,
+    sts2::game::MoveId move = sts2::game::MoveId::kSpawnedMove) noexcept {
+  sts2::game::monster_moves::SpawnEntry s{};
+  s.kind = kind;
+  s.deterministic_hp = hp;
+  s.initial_current_move = move;
+  return s;
+}
+
+// Helper: synthesize a single-enemy CompactState with the specified enemy at
+// slot 0 and no other live enemies. Player has 70 HP and no resources.
+CompactState make_carrier_state(const EnemyState& carrier) noexcept {
+  return CompactStateBuilder{}
+      .player_hp(Stat{70})
+      .player_block(Stat{0})
+      .player_strength(Stat{0})
+      .player_weak(Stat{0})
+      .energy(Stat{0})
+      .round(1)
+      .phase(Phase::kPlayerActing)
+      .hand(CardCounts{})
+      .enemy(0, carrier)
+      .enemy_count(1)
+      .build();
+}
+
+}  // namespace
+
+// 1. Surprise_OnDeath_SpawnsSneakyAndFat
+// GATE: M.β has not yet populated kMonsterMoveTables[kGremlinMerc].
+// on_death_spawns. Use the test seam (apply_surprise_spawn_for_test) to inject
+// the spawn array directly so the substrate can be verified before M.β lands.
+// M.β will un-prefix this test once on_death_spawns data is in place;
+// post-M.β an alternate "via production path" variant can drive damage through
+// apply_damage_to_enemy_with_ondeath_check_for_test and rely on the table
+// lookup.
+TEST(Transition, Surprise_OnDeath_SpawnsSneakyAndFat) {
+  const EnemyState merc = EnemyStateBuilder{}
+                              .kind(sts2::game::MonsterKind::kGremlinMerc)
+                              .hp(Stat{1})
+                              .alive(true)
+                              .add_power(sts2::game::PowerKind::kSurprise, 1)
+                              .build();
+  CompactState s = make_carrier_state(merc);
+
+  // Two-element spawn array matching the M.β-planned content:
+  //   slot 1: SneakyGremlin alive hp=12 current_move=kSpawnedMove
+  //   slot 2: FatGremlin    alive hp=15 current_move=kSpawnedMove
+  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
+      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
+      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
+  };
+
+  // Apply lethal damage via the OnDeath helper. The helper's spawn-table
+  // lookup is a no-op for kGremlinMerc (M.β data not landed); inject spawns
+  // via the test seam right after, simulating what production would do once
+  // M.β fills the table.
+  EnemyState carrier = s.get_enemy(0);
+  sts2::ai::transition::test_internals::
+      apply_damage_to_enemy_with_ondeath_check_for_test(s, carrier, /*dmg=*/1);
+  // Persist the damaged carrier back to slot 0 (test seam mutates a local).
+  update_state(
+      s, [&](CompactStateBuilder& builder) { builder.enemy(0, carrier); });
+  // Drive the spawn substrate (substituting M.β data via the test seam).
+  EnemyState dead = s.get_enemy(0);
+  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
+      s, dead, spawns, /*spawn_count=*/2);
+  // Persist the post-spawn carrier (kSurprise removed) back to slot 0.
+  update_state(s,
+               [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
+
+  EXPECT_FALSE(s.get_enemy(0).get_alive())
+      << "GremlinMerc must be dead post-OnDeath-trigger";
+  ASSERT_EQ(s.get_enemy_count(), 3U)
+      << "OnDeath should append 2 spawns to the existing 1-enemy state";
+  EXPECT_TRUE(s.get_enemy(1).get_alive());
+  EXPECT_EQ(s.get_enemy(1).get_kind(), sts2::game::MonsterKind::kSneakyGremlin);
+  EXPECT_EQ(s.get_enemy(1).get_hp(), Stat{12});
+  EXPECT_EQ(s.get_enemy(1).get_current_move(),
+            sts2::game::MoveId::kSpawnedMove);
+  EXPECT_TRUE(s.get_enemy(2).get_alive());
+  EXPECT_EQ(s.get_enemy(2).get_kind(), sts2::game::MonsterKind::kFatGremlin);
+  EXPECT_EQ(s.get_enemy(2).get_hp(), Stat{15});
+  EXPECT_EQ(s.get_enemy(2).get_current_move(),
+            sts2::game::MoveId::kSpawnedMove);
+}
+
+// 2. Surprise_OneShot_DoesNotRetrigger
+// Once kSurprise has fired, it must be removed so a hypothetical re-trigger
+// on the now-dead carrier (e.g., reapplying damage in a corrupt state) becomes
+// a no-op. find_power(kSurprise) returns nullptr post-trigger.
+TEST(Transition, Surprise_OneShot_DoesNotRetrigger) {
+  const EnemyState merc = EnemyStateBuilder{}
+                              .kind(sts2::game::MonsterKind::kGremlinMerc)
+                              .hp(Stat{1})
+                              .alive(true)
+                              .add_power(sts2::game::PowerKind::kSurprise, 1)
+                              .build();
+  CompactState s = make_carrier_state(merc);
+  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
+      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
+      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
+  };
+
+  // First trigger.
+  EnemyState dead = s.get_enemy(0);
+  sts2::ai::transition::test_internals::
+      apply_damage_to_enemy_with_ondeath_check_for_test(s, dead, /*dmg=*/1);
+  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
+      s, dead, spawns, /*spawn_count=*/2);
+  update_state(s,
+               [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
+  ASSERT_EQ(s.get_enemy_count(), 3U);
+
+  // Re-trigger attempt: damage the (now-dead) carrier again. The OnDeath
+  // helper short-circuits (was_alive==false), so no new spawns. Independently
+  // confirm kSurprise was removed.
+  EnemyState carrier_again = s.get_enemy(0);
+  sts2::ai::transition::test_internals::
+      apply_damage_to_enemy_with_ondeath_check_for_test(s, carrier_again,
+                                                        /*dmg=*/100);
+  EXPECT_EQ(s.get_enemy_count(), 3U)
+      << "kSurprise re-trigger must be a no-op (was_alive guard + power "
+         "removal)";
+  EXPECT_EQ(sts2::ai::powers::find_power(carrier_again.get_powers(),
+                                         carrier_again.get_power_count(),
+                                         sts2::game::PowerKind::kSurprise),
+            nullptr)
+      << "kSurprise PowerInstance must be removed on first trigger";
+}
+
+// 3. Surprise_SpawnCountIncrements_enemy_count_
+// The enemy_count_ field must grow by exactly the spawn count, no more.
+TEST(Transition, Surprise_SpawnCountIncrements_enemy_count_) {
+  const EnemyState merc = EnemyStateBuilder{}
+                              .kind(sts2::game::MonsterKind::kGremlinMerc)
+                              .hp(Stat{1})
+                              .alive(true)
+                              .add_power(sts2::game::PowerKind::kSurprise, 1)
+                              .build();
+  CompactState s = make_carrier_state(merc);
+  const uint8_t pre = s.get_enemy_count();
+  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
+      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
+      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
+  };
+  EnemyState dead = s.get_enemy(0);
+  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
+      s, dead, spawns, /*spawn_count=*/2);
+  EXPECT_EQ(s.get_enemy_count(), pre + 2U);
+}
+
+// 4. Surprise_TerminalCheckSeesSpawns
+// is_terminal(post_state) must return false: spawns are alive.
+TEST(Transition, Surprise_TerminalCheckSeesSpawns) {
+  const EnemyState merc = EnemyStateBuilder{}
+                              .kind(sts2::game::MonsterKind::kGremlinMerc)
+                              .hp(Stat{1})
+                              .alive(true)
+                              .add_power(sts2::game::PowerKind::kSurprise, 1)
+                              .build();
+  CompactState s = make_carrier_state(merc);
+  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
+      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
+      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
+  };
+  EnemyState dead = s.get_enemy(0);
+  sts2::ai::transition::test_internals::
+      apply_damage_to_enemy_with_ondeath_check_for_test(s, dead, /*dmg=*/1);
+  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
+      s, dead, spawns, /*spawn_count=*/2);
+  update_state(s,
+               [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
+  EXPECT_FALSE(is_terminal(s))
+      << "OnDeath spawns must keep combat live (carrier dead but spawns "
+         "alive)";
+}
+
+// 5. LegalActions.PostSurprise_StrikeTargetsAliveOnly
+// Strike/Neutralize must NOT include the dead carrier as a target.
+TEST(LegalActions, PostSurprise_StrikeTargetsAliveOnly) {
+  // Synthesize a post-Surprise state directly: dead GremlinMerc at slot 0,
+  // alive Sneaky+Fat at 1+2. Player hand: kStrike=1 (cost 1), energy 1.
+  const EnemyState dead_merc = EnemyStateBuilder{}
+                                   .kind(sts2::game::MonsterKind::kGremlinMerc)
+                                   .hp(Stat{0})
+                                   .alive(false)
+                                   .build();
+  const EnemyState sneaky = EnemyStateBuilder{}
+                                .kind(sts2::game::MonsterKind::kSneakyGremlin)
+                                .hp(Stat{12})
+                                .alive(true)
+                                .build();
+  const EnemyState fat = EnemyStateBuilder{}
+                             .kind(sts2::game::MonsterKind::kFatGremlin)
+                             .hp(Stat{15})
+                             .alive(true)
+                             .build();
+  CompactState s = CompactStateBuilder{}
+                       .player_hp(Stat{70})
+                       .player_block(Stat{0})
+                       .energy(Stat{1})
+                       .round(1)
+                       .phase(Phase::kPlayerActing)
+                       .hand(make_counts(1, 0, 0, 0))
+                       .enemy(0, dead_merc)
+                       .enemy(1, sneaky)
+                       .enemy(2, fat)
+                       .build();
+
+  const auto actions = legal_actions(s);
+  for (const auto& a : actions) {
+    if (a.kind == ActionKind::kPlayCard && a.card_id == CardId::kStrike) {
+      EXPECT_NE(a.target_idx.raw(), 0)
+          << "Strike must not target dead carrier at slot 0";
+    }
+  }
+}
+
+// 6. MultiHit_BlockDecrementsBetweenHits
+// Validates the apply_to_defender mutation semantic: each hit consumes block
+// first; excess spills to HP. Two sequential 7-dmg attacks on player block=5:
+//   hit 1: 5 block absorbed + 2 hp loss; block→0, hp 70→68.
+//   hit 2: block=0; 7 hp loss; hp 68→61.
+TEST(Transition, MultiHit_BlockDecrementsBetweenHits) {
+  sts2::game::Stat hp{70};
+  sts2::game::Stat block{5};
+  (void)sts2::damage::apply_to_defender(hp, block, 7);
+  EXPECT_EQ(hp, Stat{68})
+      << "hit 1: 5 block absorbs 5 dmg; 2 dmg spills to HP → 70-2 = 68";
+  EXPECT_EQ(block, Stat{0}) << "hit 1: block fully consumed by 7-dmg attack";
+  (void)sts2::damage::apply_to_defender(hp, block, 7);
+  EXPECT_EQ(hp, Stat{61}) << "hit 2: no block, 7 dmg lands → 68-7 = 61";
+  EXPECT_EQ(block, Stat{0});
+}
+
+// 7. MultiHit_PlayerDeathMidHits_ClampsAtZero
+// Sequential lethal hits with no block: player HP clamps at 0; is_terminal
+// returns true after the first lethal hit.
+TEST(Transition, MultiHit_PlayerDeathMidHits_ClampsAtZero) {
+  sts2::game::Stat hp{5};
+  sts2::game::Stat block{0};
+  (void)sts2::damage::apply_to_defender(hp, block, 6);
+  EXPECT_EQ(hp, Stat{0}) << "HP must clamp at 0 (not negative) post-lethal";
+  // Build a CompactState to drive is_terminal; player_hp=0 → terminal=true.
+  const CompactState s = CompactStateBuilder{}
+                             .player_hp(Stat{0})
+                             .energy(Stat{0})
+                             .round(1)
+                             .phase(Phase::kPlayerActing)
+                             .build();
+  EXPECT_TRUE(is_terminal(s)) << "is_terminal must report true at HP=0";
+  // Second 6-dmg hit on a dead player: damage_calc clamps so HP stays 0.
+  (void)sts2::damage::apply_to_defender(hp, block, 6);
+  EXPECT_EQ(hp, Stat{0}) << "HP must remain clamped at 0 (no underflow)";
+}
+
+// 8. MultiHit_PartialBlockInteraction
+// Player block=5; two separate 7-dmg attacks. Each hit's excess-over-block
+// spills to HP. Net hp loss over both hits: 2 (hit 1 excess) + 7 (hit 2) = 9.
+TEST(Transition, MultiHit_PartialBlockInteraction) {
+  sts2::game::Stat hp{70};
+  sts2::game::Stat block{5};
+  (void)sts2::damage::apply_to_defender(hp, block, 7);
+  EXPECT_EQ(hp, Stat{68}) << "hit 1: 5 block + 2 spill → 70 - 2 = 68";
+  EXPECT_EQ(block, Stat{0});
+  (void)sts2::damage::apply_to_defender(hp, block, 7);
+  EXPECT_EQ(hp, Stat{61}) << "hit 2: full 7 dmg lands → 68 - 7 = 61";
+}
+
+// 9. MultiHit_StrengthAppliesPerHit
+// 2-effect attack with attacker Strength=2: each kAttack(7) becomes 9 dmg.
+// Player has 0 block, 70 hp. Net loss: 9+9 = 18 → hp = 52.
+TEST(Transition, MultiHit_StrengthAppliesPerHit) {
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.player_hp(Stat{70}).player_block(Stat{0});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(Stat{30})
+        .alive(true)
+        .add_power(sts2::game::PowerKind::kStrength, 2);
+  });
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect attack1{
+      .value = 7,
+      .kind = sts2::game::MoveEffectKind::kAttack,
+      .power_kind = sts2::game::PowerKind::kWeak,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(
+      s, e, attack1);
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(
+      s, e, attack1);
+  EXPECT_EQ(s.get_player_hp(), Stat{52})
+      << "Strength must apply per hit: (7+2)*2 = 18 dmg → 70-18 = 52";
+}
+
+// 10. HeheAttack_UsesPreBuffStrength
+// HEHE pattern: [kAttack 8, kBuffEnemy +2 kStrength]. Player has 0 block,
+// 70 hp. The attack effect uses the strength CURRENT at the moment of effect
+// processing — Strength=0 at hit time (kBuffEnemy comes AFTER in the effects
+// array) → 8 dmg lands. Post-state: enemy strength=2 (ready for next turn).
+TEST(Transition, HeheAttack_UsesPreBuffStrength) {
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.player_hp(Stat{70}).player_block(Stat{0});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kLeafSlimeM)
+        .hp(Stat{30})
+        .alive(true)
+        .add_power(sts2::game::PowerKind::kStrength, 0);
+  });
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect attack{
+      .value = 8,
+      .kind = sts2::game::MoveEffectKind::kAttack,
+      .power_kind = sts2::game::PowerKind::kWeak,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  const sts2::game::monster_moves::MoveEffect buff{
+      .value = 2,
+      .kind = sts2::game::MoveEffectKind::kBuffEnemy,
+      .power_kind = sts2::game::PowerKind::kStrength,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(
+      s, e, attack);
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          buff);
+  EXPECT_EQ(s.get_player_hp(), Stat{62})
+      << "kAttack uses Strength snapshot at hit-time (0), not post-buff (2)";
+  EXPECT_EQ(e.get_strength(), Stat{2})
+      << "post-effect strength reflects the buff for next turn";
+}
+
+// 11. FleeDoesNotTriggerSurprise
+// A carrier with kSurprise(1) executes a 1-effect [kFleeSelf] move. The flee
+// path sets alive=false directly without routing through the OnDeath helper;
+// kSurprise persists and enemy_count_ is UNCHANGED (no spawns).
+TEST(Transition, FleeDoesNotTriggerSurprise) {
+  const EnemyState carrier = EnemyStateBuilder{}
+                                 .kind(sts2::game::MonsterKind::kFatGremlin)
+                                 .hp(Stat{15})
+                                 .alive(true)
+                                 .add_power(sts2::game::PowerKind::kSurprise, 1)
+                                 .build();
+  CompactState s = make_carrier_state(carrier);
+  const uint8_t pre_count = s.get_enemy_count();
+
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect fx{
+      .value = 0,
+      .kind = sts2::game::MoveEffectKind::kFleeSelf,
+      .power_kind = sts2::game::PowerKind::kWeak,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          fx);
+  EXPECT_FALSE(e.get_alive())
+      << "kFleeSelf must set alive=false on the carrier";
+  EXPECT_EQ(s.get_enemy_count(), pre_count)
+      << "Flee must not trigger OnDeath spawns";
+  EXPECT_GT(sts2::ai::powers::stacks_of(e.get_powers(), e.get_power_count(),
+                                        sts2::game::PowerKind::kSurprise),
+            0)
+      << "kSurprise must persist after Flee (not consumed)";
+}
+
+// 12. Surprise_ViaNeutralize_TriggersSpawn
+// Lethal Neutralize-equivalent damage (3 dmg through 1 hp carrier with no
+// block) triggers the OnDeath helper, dropping kSurprise and appending 2
+// spawns. Mirrors the production damage_enemy → OnDeath flow used by
+// apply_player_action_in_place for card-sourced attacks.
+TEST(Transition, Surprise_ViaNeutralize_TriggersSpawn) {
+  const EnemyState merc = EnemyStateBuilder{}
+                              .kind(sts2::game::MonsterKind::kGremlinMerc)
+                              .hp(Stat{2})
+                              .alive(true)
+                              .add_power(sts2::game::PowerKind::kSurprise, 1)
+                              .build();
+  CompactState s = make_carrier_state(merc);
+  const sts2::game::monster_moves::SpawnEntry spawns[2] = {
+      spawn_entry(sts2::game::MonsterKind::kSneakyGremlin, 12),
+      spawn_entry(sts2::game::MonsterKind::kFatGremlin, 15),
+  };
+  const uint8_t pre = s.get_enemy_count();
+  EnemyState dead = s.get_enemy(0);
+  sts2::ai::transition::test_internals::
+      apply_damage_to_enemy_with_ondeath_check_for_test(s, dead, /*dmg=*/3);
+  EXPECT_FALSE(dead.get_alive()) << "lethal damage must transition alive→false";
+  // The production OnDeath helper looks up kMonsterMoveTables for spawn data;
+  // M.β has not landed → lookup returns 0 spawns. Drive the substrate via
+  // the test seam to verify the spawn dispatch mechanic.
+  sts2::ai::transition::test_internals::apply_surprise_spawn_for_test(
+      s, dead, spawns, /*spawn_count=*/2);
+  update_state(s,
+               [&](CompactStateBuilder& builder) { builder.enemy(0, dead); });
+  EXPECT_EQ(s.get_enemy_count(), pre + 2U);
+  EXPECT_EQ(s.get_enemy(1).get_kind(), sts2::game::MonsterKind::kSneakyGremlin);
+  EXPECT_EQ(s.get_enemy(2).get_kind(), sts2::game::MonsterKind::kFatGremlin);
+}
+
+// 13. SpawnedMove_EffectCount0_NoOp
+// kSpawnedMove is the initial MoveId for OnDeath-spawned enemies. Its move
+// table entry will have effect_count=0 → the table-driven dispatch loop
+// runs 0 iterations → no state mutation. Until M.β populates the
+// SneakyGremlin table, kind_idx >= kMonsterMoveTables.size() short-circuits
+// at the bounds check. Either way the test asserts state invariance.
+TEST(Transition, SpawnedMove_EffectCount0_NoOp) {
+  const EnemyState spawned = EnemyStateBuilder{}
+                                 .kind(sts2::game::MonsterKind::kSneakyGremlin)
+                                 .hp(Stat{12})
+                                 .block(Stat{0})
+                                 .alive(true)
+                                 .current_move(sts2::game::MoveId::kSpawnedMove)
+                                 .performed_first_move(true)
+                                 .build();
+  CompactState s = make_carrier_state(spawned);
+  const sts2::game::Stat pre_player_hp = s.get_player_hp();
+  const sts2::game::Stat pre_player_block = s.get_player_block();
+  const sts2::game::Stat pre_enemy_block = s.get_enemy(0).get_block();
+
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+
+  EXPECT_EQ(s.get_player_hp(), pre_player_hp)
+      << "kSpawnedMove must be a no-op for the player";
+  EXPECT_EQ(s.get_player_block(), pre_player_block);
+  // enemy block decay runs at start of enemy turn (turn_flow reset), so
+  // assert post-decay value rather than pre-decay.
+  EXPECT_EQ(s.get_enemy(0).get_block(), pre_enemy_block);
+}
+
+// 14. Flee_OnFatGremlinTurn_RemovesFromCombat
+// FatGremlin executes [kFleeSelf]; another enemy is still alive. The
+// FatGremlin slot becomes dead; is_terminal remains false. Drives the
+// effect through the test_internals seam (no production move-table data
+// needed; the FatGremlin kind would lookup kMonsterMoveTables[10] which is
+// out of range until M.β bumps kMonsterKindCount → bounds-check short-
+// circuits in production).
+TEST(Transition, Flee_OnFatGremlinTurn_RemovesFromCombat) {
+  const EnemyState fat = EnemyStateBuilder{}
+                             .kind(sts2::game::MonsterKind::kFatGremlin)
+                             .hp(Stat{15})
+                             .alive(true)
+                             .current_move(sts2::game::MoveId::kFleeMove)
+                             .performed_first_move(true)
+                             .build();
+  const EnemyState companion = EnemyStateBuilder{}
+                                   .kind(sts2::game::MonsterKind::kLeafSlimeM)
+                                   .hp(Stat{30})
+                                   .alive(true)
+                                   .build();
+  CompactState s = CompactStateBuilder{}
+                       .player_hp(Stat{70})
+                       .player_block(Stat{0})
+                       .energy(Stat{0})
+                       .round(1)
+                       .phase(Phase::kPlayerActing)
+                       .hand(CardCounts{})
+                       .enemy(0, fat)
+                       .enemy(1, companion)
+                       .enemy_count(2)
+                       .build();
+
+  // Drive kFleeSelf through the test seam — production dispatch routes
+  // through do_enemy_act_slime which bounds-checks kind=kFatGremlin=10 OOR
+  // until M.β lands.
+  EnemyState e = s.get_enemy(0);
+  const sts2::game::monster_moves::MoveEffect flee{
+      .value = 0,
+      .kind = sts2::game::MoveEffectKind::kFleeSelf,
+      .power_kind = sts2::game::PowerKind::kWeak,
+      ._pad = 0,
+      ._pad2 = 0,
+  };
+  sts2::ai::transition::test_internals::apply_single_move_effect_for_test(s, e,
+                                                                          flee);
+  update_state(s, [&](CompactStateBuilder& builder) { builder.enemy(0, e); });
+  EXPECT_FALSE(s.get_enemy(0).get_alive());
+  EXPECT_TRUE(s.get_enemy(1).get_alive());
+  EXPECT_FALSE(is_terminal(s))
+      << "companion alive → combat continues post-flee";
+}
+
+// 15. GremlinMercDispatch_RoutesViaTableDriven
+// A GremlinMerc enemy with current_move=kGimmeMove invokes do_enemy_act:
+// kind_is_table_driven returns true for kGremlinMerc → dispatch enters
+// do_enemy_act_slime. Until M.β bumps kMonsterKindCount, the bounds check
+// inside do_enemy_act_slime short-circuits (kind_idx=8 >= size 8 → no-op)
+// → player HP unchanged. This DISTINGUISHES from the cultist-default path
+// which would invoke act_on_intent and (for kGimmeMove which has no
+// MoveId-switch case) silently no-op as well. The distinguishing observable
+// is that no Ritual side-effects fire (cultist Incantation path) → the
+// carrier's just_applied_ritual flag remains unset.
+TEST(Transition, GremlinMercDispatch_RoutesViaTableDriven) {
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.player_hp(Stat{70}).player_block(Stat{0}).energy(Stat{0}).hand(
+        CardCounts{});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kGremlinMerc)
+        .hp(Stat{30})
+        .alive(true)
+        .ritual_amount(Stat{0})
+        .current_move(sts2::game::MoveId::kGimmeMove)
+        .performed_first_move(true);
+  });
+  update_enemy(
+      s, 1, [](EnemyStateBuilder& enemy) { enemy.alive(false).hp(Stat{0}); });
+
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+
+  EXPECT_EQ(s.get_player_hp(), Stat{70})
+      << "kGremlinMerc routes via table-driven dispatch; pre-M.β data this "
+         "is a bounds-check no-op (NOT a cultist-path Ritual side-effect)";
+  EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual())
+      << "table-driven path must not engage cultist Ritual semantics";
 }
 
 }  // namespace
