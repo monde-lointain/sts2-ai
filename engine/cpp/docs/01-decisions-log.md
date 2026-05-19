@@ -1506,3 +1506,157 @@ Each rotation re-stamped `engine/cpp/tests/seeds/cultist_zobrist_pin.h` via the 
 - Q2-ADR-013 Amendment 4 §Compression (prior compression which rotated cultist BYTE for unrelated reasons).
 - Q2-ADR-013 Amendment 5 (LRU revert; concurrent wave-23 stream).
 - Upstream STS2 src at `/home/clydew372/development/projects/godot/sts2/src/Core/` (Phase-1 Explore audit source).
+
+## Q2-ADR-015 — Nibbit port — NibbitsWeak pinned + NibbitsNormal deferred (Cap-bust, Case B; A0 only)
+
+**Status**: Accepted (2026-05-18).
+**Wave**: 24 (K.0 ceremony + K.α substrate + K.β Nibbit definition + K.β-fix dispatch wire + K.γ_setup adapter + K.γ_pin_weak + K.γ_pin_normal + K.δ documentation).
+
+### §Context-and-motivation
+
+Post-wave-23 substrate is upstream-aligned (LRU reverted; stat widths `int32_t`). Next encounter selected from the Phase-1 pool per the `[[project-encounter-tractability]]` 4-criterion screen introduced in Q2-ADR-013 Amendment 4 / §18 of q2-architecture.md.
+
+Nibbit selected because:
+1. **Bounded combat duration**: Strength scaling forces offensive play; player cannot all-Defend indefinitely without taking escalating damage.
+2. **No status card injection**: Nibbit has no Slimed or equivalent injection move.
+3. **Player block does NOT dominate damage budget**: per Strength scaling, damage per turn escalates past block budget quickly (see §Encounter-differences-Weak-vs-Normal).
+4. **Q1 fixture support**: Q1 ported Nibbit + produced fixtures 07 and 08 (commit 9a30f80; pre-K.0 cross-quantum coordination per Q1-ADR-014).
+
+### §Nibbit-mechanics (A0)
+
+Upstream reference: `Core/Models/Monsters/TheCity/Nibbit.cs`.
+
+- HP: min 42 / max 46 (Nibbit.cs:26,28).
+- 3-move strict round-robin cycle: `BUTT_MOVE` → `SLICE_MOVE` → `HISS_MOVE` → `BUTT_MOVE` …
+  - `BUTT_MOVE`: deal 12 damage (Nibbit.cs:30).
+  - `SLICE_MOVE`: deal 6 damage (Nibbit.cs:34) + gain 5 block for self (Nibbit.cs:32).
+  - `HISS_MOVE`: gain Strength +2 for self (Nibbit.cs:36).
+- Initial move is determined by `IsAlone` / `IsFront` flags at encounter start:
+  - Solo Nibbit (`IsAlone=true`): starts `BUTT_MOVE`.
+  - Front Nibbit of a pair (`IsFront=true`): starts `SLICE_MOVE`.
+  - Back Nibbit of a pair (`IsFront=false`, i.e., NOT IsAlone AND NOT IsFront): starts `HISS_MOVE`.
+
+This gives a built-in 1-cycle offset between the two Nibbits in NibbitsNormal, driving symmetric-state breadth (see §Cap-bust-decision-tree-outcome).
+
+### §Encounter-differences-Weak-vs-Normal
+
+**NibbitsWeak** (1 Nibbit; `IsAlone=true`):
+- Starts `BUTT_MOVE` (12 damage turn 1).
+- Combined avg damage/turn at A0: ~6 baseline (BUTT+SLICE amortized over 3-move cycle); Strength from HISS accumulates linearly.
+- By turn 24 (8 full cycles) the Nibbit has +16 Strength → ~28 damage per BUTT hit. Offensive play is mandatory well before that horizon.
+
+**NibbitsNormal** (2 Nibbits):
+- Front: `SLICE_MOVE` (6 damage + 5 block), Back: `HISS_MOVE` (Strength +2) on turn 1.
+- 1-cycle offset means BUTT hits from the two Nibbits interleave rather than coincide.
+- Combined avg damage/turn at A0: ~12 baseline; both Nibbits accumulate Strength independently — combined Strength crosses the 15-block budget at turn 6-7 (dual Strength accumulation doubles the rate vs NibbitsWeak).
+
+### §New-substrate (K.α + K.β + K.β-fix)
+
+**K.α — new `MoveEffectKind` values (APPEND-ONLY)**:
+- `kBuffEnemy`: one-shot self-buff applying a stack count of a `PowerKind` to the acting enemy (used by `HISS_MOVE` → Strength +2). Processed by `do_enemy_act` via `M::add_power(effect.power_kind, effect.value)`.
+- `kBlockSelf`: one-shot self-block gain for the acting enemy (used by `SLICE_MOVE` → +5 block). Processed by `do_enemy_act` via the damage pipeline's block-gain path.
+- K.α audit confirmed `M::add_power(kStrength)` is GENERIC — no Ritual coupling; the Strength multiplier in `damage_calc` applies uniformly to any enemy kind with `PowerKind::kStrength` stacks.
+
+**K.β — new enum values (APPEND-ONLY)**:
+- `MonsterKind::kNibbit = 7` (previously `kMonsterKindCount = 7`; schema updated to `kMonsterKindCount = 8`).
+- `MoveId::kButtMove`, `MoveId::kSliceMove`, `MoveId::kHissMove` appended.
+- `kMonsterMoveTables[kNibbit]` populated with 3-move table: BUTT (damage 12) → SLICE (damage 6 + kBlockSelf 5) → HISS (kBuffEnemy kStrength +2) → strict follow-up chain.
+
+**K.β-fix — `kind_is_table_driven` dispatch helper**:
+- Boolean predicate routing `kNibbit` (and slime kinds) through `do_enemy_act_slime` (table-driven dispatch). Cultist + LouseProgenitor retain kind-specific paths.
+- Disambiguates which monster kinds are handled by the generic table-driven path vs bespoke `if`-chains.
+
+### §Enemy-block-decay-semantics
+
+Per upstream STS convention + K.α audit finding: enemy block decays at **START of each side's turn** via the existing `turn_flow.h::EndTurnOps::reset_enemy_block` scaffold — NOT at end of `do_enemy_act` as an initial K.α plan called for.
+
+Verification: Louse's `kCurlAndGrow` +14 self-block MUST persist across the player turn (it provides defensive value while the player acts). This behavior is preserved and locked by the pre-existing Louse pin. Nibbit's `SLICE_MOVE` block follows the same decay path — block gained by Nibbit on its turn persists until the start of Nibbit's next turn, decaying via `reset_enemy_block`.
+
+### §Empirical-pin-metrics
+
+**NibbitsWeak (Fixture 07, seed 42; Case A — pinned at commit 7bfcffa)**:
+- `expected_hp = 69.217677687600627`
+- `expected_rounds = 5.1979217430631941`
+- `tt_size = 62,045,014`
+- `peak_rss_gb = 6.19`
+- `wall_clock_s = 47`
+
+Interpretation: optimal play kills the Nibbit in ~5.2 rounds via aggressive offense; player takes ~0.78 HP net damage (across draw-RNG branches; expectimax averages). Fast cap-free solve — 62M TT entries well within 370M cap.
+
+**NibbitsNormal (Fixture 08, seed 42; Case B — DEFERRED at commit 5fc99ac)**:
+- `status = kCapExceeded` (TT cap hit at 370M entries)
+- `entries_at_cap = 370,000,000`
+- `peak_rss_gb = 22.16`
+- `wall_clock_s = 271`
+
+Pre-cap, the search hit breadth explosion from symmetric 2-Nibbit state proliferation. Faster than plan estimate (271s vs 20-60 min) because the cap was reached on breadth — not depth. The search horizon was never the binding constraint; distinct reachable states were.
+
+### §Cap-bust-decision-tree-outcome
+
+Per the K.γ_pin_normal Case B contingency (plan §K.γ scope): wave-24 SHIPS with NibbitsWeak pinned + NibbitsNormal tombstoned.
+
+Tombstone form:
+- Test name: `DISABLED_DISABLED_NibbitsNormalFixture8_PinnedAgreement`
+- Body: `GTEST_SKIP() << "NibbitsNormal pin DEFERRED — kCapExceeded @ 370M (Case B). ..."`
+
+**Adapter dispatch for NibbitsNormal STAYS LIVE** (K.γ_setup `encounter_map` entry + dispatch branch for the 2-Nibbit wire signature). The encounter is fully supported by the Q2 adapter; only the pin regression-lock is deferred until Amendment 1 (G1 canonical-form swap) lands.
+
+### §Amendment-1-deferred (G1 canonical-form swap; favored direction)
+
+Anticipated Amendment 1 to address NibbitsNormal cap-bust:
+
+**G1 — canonical-form pre-Zobrist swap** (favored). Canonicalize the 2-Nibbit slot ordering in `zobrist_of(CompactState)` by a deterministic lex-key before folding enemy slots. Lex-key: `(hp_desc, current_move_idx, strength)` such that slot[0] ≤ slot[1] by lex. Symmetric reachable states (where the two Nibbits have swapped slot positions but identical values) then hash identically. Estimated reduction: ~50% state-space breadth → tt_size 370M → ~150-200M; should fit within cap.
+
+**Implementation sketch for G1**: in `zobrist_of(CompactState)`, before the enemy-slot folding loop, sort the enemy-slot indices by lex-key when `kind_is_table_driven` AND `enemy_count_ == 2` AND both enemies share the same `MonsterKind`. Cultist + LouseProgenitor + slime encounters (heterogeneous compositions OR single-enemy) are unaffected.
+
+Alternatives (NOT favored):
+- **G2**: per-encounter horizon reduction (25 → 15 for NibbitsNormal). Sacrifices oracle quality; rejected.
+- **G3**: temporary LRU re-introduction (reverses wave-23 J.α). High substrate cost; encounter-selection criteria from `[[project-encounter-tractability]]` should obviate this.
+
+### §Tractability-screen-pass
+
+Per-criterion analysis vs the `[[project-encounter-tractability]]` 4-criterion screen (Q2-ADR-013 Amendment 4):
+
+1. **Bounded duration** PASS: NibbitsWeak ~5.2 rounds (faster than the 9-11 estimate); NibbitsNormal cap-bust occurred but pre-horizon (state-space breadth, not depth).
+2. **No unbounded status accumulation** PASS: Nibbit has no status card injection.
+3. **Block does NOT dominate damage** PASS: Strength scaling forces offensive play (verified via NibbitsWeak: `expected_rounds=5.198` means player attacks aggressively; an all-Defend branch would extend combat until Strength overwhelmed any feasible block budget).
+4. **Q1 fixture support** PASS: Q1 ported Nibbit + fixtures 07 + 08 (commit 9a30f80; pre-K.0 cross-quantum coordination).
+
+NibbitsNormal cap-bust does NOT invalidate the tractability criteria — the encounter IS bounded; the issue is reachable distinct STATE COUNT (breadth × symmetric duplication) exceeds the 370M TT cap. G1 Amendment addresses this without altering any 4-criterion answer.
+
+Screen limitation surfaced: the 4-criterion screen does not account for symmetric state-space duplication when same-kind enemies coexist. Future screen-criteria addition: per-(kind,count) state-space breadth estimate as criterion 5.
+
+### §Q1-divergence-acknowledgment
+
+Per Q2-ADR-029 Path A philosophy: Q2 implements upstream Nibbit semantics (`Core/Models/Monsters/TheCity/Nibbit.cs`); Q1 (per `engine/headless/`) also ports Nibbit per Q1-ADR-014 (Q1-side ADR; cross-reference). Oracle-agreement gate (Q12) should produce matching solves IF Q1's Nibbit semantics match upstream exactly. Any divergence surfaces for cross-quantum coordination.
+
+### §Cultist-byte-preservation
+
+Cultist Zobrist BYTE: `Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80` PRESERVED through wave-24 (APPEND-ONLY discipline maintained across K.α `MoveEffectKind` extensions + K.β `MonsterKind`/`MoveId` extensions + K.γ_setup adapter additions + K.β-fix dispatch wire + K.γ_pin_* test additions).
+
+Verified by `Zobrist.CultistRootKey_MatchesPreWave21Pin` test at each K.* stream verification gate. Cultist + LouseProgenitor + NibbitsWeak pin VALUES are BIT-IDENTICAL throughout wave-24 — the APPEND-ONLY discipline validated for the 4th time post-wave-21 → fix-4/H.γ → wave-23/J.β → wave-24/K.*.
+
+### Consequences (lead with negatives)
+
+- *Negative*: NibbitsNormal pin DEFERRED via tombstone; regression-lock for the 2-Nibbit encounter doesn't land until Amendment 1 (favored G1 direction).
+- *Negative*: TT cap (370M) is marginal for symmetric multi-enemy encounters with no canonical-form pruning; future encounter selection must consider this dimension.
+- *Negative*: 4-criterion screen passed all four for NibbitsNormal, yet cap-bust occurred — screen doesn't account for symmetric state-space duplication when same-kind enemies coexist. Future addition: per-(kind,count) state-space estimate as criterion 5.
+- *Negative*: substrate cost: 1 new `kind_is_table_driven` helper + new `MoveEffectKind` values + new `MoveId` values + new `MonsterKind` + 4 new tests + 2 new projection modules + tombstone test. Cumulative LOC ~1300.
+- *Positive*: NibbitsWeak pinned at `expected_hp=69.218 / expected_rounds=5.198`; first non-cultist single-enemy encounter with Strength scaling correctly pinned.
+- *Positive*: substrate generalization — `do_enemy_act_slime` is now `kind_is_table_driven`-dispatched and handles Nibbit's `kBuffEnemy` + `kBlockSelf` `MoveEffectKinds`. Future encounters with similar mechanics reuse this path.
+- *Positive*: Cultist + LouseProgenitor pins BIT-IDENTICAL throughout wave; substrate generalization didn't disturb prior regression baselines.
+- *Positive*: Cultist Zobrist BYTE preserved (APPEND-ONLY discipline validated for 4th time post-wave-21 → fix-4/H.γ → wave-23/J.β → wave-24).
+- *Positive*: G1 Amendment direction pre-documented; future engineer doesn't need to re-derive the symmetric-state pruning approach.
+
+### Cross-references
+
+- Q2-ADR-002 (Phase-1A scope; A0 only).
+- Q2-ADR-005 (algorithm_sha source-list discipline; K.γ_setup added Nibbit projection sources).
+- Q2-ADR-010 (Zobrist hash-only TT; APPEND-ONLY discipline).
+- Q2-ADR-011 (TT cap-policy + lifecycle — `kCapExceeded` as failure mode).
+- Q2-ADR-013 (slime port + Slimed mechanics — distinct from Nibbit).
+- Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation + `[[project-encounter-tractability]]` (4-criterion screen origin).
+- Q2-ADR-014 (wave-23 upstream stat widths).
+- Q2-ADR-029 §Path A (Q1-divergence-acknowledged philosophy).
+- Q1-ADR-014 (Q1-side Nibbit port ratification).
+- Wave-22-fix-4 H.γ canonical Cultist BYTE rotation (chain documented in Q2-ADR-014).

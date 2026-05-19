@@ -656,3 +656,44 @@ re-introducing LRU vs encounter-side mitigation (Q2-ADR-013 Amendment 5).
 **Cross-references.** Q2-ADR-013 Amendment 5 (LRU revert rationale + full
 Consequences). Q2-ADR-014 (stat widening rationale + rotation chain).
 Q2-ADR-011 (TT cap-policy + lifecycle — kCapExceeded restored).
+
+## 20. §20 — 2026-05-18 Wave-24 Nibbit port addendum
+
+Wave-24 ports the Nibbit encounter (A0) in two compositions: NibbitsWeak (1 Nibbit) and NibbitsNormal (2 Nibbits). NibbitsWeak is pinned; NibbitsNormal is deferred via tombstone pending Amendment 1.
+
+### Port outcome
+
+| Encounter | Fixture | Commit | Outcome |
+|---|---|---|---|
+| NibbitsWeak | 07, seed 42 | 7bfcffa | Pinned — `expected_hp=69.2177`, `expected_rounds=5.1979`, `tt_size=62M`, RSS=6.19 GB, 47s |
+| NibbitsNormal | 08, seed 42 | 5fc99ac | DEFERRED — `kCapExceeded` @ 370M entries, 22.16 GB peak, 271s wall-clock |
+
+Adapter dispatch for NibbitsNormal STAYS LIVE (K.γ_setup `encounter_map` + dispatch branch). Only the pin regression-lock is tombstoned.
+
+### New substrate (K.α + K.β + K.β-fix)
+
+- **`MoveEffectKind::kBuffEnemy`** (APPEND-ONLY): one-shot self-buff applying `PowerKind` stacks to the acting enemy. Used by Nibbit's `HISS_MOVE` (Strength +2).
+- **`MoveEffectKind::kBlockSelf`** (APPEND-ONLY): one-shot self-block gain for the acting enemy. Used by Nibbit's `SLICE_MOVE` (+5 block).
+- **`MonsterKind::kNibbit = 7`** (APPEND-ONLY); `kButtMove`, `kSliceMove`, `kHissMove` appended to `MoveId`.
+- **`kind_is_table_driven` helper**: boolean predicate routing `kNibbit` (and slime kinds) through `do_enemy_act_slime` (table-driven dispatch); cultist + LouseProgenitor retain kind-specific paths.
+- **Enemy block decay**: enemy block decays at START of each side's turn via existing `turn_flow::EndTurnOps::reset_enemy_block` scaffold. Nibbit's `SLICE_MOVE` self-block follows the same path as Louse's `kCurlAndGrow` block; no new decay logic required.
+
+Cultist Zobrist BYTE `Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80` PRESERVED. APPEND-ONLY discipline validated for the 4th time across wave-24 K.* streams.
+
+### Cap-bust observation — NibbitsNormal
+
+NibbitsNormal's 2-Nibbit slot ordering is symmetric: both enemies share `MonsterKind::kNibbit` but start at different cycle positions (front → SLICE, back → HISS). Without canonical-form normalization, states where the two Nibbits have swapped slot values are treated as distinct by the Zobrist hash. This doubles reachable breadth per state that has been explored from both orderings.
+
+Result: cap hit at 370M entries (22.16 GB) in 271s — fast because breadth (not depth) is the binding constraint. Reducing the search horizon has no material effect.
+
+### Favored Amendment direction — G1 canonical-form swap
+
+In `zobrist_of(CompactState)`, before folding enemy slots, sort the slot indices by a deterministic lex-key `(hp_desc, current_move_idx, strength)` when both enemies share the same `MonsterKind`. Symmetric states then hash identically → estimated ~50% breadth reduction → tt_size ~150-200M (within cap).
+
+Heterogeneous encounters (cultist, LouseProgenitor, slime compositions) are unaffected.
+
+### Encounter selection criteria addendum
+
+The 4-criterion screen (§18) passed for NibbitsNormal on all four dimensions, yet cap-bust still occurred. The screen does not account for symmetric state-space duplication when same-kind enemies coexist. **Future encounters with N>1 same-kind enemies should add a 5th criterion: per-(kind,count) state-space breadth estimate.**
+
+**Cross-references.** Q2-ADR-015 (full Nibbit port rationale + metrics + amendment directions). Q2-ADR-011 (TT cap-policy — `kCapExceeded` failure mode). Q2-ADR-013 Amendment 4 (4-criterion tractability screen origin). Q1-ADR-014 (Q1-side Nibbit port). ADR-029 §Path A tracker (NibbitsWeak + NibbitsNormal rows updated).

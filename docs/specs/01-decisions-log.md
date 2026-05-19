@@ -742,6 +742,8 @@ Path A encounter tracker (checked = shipped + pinned-seed gate green):
 |---|---|---|---|
 | LouseProgenitor | 17 (waves 17–20) | Q2-ADR-009 | [x] SHIPPED (wave-20.α POUNCE fix + pin captured) |
 | SmallSlimes | 22 | Q2-ADR-013 | [~] SmallSlimes — DEPRECATED-IN-Q2 per Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation (2026-05-18) |
+| NibbitsWeak | 24 | Q2-ADR-015 | [x] SHIPPED-IN-Q2 wave-24 (Q2-ADR-015; commit 7bfcffa) |
+| NibbitsNormal | 24 | Q2-ADR-015 | [~] SHIPPED-IN-Q2 wave-24 (Q2-ADR-015; commit 5fc99ac; pin DEFERRED to Amendment 1 — G1 canonical-form swap) |
 | MediumSlimes | 23 | Q2-ADR-014 (pending) | [ ] pending |
 | FossilStalker | TBD | — | [ ] pending |
 | KaiserCrab | TBD | — | [ ] pending |
