@@ -36,20 +36,22 @@ const std::array<RejectCase, 4>& reject_cases() {
   // NOTE: fixture #5 (LouseProgenitorNormal) is now a success path — it is
   // tested in test_louse_progenitor_projection.cc and test_adapter_facade.cc.
   static const std::array<RejectCase, 4> kCases = {{
+      // Hashes updated wave-24/K.q1: all 8 fixtures regenerated post-Nibbit
+      // catalog expansion (blob sizes grew due to catalog metadata append).
       {.dir = "02-fossil-stalker-elite-seed42",
        .expected_encounter_id = "FossilStalkerElite",
        .expected_canonical_hash =
-           "ef1b2a5630ef9ebd067ae13b0831d5f8d5c4dcff6df61939bf20c572f96a7d0f",
+           "15a433bec3f9fe4d8c9e6959430043ecbbd1a0d0e1cc261ae98deaa6fa9e155c",
        .expects_unknown_powers = false},
       {.dir = "03-fossil-stalker-elite-seed1337",
        .expected_encounter_id = "FossilStalkerElite",
        .expected_canonical_hash =
-           "92ebc2e91a62a521f055d791e624e293aed2ed51cbac17a963babf11dd295a45",
+           "6ae16e3393efbeb79a845c95e367fbc2b76216bf42c10e47a0a0f7fd809d059e",
        .expects_unknown_powers = false},
       {.dir = "04-kaiser-crab-boss-seed42",
        .expected_encounter_id = "KaiserCrabBoss",
        .expected_canonical_hash =
-           "9edb550ef2e4a99f9544b58516f64d8d803919acfff9db29be91938a0a9cef8e",
+           "4a5978304794c24864bab48c1676e94fce6284e02cd8af502d7539127cca44a2",
        .expects_unknown_powers = true},
       // wave-22.γ: encounter_map entries for SmallSlimes were corrected from
       // STS1 names {AcidSlimeS, SpikeSlimeS} to actual Q1 wire names
@@ -59,7 +61,7 @@ const std::array<RejectCase, 4>& reject_cases() {
       {.dir = "06-small-slimes-seed42",
        .expected_encounter_id = "<unknown>",
        .expected_canonical_hash =
-           "d33371738949b606df7713b1b19c5645fb2e4d8c822c72c6224a6ce7c8cf1fbd",
+           "cba34eaee17e246bcbf5b4942459bf6d39a853d343c197d9baab4b0661a668e7",
        .expects_unknown_powers = false},
   }};
   return kCases;

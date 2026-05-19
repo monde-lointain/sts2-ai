@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "sts2/ai/state.h"
+#include "sts2/game/types.h"
 #include "sts2/oracle/adapter/adapter.h"
 #include "tests/oracle/adapter_fixtures.h"
 
@@ -12,6 +13,7 @@
 namespace {
 
 using sts2::ai::CompactState;
+using sts2::game::MonsterKind;
 using sts2::oracle::adapter::AdapterReject;
 using sts2::oracle::adapter::AdapterResult;
 using sts2::oracle::adapter::from_blob_payload;
@@ -33,6 +35,26 @@ TEST(AdapterFacade, Fixture5_LouseProgenitor_ReturnsCompactState) {
       << "expected CompactState variant on LouseProgenitor";
   const auto& cs = std::get<CompactState>(r);
   EXPECT_TRUE(cs.get_enemy(0).get_alive());
+}
+
+TEST(AdapterFacade, Fixture7_NibbitsWeak_ReturnsCompactState) {
+  const auto bytes = load_fixture_blob("07-nibbits-weak-seed42");
+  const AdapterResult r = from_blob_payload(bytes);
+  ASSERT_EQ(r.index(), 0U) << "expected CompactState variant on NibbitsWeak";
+  const auto& cs = std::get<CompactState>(r);
+  EXPECT_TRUE(cs.get_enemy(0).get_alive());
+  EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kNibbit);
+}
+
+TEST(AdapterFacade, Fixture8_NibbitsNormal_ReturnsCompactState) {
+  const auto bytes = load_fixture_blob("08-nibbits-normal-seed42");
+  const AdapterResult r = from_blob_payload(bytes);
+  ASSERT_EQ(r.index(), 0U) << "expected CompactState variant on NibbitsNormal";
+  const auto& cs = std::get<CompactState>(r);
+  EXPECT_TRUE(cs.get_enemy(0).get_alive());
+  EXPECT_TRUE(cs.get_enemy(1).get_alive());
+  EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kNibbit);
+  EXPECT_EQ(cs.get_enemy(1).get_kind(), MonsterKind::kNibbit);
 }
 
 TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {

@@ -16,6 +16,8 @@
 #include "sts2/oracle/adapter/diagnostic.h"
 #include "sts2/oracle/adapter/louse_progenitor_projection.h"
 #include "sts2/oracle/adapter/manifest.h"
+#include "sts2/oracle/adapter/nibbits_normal_projection.h"
+#include "sts2/oracle/adapter/nibbits_weak_projection.h"
 #include "sts2/oracle/adapter/state_blob.h"
 
 // Adapter facade: encounter detection + reject-with-diagnostic path
@@ -47,6 +49,10 @@ const std::vector<EncounterEntry>& encounter_map() {
       {{"Crusher", "Rocket"}, "KaiserCrabBoss"},
       // LouseProgenitorNormal — single-monster.
       {{"LouseProgenitor"}, "LouseProgenitorNormal"},
+      // NibbitsWeak — single-Nibbit (wave-24).
+      {{"Nibbit"}, "NibbitsWeak"},
+      // NibbitsNormal — 2-Nibbit (wave-24). Sorted: {"Nibbit","Nibbit"}.
+      {{"Nibbit", "Nibbit"}, "NibbitsNormal"},
   };
   return kMap;
 }
@@ -141,6 +147,13 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   }
   if (is_louse_progenitor_normal(blob.combat_state)) {
     return project_louse_progenitor_normal(blob.combat_state);
+  }
+  // Most-specific first: 2-enemy NibbitsNormal before 1-enemy NibbitsWeak.
+  if (is_nibbits_normal(blob.combat_state)) {
+    return project_nibbits_normal(blob.combat_state);
+  }
+  if (is_nibbits_weak(blob.combat_state)) {
+    return project_nibbits_weak(blob.combat_state);
   }
 
   // Reject path. Stamp the rejection with manifest + canonical hash, and

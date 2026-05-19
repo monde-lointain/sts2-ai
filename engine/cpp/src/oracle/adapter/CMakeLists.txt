@@ -16,6 +16,8 @@ target_sources(sts2_oracle_adapter PRIVATE
     envelope.cc
     cultists_projection.cc
     louse_progenitor_projection.cc
+    nibbits_weak_projection.cc
+    nibbits_normal_projection.cc
     adapter.cc
 )
 

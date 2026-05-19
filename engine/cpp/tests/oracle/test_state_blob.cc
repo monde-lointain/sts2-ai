@@ -36,7 +36,8 @@ std::string to_hex_lower(std::span<const std::uint8_t> bytes) {
 
 TEST(StateBlobReader, Fixture1_CultistsNormal_ParsesAndValidates) {
   const auto bytes = load_fixture_blob("01-cultists-normal-seed42");
-  EXPECT_EQ(bytes.size(), 5575U);  // pinned by fixture metadata.json
+  EXPECT_EQ(bytes.size(),
+            5627U);  // pinned by fixture metadata.json (regen'd wave-24/K.q1)
 
   const ParsedStateBlob blob = read_state_blob(bytes);
   EXPECT_EQ(blob.magic, sts2::oracle::adapter::kStateCodecMagic);

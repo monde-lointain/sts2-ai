@@ -27,6 +27,8 @@ set(ALGORITHM_SHA_SOURCES
     engine/cpp/src/game/monster_moves.cc
     engine/cpp/src/oracle/adapter/cultists_projection.cc
     engine/cpp/src/oracle/adapter/louse_progenitor_projection.cc
+    engine/cpp/src/oracle/adapter/nibbits_normal_projection.cc
+    engine/cpp/src/oracle/adapter/nibbits_weak_projection.cc
 )
 # list(SORT ...) not needed: already sorted lexicographically above for determinism.
 
