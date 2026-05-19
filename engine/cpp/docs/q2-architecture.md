@@ -697,3 +697,38 @@ Heterogeneous encounters (cultist, LouseProgenitor, slime compositions) are unaf
 The 4-criterion screen (§18) passed for NibbitsNormal on all four dimensions, yet cap-bust still occurred. The screen does not account for symmetric state-space duplication when same-kind enemies coexist. **Future encounters with N>1 same-kind enemies should add a 5th criterion: per-(kind,count) state-space breadth estimate.**
 
 **Cross-references.** Q2-ADR-015 (full Nibbit port rationale + metrics + amendment directions). Q2-ADR-011 (TT cap-policy — `kCapExceeded` failure mode). Q2-ADR-013 Amendment 4 (4-criterion tractability screen origin). Q1-ADR-014 (Q1-side Nibbit port). ADR-029 §Path A tracker (NibbitsWeak + NibbitsNormal rows updated).
+
+---
+
+## 21. §21 — 2026-05-19 Wave-25 canonical-form outcome + NibbitsNormal pin deferred indefinitely
+
+### Wave-25 outcome summary
+
+Wave-25 executed three sub-streams against the NibbitsNormal cap-bust deferred from wave-24:
+
+- **L.α** (commit `e465b57`): canonical-form pre-Zobrist swap SHIPPED standalone. `zobrist_half` now perm-sorts active enemy slots by a deterministic lex-key before folding. CompactState slot order is UNCHANGED; only the hash is canonicalized. 4 new unit tests PASS. Cultist + Louse + NibbitsWeak pins BIT-IDENTICAL; cultist Zobrist BYTE PRESERVED (`Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80`).
+- **L.β** (commit `67f6d8e`): NibbitsNormal pin re-capture confirmed canonical-form INSUFFICIENT. Result: `kCapExceeded` PERSISTS at 370M entries (22.37 GB / 255.3s vs wave-24's 22.16 GB / 271.7s). Only ~5–10% wall-clock reduction; no state-space breadth collapse.
+- **L.cap-bump** (out of scope; reverted): `kMaxTtEntries` 370M → 500M attempt OOM-killed at **25.99 GB** / **5:47** wall-clock. Cap reverted; `kMaxTtEntries` stays 370M.
+
+**NibbitsNormal pin DEFERRED INDEFINITELY** per user-baked decision (2026-05-19). Adapter dispatch STAYS LIVE; tombstone test ships.
+
+### Canonical-form mechanism
+
+At `zobrist_half` entry, active enemy slots are sorted by lex-key: `alive` (true first) → `kind` (asc enum) → `hp` (asc) → `current_move` (asc enum) → `block` (asc) → `performed_first_move` (false first) → `move_index` (asc) → `power_count` (asc) → PowerInstance fields (kind, stacks, flags). Per-slot Zobrist key tables remain indexed by the outer-loop index after sorting — that is the mechanism. CompactState slot order and `target_idx` action semantics are unaffected; `derive_best_action` re-derives per-state correctly.
+
+### Why canonical-form was insufficient for NibbitsNormal
+
+The 2 Nibbits start at OFFSET cycle positions per Q1 fixture (faithful to upstream `IsAlone`/`IsFront` semantics): slot 0 → `SLICE_MOVE`, slot 1 → `HISS_MOVE`. Because they cycle BUTT → SLICE → HISS in strict 3-move order at a +1-position offset, they NEVER share the same `current_move` in any reachable state. No reachable state pair is symmetric → canonical-form collapses ZERO states. The encounter's state-space is inherently asymmetric by construction.
+
+### Cap-bump demonstrates TT-cap/overhead tradeoff
+
+The 500M-entry TT reserve alone consumes ~19 GB. Adding recursion stack + abseil internals + per-state heap overhead pushed peak RSS to ~26 GB, exceeding the 24 GB budget. This establishes a practical ceiling: at the current per-entry overhead, ~370M entries is approximately the cap at which 24 GB is exhausted without counting non-TT overhead. Increasing the cap without reducing per-entry overhead is not viable.
+
+### Amendment directions menu (G2–G5)
+
+- **G2 (per-encounter horizon)**: `kSearchHorizonRounds` reduced for NibbitsNormal-class only (e.g., 25 → 15). ~80–150 LOC. Cost: oracle quality (narrower pin window).
+- **G3 (LRU re-introduction)**: reverse wave-23/J.α LRU revert; hard-cap stays low; LRU evicts under cap. ~250 LOC. Cost: wall-clock penalty + ~4 GB RSS overhead per wave-22-fix-4 data.
+- **G4 (Strength-stack cap)**: bound per-enemy Strength accumulator. Reduces breadth. Cost: semantic divergence from upstream STS2.
+- **G5 (alternate state-encoding)**: synthetic "cycle-phase" enum collapsing the 2-Nibbit offset — substantive substrate change; dedicated wave required.
+
+**Cross-references.** Q2-ADR-015 Amendment 1 (full mechanism + correctness proof + empirical metrics + amendment directions). ADR-029 §Path A tracker (NibbitsNormal row updated to indefinite deferral). Wave-23/J.α (LRU revert — basis for G3).

@@ -1660,3 +1660,126 @@ Verified by `Zobrist.CultistRootKey_MatchesPreWave21Pin` test at each K.* stream
 - Q2-ADR-029 §Path A (Q1-divergence-acknowledged philosophy).
 - Q1-ADR-014 (Q1-side Nibbit port ratification).
 - Wave-22-fix-4 H.γ canonical Cultist BYTE rotation (chain documented in Q2-ADR-014).
+
+---
+
+### Amendment 1 — Wave-25 outcome: canonical-form attempted; NibbitsNormal pin deferred indefinitely (2026-05-19)
+
+**Status**: Accepted (2026-05-19).
+**Wave**: 25 (L.0 ceremony + L.α canonical-form swap + L.β NibbitsNormal re-capture attempt + L.cap-bump OOM + L.γ documentation).
+
+#### §Canonical-form-mechanism
+
+`zobrist_half` now performs a permutation sort of the active enemy slots by a deterministic lex-key BEFORE folding them into the Zobrist accumulator. Lex-key fields (all ascending; alive slots first):
+
+1. `alive` (true before false — dead slots sorted last)
+2. `kind` (asc by `MonsterKind` enum value)
+3. `hp` (asc by `Stat::value()`)
+4. `current_move` (asc by `MoveId` enum value)
+5. `block` (asc)
+6. `performed_first_move` (false before true)
+7. `move_index` (asc)
+8. `power_count` (asc)
+9. PowerInstance fields per slot (kind, stacks, flags) — extends tie-break depth
+
+Per-slot Zobrist key tables (`enemy_hp[slot]`, `enemy_kind[slot]`, etc.) remain indexed by the outer-loop variable `i` — that is the canonical-form mechanism: after the perm sort, the same logical enemy ends up at the same canonical slot index regardless of wire position, and thus is folded with the key table row for that canonical slot.
+
+`CompactState` slot order is UNCHANGED; only the hash function is canonicalized. `target_idx` action semantics and `derive_best_action` re-derivation per-state remain correct (see §Correctness-analysis).
+
+#### §Correctness-analysis
+
+Proof-by-walk-through:
+
+1. **CompactState slot order UNCHANGED** — only the Zobrist hash is canonicalized. Actions (Strike, Defend, Survivor with `target_idx ∈ [0, enemy_count_)`) retain wire-position semantics.
+2. **TT caches Score by canonical hash** — symmetric reachable states (where enemies differ only in slot position but share identical values) have the same expected Score; caching them under one canonical key is correct.
+3. **`derive_best_action` re-derives per-state** — walks `legal_actions(state)` enumerating `target_idx`; for each action, computes child state + canonical hash + TT lookup. Different actions produce different child hashes; `derive_best_action` picks the action whose child Score matches the stored Score.
+4. **No action-label collision** — in state A `{HP10@slot0, HP44@slot1}`, `target_idx=0` hits HP10. In symmetric state A' `{HP44@slot0, HP10@slot1}`, `target_idx=0` hits HP44 BUT `target_idx=1` hits HP10. `derive_best_action` correctly picks `target_idx=1` for A' (the mirror of A's `target_idx=0`), because A' and A hash to the same canonical key and the per-state action enumeration identifies the correct matching action.
+
+4 new unit tests (`Zobrist.CanonicalForm_*`) verify the invariant: canonical-form hash identity for symmetric states, canonical-form DOES NOT collapse asymmetric states, alive-before-dead ordering. All 4 PASS at commit `e465b57`.
+
+#### §Empirical-pin-metrics
+
+Wave-25 L.β NibbitsNormal re-capture attempt (post-L.α canonical-form) vs wave-24 Case B baseline:
+
+| Metric | Wave-24 K.γ_pin_normal | Wave-25 L.β (post-canonical-form) |
+|---|---|---|
+| status | kCapExceeded | kCapExceeded (PERSISTS) |
+| entries_at_cap | 370,000,000 | 370,000,000 |
+| peak_rss | 22.16 GB | 22.37 GB |
+| wall_clock | 271.7s | 255.3s |
+
+Conclusion: canonical-form yields only **~5-10% wall-clock reduction** with NO state-space breadth reduction at the cap-hit boundary. The cap is still reached at 370M entries.
+
+#### §Why-canonical-form-was-insufficient
+
+Root cause: the 2 Nibbits in NibbitsNormal start at OFFSET cycle positions per the Q1 fixture (which faithfully matches upstream `BuildMonster` `IsAlone`/`IsFront` semantics):
+
+- Slot 0 (front, `IsFront=true`): initial move `SLICE_MOVE` (`moveState2` in `Nibbit.cs`).
+- Slot 1 (back, `IsFront=false`): initial move `HISS_MOVE` (`moveState3` in `Nibbit.cs`).
+
+Both Nibbits cycle BUTT → SLICE → HISS → BUTT in strict 3-move order, but at a persistent +1-cycle-position offset. Reachable `current_move` pairs across all turns:
+
+| Turn | Slot 0 | Slot 1 |
+|---|---|---|
+| 1 | SLICE | HISS |
+| 2 | HISS | BUTT |
+| 3 | BUTT | SLICE |
+| 4 | SLICE | HISS (cycle repeats) |
+
+The lex-key sorts canonically, but the slot-swap produces a DIFFERENT canonical form. For example:
+- `{SLICE_MOVE, HISS_MOVE}` canonicalizes to slot 0 = HISS (lower enum), slot 1 = SLICE.
+- `{HISS_MOVE, BUTT_MOVE}` canonicalizes to slot 0 = BUTT (lower enum), slot 1 = HISS.
+
+These are already distinct pairs — there is no symmetry to collapse. The two Nibbits NEVER share the same `current_move` value in any reachable state, so no pair of reachable states is symmetric. Canonical-form collapses ZERO states.
+
+Canonical-form would have worked if the 2 Nibbits started at the SAME cycle position (e.g., both BUTT) — but the Q1 fixture correctly enforces the offset per upstream `IsAlone`/`IsFront` semantics, and changing that would be a semantic divergence from upstream STS2.
+
+#### §L.cap-bump-OOM (informational; NOT shipped)
+
+A follow-up attempt raised `kMaxTtEntries` 370M → 500M, motivated by the user's "24 GB acceptable" direction. Result: OOM-killed at **25.99 GB peak** / **5:47 wall-clock** (~347s). The 500M entry reserve consumes ~19 GB of TT alone; recursion stack + abseil internals + per-state heap overhead pushed peak to ~26 GB, exceeding the 24 GB budget.
+
+Cap-bump REVERTED in main repo CWD. `kMaxTtEntries` stays at 370M.
+
+#### §Deferred-permanently
+
+NibbitsNormal pin is **DEFERRED INDEFINITELY** per user-baked decision (2026-05-19). Wave-25 ships L.α canonical-form infrastructure standalone:
+
+- **Adapter dispatch STAYS LIVE** (commit `1e681c7` / wave-24/K.γ_setup; encounter detection + projection both functional; encounter is fully supported by the Q2 adapter).
+- **Tombstone test** (`DISABLED_DISABLED_NibbitsNormalFixture8_PinnedAgreement` at commit `67f6d8e`) prevents the pin from running by default; runs with `--gtest_also_run_disabled_tests` and skips with the cap-bust diagnostic.
+- **Future memory-reduction work** (G2–G5 directions, see §Future-Amendment-directions) re-opens the pin attempt as Amendment 2 (or beyond).
+
+#### §Cultist-BYTE-outcome
+
+Cultist Zobrist BYTE PRESERVED at `Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80`. Q1 emits `CultistsNormal` slot 0 = Calcified (`MonsterKind` enum value 0) + slot 1 = Damp (enum value 1); lex-sort by kind asc is a no-op for that ordering. Single-enemy cultist solve is trivially unaffected by the perm sort.
+
+Convergent encounter pins BIT-IDENTICAL post-L.α:
+- Cultist: `expected_hp=40.9083 expected_rounds=6.45798 tt_size=84790480`
+- Louse: `expected_hp=0.0407931 expected_rounds=10.152`
+- NibbitsWeak: `expected_hp=69.218 expected_rounds=5.198 tt_size=62045014`
+
+#### §Future-Amendment-directions (informational)
+
+For future memory-reduction efforts that may unlock NibbitsNormal pin:
+
+- **G2 (per-encounter horizon)**: reduce `kSearchHorizonRounds` for NibbitsNormal-class encounters only (e.g., 25 → 15). Halves depth; reduces state-space breadth proportionally. Cost: oracle quality (5–15-turn pin window). ~80–150 LOC.
+- **G3 (LRU re-introduction)**: reverse wave-23/J.α's LRU revert. Hard-cap stays low (e.g., 250M); LRU evicts under cap; solve continues using bounded RAM. Cost: wall-clock penalty + ~4 GB RSS overhead per wave-22-fix-4 measurements. ~250 LOC re-add.
+- **G4 (Strength-stack cap)**: bound the per-enemy Strength accumulator (similar to Slimed cap=8). Reduces state-space breadth from Strength scaling. Cost: semantic divergence from upstream STS2.
+- **G5 (alternate state-encoding)**: collapse the 2-Nibbit offset semantics via a synthetic "cycle-phase" enum value rather than separate `current_move` per slot. Substantive substrate change; out of scope without dedicated wave.
+
+#### §Consequences (lead with negatives)
+
+- *Negative*: NibbitsNormal pin remains DEFERRED indefinitely; regression-lock for the 2-Nibbit encounter is not in place.
+- *Negative*: G1 canonical-form swap was insufficient for this specific encounter (only ~5-10% wall-clock improvement; no cap-bust resolution). The lex-key infrastructure remains in place and benefits any future same-kind multi-enemy encounters with TRULY shared `current_move` cycle starts.
+- *Negative*: cap-bump attempt OOM'd at 25.99 GB / 500M cap; demonstrates the inherent tradeoff between TT cap size and per-state overhead at the 24 GB budget boundary.
+- *Negative*: the 4-criterion tractability screen passed all four for NibbitsNormal at wave-24 audit, yet pin couldn't be captured. Screen doesn't account for OFFSET-cycle-start same-kind multi-enemy state-space asymmetry — a 5th criterion addition (per §Tractability-screen-pass wave-24 body) is warranted.
+- *Positive*: canonical-form infrastructure SHIPPED (correctness-preserving; ~zero perf cost; benefits future encounters with truly symmetric reachable states).
+- *Positive*: Cultist + Louse + NibbitsWeak pins BIT-IDENTICAL through wave-25.
+- *Positive*: Cultist Zobrist BYTE PRESERVED (APPEND-ONLY discipline validated for 5th time through wave-25/L.α).
+- *Positive*: 4 new unit tests document the canonical-form invariant + asymmetric-state distinction + alive-before-dead ordering for future reviewers.
+
+#### §Cross-references
+
+- Q2-ADR-015 (this ADR; Nibbit port; wave-24/K.δ).
+- Q2-ADR-010 §Recovery (Zobrist BYTE rotation discipline; wave-21 + fix-4/H.γ + wave-23/J.β precedents).
+- Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation + `[[project-encounter-tractability]]` (4-criterion screen origin).
+- Wave-23/J.α (LRU revert; basis for G3 if revisited).
