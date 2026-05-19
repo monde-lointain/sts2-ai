@@ -565,6 +565,12 @@ public static class CombatEngine
             SourceCreatureId: PlayerId
         );
 
+        // ADR-030 §1: snapshot pre-play alive-set so any deaths from this
+        // card's effects fan out to AfterDeath subscribers. We snapshot
+        // BEFORE OnPlay drains so multi-target / multi-hit cards that kill
+        // several enemies in one drain fire AfterDeath once per id.
+        ImmutableArray<uint> aliveBeforePlay = SnapshotAliveIds(ctx);
+
         using (EffectObserver.Attach(out List<IAction> log))
         {
             cardModel.OnPlay(execCtx, targetString);
@@ -574,6 +580,14 @@ public static class CombatEngine
                 EffectDispatcher.Apply(action, ctx, dispatch);
             }
         }
+        // ADR-030 §1 fire-site: announce any deaths caused by this card
+        // before the per-turn-attack counter bump and the combat-end check.
+        // Order matters: a SurprisePower-style AfterDeath handler may
+        // mid-combat-spawn replacement enemies; CheckCombatEnd then
+        // consults ShouldStopCombatFromEnding so the new enemies are not
+        // skipped.
+        FireAfterDeathForNewDeaths(ctx, aliveBeforePlay);
+
         // Stream-B-T4: bump the per-turn attack counter AFTER OnPlay drains, so
         // calc-damage formulas (Finisher's "× attacks played THIS turn") see
         // the prior count — matching upstream's CardPlaysFinished semantics
@@ -659,7 +673,13 @@ public static class CombatEngine
             ctx.SetState(ctx.State.WithEnemy(enemy with { Block = 0 }));
 
             // --- Poison fires at owner's turn start: damage = stacks, then decrement ---
+            // ADR-030 §1: snapshot before Poison so a self-tick-kill announces
+            // AfterDeath. (Only the Poison-owner can die here; ascending-id
+            // ordering across multiple poisoned enemies is preserved by the
+            // outer foreach.)
+            ImmutableArray<uint> aliveBeforePoison = SnapshotAliveIds(ctx);
             ApplyPoisonAtTurnStart(ctx, id);
+            FireAfterDeathForNewDeaths(ctx, aliveBeforePoison);
             CheckCombatEnd(ctx);
             if (ctx.State.IsCombatOver)
                 return;
@@ -678,7 +698,13 @@ public static class CombatEngine
             string moveId = !string.IsNullOrEmpty(aliveEnemy.Intent?.MoveId)
                 ? aliveEnemy.Intent!.MoveId
                 : enemyModel.InitialMoveId;
+            // ADR-030 §1: snapshot before the move; an Attack intent that
+            // kills the player (or — future-friendly — kills the acting
+            // enemy itself via reflection / Thorns) announces AfterDeath
+            // BEFORE the next enemy acts.
+            ImmutableArray<uint> aliveBeforeMove = SnapshotAliveIds(ctx);
             ResolveMove(ctx, aliveEnemy.Id, enemyModel, moveId);
+            FireAfterDeathForNewDeaths(ctx, aliveBeforeMove);
 
             CheckCombatEnd(ctx);
             if (ctx.State.IsCombatOver)
@@ -743,6 +769,21 @@ public static class CombatEngine
     /// <summary>
     /// Set <c>Phase = CombatEnd</c> if combat is over. Idempotent: calling on
     /// an already-ended combat is a no-op.
+    ///
+    /// <para>
+    /// <b>Wave-26 / ADR-030 §1 + §6:</b> when all enemies are dead (the
+    /// player-victory branch), poll
+    /// <see cref="HookType.ShouldStopCombatFromEnding"/> subscribers via the
+    /// HookContext boolean-aggregation convention. Subscribers (e.g.,
+    /// SurprisePower from Q1.D) set <c>ctx.DeferCombatEnd[0] = true</c> to
+    /// veto the transition for this tick — useful when an
+    /// <see cref="HookType.AfterDeath"/> handler has just spawned replacement
+    /// enemies and the engine must process them before declaring victory.
+    /// The defer is per-tick: a subsequent <see cref="CheckCombatEnd"/> call
+    /// re-polls with a fresh flag. The player-defeat branch never defers
+    /// (no upstream consumer exists; gameplay symmetry would require a
+    /// distinct hook).
+    /// </para>
     /// </summary>
     public static void CheckCombatEnd(CombatContext ctx)
     {
@@ -753,9 +794,144 @@ public static class CombatEngine
         bool playerDead = ctx.State.Player.IsDead;
         bool allEnemiesDead = ctx.State.Enemies.All(e => e.IsDead);
 
-        if (playerDead || allEnemiesDead)
+        if (!playerDead && !allEnemiesDead)
+            return;
+
+        // Player-death branch transitions immediately (no veto hook is defined
+        // for that side; consult is victory-only per ADR-030 §1).
+        if (playerDead)
         {
             ctx.SetState(ctx.State with { Phase = CombatPhase.CombatEnd });
+            return;
+        }
+
+        // Victory branch: consult ShouldStopCombatFromEnding subscribers. If
+        // any veto, skip the transition this tick — the next CheckCombatEnd
+        // call (driven by the engine's existing post-mutation checks) will
+        // re-poll. If no plumbing is attached (legacy engine-tests that
+        // hand-construct CombatContext), there are no subscribers anyway —
+        // transition unconditionally.
+        if (ctx.HookRegistryHandle is null || ctx.ExecutionContextHandle is null)
+        {
+            ctx.SetState(ctx.State with { Phase = CombatPhase.CombatEnd });
+            return;
+        }
+
+        bool[] deferFlag = new bool[1];
+        var hookCtx = new HookContext(
+            ctx.ExecutionContextHandle,
+            dyingCreatureId: null,
+            deferCombatEnd: deferFlag
+        );
+        ctx.HookRegistryHandle.Fire(HookType.ShouldStopCombatFromEnding, hookCtx);
+        if (deferFlag[0])
+            return; // a subscriber vetoed; re-poll on the next CheckCombatEnd
+
+        ctx.SetState(ctx.State with { Phase = CombatPhase.CombatEnd });
+    }
+
+    // === Death-hook firing (ADR-030 §1 + §5) =============================
+
+    /// <summary>
+    /// Snapshot the set of creature ids currently alive (player + enemies) in
+    /// ascending order. Used as the pre-image for
+    /// <see cref="FireAfterDeathForNewDeaths"/>'s set-diff.
+    /// </summary>
+    private static ImmutableArray<uint> SnapshotAliveIds(CombatContext ctx)
+    {
+        var builder = ImmutableArray.CreateBuilder<uint>();
+        if (!ctx.State.Player.IsDead)
+            builder.Add(ctx.State.Player.Id);
+        foreach (Creature enemy in ctx.State.Enemies)
+        {
+            if (!enemy.IsDead)
+                builder.Add(enemy.Id);
+        }
+        // CombatState invariants: player id = 0, enemies are appended in spawn
+        // order with monotonically increasing ids (Q1.B CreatureIdAllocator).
+        // Iteration above is therefore already ascending; no Sort needed.
+        return builder.ToImmutable();
+    }
+
+    /// <summary>
+    /// Detect newly-dead creatures (alive in <paramref name="aliveBefore"/>,
+    /// dead now) and fire <see cref="HookType.AfterDeath"/> for each in
+    /// creature-id ascending order (Q1-ADR-006 / ADR-030 §5 — engine-defined
+    /// kill order; comparator handles the rest). Drains the action queue
+    /// between fires so an <see cref="HookType.AfterDeath"/> handler's
+    /// enqueued spawn / state mutation is visible before the next death's
+    /// handler runs (depth-first per-action semantics).
+    ///
+    /// <para>
+    /// <b>BeforeDeath:</b> reserved-but-unwired per ADR-030 §1 — wave-26 has
+    /// no consumer demanding the symmetric pre-death fire-site. When a future
+    /// port (e.g., a power that suppresses death) needs it, wire here just
+    /// before each newly-dead id's <see cref="HookType.AfterDeath"/> call —
+    /// the death has already been committed to state by the engine's damage
+    /// path; <see cref="HookType.BeforeDeath"/> would observe the same
+    /// post-commit view as <see cref="HookType.AfterDeath"/> unless the
+    /// upstream semantic requires interception before the HP write (which
+    /// would necessitate a deeper refactor of <see cref="CombatContext"/> to
+    /// hoist the fire-site above the HP mutation).
+    /// </para>
+    ///
+    /// <para>
+    /// <b>No-op when no plumbing:</b> legacy engine tests that hand-construct
+    /// a <see cref="CombatContext"/> without <see cref="StartCombat"/> have
+    /// no hook registry attached; this method short-circuits, preserving the
+    /// pre-Q1.C death path byte-for-byte.
+    /// </para>
+    /// </summary>
+    private static void FireAfterDeathForNewDeaths(
+        CombatContext ctx,
+        ImmutableArray<uint> aliveBefore
+    )
+    {
+        if (
+            ctx.HookRegistryHandle is null
+            || ctx.ActionQueueHandle is null
+            || ctx.ExecutionContextHandle is null
+        )
+        {
+            return; // no subscribers possible; preserve pre-Q1.C behavior
+        }
+        if (aliveBefore.IsDefaultOrEmpty)
+            return;
+
+        // Compute newly-dead = aliveBefore that are dead now. aliveBefore is
+        // already ascending by snapshot construction; the comparator across
+        // multiple deaths in the same tick is therefore creature-id ascending
+        // (ADR-030 §5).
+        var dispatch = new EffectDispatcher.DispatchContext(
+            PlayerId: PlayerId,
+            PrimaryTargetId: null,
+            SourceCreatureId: PlayerId
+        );
+        foreach (uint id in aliveBefore)
+        {
+            Creature? c = id == PlayerId ? ctx.State.Player : ctx.State.FindEnemy(id);
+            // A creature that vanished entirely (id no longer in state) is
+            // also a "death" for our purposes — though current Q1 substrate
+            // never removes creatures from state, so `c is null` shouldn't
+            // happen. Treat null as "no longer alive" for safety.
+            bool nowDead = c is null || c.IsDead;
+            if (!nowDead)
+                continue;
+
+            using (EffectObserver.Attach(out List<IAction> log))
+            {
+                var hookCtx = new HookContext(
+                    ctx.ExecutionContextHandle,
+                    dyingCreatureId: id,
+                    deferCombatEnd: null
+                );
+                ctx.HookRegistryHandle.Fire(HookType.AfterDeath, hookCtx);
+                ctx.ActionQueueHandle.Drain(ctx.ExecutionContextHandle);
+                foreach (IAction action in log)
+                {
+                    EffectDispatcher.Apply(action, ctx, dispatch);
+                }
+            }
         }
     }
 
