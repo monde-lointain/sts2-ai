@@ -113,4 +113,61 @@ TEST(AdapterRoundtrip, DISABLED_Fixture1_AdapterPlusSearch_PinnedAgreement) {
               kPinTolerance);
 }
 
+// ---------------------------------------------------------------------------
+// GREMLIN_MERC_NORMAL round-trip (DISABLED — Search::solve is slow;
+// pinned values live in test_gremlin_merc_search_pins.cc).
+// ---------------------------------------------------------------------------
+
+// DISABLED by default. Run explicitly:
+//   ./build/Release/sts2_oracle_tests
+//     --gtest_also_run_disabled_tests
+//     --gtest_filter='AdapterRoundtrip.DISABLED_*'
+TEST(AdapterRoundtrip,
+     DISABLED_Fixture9_GremlinMercNormal_AdapterPlusSearch_Dispatches) {
+  const auto bytes = load_fixture_blob("09-gremlin-merc-normal-seed42");
+  const AdapterResult r = from_blob_payload(bytes);
+  ASSERT_EQ(r.index(), 0U)
+      << "expected CompactState variant for GREMLIN_MERC_NORMAL fixture";
+  const CompactState s = std::get<CompactState>(r);
+
+  // Sanity: CompactState shape matches Silent starter @ seed 42 boot.
+  ASSERT_TRUE(s.get_enemy(0).get_alive());
+  EXPECT_EQ(s.get_enemy_count(), 1U);
+  EXPECT_EQ(s.get_enemy(0).get_kind(), sts2::game::MonsterKind::kGremlinMerc);
+  EXPECT_EQ(s.get_player_hp().value(), 70);
+  EXPECT_EQ(s.get_energy().value(), 3);
+  EXPECT_EQ(s.get_round(), 1U);
+  EXPECT_EQ(s.get_phase(), Phase::kPlayerActing);
+  EXPECT_EQ(
+      s.get_hand().total() + s.get_draw().total() + s.get_discard().total(),
+      12);
+
+  Search search;
+  const SearchResult result = search.solve(s);
+  EXPECT_FALSE(result.terminal);
+
+  // Legality cross-check (re-surface trigger #2 guard).
+  if (!result.terminal) {
+    const auto actions = legal_actions(s);
+    bool found_in_legals = false;
+    for (const auto& a : actions) {
+      if (a == result.best_action) {
+        found_in_legals = true;
+        break;
+      }
+    }
+    ASSERT_TRUE(found_in_legals)
+        << "Search produced an action absent from transition::legal_actions; "
+        << "adapter-vs-prototype divergence. "
+        << "Action: kind=" << static_cast<int>(result.best_action.kind)
+        << " card_id=" << static_cast<int>(result.best_action.card_id)
+        << " target=" << result.best_action.target_idx.raw();
+  }
+
+  // Sanity: player survived (expected_hp < 70 and > 0).
+  EXPECT_GT(result.score.expected_hp, 0.0);
+  EXPECT_LT(result.score.expected_hp, 70.0)
+      << "expected_hp=70 likely indicates GremlinMerc attacks silent-no-op'd";
+}
+
 }  // namespace

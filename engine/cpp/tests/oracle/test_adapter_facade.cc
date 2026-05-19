@@ -57,6 +57,16 @@ TEST(AdapterFacade, Fixture8_NibbitsNormal_ReturnsCompactState) {
   EXPECT_EQ(cs.get_enemy(1).get_kind(), MonsterKind::kNibbit);
 }
 
+TEST(AdapterFacade, Fixture9_GremlinMercNormal_ReturnsCompactState) {
+  const auto bytes = load_fixture_blob("09-gremlin-merc-normal-seed42");
+  const AdapterResult r = from_blob_payload(bytes);
+  ASSERT_EQ(r.index(), 0U)
+      << "expected CompactState variant on GremlinMercNormal";
+  const auto& cs = std::get<CompactState>(r);
+  EXPECT_TRUE(cs.get_enemy(0).get_alive());
+  EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kGremlinMerc);
+}
+
 TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {
   for (const auto& d : {
            "02-fossil-stalker-elite-seed42",

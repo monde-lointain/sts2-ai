@@ -18,6 +18,8 @@ target_sources(sts2_oracle_tests PRIVATE
     test_nibbits_normal_search_pins.cc
     test_nibbits_weak_projection.cc
     test_nibbits_normal_projection.cc
+    test_gremlin_merc_projection.cc
+    test_gremlin_merc_search_pins.cc
     ../seeds/dump_cultist_zobrist_key.cc
     test_adapter_facade.cc
     test_adapter_roundtrip.cc

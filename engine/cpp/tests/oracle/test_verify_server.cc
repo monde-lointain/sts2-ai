@@ -193,6 +193,30 @@ TEST(VerifyServer, DISABLED_HappyPathCultistsNormal) {
 }
 
 // ---------------------------------------------------------------------------
+// 1b. GremlinMercNormal happy path (DISABLED — Search::solve is slow).
+// ---------------------------------------------------------------------------
+TEST(VerifyServer, DISABLED_HappyPathGremlinMercNormal) {
+  const auto payload = load_fixture_blob("09-gremlin-merc-normal-seed42");
+  const std::string req = make_request_json(
+      std::span<const std::uint8_t>(payload.data(), payload.size()), "1");
+  const std::string resp = handle_request(req);
+
+  std::cerr << "VerifyServer.HappyPathGremlinMercNormal response: " << resp
+            << '\n';
+
+  EXPECT_TRUE(find_bool_field(resp, "verified"));
+  EXPECT_EQ(find_string_field(resp, "protocol_version"), "1");
+  EXPECT_EQ(find_string_field(resp, "kind"), "play_card");
+
+  // Sanity: expected_hp must be < 70 (player took damage).
+  const double hp = find_double_field(resp, "expected_hp");
+  EXPECT_GT(hp, 0.0);
+  EXPECT_LT(hp, 70.0)
+      << "expected_hp=70 likely indicates GremlinMerc attacks silent-no-op'd";
+  EXPECT_TRUE(find_bool_field(resp, "expansion_complete"));
+}
+
+// ---------------------------------------------------------------------------
 // 2. Adapter-reject path (fixture #2 — FossilStalkerElite).
 // ---------------------------------------------------------------------------
 TEST(VerifyServer, RejectPathFossilStalker) {

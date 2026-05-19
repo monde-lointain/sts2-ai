@@ -14,6 +14,7 @@
 #include "sha256_internal.h"
 #include "sts2/oracle/adapter/cultists_projection.h"
 #include "sts2/oracle/adapter/diagnostic.h"
+#include "sts2/oracle/adapter/gremlin_merc_projection.h"
 #include "sts2/oracle/adapter/louse_progenitor_projection.h"
 #include "sts2/oracle/adapter/manifest.h"
 #include "sts2/oracle/adapter/nibbits_normal_projection.h"
@@ -53,6 +54,8 @@ const std::vector<EncounterEntry>& encounter_map() {
       {{"Nibbit"}, "NibbitsWeak"},
       // NibbitsNormal — 2-Nibbit (wave-24). Sorted: {"Nibbit","Nibbit"}.
       {{"Nibbit", "Nibbit"}, "NibbitsNormal"},
+      // GremlinMercNormal — single GremlinMerc (wave-26/M.γ).
+      {{"GremlinMerc"}, "GremlinMercNormal"},
   };
   return kMap;
 }
@@ -154,6 +157,9 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   }
   if (is_nibbits_weak(blob.combat_state)) {
     return project_nibbits_weak(blob.combat_state);
+  }
+  if (is_gremlin_merc_normal(blob.combat_state)) {
+    return project_gremlin_merc_normal(blob.combat_state);
   }
 
   // Reject path. Stamp the rejection with manifest + canonical hash, and

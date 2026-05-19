@@ -36,6 +36,13 @@ namespace sts2::oracle::adapter {
     out = sts2::game::PowerKind::kRitual;
     return true;
   }
+  // Wave-26/M.γ: SurprisePower wire → kSurprise (GremlinMerc OnDeath trigger).
+  // ThieveryPower is UNRECOGNIZED → caller sees false → silent-drop
+  // (Q2-ADR-005).
+  if (model_id == "SurprisePower") {
+    out = sts2::game::PowerKind::kSurprise;
+    return true;
+  }
   return false;
 }
 
