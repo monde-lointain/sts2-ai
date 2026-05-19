@@ -268,6 +268,13 @@ public sealed class CombatContext : ICombatContext
     /// <inheritdoc />
     public int AllRemainingEnergy() => _state.LastSpentEnergy;
 
+    /// <inheritdoc />
+    public void AddEnemies(IEnumerable<Creature> enemies)
+    {
+        ArgumentNullException.ThrowIfNull(enemies);
+        _state = _state.WithSpawnedEnemies(enemies);
+    }
+
     // --- helpers ----------------------------------------------------------
 
     /// <summary>

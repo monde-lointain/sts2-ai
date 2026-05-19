@@ -143,6 +143,25 @@ public interface ICombatContext
     void SetState(CombatState state);
 
     /// <summary>
+    /// Spawn additional enemies into the current combat. Each element in
+    /// <paramref name="enemies"/> is appended to <see cref="State"/>'s enemy
+    /// list; unique creature ids must be pre-allocated via
+    /// <see cref="CreatureIdAllocator"/>. Use this from OnAfterDeath hooks (e.g.,
+    /// SurprisePower) to introduce reinforcements mid-combat.
+    ///
+    /// <para>
+    /// <b>StateCodec compatibility:</b> no schema-version bump needed — the
+    /// codec encodes enemy count as a plain i32 and already round-trips arbitrary
+    /// counts. Forward-compatible by design per Q1-ADR-002.
+    /// </para>
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// If any element has <c>IsPlayer=true</c> or its id collides with an
+    /// existing creature.
+    /// </exception>
+    void AddEnemies(IEnumerable<Creature> enemies);
+
+    /// <summary>
     /// B.1-gamma-T5: amount of energy consumed by the most recently played
     /// X-cost card. Engine snapshots <see cref="CombatState.Energy"/> before
     /// consumption and writes it here so the card's <c>OnPlay</c> body can

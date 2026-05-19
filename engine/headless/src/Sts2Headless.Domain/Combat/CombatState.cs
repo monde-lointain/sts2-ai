@@ -177,6 +177,51 @@ public sealed record CombatState(
         return this with { Player = updated };
     }
 
+    /// <summary>
+    /// Return a new state with <paramref name="spawned"/> appended to the
+    /// <see cref="Enemies"/> list. Ids on the incoming creatures must already
+    /// be allocated (use <see cref="CreatureIdAllocator"/>); this method does
+    /// not mint ids itself.
+    ///
+    /// <para>
+    /// <b>StateCodec (S7) forward-compatibility:</b> the wire format encodes
+    /// <c>EnemyCount</c> as a plain <c>i32</c> followed by that many creature
+    /// blobs. Appending enemies increases the count; no schema-version bump
+    /// is required because the codec already round-trips arbitrary counts.
+    /// </para>
+    /// </summary>
+    /// <exception cref="ArgumentException">
+    /// If any <paramref name="spawned"/> creature has <c>IsPlayer=true</c> or
+    /// its id collides with an existing creature id.
+    /// </exception>
+    public CombatState WithSpawnedEnemies(IEnumerable<Creature> spawned)
+    {
+        ArgumentNullException.ThrowIfNull(spawned);
+
+        // Collect existing ids for collision check.
+        System.Collections.Generic.HashSet<uint> existing = new(Enemies.Count + 1);
+        existing.Add(Player.Id);
+        for (int i = 0; i < Enemies.Count; i++)
+            existing.Add(Enemies[i].Id);
+
+        ImmutableList<Creature> updated = Enemies;
+        foreach (Creature c in spawned)
+        {
+            if (c.IsPlayer)
+                throw new ArgumentException(
+                    $"WithSpawnedEnemies: creature id={c.Id} has IsPlayer=true; spawned creatures must be enemies.",
+                    nameof(spawned)
+                );
+            if (!existing.Add(c.Id))
+                throw new ArgumentException(
+                    $"WithSpawnedEnemies: creature id={c.Id} collides with an existing creature.",
+                    nameof(spawned)
+                );
+            updated = updated.Add(c);
+        }
+        return this with { Enemies = updated };
+    }
+
     /// <summary>Replace one enemy by id, preserving order. Throws if not found.</summary>
     public CombatState WithEnemy(Creature updated)
     {
