@@ -21,8 +21,8 @@ public class NibbitsWeakTests
     {
         NibbitsWeak e = new();
         Assert.Equal("NibbitsWeak", e.Id);
-        Assert.Equal(1, e.MonsterIds.Count);
-        Assert.Equal(Nibbit.CanonicalId, e.MonsterIds[0]);
+        string monsterId = Assert.Single(e.MonsterIds);
+        Assert.Equal(Nibbit.CanonicalId, monsterId);
     }
 
     [Fact]

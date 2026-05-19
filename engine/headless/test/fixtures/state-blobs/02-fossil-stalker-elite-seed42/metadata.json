@@ -2,6 +2,6 @@
   "seed": 42,
   "encounter_id": "FossilStalkerElite",
   "role": "Elite, initial-state-only. Single-monster.",
-  "expected_canonical_hash_hex": "ef1b2a5630ef9ebd067ae13b0831d5f8d5c4dcff6df61939bf20c572f96a7d0f",
-  "blob_bytes": 5493
+  "expected_canonical_hash_hex": "15a433bec3f9fe4d8c9e6959430043ecbbd1a0d0e1cc261ae98deaa6fa9e155c",
+  "blob_bytes": 5545
 }
