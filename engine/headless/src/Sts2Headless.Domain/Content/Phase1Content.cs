@@ -240,6 +240,11 @@ public static class Phase1Content
         // B.1-gamma-T4: relic-applied buff powers (Akabeko Vigor, DataDisk Focus).
         powers.Register(PowerIds.Vigor, new VigorPower());
         powers.Register(PowerIds.Focus, new FocusPower());
+        // Wave-26/Q1.D: GremlinMerc spawn powers.
+        // SurprisePower has full runtime hook subscription (AfterDeath + ShouldStopCombatFromEnding).
+        // ThieveryPower is metadata-only stub (gold-tracking deferred to Phase-2; see ADR-030).
+        powers.Register(PowerIds.Surprise, new SurprisePower());
+        powers.Register(PowerIds.Thievery, new ThieveryPower());
         return powers;
     }
 
@@ -284,6 +289,9 @@ public static class Phase1Content
         monsters.Register(FrogKnight.CanonicalId, new FrogKnight());
         // Wave-24/K.q1: Nibbit ported from upstream.
         monsters.Register(Nibbit.CanonicalId, new Nibbit());
+        // Wave-26/Q1.D: GremlinMerc spawn targets (spawned mid-combat by SurprisePower).
+        monsters.Register(SneakyGremlin.CanonicalId, new SneakyGremlin());
+        monsters.Register(FatGremlin.CanonicalId, new FatGremlin());
         return monsters;
     }
 

@@ -2,6 +2,6 @@
   "seed": 42,
   "encounter_id": "NibbitsWeak",
   "role": "Wave-24/K.q1 Nibbit port. Single-Nibbit encounter; initial move BUTT_MOVE. Q2 K.\u03B3_setup prerequisite.",
-  "expected_canonical_hash_hex": "28788bdf0c7a017e61d676056b0e344ba1d4aed97f01cebc2cd7e4814582e4af",
-  "blob_bytes": 5537
+  "expected_canonical_hash_hex": "a0ff8f3f5485b9b88302a3afcf13cbd4f6497b0540891748a0da66b75b96dcbd",
+  "blob_bytes": 5618
 }

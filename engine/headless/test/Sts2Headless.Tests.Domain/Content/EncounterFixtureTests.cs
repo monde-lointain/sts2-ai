@@ -41,7 +41,8 @@ public class EncounterFixtureTests
     [InlineData("LagavulinElite", 1)]
     [InlineData("HauntedShipSolo", 1)]
     [InlineData("LivingFogSolo", 1)]
-    [InlineData("GremlinMercNormal", 2)]
+    // Wave-26/Q1.D: 1 GremlinMerc initial (SneakyGremlin + FatGremlin spawn mid-combat via SurprisePower).
+    [InlineData("GremlinMercNormal", 1)]
     [InlineData("KaiserCrabBoss", 2)]
     [InlineData("CeremonialBeastBoss", 1)]
     [InlineData("LouseProgenitorNormal", 1)]

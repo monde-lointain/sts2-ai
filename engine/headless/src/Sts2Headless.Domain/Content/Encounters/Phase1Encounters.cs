@@ -211,12 +211,18 @@ public sealed class LivingFogSolo : EncounterModel
         : base(CanonicalId, new[] { LivingFog.CanonicalId }) { }
 }
 
+/// <summary>
+/// Wave-26/Q1.D fix: upstream GremlinMercNormal spawns a single GremlinMerc
+/// (one "merc" slot per upstream Encounters/GremlinMercNormal.cs:28).
+/// The prior stub incorrectly used 2×GremlinMerc — corrected here to 1×.
+/// SneakyGremlin + FatGremlin are spawned mid-combat by SurprisePower on GremlinMerc's death.
+/// </summary>
 public sealed class GremlinMercNormal : EncounterModel
 {
     public const string CanonicalId = "GremlinMercNormal";
 
     public GremlinMercNormal()
-        : base(CanonicalId, new[] { GremlinMerc.CanonicalId, GremlinMerc.CanonicalId }) { }
+        : base(CanonicalId, new[] { GremlinMerc.CanonicalId }) { }
 }
 
 // B.1-final-T2a: deleted SnakePlantSolo / FungalBossEncounter / CenturyGuardBoss

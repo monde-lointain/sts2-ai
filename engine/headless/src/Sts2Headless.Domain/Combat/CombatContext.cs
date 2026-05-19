@@ -192,6 +192,31 @@ public sealed class CombatContext : ICombatContext
         }
         var updated = target with { Powers = newPowers };
         _state = WriteCreature(updated);
+
+        // Wave-26/Q1.D OnApplied bridge: notify the power model that a new
+        // PowerInstance was attached to a creature so it can subscribe hooks.
+        // Only fires when the hook plumbing is attached (StartCombat path);
+        // hand-constructed CombatContext in legacy tests has null plumbing → no-op.
+        // The base OnApplied default is a no-op for existing powers (they do not
+        // override SubscribeHooks), so BitIdenticalRoundtripTests are unaffected.
+        if (HookRegistryHandle is not null)
+        {
+            if (existingIndex < 0)
+            {
+                // Fresh attachment: call OnApplied which creates the handle slot
+                // and calls SubscribeHooks (no-op for pure-metadata powers).
+                model.OnApplied(targetId, HookRegistryHandle);
+
+                // ICombatAwarePowerModel opt-in: powers that need ICombatContext
+                // (e.g., SurprisePower) subscribe their hooks here with the live ctx.
+                if (model is ICombatAwarePowerModel cam)
+                    cam.OnAppliedWithContext(targetId, HookRegistryHandle, this);
+            }
+            // Note: re-application (existingIndex >= 0) does NOT call OnApplied again.
+            // Per PowerModel doc: "double-apply without a prior remove is a caller bug".
+            // For Counter-stack re-applications, the subscription from the first
+            // OnApplied call is still active — no re-subscribe needed.
+        }
     }
 
     public void Heal(uint targetId, int amount)

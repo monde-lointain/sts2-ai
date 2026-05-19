@@ -2,6 +2,6 @@
   "seed": 42,
   "encounter_id": "CultistsNormal",
   "role": "Smoke per-step gold standard (full Godot per-step parity). Indexed 2-monster slot.",
-  "expected_canonical_hash_hex": "35f2d2948c7d2533b950382d0bfb4ff32ef970501d41b5718a275e3fa891212f",
-  "blob_bytes": 5627
+  "expected_canonical_hash_hex": "6a5cd493f335f92cc1b04a36f8fd17882dca27c738d0bc51d54bad1c2f56c7a4",
+  "blob_bytes": 5708
 }

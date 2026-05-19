@@ -267,3 +267,20 @@ public sealed class BlurPower : PowerModel
     public BlurPower()
         : base("BlurPower", PowerType.Buff, PowerStackType.Counter) { }
 }
+
+// === GremlinMerc companion powers (wave-26/Q1.D) ===
+
+/// <summary>
+/// Metadata-only stub for upstream <c>MegaCrit.Sts2.Core.Models.Powers.ThieveryPower</c>.
+/// Upstream: gold-stealing mechanic — tracks a gold amount per player target and
+/// transfers it to the player when GremlinMerc dies (via HeistPower on FatGremlin).
+/// Gold-tracking and Heist transfer are Phase-2 deferred (no oracle impact;
+/// see ADR-030). Registered so the engine does not fail-soft on GremlinMerc's spawn.
+///
+/// <para>StackType=Counter per upstream (gold amount accumulates per steal).</para>
+/// </summary>
+public sealed class ThieveryPower : PowerModel
+{
+    public ThieveryPower()
+        : base(PowerIds.Thievery, PowerType.Buff, PowerStackType.Counter) { }
+}

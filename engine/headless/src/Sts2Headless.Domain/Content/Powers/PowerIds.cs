@@ -53,6 +53,13 @@ public static class PowerIds
     public const string NoDraw = "NoDrawPower";
     public const string Confused = "ConfusedPower";
 
+    // ===== GremlinMerc spawn powers (wave-26/Q1.D) =====
+    /// <summary>SurprisePower — AfterDeath spawn of SneakyGremlin + FatGremlin. StackType=Single.</summary>
+    public const string Surprise = "SurprisePower";
+
+    /// <summary>ThieveryPower — gold-steal metadata stub. Gold-tracking deferred to Phase-2 per ADR-030.</summary>
+    public const string Thievery = "ThieveryPower";
+
     // ===== Monster-specific powers used by enemies =====
     public const string CurlUp = "CurlUpPower";
     public const string SplitPower = "SplitPower";

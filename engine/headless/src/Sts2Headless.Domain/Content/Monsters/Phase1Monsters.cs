@@ -190,20 +190,84 @@ public sealed class LouseProgenitor : MonsterModel
         ) { }
 }
 
+/// <summary>
+/// Verbatim port of upstream <c>Monsters.GremlinMerc</c> rotation (A0 values):
+/// GIMME_MOVE (7 dmg ×2 + steal gold) → DOUBLE_SMASH_MOVE (6 dmg ×2 + Weak 2 to player)
+/// → HEHE_MOVE (8 dmg ×1 + Strength +2 self) → GIMME_MOVE (repeats).
+/// Upstream's <c>AfterAddedToRoom</c> applies SurprisePower(1) to self and
+/// ThieveryPower(20) to each player — declared as spawn powers so the engine
+/// stamps them at combat-start via <c>CombatContext.ApplyPower</c> with OnApplied
+/// bridge (wave-26/Q1.D bridge). Thievery gold-tracking is Phase-2 deferred
+/// (noted in ADR-030). The 3-cycle rotation is byte-faithful to upstream.
+/// </summary>
 public sealed class GremlinMerc : MonsterModel
 {
     public const string CanonicalId = "GremlinMerc";
+
+    /// <summary>A0 MinInitialHp — upstream <c>GetValueIfAscension(ToughEnemies, 51, 47)</c>.</summary>
     public const int MinHp = 47;
+
+    /// <summary>A0 MaxInitialHp — upstream <c>GetValueIfAscension(ToughEnemies, 53, 49)</c>.</summary>
     public const int MaxHp = 49;
-    public const int AttackDamage = 9;
+
+    /// <summary>GIMME per-hit damage A0 — upstream <c>GetValueIfAscension(ToughEnemies, 8, 7)</c>.</summary>
+    public const int GimmeDamage = 7;
+
+    /// <summary>GIMME hit count — upstream <c>_gimmeRepeat = 2</c>.</summary>
+    public const int GimmeHitCount = 2;
+
+    /// <summary>DOUBLE_SMASH per-hit damage A0 — upstream <c>GetValueIfAscension(ToughEnemies, 7, 6)</c>.</summary>
+    public const int DoubleSmashDamage = 6;
+
+    /// <summary>DOUBLE_SMASH hit count — upstream <c>_doubleSmashRepeat = 2</c>.</summary>
+    public const int DoubleSmashHitCount = 2;
+
+    /// <summary>Weak stacks applied to player by DOUBLE_SMASH — upstream <c>WeakPower(target, 2)</c>.</summary>
+    public const int DoubleSmashWeakStacks = 2;
+
+    /// <summary>HEHE single-hit damage A0 — upstream <c>GetValueIfAscension(ToughEnemies, 9, 8)</c>.</summary>
+    public const int HeheDamage = 8;
+
+    /// <summary>Strength stacks self-applied by HEHE — upstream <c>StrengthPower(self, 2)</c>.</summary>
+    public const int HeheStrengthStacks = 2;
+
+    /// <summary>SurprisePower stacks applied at spawn — upstream <c>PowerCmd.Apply&lt;SurprisePower&gt;(self, 1)</c>.</summary>
+    public const int SurprisePowerStacks = 1;
+
+    /// <summary>ThieveryPower gold amount applied at spawn — upstream <c>PowerCmd.Apply(thievery, 20)</c>.</summary>
+    public const int ThieveryPowerGold = 20;
+
+    /// <summary>Backwards-compat aggregate damage (GIMME total per-turn).</summary>
+    public const int AttackDamage = GimmeDamage;
+
+    public const string GimmeMoveId = "GIMME_MOVE";
+    public const string DoubleSmashMoveId = "DOUBLE_SMASH_MOVE";
+    public const string HeheMoveId = "HEHE_MOVE";
 
     public GremlinMerc()
         : base(
             CanonicalId,
             MinHp,
             MaxHp,
-            new MonsterMove[] { new("ATTACK", Intent.Attack(AttackDamage), "ATTACK") },
-            "ATTACK"
+            new MonsterMove[]
+            {
+                // GIMME → DOUBLE_SMASH → HEHE → GIMME (deterministic 3-cycle).
+                // Upstream: moveState.FollowUpState = moveState2;
+                //           moveState2.FollowUpState = moveState3;
+                //           moveState3.FollowUpState = moveState (loop).
+                new(GimmeMoveId, Intent.MultiAttack(GimmeDamage, GimmeHitCount), FollowUpMoveId: DoubleSmashMoveId),
+                new(DoubleSmashMoveId, Intent.MultiAttack(DoubleSmashDamage, DoubleSmashHitCount), FollowUpMoveId: HeheMoveId),
+                new(HeheMoveId, Intent.Attack(HeheDamage), FollowUpMoveId: GimmeMoveId),
+            },
+            initialMoveId: GimmeMoveId,
+            // Upstream AfterAddedToRoom: SurprisePower(1) on self + ThieveryPower(20) on player.
+            // OnApplied bridge (wave-26/Q1.D) fires SurprisePower.SubscribeHooks at combat start
+            // so the AfterDeath spawn subscription is live. ThieveryPower is metadata-only stub
+            // (gold-tracking deferred to Phase-2; see ADR-030).
+            spawnPowers: ImmutableArray.Create(
+                new MonsterSpawnPower(PowerIds.Surprise, SurprisePowerStacks),
+                new MonsterSpawnPower(PowerIds.Thievery, ThieveryPowerGold)
+            )
         ) { }
 }
 

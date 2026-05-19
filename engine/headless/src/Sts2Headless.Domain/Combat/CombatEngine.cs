@@ -169,6 +169,13 @@ public static class CombatEngine
         );
 
         WireUpRelics(player.RelicIds, catalogs.Relics, execCtx);
+        // Wave-26/Q1.D OnApplied bridge for spawn-time powers: SpawnEnemies adds
+        // PowerInstances directly onto Creatures (bypassing ApplyPower) so the
+        // standard OnApplied call in CombatContext.ApplyPower never fires for them.
+        // We fire it here after the hookRegistry is live but before BeforeCombatStart,
+        // matching upstream's AfterAddedToRoom order (powers applied → hooks wired →
+        // combat-start hooks fire). No-op for powers without hook subscriptions.
+        WireUpSpawnPowerHooks(ctx, catalogs.Powers, hookRegistry);
         FireStartupHooks(hookRegistry, actionQueue, execCtx, ctx, dispatch);
         OpenFirstPlayerTurn(
             ctx,
@@ -307,6 +314,43 @@ public static class CombatEngine
         {
             var relicModel = (RelicModel)relics.Get(relicId);
             relicModel.OnAdded(execCtx);
+        }
+    }
+
+    /// <summary>
+    /// Wave-26/Q1.D: fire <see cref="PowerModel.OnApplied"/> for every spawn-time
+    /// power on every initial enemy. <c>SpawnEnemies</c> constructs
+    /// <see cref="PowerInstance"/> records directly (bypassing
+    /// <see cref="CombatContext.ApplyPower"/>) so the standard OnApplied bridge in
+    /// ApplyPower never fires. This method closes that gap by calling OnApplied +
+    /// <see cref="ICombatAwarePowerModel.OnAppliedWithContext"/> for each
+    /// (creature, power) pair after the hook registry is live.
+    ///
+    /// <para>
+    /// Call site: <see cref="StartCombat"/>, after <see cref="WireUpRelics"/> and
+    /// before <c>FireStartupHooks</c>, so spawn-power subscriptions (e.g.,
+    /// SurprisePower's AfterDeath hook) are active during BeforeCombatStart.
+    /// </para>
+    /// </summary>
+    private static void WireUpSpawnPowerHooks(
+        CombatContext ctx,
+        PowerCatalog powers,
+        HookRegistry hookRegistry
+    )
+    {
+        foreach (Creature enemy in ctx.State.Enemies)
+        {
+            foreach (PowerInstance pi in enemy.Powers)
+            {
+                // Unknown power ids were skipped in SpawnEnemies; only registered ids
+                // survive into the Powers list.
+                if (!powers.TryGet(pi.ModelId, out IPowerModel? raw))
+                    continue;
+                var model = (PowerModel)raw!;
+                model.OnApplied(enemy.Id, hookRegistry);
+                if (model is ICombatAwarePowerModel cam)
+                    cam.OnAppliedWithContext(enemy.Id, hookRegistry, ctx);
+            }
         }
     }
 
@@ -1280,12 +1324,28 @@ public static class CombatEngine
         }
         if (anyChanged)
         {
-            // Strip zero-stack powers.
+            // Strip zero-stack powers — then fire OnRemoved for each stripped
+            // PowerModel so _handlesByCreature is kept in sync.  Without this,
+            // a re-application of the same power (e.g. Weak applied on turn N,
+            // ticked to 0 and stripped at turn end, then Weak re-applied turn N+1)
+            // hits the "already attached" guard in PowerModel.OnApplied because
+            // the singleton still has the creature-id registered.
+            var stripped = newPowers.FindAll(p => p.Stacks <= 0 && p.ModelId != PowerIds.Strength);
             newPowers = newPowers.RemoveAll(p => p.Stacks <= 0 && p.ModelId != PowerIds.Strength);
             var updated = owner with { Powers = newPowers };
             ctx.SetState(
                 owner.IsPlayer ? ctx.State.WithPlayer(updated) : ctx.State.WithEnemy(updated)
             );
+            // Notify each stripped PowerModel so it can un-subscribe its hooks.
+            // HookRegistryHandle is null during hand-constructed legacy tests — skip.
+            if (ctx.HookRegistryHandle is not null)
+            {
+                foreach (PowerInstance pi in stripped)
+                {
+                    if (ctx.Powers.TryGet(pi.ModelId, out var raw) && raw is PowerModel pm)
+                        pm.OnRemoved(owner.Id, ctx.HookRegistryHandle);
+                }
+            }
         }
     }
 }

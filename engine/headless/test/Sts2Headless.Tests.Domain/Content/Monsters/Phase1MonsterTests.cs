@@ -28,7 +28,13 @@ public class Phase1MonsterTests
     [InlineData(typeof(FuzzyWurmCrawler), "FuzzyWurmCrawler", 55, 57, "attack:14")]
     // Louse opens with WEB_CANNON (Attack 9). Upstream initial machine state.
     [InlineData(typeof(LouseProgenitor), "LouseProgenitor", 134, 136, "attack:9")]
-    [InlineData(typeof(GremlinMerc), "GremlinMerc", 47, 49, "attack:9")]
+    // GremlinMerc opens with GIMME_MOVE (MultiAttack 7x2). Per-hit value=7 (A0).
+    // Wave-26/Q1.D: stub replaced with full 3-cycle impl; "attack:9" was wrong placeholder.
+    [InlineData(typeof(GremlinMerc), "GremlinMerc", 47, 49, "attack:7")]
+    // SneakyGremlin opens with SPAWNED_MOVE (Stun — wake-up no-op). IntentKind.Stun.
+    [InlineData(typeof(SneakyGremlin), "SneakyGremlin", 10, 14, "stun")]
+    // FatGremlin opens with SPAWNED_MOVE (Stun — wake-up no-op). IntentKind.Stun.
+    [InlineData(typeof(FatGremlin), "FatGremlin", 13, 17, "stun")]
     [InlineData(typeof(HauntedShip), "HauntedShip", 63, 63, "attack:12")]
     [InlineData(typeof(LivingFog), "LivingFog", 80, 80, "attack:14")]
     // Ceremonial Beast opens with STAMP (Buff intent — apply PlowPower).
@@ -101,6 +107,11 @@ public class Phase1MonsterTests
             int expectedCards = int.Parse(expectedFirstIntent.Substring("status:".Length));
             Assert.Equal(IntentKind.Status, m.InitialIntent.Kind);
             Assert.Equal(expectedCards, m.InitialIntent.Value);
+        }
+        else if (expectedFirstIntent == "stun")
+        {
+            // Stun intent: SPAWNED_MOVE (wake-up no-op) for SneakyGremlin / FatGremlin.
+            Assert.Equal(IntentKind.Stun, m.InitialIntent.Kind);
         }
         else
         {

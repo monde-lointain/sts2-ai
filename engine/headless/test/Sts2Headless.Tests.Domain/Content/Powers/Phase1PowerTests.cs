@@ -107,6 +107,9 @@ public class Phase1PowerTests
     [InlineData(typeof(ConfusedPower), "ConfusedPower", PowerType.Debuff, PowerStackType.Single)]
     [InlineData(typeof(BarricadePower), "BarricadePower", PowerType.Buff, PowerStackType.Single)]
     [InlineData(typeof(BlurPower), "BlurPower", PowerType.Buff, PowerStackType.Counter)]
+    // Wave-26/Q1.D: SurprisePower (Buff/Single) + ThieveryPower (Buff/Counter) for GremlinMerc.
+    [InlineData(typeof(SurprisePower), "SurprisePower", PowerType.Buff, PowerStackType.Single)]
+    [InlineData(typeof(ThieveryPower), "ThieveryPower", PowerType.Buff, PowerStackType.Counter)]
     public void Power_canonical_metadata(
         System.Type t,
         string expectedId,

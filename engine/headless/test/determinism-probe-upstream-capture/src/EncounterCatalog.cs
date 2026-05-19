@@ -171,10 +171,11 @@ public static class EncounterCatalog
                 PlanKind.UpstreamComparable,
                 null
             ),
+            // Wave-26/Q1.D: 1 GremlinMerc initial (SneakyGremlin + FatGremlin spawn mid-combat).
             "GremlinMercNormal" => new EncounterPlan(
                 id,
-                new[] { "GremlinMerc", "GremlinMerc" },
-                new string?[] { null, null },
+                new[] { "GremlinMerc" },
+                new string?[] { null },
                 PlanKind.UpstreamComparable,
                 null
             ),

@@ -333,4 +333,66 @@ public sealed class Phase1MonsterRotationTests
         cursor = n.AdvanceMoveId(cursor, ctx, rng);
         Assert.Equal(Nibbit.HissMoveId, cursor);
     }
+
+    // ===== GremlinMerc: GIMME → DOUBLE_SMASH → HEHE → GIMME (deterministic 3-cycle) =====
+
+    [Fact]
+    public void GremlinMerc_rotation_GIMME_DOUBLE_SMASH_HEHE_loop()
+    {
+        GremlinMerc m = new();
+        Assert.Equal(GremlinMerc.GimmeMoveId, m.InitialMoveId);
+        var ctx = new MoveBranchContext(48, 48, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("gremlin-merc-seed");
+
+        string cursor = m.InitialMoveId;
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(GremlinMerc.DoubleSmashMoveId, cursor);
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(GremlinMerc.HeheMoveId, cursor);
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(GremlinMerc.GimmeMoveId, cursor);
+        // Second cycle identical.
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(GremlinMerc.DoubleSmashMoveId, cursor);
+    }
+
+    // ===== SneakyGremlin: SPAWNED → TACKLE (self-loop) =====
+
+    [Fact]
+    public void SneakyGremlin_rotation_SPAWNED_then_TACKLE_self_loop()
+    {
+        SneakyGremlin m = new();
+        Assert.Equal(SneakyGremlin.SpawnedMoveId, m.InitialMoveId);
+        var ctx = new MoveBranchContext(12, 14, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("sneaky-gremlin-seed");
+
+        string cursor = m.InitialMoveId;
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(SneakyGremlin.TackleMoveId, cursor);
+        // Self-loop.
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(SneakyGremlin.TackleMoveId, cursor);
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(SneakyGremlin.TackleMoveId, cursor);
+    }
+
+    // ===== FatGremlin: SPAWNED → FLEE (self-loop) =====
+
+    [Fact]
+    public void FatGremlin_rotation_SPAWNED_then_FLEE_self_loop()
+    {
+        FatGremlin m = new();
+        Assert.Equal(FatGremlin.SpawnedMoveId, m.InitialMoveId);
+        var ctx = new MoveBranchContext(15, 17, HasPower: _ => false, GetPowerStacks: _ => 0);
+        var rng = new RunRngSet("fat-gremlin-seed");
+
+        string cursor = m.InitialMoveId;
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(FatGremlin.FleeMoveId, cursor);
+        // Self-loop.
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(FatGremlin.FleeMoveId, cursor);
+        cursor = m.AdvanceMoveId(cursor, ctx, rng);
+        Assert.Equal(FatGremlin.FleeMoveId, cursor);
+    }
 }
