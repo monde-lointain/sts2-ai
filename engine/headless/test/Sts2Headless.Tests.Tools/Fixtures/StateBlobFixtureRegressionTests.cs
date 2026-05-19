@@ -82,10 +82,11 @@ public class StateBlobFixtureRegressionTests
     }
 
     [Fact]
-    public void Roster_size_is_eight()
+    public void Roster_size_is_nine()
     {
         // Wave-24/K.q1 added slots 07 (NibbitsWeak) + 08 (NibbitsNormal).
-        Assert.Equal(8, StateBlobFixtureRecipe.AllSlots.Count);
+        // Wave-26/Q1.E added slot 09 (GremlinMercNormal).
+        Assert.Equal(9, StateBlobFixtureRecipe.AllSlots.Count);
     }
 
     [Fact]

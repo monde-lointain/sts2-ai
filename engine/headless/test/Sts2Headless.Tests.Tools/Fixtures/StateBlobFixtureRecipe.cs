@@ -65,9 +65,10 @@ public static class StateBlobFixtureRecipe
     );
 
     /// <summary>
-    /// The eight fixture slots, project-lead approved. Order is the catalog order
+    /// The nine fixture slots, project-lead approved. Order is the catalog order
     /// recorded in the README; do not reorder without updating the README.
     /// Slots 07 + 08 added in Wave-24/K.q1 for the Nibbit port.
+    /// Slot 09 added in Wave-26/Q1.E for the GremlinMerc port.
     /// </summary>
     public static IReadOnlyList<Slot> AllSlots { get; } =
         new Slot[]
@@ -127,6 +128,13 @@ public static class StateBlobFixtureRecipe
                 Seed: 42,
                 EncounterId: "NibbitsNormal",
                 Role: "Wave-24/K.q1 Nibbit port. 2-Nibbit encounter; slot-0=SLICE_MOVE, slot-1=HISS_MOVE. Q2 K.γ_setup prerequisite."
+            ),
+            new(
+                9,
+                "09-gremlin-merc-normal-seed42",
+                Seed: 42,
+                EncounterId: "GremlinMercNormal",
+                Role: "Wave-26/Q1.E GremlinMerc port. Single-GremlinMerc at turn-1 with SurprisePower(1) + ThieveryPower(20) spawn powers; SneakyGremlin + FatGremlin substrate ratified Phase-1-3 of wave. Q2 M.γ prerequisite."
             ),
         };
 
