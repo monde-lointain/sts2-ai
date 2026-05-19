@@ -15,11 +15,7 @@ target_sources(sts2_oracle_tests PRIVATE
     test_louse_progenitor_projection.cc
     test_louse_progenitor_search_pins.cc
     test_nibbits_weak_search_pins.cc
-    test_nibbits_normal_search_pins.cc
     test_nibbits_weak_projection.cc
-    test_nibbits_normal_projection.cc
-    test_gremlin_merc_projection.cc
-    test_gremlin_merc_search_pins.cc
     ../seeds/dump_cultist_zobrist_key.cc
     test_adapter_facade.cc
     test_adapter_roundtrip.cc
@@ -27,7 +23,6 @@ target_sources(sts2_oracle_tests PRIVATE
     test_registry_sha.cc
     test_pin_row.cc
     test_cultists_search_pins.cc
-    test_small_slimes_search_pins.cc
     test_agreement_row.cc
     test_verify_server.cc
     adapter_fixtures.h

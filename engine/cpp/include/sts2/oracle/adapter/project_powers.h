@@ -36,13 +36,12 @@ namespace sts2::oracle::adapter {
     out = sts2::game::PowerKind::kRitual;
     return true;
   }
-  // Wave-26/M.γ: SurprisePower wire → kSurprise (GremlinMerc OnDeath trigger).
-  // ThieveryPower is UNRECOGNIZED → caller sees false → silent-drop
-  // (Q2-ADR-005).
-  if (model_id == "SurprisePower") {
-    out = sts2::game::PowerKind::kSurprise;
-    return true;
-  }
+  // Wave-27/N.alpha: SurprisePower recognition removed (GremlinMercNormal
+  // adapter dispatch removed; see Q2-ADR-017). kSurprise enum value retained
+  // in types.h for substrate (transition.cc OnDeath helper); wire encoding
+  // "SurprisePower" now silent-drops via Q2-ADR-005 unknown-power path
+  // (same handling as "ThieveryPower"). Restore the explicit recognition
+  // branch when GremlinMercNormal pin is re-attempted.
   return false;
 }
 

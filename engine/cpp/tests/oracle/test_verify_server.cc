@@ -192,39 +192,9 @@ TEST(VerifyServer, DISABLED_HappyPathCultistsNormal) {
   EXPECT_NE(body.find(R"("schema_minor":1)"), std::string::npos);
 }
 
-// ---------------------------------------------------------------------------
-// 1b. GremlinMercNormal happy path (DISABLED_DISABLED_ — pin deferred via
-// cap-bust Case B per Q2-ADR-016; q2-ci passes --gtest_also_run_disabled_tests
-// so single DISABLED_ would run + fail on EXPECT_GT(hp, 0.0) when solve aborts.
-// Match NibbitsNormal precedent: double prefix skips even with the flag.
-// ---------------------------------------------------------------------------
-TEST(VerifyServer, DISABLED_DISABLED_HappyPathGremlinMercNormal) {
-  GTEST_SKIP()
-      << "GremlinMerc solve hit kCapExceeded at 370000000 entries "
-      << "(wall_clock=6m28s) — Case B cap-bust per Q2-ADR-016. Pin "
-      << "DEFERRED matches NibbitsNormal precedent (Q2-ADR-015 Amendment 1). "
-      << "Adapter projection + dispatch verified via GremlinMercDetection.* "
-      << "+ GremlinMercProjection.* tests (9 tests; all PASS).";
-
-  const auto payload = load_fixture_blob("09-gremlin-merc-normal-seed42");
-  const std::string req = make_request_json(
-      std::span<const std::uint8_t>(payload.data(), payload.size()), "1");
-  const std::string resp = handle_request(req);
-
-  std::cerr << "VerifyServer.HappyPathGremlinMercNormal response: " << resp
-            << '\n';
-
-  EXPECT_TRUE(find_bool_field(resp, "verified"));
-  EXPECT_EQ(find_string_field(resp, "protocol_version"), "1");
-  EXPECT_EQ(find_string_field(resp, "kind"), "play_card");
-
-  // Sanity: expected_hp must be < 70 (player took damage).
-  const double hp = find_double_field(resp, "expected_hp");
-  EXPECT_GT(hp, 0.0);
-  EXPECT_LT(hp, 70.0)
-      << "expected_hp=70 likely indicates GremlinMerc attacks silent-no-op'd";
-  EXPECT_TRUE(find_bool_field(resp, "expansion_complete"));
-}
+// Wave-27/N.alpha: VerifyServer GremlinMercNormal happy-path entry removed.
+// Encounter removed from Q2 dispatch (Q2-ADR-017). Fixture 09 now routes
+// through the reject path verified in test_adapter_reject.cc.
 
 // ---------------------------------------------------------------------------
 // 2. Adapter-reject path (fixture #2 — FossilStalkerElite).

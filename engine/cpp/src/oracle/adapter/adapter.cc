@@ -14,10 +14,8 @@
 #include "sha256_internal.h"
 #include "sts2/oracle/adapter/cultists_projection.h"
 #include "sts2/oracle/adapter/diagnostic.h"
-#include "sts2/oracle/adapter/gremlin_merc_projection.h"
 #include "sts2/oracle/adapter/louse_progenitor_projection.h"
 #include "sts2/oracle/adapter/manifest.h"
-#include "sts2/oracle/adapter/nibbits_normal_projection.h"
 #include "sts2/oracle/adapter/nibbits_weak_projection.h"
 #include "sts2/oracle/adapter/state_blob.h"
 
@@ -52,10 +50,10 @@ const std::vector<EncounterEntry>& encounter_map() {
       {{"LouseProgenitor"}, "LouseProgenitorNormal"},
       // NibbitsWeak — single-Nibbit (wave-24).
       {{"Nibbit"}, "NibbitsWeak"},
-      // NibbitsNormal — 2-Nibbit (wave-24). Sorted: {"Nibbit","Nibbit"}.
-      {{"Nibbit", "Nibbit"}, "NibbitsNormal"},
-      // GremlinMercNormal — single GremlinMerc (wave-26/M.γ).
-      {{"GremlinMerc"}, "GremlinMercNormal"},
+      // Wave-27/N.alpha: NibbitsNormal + GremlinMercNormal removed from
+      // encounter_map. Fixtures 08 + 09 now route through the reject path
+      // ("<unknown>"). Substrate retained for future re-attempts via the
+      // G2-G5 amendment menu (Q2-ADR-016 + Q2-ADR-017).
   };
   return kMap;
 }
@@ -151,16 +149,11 @@ AdapterResult from_blob_payload(std::span<const std::uint8_t> m1_payload) {
   if (is_louse_progenitor_normal(blob.combat_state)) {
     return project_louse_progenitor_normal(blob.combat_state);
   }
-  // Most-specific first: 2-enemy NibbitsNormal before 1-enemy NibbitsWeak.
-  if (is_nibbits_normal(blob.combat_state)) {
-    return project_nibbits_normal(blob.combat_state);
-  }
   if (is_nibbits_weak(blob.combat_state)) {
     return project_nibbits_weak(blob.combat_state);
   }
-  if (is_gremlin_merc_normal(blob.combat_state)) {
-    return project_gremlin_merc_normal(blob.combat_state);
-  }
+  // Wave-27/N.alpha: NibbitsNormal + GremlinMercNormal dispatch removed.
+  // Fixtures 08 + 09 fall through to the reject path below.
 
   // Reject path. Stamp the rejection with manifest + canonical hash, and
   // attach the unknown-power diagnostic if applicable.

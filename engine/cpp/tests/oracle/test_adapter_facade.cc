@@ -46,26 +46,9 @@ TEST(AdapterFacade, Fixture7_NibbitsWeak_ReturnsCompactState) {
   EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kNibbit);
 }
 
-TEST(AdapterFacade, Fixture8_NibbitsNormal_ReturnsCompactState) {
-  const auto bytes = load_fixture_blob("08-nibbits-normal-seed42");
-  const AdapterResult r = from_blob_payload(bytes);
-  ASSERT_EQ(r.index(), 0U) << "expected CompactState variant on NibbitsNormal";
-  const auto& cs = std::get<CompactState>(r);
-  EXPECT_TRUE(cs.get_enemy(0).get_alive());
-  EXPECT_TRUE(cs.get_enemy(1).get_alive());
-  EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kNibbit);
-  EXPECT_EQ(cs.get_enemy(1).get_kind(), MonsterKind::kNibbit);
-}
-
-TEST(AdapterFacade, Fixture9_GremlinMercNormal_ReturnsCompactState) {
-  const auto bytes = load_fixture_blob("09-gremlin-merc-normal-seed42");
-  const AdapterResult r = from_blob_payload(bytes);
-  ASSERT_EQ(r.index(), 0U)
-      << "expected CompactState variant on GremlinMercNormal";
-  const auto& cs = std::get<CompactState>(r);
-  EXPECT_TRUE(cs.get_enemy(0).get_alive());
-  EXPECT_EQ(cs.get_enemy(0).get_kind(), MonsterKind::kGremlinMerc);
-}
+// Wave-27/N.alpha: AdapterFacade entries for fixtures 8 + 9 (NibbitsNormal +
+// GremlinMercNormal) removed. Both encounters now route through the reject
+// path; coverage moved to test_adapter_reject.cc. See Q2-ADR-017.
 
 TEST(AdapterFacade, NonCultistFixtures_ReturnAdapterReject) {
   for (const auto& d : {
