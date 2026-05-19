@@ -816,4 +816,47 @@ TEST(Transition, EnemyStrength_AppliesToNonCultistAttack) {
          "compute_outgoing(base, strength, weak)";
 }
 
+// ---------------------------------------------------------------------------
+// Wave-24/K.β-fix — Nibbit dispatch chain regression guard
+//
+// Nibbit (kind=kNibbit=7) previously fell through to the cultist default path
+// in do_enemy_act because kind_is_slime() only covers the 4 slime kinds.
+// act_on_intent's MoveId switch has no case for kButtMove/kSliceMove/kHissMove
+// → silent no-op → Nibbit attacks never landed.
+//
+// Fix: kind_is_table_driven() now returns true for kNibbit, routing it
+// through do_enemy_act_slime (table-driven dispatch).
+//
+// This test drives the full do_enemy_act path via resolve_end_turn_pre_draw
+// (same pattern as EnemyBlock_DecaysAtEndOfEnemyTurn) with Nibbit at
+// BUTT_MOVE (move_index=0, kAttack value=12). Player has 70 HP, 0 block.
+// Expected player HP after Nibbit acts: 70 - 12 = 58.
+// ---------------------------------------------------------------------------
+TEST(Transition, NibbitBuff_ResolvesViaTableDispatch) {
+  CompactState s = make_test_state();
+  update_state(s, [](CompactStateBuilder& builder) {
+    builder.player_hp(Stat{70}).player_block(Stat{0}).energy(Stat{0}).hand(
+        CardCounts{});
+  });
+  update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
+    enemy.kind(sts2::game::MonsterKind::kNibbit)
+        .hp(sts2::game::Stat{44})
+        .block(Stat{0})
+        .alive(true)
+        .move_index(0)  // BUTT_MOVE (kAttack, value=12; Nibbit.cs:30)
+        .current_move(sts2::game::MoveId::kButtMove)
+        .performed_first_move(true);
+  });
+  // Slot 1: dead; not part of the assertion.
+  update_enemy(
+      s, 1, [](EnemyStateBuilder& enemy) { enemy.alive(false).hp(Stat{0}); });
+
+  apply_or_fail(s, end_turn());
+  s = resolve_end_turn_pre_draw(s);
+
+  EXPECT_EQ(s.get_player_hp(), Stat{58})
+      << "Nibbit BUTT_MOVE (kAttack,12) must land via table-driven dispatch "
+         "(pre-fix: fell through to cultist default → silent no-op → HP=70)";
+}
+
 }  // namespace

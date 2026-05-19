@@ -637,6 +637,15 @@ bool kind_is_slime(MonsterKind k) noexcept {
          k == MonsterKind::kTwigSlimeS || k == MonsterKind::kTwigSlimeM;
 }
 
+// Returns true for any MonsterKind whose combat behavior is fully described
+// by a populated kMonsterMoveTables entry. do_enemy_act routes these through
+// do_enemy_act_slime (table-driven dispatch) rather than the cultist default.
+// Wave-24/K.β-fix: kNibbit appended; all slime kinds covered via
+// kind_is_slime().
+bool kind_is_table_driven(MonsterKind k) noexcept {
+  return kind_is_slime(k) || k == MonsterKind::kNibbit;
+}
+
 void do_enemy_act_slime(CompactState& s, EnemyState& e) {
   const auto kind_idx = static_cast<std::size_t>(e.get_kind());
   const auto& table = kMonsterMoveTables[kind_idx];
@@ -729,7 +738,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
     do_enemy_act_louse_progenitor(s, e);
     return;
   }
-  if (kind_is_slime(e.get_kind())) {
+  if (kind_is_table_driven(e.get_kind())) {
     do_enemy_act_slime(s, e);
     return;
   }
