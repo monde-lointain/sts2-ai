@@ -9,6 +9,8 @@ inline constexpr const char* kBulletFilled = "\xe2\x97\x8f";
 inline constexpr const char* kBulletHollow = "\xe2\x97\x8b";
 inline constexpr const char* kArrowRight = "\xe2\x86\x92";
 inline constexpr const char* kArrowUp = "\xe2\xac\x86";
+inline constexpr const char* kArrowDown = "\xe2\xac\x87";  // ⬇ HEAVY DOWN ARROW
+inline constexpr const char* kShield = "\xf0\x9f\x9b\xa1";  // 🛡 SHIELD
 inline constexpr const char* kSwords = "\xe2\x9a\x94";
 inline constexpr const char* kRelicDiamond = "\xf0\x9f\x94\xb6";
 
