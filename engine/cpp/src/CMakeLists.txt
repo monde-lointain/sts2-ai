@@ -69,10 +69,16 @@ target_link_libraries(sts2_ai
 sts2_apply_warnings(sts2_ai)
 
 # ------------------------------------------------------------------
+# sts2::app_scenario — JSON scenario loader (PRIVATE nlohmann/json dep)
+# ------------------------------------------------------------------
+add_subdirectory(app/scenario)
+
+# ------------------------------------------------------------------
 # sts2_fight — fight simulator executable
 # ------------------------------------------------------------------
 add_executable(sts2_fight main.cc)
-target_link_libraries(sts2_fight PRIVATE sts2::simulator sts2::ai)
+target_link_libraries(sts2_fight PRIVATE
+    sts2::simulator sts2::ai sts2::app_scenario)
 sts2_apply_warnings(sts2_fight)
 
 # ------------------------------------------------------------------
