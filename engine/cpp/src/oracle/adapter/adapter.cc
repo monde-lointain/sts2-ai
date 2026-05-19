@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "sha256_internal.h"
+#include "sts2/game/encounter_registry.h"
 #include "sts2/oracle/adapter/cultists_projection.h"
 #include "sts2/oracle/adapter/diagnostic.h"
 #include "sts2/oracle/adapter/louse_progenitor_projection.h"
@@ -28,35 +29,12 @@ namespace sts2::oracle::adapter {
 
 namespace {
 
-// Encounter-id detection. Maps the SORTED set of wire-emitted monster
-// Creature.Name strings to the encounter id used by Q1-side recipes /
-// downstream consumers. Phase-1A: 6 entries pinned against the D3 fixture
-// corpus. CULTISTS_NORMAL is intentionally NOT in this map — it's the
-// happy-path branch, not the reject branch.
-struct EncounterEntry {
-  // Sorted lower-case-insensitive set; we store sorted ASCII as the source
-  // strings happen to be CamelCase distinct.
-  std::vector<std::string_view> sorted_monster_ids;
-  std::string_view encounter_id;
-};
-
-const std::vector<EncounterEntry>& encounter_map() {
-  static const std::vector<EncounterEntry> kMap = {
-      // FossilStalkerElite — single-monster.
-      {{"FossilStalker"}, "FossilStalkerElite"},
-      // KaiserCrabBoss — Crusher + Rocket spawn pair.
-      {{"Crusher", "Rocket"}, "KaiserCrabBoss"},
-      // LouseProgenitorNormal — single-monster.
-      {{"LouseProgenitor"}, "LouseProgenitorNormal"},
-      // NibbitsWeak — single-Nibbit (wave-24).
-      {{"Nibbit"}, "NibbitsWeak"},
-      // Wave-27/N.alpha: NibbitsNormal + GremlinMercNormal removed from
-      // encounter_map. Fixtures 08 + 09 now route through the reject path
-      // ("<unknown>"). Substrate retained for future re-attempts via the
-      // G2-G5 amendment menu (Q2-ADR-016 + Q2-ADR-017).
-  };
-  return kMap;
-}
+// Encounter-id detection is now backed by sts2::game::encounter_registry —
+// the single source of truth shared with the scenario loader. CULTISTS_NORMAL
+// + NibbitsNormal carry `in_adapter_map=false` in the registry (the former is
+// the adapter's happy-path branch; the latter was removed wave-27/N.alpha per
+// Q2-ADR-017), so `find_by_monsters` skips them and the diagnostic falls
+// through to "<unknown>" — preserving the prior adapter behavior.
 
 // Spawn-power expectation map (Q2-ADR-005). Maps encounter_id -> the set
 // of source-declared PowerInstance.ModelId strings that Q1's content
@@ -100,22 +78,14 @@ std::vector<std::string> sorted_monster_ids(const ParsedCombatState& combat) {
 
 std::string detect_encounter_id(
     const std::vector<std::string>& sorted_wire_names) {
-  for (const auto& entry : encounter_map()) {
-    if (entry.sorted_monster_ids.size() != sorted_wire_names.size()) {
-      continue;
-    }
-    bool match = true;
-    for (std::size_t i = 0; i < sorted_wire_names.size(); ++i) {
-      if (sorted_wire_names[i] != entry.sorted_monster_ids[i]) {
-        match = false;
-        break;
-      }
-    }
-    if (match) {
-      return std::string(entry.encounter_id);
-    }
+  // Adapter the registry's string_view-based API to our string-based input.
+  std::vector<std::string_view> sv;
+  sv.reserve(sorted_wire_names.size());
+  for (const auto& s : sorted_wire_names) {
+    sv.emplace_back(s);
   }
-  return "<unknown>";
+  const auto* spec = sts2::game::encounter_registry::find_by_monsters(sv);
+  return spec ? std::string(spec->encounter_id) : std::string("<unknown>");
 }
 
 // Collect all PowerInstance.ModelId strings from a CombatState's enemies.

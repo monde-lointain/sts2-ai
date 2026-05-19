@@ -12,6 +12,7 @@ target_sources(sts2_simulator PRIVATE
     game/monster_moves.cc
     game/cards.cc
     game/enemies.cc
+    game/encounter_registry.cc
     game/deck.cc
     game/hand.cc
     game/combat.cc
