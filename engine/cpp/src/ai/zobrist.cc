@@ -129,12 +129,17 @@
 //     invariant to byte rotation (cultist + Louse expectation pins still
 //     bit-identical). Q2-ADR-013 Amendment 4 §Cultist-byte-rotation.
 //
-// Wave-21.β fold_enemy loop bound audit:
+// Wave-21.β fold_enemy loop bound audit (revised wave-25/L.α):
 //   * zobrist_half() iterates `for (i = 0; i < s.get_enemy_count(); ++i)`
 //     — NOT `kMaxEnemies`. Cultist (enemy_count=2) hashes only slots 0+1
 //     even though slot 2+3 storage exists. If this loop ever changes to
 //     iterate kMaxEnemies, cultist would XOR the slot-2+3 dead-default
 //     contributions and break byte identity.
+//   * Wave-25/L.α: the loop body now reads `s.get_enemy(perm[i])` instead
+//     of `s.get_enemy(i)` (canonical-form swap). The outer index `i`
+//     (used to look up enemy_*[i][...]) is preserved — only the SOURCE
+//     enemy is permuted. The loop BOUND remains `ec`; dead-default
+//     contributions of slots 2+3 are still NOT folded.
 //
 // Wave-21.β decoupling of kMonsterKindCardinality:
 //   * Pre-wave-21, kMonsterKindCardinality was sourced from
@@ -167,6 +172,24 @@
 //     `0x569115efa81a95dc / 0x9a06f1e505846a80` pin is PRESERVED.
 //   * The new kinds are dead-path for cultist + Louse + slimes (no existing
 //     monster_moves table emits them); Nibbit emits them after K.β lands.
+//
+// Wave-25/L.α canonical-form pre-Zobrist swap (Q2-ADR-015 Amendment 1):
+//   * zobrist_half() now sorts the active enemy slots [0..ec) by a
+//     deterministic LEX-KEY (alive → kind → hp → current_move → block →
+//     pfm → move_idx → power_count → powers) BEFORE folding. Per-slot
+//     key tables (enemy_hp[slot], enemy_kind[slot], etc.) remain indexed by
+//     the OUTER LOOP `i` — that's the canonical-form mechanism: the same
+//     enemy ends up at the same "canonical slot" regardless of its wire
+//     position. Symmetric reachable states (same-kind enemies in swapped
+//     wire slots) collapse to a single TT entry, halving the NibbitsNormal
+//     symmetric breadth (state-space cap recovery; L.β re-captures pin).
+//   * CompactState slot order is UNCHANGED (only this hash function is
+//     canonicalized); `target_idx` action semantics + `derive_best_action`
+//     re-derivation per state remain correct (Q2-ADR-015 Amendment 1
+//     §Correctness-analysis).
+//   * Cultist BYTE outcome depends on Q1's BuildMonster wire order for the
+//     2-cultist Normal encounter (Calcified-first → preserved; Damp-first
+//     → rotated). The CultistRootKey pin file is the source of truth.
 //
 // Future widening required when:
 //   - kMaxEnemies bumps 4 → higher (no current encounter requires this).
@@ -624,9 +647,98 @@ uint64_t zobrist_half(const CompactState& s, const ZobristTables& t) noexcept {
   fold_player(h, t, s);
   const uint8_t ec = s.get_enemy_count();
   assert(ec <= kMaxEnemies && "enemy_count out of bound");
-  for (uint8_t i = 0; i < ec; ++i) {
-    fold_enemy(h, t, i, s.get_enemy(i));
+
+  // Wave-25/L.α / Q2-ADR-015 Amendment 1: canonical-form pre-Zobrist swap.
+  // Sort the active enemy slots [0..ec) by a deterministic lex-key BEFORE
+  // folding. Symmetric reachable states (same-kind enemies in either slot
+  // order) then hash IDENTICALLY → TT collapses them.
+  //
+  // Per-slot key tables (enemy_hp[slot], enemy_kind[slot], etc.) are still
+  // indexed by the OUTER LOOP `i` — that's the canonical-form mechanism: the
+  // same enemy ends up at the same "canonical slot" regardless of wire
+  // position.
+  //
+  // CompactState slot order is UNCHANGED (only this hash function is
+  // canonicalized); `target_idx` action semantics + `derive_best_action`
+  // re-derivation per state remain correct (Q2-ADR-015 Amendment 1
+  // §Correctness-analysis).
+  //
+  // Implementation note: ec ≤ kMaxEnemies = 4, so a small in-place
+  // insertion sort is used (avoids GCC's std::sort __insertion_sort
+  // false-positive -Warray-bounds for tiny ranges below _S_threshold=16).
+  std::array<uint8_t, kMaxEnemies> perm{0, 1, 2, 3};
+  const auto lex_less = [&s](uint8_t a, uint8_t b) noexcept -> bool {
+    const auto& ea = s.get_enemy(a);
+    const auto& eb = s.get_enemy(b);
+    // Lex-key: most-distinguishing first.
+    // 1. alive (true before false; dead slots last)
+    if (ea.get_alive() != eb.get_alive()) {
+      return ea.get_alive();
+    }
+    // 2. kind (asc by MonsterKind enum value)
+    if (ea.get_kind() != eb.get_kind()) {
+      return static_cast<uint8_t>(ea.get_kind()) <
+             static_cast<uint8_t>(eb.get_kind());
+    }
+    // 3. hp
+    if (ea.get_hp().value() != eb.get_hp().value()) {
+      return ea.get_hp().value() < eb.get_hp().value();
+    }
+    // 4. current_move
+    if (ea.get_current_move() != eb.get_current_move()) {
+      return static_cast<int>(ea.get_current_move()) <
+             static_cast<int>(eb.get_current_move());
+    }
+    // 5. block
+    if (ea.get_block().value() != eb.get_block().value()) {
+      return ea.get_block().value() < eb.get_block().value();
+    }
+    // 6. performed_first_move (false before true)
+    if (ea.get_performed_first_move() != eb.get_performed_first_move()) {
+      return !ea.get_performed_first_move();
+    }
+    // 7. move_index
+    if (ea.get_move_index() != eb.get_move_index()) {
+      return ea.get_move_index() < eb.get_move_index();
+    }
+    // 8. power_count
+    if (ea.get_power_count() != eb.get_power_count()) {
+      return ea.get_power_count() < eb.get_power_count();
+    }
+    // 9. PowerInstance fields per slot (extend tie-break depth as needed;
+    //    first ~5 keys should disambiguate all reachable Phase-1 states).
+    const auto& pa = ea.get_powers();
+    const auto& pb = eb.get_powers();
+    for (uint8_t k = 0; k < ea.get_power_count(); ++k) {
+      if (pa[k].kind != pb[k].kind) {
+        return static_cast<uint8_t>(pa[k].kind) <
+               static_cast<uint8_t>(pb[k].kind);
+      }
+      if (pa[k].stacks != pb[k].stacks) {
+        return pa[k].stacks < pb[k].stacks;
+      }
+      if (pa[k].flags != pb[k].flags) {
+        return pa[k].flags < pb[k].flags;
+      }
+    }
+    // Truly identical → stable.
+    return false;
+  };
+  // Insertion sort over perm[0..ec). ec ≤ 4 — trivially fast.
+  for (uint8_t i = 1; i < ec; ++i) {
+    const uint8_t key = perm[i];
+    uint8_t j = i;
+    while (j > 0 && lex_less(key, perm[j - 1])) {
+      perm[j] = perm[j - 1];
+      --j;
+    }
+    perm[j] = key;
   }
+
+  for (uint8_t i = 0; i < ec; ++i) {
+    fold_enemy(h, t, i, s.get_enemy(perm[i]));
+  }
+
   h ^= at(t.enemy_count, ec);
   fold_card_zones(h, t, s);
   return h;

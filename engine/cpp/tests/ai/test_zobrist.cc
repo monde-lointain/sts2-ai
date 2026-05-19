@@ -162,9 +162,18 @@ TEST(Zobrist, DistinctStatesDistinctHashes) {
 }
 
 TEST(Zobrist, PositionalNonAliasing) {
-  // Two enemies with IDENTICAL content placed in swapped slots must hash
-  // differently — the "Strength=5 on enemy 0" vs "Strength=5 on enemy 1"
-  // invariant.
+  // Wave-25/L.α revision: the canonical-form pre-Zobrist swap (Q2-ADR-015
+  // Amendment 1) now LEX-SORTS active enemy slots before folding, so wire
+  // slot ORDER is by design NOT distinguished by the hash. The pre-L.α
+  // "positional aliasing" invariant has been replaced with a multi-set
+  // invariant: states with the SAME multi-set of enemies (regardless of
+  // wire order) MUST hash identically, while states with DIFFERENT
+  // multi-sets must hash differently.
+  //
+  // The original test that asserted EXPECT_NE for slot-swap of distinct
+  // enemies is now contradictory under canonical-form; recast here as the
+  // multi-set distinction test (which the L.α-introduced
+  // Zobrist.CanonicalForm_* tests cover from the IDENTITY side).
   EnemyState ea = EnemyStateBuilder()
                       .kind(MonsterKind::kCultistCalcified)
                       .hp(Stat{40})
@@ -182,25 +191,39 @@ TEST(Zobrist, PositionalNonAliasing) {
                       .current_move(MoveId::kIncantation)
                       .alive(true)
                       .build();
+  // ec_distinct: ea modified — different multi-set than the {ea, eb} above.
+  EnemyState ea_strength6 = EnemyStateBuilder(ea).strength(Stat{6}).build();
 
-  const CompactState s_ab = CompactStateBuilder()
-                                .player_hp(Stat{70})
-                                .energy(Stat{3})
-                                .round(1)
-                                .enemy(0, ea)
-                                .enemy(1, eb)
-                                .enemy_count(2)
-                                .build();
-  const CompactState s_ba = CompactStateBuilder()
-                                .player_hp(Stat{70})
-                                .energy(Stat{3})
-                                .round(1)
-                                .enemy(0, eb)
-                                .enemy(1, ea)
-                                .enemy_count(2)
-                                .build();
-  EXPECT_NE(zobrist_of(s_ab), zobrist_of(s_ba))
-      << "positional aliasing — Zobrist must distinguish enemy slots";
+  const CompactState s_same_multiset_ab = CompactStateBuilder()
+                                              .player_hp(Stat{70})
+                                              .energy(Stat{3})
+                                              .round(1)
+                                              .enemy(0, ea)
+                                              .enemy(1, eb)
+                                              .enemy_count(2)
+                                              .build();
+  const CompactState s_same_multiset_ba = CompactStateBuilder()
+                                              .player_hp(Stat{70})
+                                              .energy(Stat{3})
+                                              .round(1)
+                                              .enemy(0, eb)
+                                              .enemy(1, ea)
+                                              .enemy_count(2)
+                                              .build();
+  const CompactState s_distinct_multiset = CompactStateBuilder()
+                                               .player_hp(Stat{70})
+                                               .energy(Stat{3})
+                                               .round(1)
+                                               .enemy(0, ea_strength6)
+                                               .enemy(1, eb)
+                                               .enemy_count(2)
+                                               .build();
+  // Slot-swap of same multi-set → MUST collide (canonical-form collapse).
+  EXPECT_EQ(zobrist_of(s_same_multiset_ab), zobrist_of(s_same_multiset_ba))
+      << "Canonical-form must collapse slot-swapped same-multiset states.";
+  // Different multi-set (ea.strength 5 → 6) → MUST distinguish.
+  EXPECT_NE(zobrist_of(s_same_multiset_ab), zobrist_of(s_distinct_multiset))
+      << "Canonical-form must NOT over-collapse distinct multisets.";
 }
 
 TEST(Zobrist, PowerCombinationCoverage) {
@@ -319,6 +342,131 @@ TEST(Zobrist, CultistRootKey_MatchesPreWave21Pin) {
       << "cultist Zobrist hi half drifted from pre-wave-21 pin — "
          "mt19937_64 fill order regressed OR fold_enemy loop bound is "
          "kMaxEnemies (must be enemy_count)";
+}
+
+// ---------------------------------------------------------------------------
+// Wave-25/L.α canonical-form pre-Zobrist swap (Q2-ADR-015 Amendment 1).
+// Verifies that zobrist_half() lex-sorts active enemy slots before folding,
+// so symmetric reachable states collapse to a single TT entry. Recovers
+// NibbitsNormal pin (deferred via wave-24 Case B tombstone).
+// ---------------------------------------------------------------------------
+
+namespace {
+// Build a generic Nibbit EnemyState with the given (kind, hp, current_move,
+// move_index, alive) tuple. Other fields are at defaults.
+EnemyState make_enemy(MonsterKind kind, int hp, MoveId move,
+                      uint8_t move_idx = 0, bool alive = true, int block = 0) {
+  return EnemyStateBuilder()
+      .kind(kind)
+      .hp(Stat{hp})
+      .block(Stat{block})
+      .current_move(move)
+      .move_index(move_idx)
+      .alive(alive)
+      .performed_first_move(false)
+      .build();
+}
+
+// Wrap two enemies into a 2-enemy CompactState (no card-zone bias —
+// shared player slots stay constant across pair orderings).
+CompactState make_two_enemy_state(const EnemyState& slot0,
+                                  const EnemyState& slot1) {
+  return CompactStateBuilder()
+      .player_hp(Stat{70})
+      .player_block(Stat{0})
+      .energy(Stat{3})
+      .round(1)
+      .phase(Phase::kPlayerActing)
+      .enemy(0, slot0)
+      .enemy(1, slot1)
+      .enemy_count(2)
+      .build();
+}
+}  // namespace
+
+TEST(Zobrist, CanonicalForm_SymmetricTwoNibbits_HashIdentical) {
+  // Two distinct-but-slot-swappable Nibbits → both wire orderings must hash
+  // identically post-canonicalization.
+  const EnemyState nA =
+      make_enemy(MonsterKind::kNibbit, 44, MoveId::kButtMove, 0);
+  const EnemyState nB =
+      make_enemy(MonsterKind::kNibbit, 30, MoveId::kSliceMove, 1);
+
+  const CompactState state_ab = make_two_enemy_state(nA, nB);
+  const CompactState state_ba = make_two_enemy_state(nB, nA);
+
+  EXPECT_EQ(zobrist_of(state_ab), zobrist_of(state_ba))
+      << "Canonical-form must collapse slot-swapped symmetric states "
+         "(same kinds, distinct stats).";
+}
+
+TEST(Zobrist, CanonicalForm_AsymmetricTwoNibbits_HashDifferent) {
+  // Two semantically-distinct multisets of enemies must hash differently —
+  // canonical-form must NOT over-collapse.
+  //   State A: {HP44 Nibbit/BUTT, HP30 Nibbit/SLICE}
+  //   State B: {HP44 Nibbit/BUTT, HP31 Nibbit/SLICE}  ← HP differs by 1
+  const EnemyState nA1 =
+      make_enemy(MonsterKind::kNibbit, 44, MoveId::kButtMove, 0);
+  const EnemyState nA2 =
+      make_enemy(MonsterKind::kNibbit, 30, MoveId::kSliceMove, 1);
+  const EnemyState nB1 =
+      make_enemy(MonsterKind::kNibbit, 44, MoveId::kButtMove, 0);
+  const EnemyState nB2 =
+      make_enemy(MonsterKind::kNibbit, 31, MoveId::kSliceMove, 1);
+
+  const CompactState state_a = make_two_enemy_state(nA1, nA2);
+  const CompactState state_b = make_two_enemy_state(nB1, nB2);
+
+  EXPECT_NE(zobrist_of(state_a), zobrist_of(state_b))
+      << "Canonical-form must distinguish semantically-distinct multisets "
+         "(one HP differs by 1).";
+}
+
+TEST(Zobrist, CanonicalForm_DifferentKindsPreserveOrder) {
+  // Two cultists of different kinds — lex-sort by kind asc.
+  //   State A: slot 0 = Calcified, slot 1 = Damp
+  //   State B: slot 0 = Damp, slot 1 = Calcified
+  // Both must canonicalize to Calcified-first → identical hash.
+  const EnemyState calcified = EnemyStateBuilder()
+                                   .kind(MonsterKind::kCultistCalcified)
+                                   .hp(Stat{40})
+                                   .current_move(MoveId::kIncantation)
+                                   .move_index(0)
+                                   .alive(true)
+                                   .build();
+  const EnemyState damp = EnemyStateBuilder()
+                              .kind(MonsterKind::kCultistDamp)
+                              .hp(Stat{52})
+                              .current_move(MoveId::kIncantation)
+                              .move_index(0)
+                              .alive(true)
+                              .build();
+
+  const CompactState state_calc_damp = make_two_enemy_state(calcified, damp);
+  const CompactState state_damp_calc = make_two_enemy_state(damp, calcified);
+
+  EXPECT_EQ(zobrist_of(state_calc_damp), zobrist_of(state_damp_calc))
+      << "Canonical-form must sort by MonsterKind asc — both orderings "
+         "must canonicalize to Calcified-first.";
+}
+
+TEST(Zobrist, CanonicalForm_AliveVsDeadSorted) {
+  // alive=true sorts BEFORE alive=false.
+  //   State A: slot 0 = alive Nibbit, slot 1 = dead Nibbit
+  //   State B: slot 0 = dead Nibbit, slot 1 = alive Nibbit
+  // Both must canonicalize to alive-first → identical hash.
+  const EnemyState live =
+      make_enemy(MonsterKind::kNibbit, 44, MoveId::kButtMove, 0,
+                 /*alive=*/true);
+  const EnemyState dead =
+      make_enemy(MonsterKind::kNibbit, 0, MoveId::kButtMove, 0,
+                 /*alive=*/false);
+
+  const CompactState state_live_dead = make_two_enemy_state(live, dead);
+  const CompactState state_dead_live = make_two_enemy_state(dead, live);
+
+  EXPECT_EQ(zobrist_of(state_live_dead), zobrist_of(state_dead_live))
+      << "Canonical-form must sort alive=true before alive=false.";
 }
 
 TEST(ZobristKeyHash, BucketSpreadSanity) {
