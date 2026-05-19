@@ -60,6 +60,14 @@ cultist_archetype_from_internal_name(std::string_view internal_name) noexcept {
 game::Enemy make_calcified_cultist(game::Rng& rng);
 game::Enemy make_damp_cultist(game::Rng& rng);
 
+// LouseProgenitor factory (LouseProgenitor.cs:38-40, A0 baseline).
+// HP 134-136, applies CurlUp(14) spawn power per upstream AfterAddedToRoom,
+// starts on WEB_CANNON. Used by the scenario loader for the
+// LouseProgenitorNormal encounter (no direct C# factory upstream — encounter
+// instantiation goes through the adapter on the wire-blob path; the scenario
+// loader needs a name-buildable path).
+game::Enemy make_louse_progenitor(game::Rng& rng);
+
 // Wave-21: slime factory stubs (HP only; move-table data deferred to
 // wave-22.β). HP ranges: A0 baselines per upstream
 // Models/Monsters/{LeafSlimeS,LeafSlimeM,

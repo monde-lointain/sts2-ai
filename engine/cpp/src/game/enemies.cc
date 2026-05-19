@@ -1,6 +1,7 @@
 #include "sts2/game/enemies.h"
 
 #include "sts2/game/combat.h"
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
@@ -32,6 +33,26 @@ sts2::game::Enemy make_calcified_cultist(sts2::game::Rng& rng) {
 sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
   auto e = make_cultist(kCultistArchetypes[1], rng);
   e.kind = sts2::game::MonsterKind::kCultistDamp;
+  return e;
+}
+
+// LouseProgenitor factory — A0 baseline per upstream
+// Models/Monsters/LouseProgenitor.cs:38-40,67-71. HP rolled from the
+// monster_moves table (134-136); CurlUp(14) spawn power applied per upstream
+// AfterAddedToRoom (LouseProgenitor.cs:67-71); initial move WEB_CANNON.
+sts2::game::Enemy make_louse_progenitor(sts2::game::Rng& rng) {
+  sts2::game::Enemy e;
+  const auto& table =
+      sts2::game::monster_moves::kMonsterMoveTables[static_cast<std::size_t>(
+          sts2::game::MonsterKind::kLouseProgenitor)];
+  e.name = "Louse Progenitor";
+  e.kind = sts2::game::MonsterKind::kLouseProgenitor;
+  const int hp = rng.uniform_int(table.min_hp, table.max_hp);
+  e.vitals.max_hp = sts2::game::Stat{hp};
+  e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = sts2::game::MoveId::kWebCannon;
+  e.vitals.powers.push_back(
+      {sts2::game::PowerKind::kCurlUp, 14, /*just_applied=*/false});
   return e;
 }
 

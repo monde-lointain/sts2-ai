@@ -303,4 +303,27 @@ TEST(EnemiesAct, T_ENM_060_DarkStrikeWithWeakHalves) {
   EXPECT_EQ(c.player().vitals.hp, Stat{70 - 6});  // 64
 }
 
+// -------------------------------------------------------------------------
+// LouseProgenitor factory
+// -------------------------------------------------------------------------
+
+// T-ENM-065 — BP — make_louse_progenitor at kCultistTestSeed yields a
+// well-formed LP enemy: name, kind, HP within table range, spawn power
+// CurlUp(14), initial move WebCannon.
+TEST(EnemiesMakeLouseProgenitor, T_ENM_065_StableAtSeed42) {
+  Rng r{kCultistTestSeed};
+  Enemy e = sts2::enemies::make_louse_progenitor(r);
+  EXPECT_EQ(e.name, "Louse Progenitor");
+  EXPECT_EQ(e.kind, sts2::game::MonsterKind::kLouseProgenitor);
+  EXPECT_GE(e.vitals.hp, Stat{134});
+  EXPECT_LE(e.vitals.hp, Stat{136});
+  EXPECT_EQ(e.vitals.hp, e.vitals.max_hp);
+  EXPECT_EQ(e.current_move, MoveId::kWebCannon);
+  EXPECT_FALSE(e.performed_first_move);
+  EXPECT_EQ(e.vitals.block, Stat{0});
+  ASSERT_EQ(e.vitals.powers.size(), 1U);
+  EXPECT_EQ(e.vitals.powers[0].kind, sts2::game::PowerKind::kCurlUp);
+  EXPECT_EQ(e.vitals.powers[0].amount, 14);
+}
+
 }  // namespace
