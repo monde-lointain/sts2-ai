@@ -24,6 +24,8 @@ then positives).
 | Q2-ADR-012 | Slime prerequisites — kMaxEnemies 2→4 + MonsterKind/MoveId/FollowUpRule extensions + Zobrist table widening | Accepted (2026-05-18) |
 | Q2-ADR-013 | SmallSlimes port — Slimed card mechanics + Exhaust emulation + enemy-move RNG chance-node + CannotRepeat rule | Accepted (2026-05-18) |
 | Q2-ADR-014 | Restore upstream stat widths (wave-23 stat widening to int32 + Zobrist key table expansion) | Accepted (2026-05-18) |
+| Q2-ADR-015 | Nibbit port — NibbitsWeak pinned + NibbitsNormal deferred (Cap-bust, Case B; A0 only) | Accepted (2026-05-18) |
+| Q2-ADR-016 | GremlinMerc encounter port + Surprise OnDeath substrate + pin deferral | Accepted (2026-05-19) |
 
 ---
 
@@ -1783,3 +1785,210 @@ For future memory-reduction efforts that may unlock NibbitsNormal pin:
 - Q2-ADR-010 §Recovery (Zobrist BYTE rotation discipline; wave-21 + fix-4/H.γ + wave-23/J.β precedents).
 - Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation + `[[project-encounter-tractability]]` (4-criterion screen origin).
 - Wave-23/J.α (LRU revert; basis for G3 if revisited).
+
+---
+
+## Q2-ADR-016 — GremlinMerc encounter port + Surprise OnDeath substrate + pin deferral
+
+**Status**: Accepted (2026-05-19).
+**Wave**: 26 (M.0 ceremony + M.α substrate + M.β monster definitions + M.γ adapter projection + M.δ documentation).
+
+### §Context-and-motivation
+
+Post-wave-25 substrate includes canonical-form pre-Zobrist swap (wave-25/L.α) + hard TT cap at 370M + LRU-free policy (wave-23/J.α). Next encounter from the Phase-1 pool selected per the `[[project-encounter-tractability]]` 4-criterion screen (Q2-ADR-013 Amendment 4).
+
+GremlinMerc selected because:
+1. **Bounded combat duration**: GremlinMerc's GIMME (2×7 damage) + DOUBLE_SMASH (2×6 damage + Weak) + HEHE (8 damage + Strength +2) cycle guarantees escalating pressure; HEHE Strength scaling forces offensive play analogously to Nibbit HISS.
+2. **No unbounded status-card accumulation**: GremlinMerc encounter has no status-card injection mechanic.
+3. **Player block does NOT dominate damage budget**: multi-hit attacks (GIMME 14 total, DOUBLE_SMASH 12 + Weak debuff) overwhelm block within the horizon.
+4. **Q1 fixture support**: Q1 wave-26 produced fixture 09 (`09-gremlin-merc-normal-seed42`; Q1 commit `f5c0006`).
+
+The encounter also introduces a NEW substrate requirement not covered by any prior wave: OnDeath mid-combat enemy spawn. `GremlinMerc.cs` applies `SurprisePower` at encounter creation; when the merchant dies, the power fires `AfterDeath` to spawn `SneakyGremlin` + `FatGremlin` and vetoes the combat-end check so the spawned wave isn't skipped. Q1-ADR-030 ratifies the Q1-side hook protocol extension (wave-26 Q1.A–Q1.E streams). Q2's M.α–M.γ sub-streams add the corresponding substrate to the C++ engine.
+
+### §Surprise-mechanism
+
+`PowerKind::kSurprise` (`= 6`, APPEND-ONLY) is the Q2 representation of upstream `SurprisePower`. When `apply_damage_to_enemy_with_ondeath_check(state, enemy_idx, damage)` reduces an enemy's HP to ≤ 0, it:
+
+1. Sets `alive = false` on the dying enemy.
+2. Checks `powers::stacks_of(enemy, kSurprise) > 0`.
+3. If present: calls `do_surprise_spawn(state, dead_enemy_idx)`, which reads `kMonsterMoveTables[dead_kind].on_death_spawns` and appends each `SpawnEntry` as a new `EnemyState` (HP from spawn entry, `move_index_ = kSpawnedMove`, zero powers except as noted). `enemy_count_` is bumped. `kSurprise` is then removed from the dead enemy via `powers::remove_power` (one-shot enforcement).
+4. Returns normally; the caller's damage accounting sees the dead enemy marked `alive=false`.
+
+The helper replaces the direct `damage_enemy()` call at every damage-to-enemy site in `transition.cc`. Pre-wave-26 enemies (cultist, LouseProgenitor, slime kinds, Nibbit) carry no `kSurprise` power → step 2 short-circuits → BIT-IDENTICAL behavior.
+
+`kFleeSelf` (`MoveEffectKind`) is SEPARATE from the OnDeath path: `do_enemy_act_slime` sets `alive = false` on the fleeing enemy WITHOUT routing through `apply_damage_to_enemy_with_ondeath_check`. This means a `kFleeSelf` action does NOT trigger `kSurprise`. FatGremlin flees after its turn-2 stun, not via damage-death — this matches upstream `FatGremlin.cs:52 SPAWNED_MOVE → FLEE` semantics exactly.
+
+### §Encounter-mechanics
+
+Upstream references: `GremlinMerc.cs`, `SneakyGremlin.cs`, `FatGremlin.cs`.
+
+**GremlinMerc** (HP 47–49; initial move `GIMME_MOVE`):
+- 3-move strict cycle: `GIMME_MOVE` → `DOUBLE_SMASH_MOVE` → `HEHE_MOVE` → `GIMME_MOVE` …
+  - `GIMME_MOVE`: 2 × `kAttack(7)` = 14 total damage.
+  - `DOUBLE_SMASH_MOVE`: 2 × `kAttack(6)` + `kDebuffPlayer(kWeak, 2)` = 12 total damage + applies Weak 2 to player.
+  - `HEHE_MOVE`: 1 × `kAttack(8)` (using PRE-BUFF Strength; attack resolves before `kBuffEnemy`) + `kBuffEnemy(kStrength, +2)`.
+- Carries `kSurprise(1)` spawn power from encounter creation. On death (by damage): spawns SneakyGremlin + FatGremlin at B1 median HPs and removes `kSurprise` (one-shot).
+- `kThievery` (GremlinMerc.cs:54) is DROPPED: Q2 is a combat-only oracle; merchant economy is not modelled. Silent-drop via Q2-ADR-005 unknown-power infrastructure.
+
+**SneakyGremlin** (spawned; HP default 12 = B1 median of [10,14]):
+- Starts at `kSpawnedMove`, then enters `kTackleMove` self-loop.
+  - `kSpawnedMove`: no-op (spawn arrival); next move deterministically → `kTackleMove`.
+  - `kTackleMove`: deal 9 damage (SneakyGremlin.cs:25; A0 = 9 per `GetValueIfAscension(DeadlyEnemies, 10, 9)`). Strict self-loop.
+- `kTackleMove` is REUSED from the wave-21 slime substrate (MoveId = 5); per-monster damage value lives in the `MonsterMoveTable` effect entry, not the `MoveId` enum.
+
+**FatGremlin** (spawned; HP default 15 = B1 median of [13,17]):
+- Starts at `kSpawnedMove`, then enters `kFleeMove` self-loop.
+  - `kSpawnedMove`: no-op; next → `kFleeMove`.
+  - `kFleeMove`: `kFleeSelf` effect — sets `alive = false` on FatGremlin WITHOUT OnDeath routing. FatGremlin exits combat; no Surprise spawn fires.
+
+HEHE Strength scaling forces offensive play: by turn 3 GremlinMerc has +2 Strength → GIMME deals 2×9=18, DOUBLE_SMASH 2×8=16 + Weak. Combined threat from Sneaky TACKLE (9/turn post-spawn) makes all-Defend non-viable.
+
+### §New-substrate
+
+All extensions are APPEND-ONLY; existing enum values are locked.
+
+**PowerKind**:
+- `kSurprise = 6` (previously `kPowerKindCount = 6`; `kPowerKindCardinality` bumped 6 → 7 in M.β).
+
+**MoveEffectKind**:
+- `kFleeSelf` (APPEND-ONLY): FatGremlin FLEE semantic; alive → false without OnDeath routing.
+
+**MonsterKind** (APPEND-ONLY after `kNibbit = 7`):
+```
+kGremlinMerc    = 8
+kSneakyGremlin  = 9
+kFatGremlin     = 10
+kMonsterKindCount = 11  (was 8)
+```
+
+**MoveId** (APPEND-ONLY after `kPokeyPounce = 9` + `kButtMove/kSliceMove/kHissMove` from wave-24):
+```
+kGimmeMove       = 13
+kDoubleSmashMove = 14
+kHeheMove        = 15
+kSpawnedMove     = 16
+kFleeMove        = 17
+kMoveIdCount     = 18  (was 13)
+```
+
+**Zobrist cardinality triple-update** (wave-26/M.β):
+- `kMonsterKindCardinality` 8 → 11.
+- `kMoveIdCardinality` 13 → 18.
+- `kPowerKindCardinality` 6 → 7.
+
+**New data structures** (wave-26/M.α):
+- `SpawnEntry` struct (12 B; `int32_t hp`, `MoveId initial_move`, `MonsterKind kind`, padding).
+- `kMaxOnDeathSpawns = 3`; `on_death_spawns[kMaxOnDeathSpawns]` + `uint8_t on_death_spawn_count` fields appended to `MonsterMoveTable`.
+- Zero-initialised defaults for all pre-wave-26 kinds (no OnDeath for cultist, Louse, slime, Nibbit).
+
+### §Multi-hit-damage-modeling
+
+Wave-26/M.α implements the A2 multi-hit approach: each physical hit is a separate `kAttack` effect within the move's effects array. `do_enemy_act_slime` processes effects in order; each `kAttack` calls `apply_damage_to_player` independently. Block decrements between hits (Transition.MultiHit_BlockDecrementsBetweenHits), player death mid-hits clamps at zero and stops (Transition.MultiHit_PlayerDeathMidHits_ClampsAtZero), partial block interacts correctly (Transition.MultiHit_PartialBlockInteraction), and per-hit Strength scaling applies uniformly (Transition.MultiHit_StrengthAppliesPerHit).
+
+Move effect arrays (exhaustive):
+- `GIMME_MOVE`: `{kAttack(7), kAttack(7)}` — total 14 damage.
+- `DOUBLE_SMASH_MOVE`: `{kAttack(6), kAttack(6), kDebuffPlayer(kWeak, 2)}` — total 12 damage + Weak 2. Requires `kMaxEffectsPerMove >= 3` (`static_assert` added in M.β).
+- `HEHE_MOVE`: `{kAttack(8), kBuffEnemy(kStrength, 2)}` — 8 damage (PRE-buff Strength), then Strength +2.
+
+`HeheAttack_UsesPreBuffStrength` verifies: the attack effect's damage is computed using Strength stacks present BEFORE `kBuffEnemy` processes. This matches `GremlinMerc.cs:109`: `Execute_HEHE_Move` deals damage, then applies Strength.
+
+Relevant tests in `engine/cpp/tests/ai/test_transition.cc`:
+- `Transition.MultiHit_BlockDecrementsBetweenHits`
+- `Transition.MultiHit_PlayerDeathMidHits_ClampsAtZero`
+- `Transition.MultiHit_PartialBlockInteraction`
+- `Transition.MultiHit_StrengthAppliesPerHit`
+- `Transition.HeheAttack_UsesPreBuffStrength`
+
+### §B1-spawn-HP-fallback
+
+Q1 fixture 09 (`09-gremlin-merc-normal-seed42`) does NOT emit `next_spawn_hps` metadata. The Q1 wire blob carries the GremlinMerc's starting state but does not pre-compute the spawned enemies' HP rolls (STS2's RNG is consumed at spawn-time, after the merchant's death, which does not occur during the fixture-capture decision-request window).
+
+B1 decision: use deterministic median HPs for spawned enemies:
+- SneakyGremlin: 12 (median of [10, 14] from SneakyGremlin.cs:21,23).
+- FatGremlin: 15 (median of [13, 17] from FatGremlin.cs:28,30).
+
+These values are baked into `kMonsterMoveTables[kGremlinMerc].on_death_spawns[]` entries. The oracle's expectimax solve uses these deterministic HPs for the full search; actual Q1 RNG-rolled HPs will vary per combat instance.
+
+This is the Q2-ADR-029 Path A philosophy at work: Q2 acknowledges the B1 median may diverge from Q1 actual RNG roll. The oracle-agreement gate (Q12) surfaces divergence; it is acceptable because Q2's role is verifier-of-optimal-play given a state, not a predictor of spawn RNG. See §Consequences below.
+
+### §Cap-bust-case-B
+
+**GremlinMercNormal (Fixture 09, seed 42; Case B — DEFERRED at commit `da635cf`)**:
+- `status = kCapExceeded` (TT cap hit at 370M entries)
+- `entries_at_cap = 370,000,000`
+- `wall_clock ≈ 6m28s (388s)`
+
+This outcome was UNEXPECTED per the wave-26 plan risk register, which predicted Low probability based on the encounter shape (1 enemy at start + 2 different-kind spawns). The 4-criterion tractability screen PASSED for GremlinMerc:
+
+1. **Bounded duration** PASS: HEHE Strength scaling + multi-hit attacks guarantee offensive pressure.
+2. **No unbounded status accumulation** PASS: no status card injection.
+3. **Block does NOT dominate damage budget** PASS: 14-damage multi-hit GIMME overwhelms Silent A0 block budget quickly.
+4. **Q1 fixture support** PASS: fixture 09 available.
+
+The state-space expansion is driven by a NEW criterion vector not present in prior port waves: mid-combat enemy-count growth doubles `enemy_count_` from 1 to 3 at the death-spawn event. Each spawned enemy carries its own independent action-state machinery — Sneaky's 1-turn stun then TACKLE self-loop (generating ongoing states with Sneaky alive at varying HP + block), Fat's 1-turn stun then FLEE (though Fat flees quickly, the pre-flee states add breadth). The search tree's branching factor increases substantially once the spawn fires.
+
+**G2–G5 amendment menu** (identical to NibbitsNormal precedent; see Q2-ADR-015 Amendment 1 §Future-Amendment-directions):
+- G1 canonical-form (already in place from wave-25; no additional benefit for this encounter — monsters are different kinds so never symmetric).
+- G2 (per-encounter horizon reduction): risks oracle optimality.
+- G3 (LRU re-introduction): per wave-22-fix-4 data, adds ~4 GB RSS overhead + thrashing for retained encounters.
+- G4 (partial-solve pin): departs from converged-pin discipline.
+- G5 = this decision (ship adapter LIVE; pin DEFERRED; tombstone).
+
+Tombstone form in `engine/cpp/tests/oracle/test_gremlin_merc_search_pins.cc`:
+- Test name: `DISABLED_GremlinMercFixture9_PinnedAgreement`
+- Runs with `--gtest_also_run_disabled_tests`; logs cap-bust actuals for iterative-pin-capture protocol.
+
+**Adapter dispatch STAYS LIVE** (M.γ `encounter_map` + `project_gremlin_merc` dispatch wired; 9 projection tests PASS). The encounter is fully supported by the Q2 adapter; only the pin regression-lock is deferred.
+
+### §Tractability-screen-pass
+
+Per-criterion analysis vs the 4-criterion screen (Q2-ADR-013 Amendment 4 + Q2-ADR-015 §Tractability-screen-pass precedent):
+
+1. **Bounded duration** PASS: multi-hit escalation + Strength growth force offensive play.
+2. **No unbounded status accumulation** PASS: no status card injection.
+3. **Block does NOT dominate damage budget** PASS: GIMME 14 damage overwhelms block budget within horizon.
+4. **Q1 fixture support** PASS: fixture 09 (`09-gremlin-merc-normal-seed42`).
+
+Cap-bust despite PASS on all four criteria establishes a NEW criterion vector: mid-combat enemy-count growth as a state-space multiplier. The wave-16 framework was designed for fixed enemy composition per encounter; the `enemy_count_` growth mid-game doubles the effective reachable-state count. Future encounters with mid-combat spawns should add a 5th criterion: spawn-count × per-spawn independent action-states breadth estimate.
+
+### §Cultist-BYTE-outcome
+
+Cultist Zobrist BYTE PRESERVED at `Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80`. Wave-26 M.α–M.γ represent the 5th rotation event (wave-22-fix-4/H.γ initial rotation → wave-23/J.β → wave-24/K.* → wave-25/L.α → wave-26 M.β cardinality bumps). APPEND-ONLY discipline holds throughout: new enum values (`kSurprise`, `kGremlinMerc`, `kSneakyGremlin`, `kFatGremlin`, `kGimme*`, ...) are appended at the END of their respective enums; mt19937_64 PRNG fill sequence for pre-existing indices is unaffected.
+
+Cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL across M.α, M.β, and M.γ commits.
+
+### §Q1-coordination
+
+Wave-26 Q1 sub-streams A–E + docs (Q1-ADR-030) landed cross-quantum:
+
+- **Q1.A** (commit `449bb76`): PowerModel hook-subscription lifecycle (RelicModel pattern) — `AfterDeath` + `ShouldStopCombatFromEnding` subscription infrastructure.
+- **Q1.B** (commit `bef87b5`): `AddEnemies` API + `CreatureIdAllocator` — mid-combat spawn API.
+- **Q1.C** (commit `74ca699`): `CombatEngine` `AfterDeath` fire-site + `CheckCombatEnd` `ShouldStopCombatFromEnding` consult.
+- **Q1.D** (commit `0342e15`): `SurprisePower` runtime + GremlinMerc 3-cycle + `SneakyGremlin` + `FatGremlin` definitions.
+- **Q1.E** (commit `f5c0006`): Fixture 09 emitted (`09-gremlin-merc-normal-seed42`).
+- **Q1.docs** (commit `c56f85f`): ADR-030 ratified.
+
+Q2 M.γ wire-encoding: `"SurprisePower"` (Q1 wire name) → `PowerKind::kSurprise` via `try_power_kind_from_wire_id` extension in `project_powers.h`. `"ThieveryPower"` → silent-drop via Q2-ADR-005 unknown-power infrastructure (verified by `Fixture9_DropsThieverySilently` test).
+
+### Consequences (lead with negatives)
+
+- *Negative*: GremlinMerc pin DEFERRED via tombstone → no regression-lock on Surprise OnDeath spawn behavior in pin VALUES. Q2–Q1 oracle-agreement gate (Q12) cannot bit-equality-validate `GremlinMercNormal` until a future amendment captures converged pin values.
+- *Negative*: B1 deterministic spawn HPs (Sneaky=12, Fat=15) may diverge from Q1 actual RNG-rolled HPs. Oracle-agreement gate surfaces divergence; acceptable per Q2-ADR-029 Path A philosophy, but introduces a systematic bias in the oracle's GremlinMerc evaluation.
+- *Negative*: cap-bust at 370M with canonical-form (wave-25/G1) already in place + mt19937 + hard-abort policy suggests GremlinMercNormal represents a hard upper-bound case for the current substrate. Each additional mid-combat-spawn encounter of similar shape will face the same state-space multiplier. Reduces room for future encounter additions with spawn mechanics within the 24 GB budget.
+- *Negative*: 4-criterion tractability screen PASSED for GremlinMerc yet cap-bust occurred; screen does not account for mid-combat enemy-count growth. Future screen additions warranted (5th criterion).
+- *Positive*: adapter LIVE + 9 projection tests + audit-trio + 15 transition tests + 4 monster-table tests provide substrate regression lock at non-pin levels. The Surprise OnDeath spawn dispatch, multi-hit damage modeling, and FLEE semantic are all exercised by the test battery.
+- *Positive*: oracle coverage now includes the player-Weak-debuff path (Weak applied by DOUBLE_SMASH; engaged in M.α multi-hit transition tests `MultiHit_PartialBlockInteraction` and `MultiHit_StrengthAppliesPerHit`).
+- *Positive*: NEW substrate (`kSurprise` OnDeath spawn + `kFleeSelf` + `SpawnEntry` + `apply_damage_to_enemy_with_ondeath_check` helper) unlocks future encounters with mid-combat spawn mechanics (e.g., HauntedShip if pursued in Phase-2, future bosses with reinforcement waves per Q1-ADR-030).
+- *Positive*: Cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL across all 3 M.α/β/γ commits; 5th APPEND-ONLY validation event across waves 22-fix-4, 23, 24, 25, 26 confirms the enum-fill-order discipline.
+
+### §Cross-references
+
+- Q2-ADR-005 (algorithm_sha source-list; `gremlin_merc_projection.cc` added to `ALGORITHM_SHA_SOURCES`).
+- Q2-ADR-006 (polymorphic power-hook framework; `kSurprise` hooks into `apply_damage_to_enemy_with_ondeath_check`).
+- Q2-ADR-010 (Zobrist hash-only TT; APPEND-ONLY discipline; cap-hit at 370M).
+- Q2-ADR-011 (TT cap-policy; `kCapExceeded` as failure mode).
+- Q2-ADR-013 Amendment 4 (4-criterion tractability screen origin).
+- Q2-ADR-015 Amendment 1 (NibbitsNormal pin deferral precedent; G2–G5 amendment directions reused here).
+- ADR-029 (Path A roadmap; GremlinMerc row updated to adapter-LIVE-pin-DEFERRED).
+- ADR-030 (Q1 hook protocol extension for OnDeath mechanics; wave-26 Q1-side ratification).
+- Q1-ADR-030 = pipeline ADR-030 (cross-quantum; see above).

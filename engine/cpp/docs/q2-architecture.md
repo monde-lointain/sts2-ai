@@ -732,3 +732,103 @@ The 500M-entry TT reserve alone consumes ~19 GB. Adding recursion stack + abseil
 - **G5 (alternate state-encoding)**: synthetic "cycle-phase" enum collapsing the 2-Nibbit offset — substantive substrate change; dedicated wave required.
 
 **Cross-references.** Q2-ADR-015 Amendment 1 (full mechanism + correctness proof + empirical metrics + amendment directions). ADR-029 §Path A tracker (NibbitsNormal row updated to indefinite deferral). Wave-23/J.α (LRU revert — basis for G3).
+
+---
+
+## 22. §22 — 2026-05-19 Wave-26 GremlinMercNormal encounter substrate
+
+Wave-26 ports the `GremlinMerc` encounter and introduces the Q2 engine's first mid-combat enemy-spawn substrate. The port spans 3 Q2 sub-streams (M.α substrate, M.β monster definitions, M.γ adapter) + 5 Q1 sub-streams (Q1.A–Q1.E) with cross-quantum coordination via ADR-030. See Q2-ADR-016 for the full design rationale and decision record.
+
+### Surprise OnDeath spawn primitive
+
+The `kSurprise` OnDeath spawn primitive is the load-bearing new substrate for wave-26.
+
+**Substrate path** (M.α):
+1. `PowerKind::kSurprise = 6` added APPEND-ONLY (pre-existing max was `kVulnerable = 5`; `kPowerKindCardinality` bumped 6 → 7 in M.β).
+2. `apply_damage_to_enemy_with_ondeath_check(CompactState& s, int enemy_idx, int damage)` new helper in `transition.cc`. Replaces the prior `damage_enemy()` call at every damage-to-enemy site; behavior is BIT-IDENTICAL for non-`kSurprise` carriers (cultist, LouseProgenitor, slime kinds, Nibbit).
+3. `do_surprise_spawn(CompactState& s, int dead_enemy_idx)` internal helper: reads `kMonsterMoveTables[kind].on_death_spawns[]`, appends each spawn as a new `EnemyState` with `kSpawnedMove` as initial move + B1 median HP from the spawn entry, increments `enemy_count_`.
+4. `powers::remove_power(EnemyState& e, PowerKind pk)` new sibling to `powers::add_power` (5-line O(N) slot-shift); called after spawn to enforce one-shot.
+
+**Dispatch flow**:
+```
+apply_damage_to_player(s, dmg)        // unchanged
+apply_damage_to_enemy_with_ondeath_check(s, idx, dmg)
+  ├─ reduce hp
+  ├─ if hp ≤ 0: alive = false
+  │   └─ if stacks_of(kSurprise) > 0:
+  │         do_surprise_spawn(s, idx)      // appends EnemyStates
+  │         remove_power(e, kSurprise)     // one-shot enforcement
+  └─ return
+```
+
+**One-shot enforcement**: `remove_power` runs immediately after `do_surprise_spawn`. A hypothetical second damage event to the already-dead enemy (not reachable in practice, but defensive) would find `kSurprise` absent and skip the spawn.
+
+**FLEE path bypasses OnDeath**: `kFleeSelf` in `do_enemy_act_slime` sets `alive = false` directly — does NOT route through `apply_damage_to_enemy_with_ondeath_check`. FatGremlin fleeing combat does not trigger its own spawn power (and FatGremlin carries no `kSurprise` anyway). This is the correct upstream semantics: `SurprisePower` fires on *damage-death*, not on voluntary retreat.
+
+**Q1-side coordination** (ADR-030): Q1 fires `HookType.AfterDeath` from `CombatEngine` and consults `HookType.ShouldStopCombatFromEnding` in `CheckCombatEnd`. `SurprisePower.cs` subscribes both hooks: `AfterDeath` spawns via `ICombatContext.AddEnemies(...)`, `ShouldStopCombatFromEnding` returns true when the GremlinMerc just died (so combat doesn't end before the spawned wave resolves). Q2's `apply_damage_to_enemy_with_ondeath_check` implements the same two-hook semantic inline without a separate hook dispatch system.
+
+**Test seams** (in `transition.h::test_internals`):
+- `apply_damage_to_enemy_with_ondeath_check_for_test`: drive the helper directly.
+- `apply_surprise_spawn_for_test`: inject a `SpawnEntry[]` directly, bypassing `kMonsterMoveTables` lookup.
+
+Tests in `engine/cpp/tests/ai/test_transition.cc`.
+
+### Multi-hit damage modeling
+
+Wave-26/M.α implements multi-hit via the effects-array approach (A2): multiple `kAttack` entries within a single move's `MonsterMove::effects[]`. The `do_enemy_act_slime` loop processes each effect in order, so block decrements between hits and player death mid-sequence both happen correctly.
+
+**GremlinMerc move effect arrays**:
+
+| Move | Effects | Total damage |
+|---|---|---|
+| `GIMME_MOVE` | `{kAttack(7), kAttack(7)}` | 14 |
+| `DOUBLE_SMASH_MOVE` | `{kAttack(6), kAttack(6), kDebuffPlayer(kWeak,2)}` | 12 + Weak 2 |
+| `HEHE_MOVE` | `{kAttack(8), kBuffEnemy(kStrength,2)}` | 8 (pre-buff) + Strength +2 |
+
+`DOUBLE_SMASH_MOVE` requires `kMaxEffectsPerMove >= 3`; `static_assert` added in M.β.
+
+`HEHE_MOVE`: the `kAttack(8)` effect resolves using the enemy's Strength stacks at the time the effect processes — BEFORE the subsequent `kBuffEnemy` increases Strength. `HeheAttack_UsesPreBuffStrength` test locks this ordering. Matches `GremlinMerc.cs:109` (deal damage, then apply Strength).
+
+Multi-hit regression tests in `engine/cpp/tests/ai/test_transition.cc`:
+- `Transition.MultiHit_BlockDecrementsBetweenHits`
+- `Transition.MultiHit_PlayerDeathMidHits_ClampsAtZero`
+- `Transition.MultiHit_PartialBlockInteraction`
+- `Transition.MultiHit_StrengthAppliesPerHit`
+- `Transition.HeheAttack_UsesPreBuffStrength`
+
+### FLEE semantic
+
+`MoveEffectKind::kFleeSelf` (APPEND-ONLY) is FatGremlin's FLEE effect.
+
+Semantics: `do_enemy_act_slime` processes a move containing `kFleeSelf` by setting `enemy.alive = false` directly. **No damage is dealt; OnDeath is NOT triggered.** The enemy exits combat via voluntary retreat, not death. `enemy_count_` is NOT decremented — the slot stays allocated but is inert (alive=false). Future `do_enemy_act` dispatch skips dead enemies.
+
+This is distinct from `apply_damage_to_enemy_with_ondeath_check` precisely because: (a) FLEE is not damage-death, so `kSurprise` must NOT fire, and (b) upstream `FatGremlin.cs:52` models FLEE as a move effect, not a damage source.
+
+FatGremlin carries no `kSurprise`; the distinction is moot for this encounter. But the separation is load-bearing for hypothetical future encounters where a fleeing enemy also carries `kSurprise` — `kFleeSelf` correctly skips the spawn.
+
+### B1 spawn-HP fallback + Q2-ADR-029 Path A acknowledgment
+
+Q1 fixture 09 does NOT emit `next_spawn_hps` metadata. The Q1 wire blob represents the GremlinMerc encounter state at the decision-request window (before the merchant's death); spawn HP rolls happen at death-time in the live game and are not captured in the fixture.
+
+**B1 fallback**: deterministic median HPs baked into `kMonsterMoveTables[kGremlinMerc].on_death_spawns[]`:
+
+| Spawn | HP range (A0) | Median used |
+|---|---|---|
+| SneakyGremlin | [10, 14] | 12 |
+| FatGremlin | [13, 17] | 15 |
+
+The oracle's expectimax solve treats these as fixed. Actual Q1 combats RNG-roll spawn HPs from the uniform range; the oracle-agreement gate (Q12) will observe divergence for combats where RNG-rolled HPs differ from B1 medians. This is the Q2-ADR-029 Path A philosophy: Q2 acknowledges systematic disagreement on this dimension and accepts it as a known oracle-limitation rather than an error.
+
+A future Path B extension (encode spawn HP distribution as a chance node in the search) would require adding `kAtSpawnHpRng` as a new `Phase` value and widening the chance enumeration. This is deferred per Q2-ADR-029.
+
+### Cap-bust Case B outcome + pin deferral
+
+GremlinMercNormal solve hit `kCapExceeded` at 370M entries / ~6m28s (388s wall-clock). This matches the NibbitsNormal Case B precedent (Q2-ADR-015) but was UNEXPECTED for an encounter passing all 4 tractability criteria.
+
+**Root cause**: mid-combat enemy-count growth (1 merchant → 3 active enemies post-spawn) approximately triples the reachable state count relative to a fixed-1-enemy encounter. Each of the 3 post-spawn enemies contributes independent action-state dimension: Sneaky (alive, HP ∈ [1,12], TACKLE self-loop) × Fat (alive until FLEE, then inert; short-lived but adds pre-FLEE states) × GremlinMerc (dead, inert). The branching factor post-spawn is qualitatively higher than any prior encounter in the Path A queue.
+
+The G1 canonical-form swap (wave-25/L.α) provides no benefit: spawned enemies are different kinds (kSneakyGremlin ≠ kFatGremlin), so no symmetric state-pair exists to collapse.
+
+**Pin deferral decision**: ship adapter LIVE + tombstone test, matching NibbitsNormal precedent.
+
+Cross-link: Q2-ADR-016 §Cap-bust-case-B (full decision tree + G2–G5 amendment menu).
