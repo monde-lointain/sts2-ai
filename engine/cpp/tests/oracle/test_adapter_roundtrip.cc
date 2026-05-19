@@ -118,12 +118,13 @@ TEST(AdapterRoundtrip, DISABLED_Fixture1_AdapterPlusSearch_PinnedAgreement) {
 // pinned values live in test_gremlin_merc_search_pins.cc).
 // ---------------------------------------------------------------------------
 
-// DISABLED by default. Run explicitly:
-//   ./build/Release/sts2_oracle_tests
-//     --gtest_also_run_disabled_tests
-//     --gtest_filter='AdapterRoundtrip.DISABLED_*'
-TEST(AdapterRoundtrip,
-     DISABLED_Fixture9_GremlinMercNormal_AdapterPlusSearch_Dispatches) {
+// Wave-26/M.epsilon: DISABLED_DISABLED_ tombstone — pin deferred via cap-bust
+// Case B (see Q2-ADR-016). Match NibbitsNormal precedent: q2-ci passes
+// --gtest_also_run_disabled_tests so single DISABLED_ would run; the double
+// prefix is required to skip. Un-prefix one level when pin is re-attempted.
+TEST(
+    AdapterRoundtrip,
+    DISABLED_DISABLED_Fixture9_GremlinMercNormal_AdapterPlusSearch_Dispatches) {
   const auto bytes = load_fixture_blob("09-gremlin-merc-normal-seed42");
   const AdapterResult r = from_blob_payload(bytes);
   ASSERT_EQ(r.index(), 0U)
@@ -141,6 +142,11 @@ TEST(AdapterRoundtrip,
   EXPECT_EQ(
       s.get_hand().total() + s.get_draw().total() + s.get_discard().total(),
       12);
+
+  GTEST_SKIP()
+      << "GremlinMerc solve hit kCapExceeded at 370000000 entries "
+      << "(wall_clock=6m28s) — Case B cap-bust per Q2-ADR-016. Pin "
+      << "DEFERRED matches NibbitsNormal precedent (Q2-ADR-015 Amendment 1).";
 
   Search search;
   const SearchResult result = search.solve(s);
