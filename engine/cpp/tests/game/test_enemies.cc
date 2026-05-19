@@ -107,6 +107,7 @@ TEST(EnemiesMakeCalcified, T_ENM_005_StableCultistAtSeed42) {
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, Stat{0});
   EXPECT_TRUE(e.vitals.powers.empty());
+  EXPECT_EQ(e.kind, sts2::game::MonsterKind::kCultistCalcified);
 }
 
 // T-ENM-010 — EG, BV — All four HP outcomes 38..41 reachable; locks the
@@ -155,6 +156,7 @@ TEST(EnemiesMakeDamp, T_ENM_015_StableCultistAtSeed42) {
   EXPECT_FALSE(e.performed_first_move);
   EXPECT_EQ(e.vitals.block, Stat{0});
   EXPECT_TRUE(e.vitals.powers.empty());
+  EXPECT_EQ(e.kind, sts2::game::MonsterKind::kCultistDamp);
 }
 
 // T-ENM-020 — EG, BV — Three HP outcomes 51..53 reachable.

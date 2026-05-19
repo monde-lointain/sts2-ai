@@ -24,11 +24,15 @@ sts2::game::Enemy make_cultist(const CultistArchetype& archetype,
 }  // namespace
 
 sts2::game::Enemy make_calcified_cultist(sts2::game::Rng& rng) {
-  return make_cultist(kCultistArchetypes[0], rng);
+  auto e = make_cultist(kCultistArchetypes[0], rng);
+  e.kind = sts2::game::MonsterKind::kCultistCalcified;
+  return e;
 }
 
 sts2::game::Enemy make_damp_cultist(sts2::game::Rng& rng) {
-  return make_cultist(kCultistArchetypes[1], rng);
+  auto e = make_cultist(kCultistArchetypes[1], rng);
+  e.kind = sts2::game::MonsterKind::kCultistDamp;
+  return e;
 }
 
 // Wave-22.β: slime factories — HP roll + initial move per upstream.
