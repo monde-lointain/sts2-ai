@@ -23,6 +23,7 @@
 #include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
+#include "sts2/game/damage.h"
 #include "sts2/game/enemy.h"
 #include "sts2/game/types.h"
 #include "sts2/game/vitals.h"
@@ -381,6 +382,33 @@ TEST(RenderCombat, T_RND_225_AttackIntentAppliesStrength) {
 
   const std::string s = render_to_string(c);
   EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "12"));
+}
+
+// T-RND-230 — Cultist DarkStrike attack token renders ⚔{n} with NO space
+// between glyph and value (sts2-cli parity: play.py:721 emits f"⚔{dmg}").
+// Self-bound T_RND_205 accepts either form, so we pin the no-space format here.
+TEST(RenderCombat, T_RND_230_CultistDarkStrikeNoSpace) {
+  Combat c = make_starter_combat(kCombatTestSeed);
+  c.end_turn();  // Advance to R2; both cultists roll to DarkStrike.
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kDarkStrike);
+  ASSERT_EQ(c.enemies()[1].current_move, MoveId::kDarkStrike);
+
+  const std::string s = render_to_string(c);
+
+  // Derive expected damage from live enemy state (Strength accrual from R1
+  // Ritual is applied via compute_outgoing).
+  const int dmg0 = sts2::damage::compute_outgoing(
+      c.enemies()[0].vitals.powers, c.enemies()[0].dark_strike_base.value());
+  const int dmg1 = sts2::damage::compute_outgoing(
+      c.enemies()[1].vitals.powers, c.enemies()[1].dark_strike_base.value());
+
+  EXPECT_THAT(s,
+              HasSubstr(std::string(glyphs::kSwords) + std::to_string(dmg0)));
+  EXPECT_THAT(s,
+              HasSubstr(std::string(glyphs::kSwords) + std::to_string(dmg1)));
+  // Belt: explicit no-space check — glyph followed immediately by digit, never
+  // " ".
+  EXPECT_THAT(s, Not(HasSubstr(std::string(glyphs::kSwords) + " ")));
 }
 
 }  // namespace
