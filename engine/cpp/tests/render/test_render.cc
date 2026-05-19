@@ -285,4 +285,102 @@ TEST(RenderCombat, T_RND_210_AllEnemiesDeadNoEnemyRows) {
   EXPECT_THAT(s, Not(HasSubstr(enemy_prefix)));
 }
 
+// T-RND-215 — LouseProgenitor 3-move intent (sts2-cli parity).
+// WebCannon:  ⚔9 ⬇Debuff.  CurlAndGrow: 🛡DEF ⬆Buff.  Pounce: ⚔14.
+TEST(RenderCombat, T_RND_215_LouseProgenitorIntents) {
+  using sts2::game::MonsterKind;
+
+  auto make_lp = [](MoveId m) {
+    Enemy e{};
+    e.name = "Louse";
+    e.kind = MonsterKind::kLouseProgenitor;
+    e.current_move = m;
+    e.vitals = Vitals{Stat{134}, Stat{134}, Stat{0}, {}};
+    return e;
+  };
+
+  {  // WebCannon: attack 9 + Frail debuff
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_lp(MoveId::kWebCannon));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "9"));
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kArrowDown) + "Debuff"));
+  }
+  {  // CurlAndGrow: 14 block + Strength buff
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_lp(MoveId::kCurlAndGrow));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kShield) + "DEF"));
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kArrowUp) + "Buff"));
+  }
+  {  // Pounce: attack 14
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_lp(MoveId::kPounce));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "14"));
+  }
+}
+
+// T-RND-220 — Nibbit 3-move intent (sts2-cli parity).
+// ButtMove: ⚔12.  SliceMove: ⚔6 🛡DEF.  HissMove: ⬆Buff.
+TEST(RenderCombat, T_RND_220_NibbitIntents) {
+  using sts2::game::MonsterKind;
+
+  auto make_nb = [](MoveId m) {
+    Enemy e{};
+    e.name = "Nibbit";
+    e.kind = MonsterKind::kNibbit;
+    e.current_move = m;
+    e.vitals = Vitals{Stat{42}, Stat{42}, Stat{0}, {}};
+    return e;
+  };
+
+  {  // ButtMove: attack 12
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_nb(MoveId::kButtMove));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "12"));
+  }
+  {  // SliceMove: attack 6 + 5 block-self
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_nb(MoveId::kSliceMove));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "6"));
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kShield) + "DEF"));
+  }
+  {  // HissMove: Strength self-buff
+    Combat c{kCombatTestSeed};
+    c.add_enemy(make_nb(MoveId::kHissMove));
+    c.start(sts2::cards::make_silent_starter_deck());
+    const std::string s = render_to_string(c);
+    EXPECT_THAT(s, HasSubstr(std::string(glyphs::kArrowUp) + "Buff"));
+  }
+}
+
+// T-RND-225 — kAttack token applies attacker Strength via compute_outgoing.
+// LP + Strength(3) on WebCannon: 9 + 3 = 12.
+TEST(RenderCombat, T_RND_225_AttackIntentAppliesStrength) {
+  using sts2::game::MonsterKind;
+  using sts2::game::Power;
+  using sts2::game::PowerKind;
+
+  Combat c{kCombatTestSeed};
+  Enemy e{};
+  e.name = "Louse";
+  e.kind = MonsterKind::kLouseProgenitor;
+  e.current_move = MoveId::kWebCannon;
+  e.vitals =
+      Vitals{Stat{134}, Stat{134}, Stat{0}, {Power{PowerKind::kStrength, 3}}};
+  c.add_enemy(std::move(e));
+  c.start(sts2::cards::make_silent_starter_deck());
+
+  const std::string s = render_to_string(c);
+  EXPECT_THAT(s, HasSubstr(std::string(glyphs::kSwords) + "12"));
+}
+
 }  // namespace

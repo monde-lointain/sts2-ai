@@ -8,6 +8,7 @@
 #include "sts2/game/combat.h"
 #include "sts2/game/damage.h"
 #include "sts2/game/index_types.h"
+#include "sts2/game/monster_moves.h"
 #include "sts2/game/power.h"
 #include "sts2/game/types.h"
 #include "sts2/render/ansi.h"
@@ -68,37 +69,57 @@ std::string format_powers(std::span<const sts2::game::Power> ps) {
 }
 
 std::string format_intent(const sts2::game::Enemy& e) {
+  namespace mm = sts2::game::monster_moves;
+  const auto kind_idx = static_cast<std::size_t>(e.kind);
+  if (kind_idx >= mm::kMonsterKindCount) {
+    return {};
+  }
+  const uint8_t move_idx = mm::find_move_index(e.kind, e.current_move);
+  if (move_idx == 0xFF) {
+    return {};
+  }
+  const mm::MonsterMove& move =
+      mm::kMonsterMoveTables[kind_idx].moves[move_idx];
+
   std::ostringstream os;
-  switch (e.current_move) {
-    case sts2::game::MoveId::kIncantation:
-      os << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
-      break;
-    case sts2::game::MoveId::kDarkStrike:
-      os << ansi::kRed << glyphs::kSwords << ' '
-         << sts2::damage::compute_outgoing(e.vitals.powers,
-                                           e.dark_strike_base.value())
-         << ansi::kReset;
-      break;
-    // Wave-17/21 reserved MoveIds: no display logic yet.
-    case sts2::game::MoveId::kWebCannon:
-    case sts2::game::MoveId::kCurlAndGrow:
-    case sts2::game::MoveId::kPounce:
-    case sts2::game::MoveId::kTackleMove:
-    case sts2::game::MoveId::kGoopMove:
-    case sts2::game::MoveId::kClumpShot:
-    case sts2::game::MoveId::kStickyShot:
-    case sts2::game::MoveId::kPokeyPounce:
-    // Wave-24/K.β: Nibbit moves (no display logic yet).
-    case sts2::game::MoveId::kButtMove:
-    case sts2::game::MoveId::kSliceMove:
-    case sts2::game::MoveId::kHissMove:
-    // Wave-26/M.α: GremlinMerc moves (display logic deferred to M.δ).
-    case sts2::game::MoveId::kGimmeMove:
-    case sts2::game::MoveId::kDoubleSmashMove:
-    case sts2::game::MoveId::kHeheMove:
-    case sts2::game::MoveId::kSpawnedMove:
-    case sts2::game::MoveId::kFleeMove:
-      break;
+  bool first = true;
+  for (uint8_t i = 0; i < move.effect_count; ++i) {
+    const mm::MoveEffect& eff = move.effects[i];
+    std::ostringstream tok;
+    switch (eff.kind) {
+      case sts2::game::MoveEffectKind::kAttack:
+        tok << ansi::kRed << glyphs::kSwords
+            << sts2::damage::compute_outgoing(e.vitals.powers, eff.value)
+            << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kDefend:
+      case sts2::game::MoveEffectKind::kBlockSelf:
+        tok << ansi::kBlue << glyphs::kShield << "DEF" << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kBuffSelf:
+      case sts2::game::MoveEffectKind::kBuffEnemy:
+        tok << ansi::kMagenta << glyphs::kArrowUp << "Buff" << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kDebuffPlayer:
+        tok << ansi::kYellow << glyphs::kArrowDown << "Debuff" << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kAddStatusCard:
+        tok << ansi::kYellow << glyphs::kArrowDown << "Cards" << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kFleeSelf:
+        // sts2-cli "Escape" token. No glyphs::kRunner constant yet — emit
+        // inline 🏃 bytes (out-of-scope move; see plan §Decisions baked in).
+        tok << ansi::kDim << "\xf0\x9f\x8f\x83"
+            << "Escape" << ansi::kReset;
+        break;
+      case sts2::game::MoveEffectKind::kNone:
+        continue;
+    }
+    if (!first) {
+      os << ' ';
+    }
+    first = false;
+    os << tok.str();
   }
   return os.str();
 }
