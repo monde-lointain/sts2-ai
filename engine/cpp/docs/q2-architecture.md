@@ -832,3 +832,37 @@ The G1 canonical-form swap (wave-25/L.α) provides no benefit: spawned enemies a
 **Pin deferral decision**: ship adapter LIVE + tombstone test, matching NibbitsNormal precedent.
 
 Cross-link: Q2-ADR-016 §Cap-bust-case-B (full decision tree + G2–G5 amendment menu).
+
+**Status (post-wave-27/Q2-ADR-017)**: REMOVED from adapter dispatch. GremlinMercNormal projection module deleted; fixture 09 now routes through the reject path with `encounter_id="<unknown>"`. Substrate (kSurprise enum, OnDeath helper, monster tables) retained — see §23.
+
+## 23. §23 — 2026-05-19 Wave-27 tombstoned encounter removal
+
+**Wave-27 outcome**: NibbitsNormal + GremlinMercNormal removed from the Q2 adapter dispatch path. SmallSlimes pin tombstone retired. Fixtures 08 + 09 now route through `adapter_reject::reject_cases()` with `encounter_id="<unknown>"`, matching the SmallSlimes precedent (fixture 06) established in Q2-ADR-013 Amendment 4.
+
+**Removed (adapter layer)**:
+- `nibbits_normal_projection.{h,cc}` + `gremlin_merc_projection.{h,cc}` (NEW wave-24/K.γ and wave-26/M.γ respectively; never converged a pin)
+- `test_{nibbits_normal,gremlin_merc}_projection.cc` (projection unit tests)
+- `test_{small_slimes,nibbits_normal,gremlin_merc}_search_pins.cc` (pin tombstones)
+- adapter.cc encounter_map + dispatch entries for the 2 encounters
+- `project_powers.h` `"SurprisePower"` → `kSurprise` recognition (wire silent-drops via Q2-ADR-005 unknown-power path; same handling as `ThieveryPower`)
+- Audit-trio entries: `AdapterFacade.Fixture8/9_*_ReturnsCompactState`, `AdapterRoundtrip.DISABLED_DISABLED_Fixture9_GremlinMercNormal_*`, `VerifyServer.DISABLED_DISABLED_HappyPathGremlinMercNormal`
+- AlgorithmSha.cmake source list (algorithm_sha ROTATES)
+
+**Preserved (substrate)**:
+- types.h enum extensions (PowerKind::kSurprise, MoveEffectKind::kFleeSelf, 3 MonsterKinds, 5 MoveIds — APPEND-ONLY discipline)
+- monster_moves.cc tables for GremlinMerc + SneakyGremlin + FatGremlin
+- enemies.h/cc factories
+- move_calc.h/cc wire-name mappings
+- transition.cc `apply_damage_to_enemy_with_ondeath_check` helper + `do_surprise_spawn` + kFleeSelf branch + kind_is_table_driven extension
+- state.h `powers::remove_power` helper
+- zobrist.cc cardinality 11/18/7 (do NOT revert — cultist BYTE depends on APPEND-ONLY fill-order)
+- test_transition.cc 15 OnDeath/multi-hit/Flee transition tests (substrate-level coverage)
+- test_monster_moves_table.cc 4 monster-table tests (schema validation)
+
+**Side-effect re-bake**: `test_adapter_reject.cc::reject_cases()` canonical hashes for fixtures 02/03/04/06 were stale (Q1.E wave-26 roster bump regenerated all fixtures); wave-27/N.α re-reads them from each fixture's `metadata.json::expected_canonical_hash_hex` field. The full parameterized `AdapterRejectParamTest` sweep (which was silently bypassed by q2-ci's `Q2_CI_ORACLE_FILTER='*DISABLED_*'`) now passes for all 6 entries.
+
+**Cultist BYTE outcome**: PRESERVED at `0x569115efa81a95dc / 0x9a06f1e505846a80` (6th APPEND-ONLY validation across waves 22-fix-4 → 23 → 24 → 25 → 26 → 27). Cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL. algorithm_sha ROTATES (2 fewer ALGORITHM_SHA_SOURCES entries).
+
+**Re-attempt path**: see Q2-ADR-017 §Re-attempt-path. Substrate retention means a future pin attempt can focus on the G2-G5 tractability menu without re-porting monster definitions or OnDeath primitives.
+
+Cross-link: Q2-ADR-017 (full decision document).

@@ -742,10 +742,10 @@ Path A encounter tracker (checked = shipped + pinned-seed gate green):
 | Encounter | Wave | ADR | Status |
 |---|---|---|---|
 | LouseProgenitor | 17 (waves 17–20) | Q2-ADR-009 | [x] SHIPPED (wave-20.α POUNCE fix + pin captured) |
-| SmallSlimes | 22 | Q2-ADR-013 | [~] SmallSlimes — DEPRECATED-IN-Q2 per Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation (2026-05-18) |
+| SmallSlimes | 22 | Q2-ADR-013, Q2-ADR-017 | [~] REMOVED-FROM-Q2 wave-27 (was DEPRECATED-IN-Q2 per Q2-ADR-013 Amendment 4 §SmallSlimes-deprecation, 2026-05-18; pin tombstone removed wave-27/N.α per Q2-ADR-017) |
 | NibbitsWeak | 24 | Q2-ADR-015 | [x] SHIPPED-IN-Q2 wave-24 (Q2-ADR-015; commit 7bfcffa) |
-| NibbitsNormal | 24 | Q2-ADR-015 | [~] SHIPPED-IN-Q2 wave-24 (adapter LIVE; pin DEFERRED indefinitely per Q2-ADR-015 Amendment 1; G1 canonical-form attempted but insufficient — see §Why-canonical-form-was-insufficient) |
-| GremlinMercNormal | 26 | Q2-ADR-016 | [~] SHIPPED-IN-Q2 wave-26 (adapter LIVE; pin DEFERRED indefinitely — kCapExceeded @ 370M / ~6m28s; Case B cap-bust; mid-combat spawn state-space multiplier; G1 canonical-form inapplicable (different-kind spawns); see Q2-ADR-016) |
+| NibbitsNormal | 24 | Q2-ADR-015, Q2-ADR-017 | [~] REMOVED-FROM-Q2 wave-27 (was SHIPPED-IN-Q2 wave-24 adapter-LIVE-pin-DEFERRED per Q2-ADR-015 Amendment 1; G1 canonical-form attempted wave-25 but insufficient; removed wave-27/N.α per Q2-ADR-017; substrate retained for future G2-G5 re-attempt) |
+| GremlinMercNormal | 26 | Q2-ADR-016, Q2-ADR-017 | [~] REMOVED-FROM-Q2 wave-27 (was SHIPPED-IN-Q2 wave-26 adapter-LIVE-pin-DEFERRED per Q2-ADR-016; kCapExceeded @ 370M / ~6m28s Case B; G1 canonical-form inapplicable due to different-kind spawns; removed wave-27/N.α per Q2-ADR-017; substrate retained including kSurprise OnDeath helper for future encounters with similar mechanics) |
 | MediumSlimes | 23 | Q2-ADR-014 (pending) | [ ] pending |
 | FossilStalker | TBD | — | [ ] pending |
 | KaiserCrab | TBD | — | [ ] pending |

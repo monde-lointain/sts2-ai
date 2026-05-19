@@ -26,6 +26,7 @@ then positives).
 | Q2-ADR-014 | Restore upstream stat widths (wave-23 stat widening to int32 + Zobrist key table expansion) | Accepted (2026-05-18) |
 | Q2-ADR-015 | Nibbit port — NibbitsWeak pinned + NibbitsNormal deferred (Cap-bust, Case B; A0 only) | Accepted (2026-05-18) |
 | Q2-ADR-016 | GremlinMerc encounter port + Surprise OnDeath substrate + pin deferral | Accepted (2026-05-19) |
+| Q2-ADR-017 | Tombstoned encounter removal — NibbitsNormal + GremlinMercNormal off adapter dispatch; SmallSlimes pin tombstone retired | Accepted (2026-05-19) |
 
 ---
 
@@ -1992,3 +1993,102 @@ Q2 M.γ wire-encoding: `"SurprisePower"` (Q1 wire name) → `PowerKind::kSurpris
 - ADR-029 (Path A roadmap; GremlinMerc row updated to adapter-LIVE-pin-DEFERRED).
 - ADR-030 (Q1 hook protocol extension for OnDeath mechanics; wave-26 Q1-side ratification).
 - Q1-ADR-030 = pipeline ADR-030 (cross-quantum; see above).
+
+---
+
+## Q2-ADR-017 — Tombstoned encounter removal — NibbitsNormal + GremlinMercNormal off adapter dispatch; SmallSlimes pin tombstone retired
+
+**Status**: Accepted (2026-05-19)
+**Wave**: 27
+
+### §Context-and-motivation
+
+Post-wave-26 the Q2 oracle's adapter dispatch path supported 5 encounters:
+
+| Encounter | Status | Pin |
+|---|---|---|
+| CultistsNormal | LIVE | PINNED |
+| LouseProgenitorNormal | LIVE | PINNED |
+| NibbitsWeak | LIVE | PINNED |
+| NibbitsNormal | LIVE | **DEFERRED** (Q2-ADR-015 Amendment 1) |
+| GremlinMercNormal | LIVE | **DEFERRED** (Q2-ADR-016) |
+
+The 2 deferred encounters had complete adapter projection modules (`nibbits_normal_projection.{h,cc}` + `gremlin_merc_projection.{h,cc}`) routing fixtures 08 + 09 to CompactState successfully, but their `Search::solve` runs hit `kCapExceeded` at the 370M `kMaxTtEntries` cap (Case B per Q2-ADR-015 Amendment 1 + Q2-ADR-016 §Cap-bust-case-B). Their pin tests carried `DISABLED_DISABLED_` tombstones with `GTEST_SKIP()` runtime guards; their audit-trio entries in `test_adapter_facade.cc`/`test_adapter_roundtrip.cc`/`test_verify_server.cc` carried similar tombstones.
+
+SmallSlimes was deprecated at the adapter layer in Q2-ADR-013 Amendment 4 (2026-05-18) following the H.δ Case B 40m+ wall-clock OOM. Its pin test file (`test_small_slimes_search_pins.cc`) remained as a legacy tombstone.
+
+**Problem identified**: live adapter projection modules + dispatch entries point to encounters that the oracle CANNOT pin-verify. Production callers hitting fixtures 08 or 09 receive a CompactState that the oracle cannot bit-equality validate against Q1. The tombstone tests add CI surface area + maintenance cognitive load with zero pin coverage benefit.
+
+### §Decision
+
+Remove NibbitsNormal + GremlinMercNormal from the Q2 adapter dispatch path. Route fixtures 08 + 09 through the existing `adapter_reject` path with `encounter_id="<unknown>"`, matching the SmallSlimes precedent at fixture 06. Remove the SmallSlimes pin tombstone file. Preserve substrate (monster definitions, enum extensions, OnDeath helper, multi-hit damage modeling, Slimed cap) for future re-attempts via G2-G5 amendment menu or new encounter ports.
+
+### §Files-removed (9)
+
+- `engine/cpp/include/sts2/oracle/adapter/nibbits_normal_projection.h`
+- `engine/cpp/include/sts2/oracle/adapter/gremlin_merc_projection.h`
+- `engine/cpp/src/oracle/adapter/nibbits_normal_projection.cc`
+- `engine/cpp/src/oracle/adapter/gremlin_merc_projection.cc`
+- `engine/cpp/tests/oracle/test_nibbits_normal_projection.cc`
+- `engine/cpp/tests/oracle/test_gremlin_merc_projection.cc`
+- `engine/cpp/tests/oracle/test_small_slimes_search_pins.cc`
+- `engine/cpp/tests/oracle/test_nibbits_normal_search_pins.cc`
+- `engine/cpp/tests/oracle/test_gremlin_merc_search_pins.cc`
+
+### §Substrate-preserved (out of scope)
+
+- `engine/cpp/include/sts2/game/types.h`: ALL enum extensions retained — `PowerKind::kSurprise`, `MoveEffectKind::kFleeSelf`, `MonsterKind::{kGremlinMerc, kSneakyGremlin, kFatGremlin}`, `MoveId::{kGimmeMove, kDoubleSmashMove, kHeheMove, kSpawnedMove, kFleeMove}`. APPEND-ONLY discipline preserved.
+- `engine/cpp/src/game/monster_moves.cc`: GremlinMerc + SneakyGremlin + FatGremlin move tables retained (data layer reference for future re-attempts).
+- `engine/cpp/include/sts2/game/monster_moves.h`: `SpawnEntry` struct + `kMaxOnDeathSpawns` + `on_death_spawns` field on `MonsterMoveTable` retained.
+- `engine/cpp/src/game/enemies.cc`: factories `make_gremlin_merc`/`make_sneaky_gremlin`/`make_fat_gremlin` retained.
+- `engine/cpp/src/game/move_calc.cc`: 5 wire-name mappings retained (forward + reverse).
+- `engine/cpp/src/ai/transition.cc`: `apply_damage_to_enemy_with_ondeath_check` helper + `do_surprise_spawn` + `kFleeSelf` branch + `kind_is_table_driven` extension retained. The OnDeath substrate primitive is fully exercised by the 15 transition unit tests + 4 monster-table tests.
+- `engine/cpp/include/sts2/ai/state.h`: `powers::remove_power` helper retained.
+- `engine/cpp/src/ai/zobrist.cc`: cardinality constants retained at 11/18/7 (do NOT revert — cultist BYTE depends on the APPEND-ONLY fill-order; reverting would force re-pinning cultist + LouseProgenitor + NibbitsWeak).
+- `engine/cpp/tests/ai/test_transition.cc`: 15 OnDeath/multi-hit/Flee transition unit tests retained (substrate-level coverage independent of adapter).
+- `engine/cpp/tests/game/test_monster_moves_table.cc`: 4 monster-table tests retained (data-layer schema validation).
+
+### §Adapter-reject-fixtures
+
+Fixtures 08 + 09 appended to `test_adapter_reject.cc::reject_cases()`:
+
+| Fixture | Expected encounter_id | Canonical hash |
+|---|---|---|
+| `08-nibbits-normal-seed42` | `<unknown>` | `324156fe4c21deaea39ad2b6bace0a5dc75750ac7f68ec0e7a1599548f3ce628` |
+| `09-gremlin-merc-normal-seed42` | `<unknown>` | `817bd40dc9d009c9db0b85375af6775eac1c46a36c1b79a0f78e7eac0a8a5e17` |
+
+Side-effect: re-baked stale canonical hashes for fixtures 02/03/04/06 in `test_adapter_reject.cc` (Q1.E wave-26 roster bump regenerated all fixtures with new catalog metadata; prior hashes had drifted from `15a433be...` / `6ae16e33...` / `4a597830...` / `cba34eae...` to current values).
+
+### §Cultist-BYTE-outcome
+
+PRESERVED at `0x569115efa81a95dc / 0x9a06f1e505846a80`. zobrist.cc untouched; cardinality constants unchanged at 11/18/7. 6th APPEND-ONLY validation event across waves 22-fix-4, 23, 24, 25, 26, 27.
+
+`algorithm_sha` ROTATES — `AlgorithmSha.cmake` source list shrunk by 2 files (`gremlin_merc_projection.cc` + `nibbits_normal_projection.cc` removed). Cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL (substrate untouched).
+
+### §Re-attempt-path
+
+If NibbitsNormal or GremlinMercNormal pin attempt is revisited:
+
+1. **Substrate already in place**: no need to re-port monster definitions, factories, wire-names, or OnDeath helper. Pull the historical projection module from `git log --follow engine/cpp/src/oracle/adapter/{nibbits_normal,gremlin_merc}_projection.cc` (last touched at SHA `da635cf` for GremlinMerc, `7bfcffa` for NibbitsNormal).
+2. **Pin attempt via G2-G5**: G2 (horizon cap reduction) / G3 (encounter-specific cap override; consult L.cap-bump precedent which OOM'd at 25.99 GB) / G4 (partial-solve pin with `kCapExceeded` acknowledged) / G5 (architectural amendment like a new canonical-form pass).
+3. **Restore steps**: (a) re-add projection module + `is_<encounter>` dispatch in `adapter.cc`; (b) restore `kSurprise` recognition in `project_powers.h`; (c) re-add projection unit tests; (d) author pin test; (e) re-add to AlgorithmSha.cmake + 2 CMakeLists.txt; (f) move fixture 08/09 OUT of `test_adapter_reject.cc::reject_cases()`; (g) move fixture into `test_adapter_facade.cc` happy path; (h) author amendment ADR (Q2-ADR-015 Amendment 2 or Q2-ADR-016 Amendment 1 as appropriate).
+
+### Consequences (lead with negatives)
+
+- *Negative*: production callers hitting fixtures 08 + 09 now receive `AdapterReject` with `encounter_id="<unknown>"`, regressing from the prior CompactState projection. Any downstream pipeline that relied on the projected CompactState being available (even un-pinned) will surface the `<unknown>` outcome. As of wave-27, no Q3/Q12 consumer depends on these projections.
+- *Negative*: re-attempting either encounter requires restoring 12+ files from git history; not a trivial revert. The 9 deleted files total ~1083 LOC.
+- *Negative*: the Surprise OnDeath substrate primitive (`apply_damage_to_enemy_with_ondeath_check` helper, `do_surprise_spawn`, kSurprise / kFleeSelf enums, SpawnEntry struct) has no LIVE encounter exercising the production path. The substrate is exercised only by the 15 unit tests in `test_transition.cc`. Drift between unit-test behavior and production-encounter behavior becomes possible.
+- *Negative*: project_powers.h `"SurprisePower"` recognition removal means that if a future fixture were emitted by Q1 carrying SurprisePower, the silent-drop path triggers (no diagnostic). Restoration requires re-adding the `try_power_kind_from_wire_id` branch.
+- *Positive*: q2-ci runtime reduces (5 oracle test files no longer compiled or run; 3 cap-bust pin tests no longer attempt to skip).
+- *Positive*: adapter dispatch path complexity reduced from 5 success paths to 3 — easier to reason about + faster to compile.
+- *Positive*: Cultist Zobrist BYTE + cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL preserved across the cleanup; 6th APPEND-ONLY validation event.
+- *Positive*: side-effect re-baking of stale fixture 02/03/04/06 canonical hashes brings the `adapter_reject` sweep into alignment with current Q1 fixture state (Q1.E wave-26 roster bump). Previously the full reject parameterized sweep failed if run explicitly (q2-ci's `Q2_CI_ORACLE_FILTER` skipped the parameterized variant; this drift was silent).
+- *Positive*: substrate retention means a future re-attempt can focus on the pin-tractability problem (G2-G5 menu) without re-porting monster definitions or substrate primitives.
+
+### §Cross-references
+
+- Q2-ADR-005 (algorithm_sha source list; 2 entries removed in wave-27).
+- Q2-ADR-013 Amendment 4 (SmallSlimes deprecation precedent at adapter layer; pin tombstone removal here completes the cleanup).
+- Q2-ADR-015 Amendment 1 (NibbitsNormal pin deferral; superseded at the adapter layer by Q2-ADR-017 — pin context retained for the historical record).
+- Q2-ADR-016 (GremlinMercNormal pin deferral; superseded at the adapter layer by Q2-ADR-017 — pin context retained for the historical record).
+- ADR-029 Path A roadmap (rows for SmallSlimes / NibbitsNormal / GremlinMercNormal updated to REMOVED-FROM-Q2 wave-27).
