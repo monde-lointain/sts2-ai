@@ -10,6 +10,7 @@
 #include "sts2/game/card_effects.h"
 #include "sts2/game/damage_calc.h"
 #include "sts2/game/monster_moves.h"
+#include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/types.h"
 
@@ -18,10 +19,6 @@ class Combat;
 }
 
 namespace sts2::ai {
-
-namespace transition::detail {
-class StateMutator;
-}
 
 namespace detail {
 constexpr bool counted_card_ids_are_ordered() noexcept {
@@ -408,11 +405,28 @@ class EnemyState {
     powers_.clear_just_applied_ritual();
   }
 
+  // ---- Typed public mutators (wave-31/B: StateMutator deletion) ----
+  void set_block(sts2::game::Stat value) noexcept { block_ = value; }
+  void set_performed_first_move(bool value) noexcept {
+    performed_first_move_ = value;
+  }
+  void set_alive(bool value) noexcept { alive_ = value; }
+  void advance_intent(
+      const sts2::game::monster_moves::MonsterMoveTable& table) noexcept {
+    sts2::game::move_calc::advance_intent_table(
+        performed_first_move_, current_move_, move_index_, table);
+  }
+  // Mutable PowerArray access (used for curl_up_card stamp in
+  // apply_player_action).
+  PowerArray& powers_mut() noexcept { return powers_; }
+  // Mutable hp/block refs for apply_to_defender (damage path).
+  sts2::game::Stat& hp_mut() noexcept { return hp_; }
+  sts2::game::Stat& block_mut() noexcept { return block_; }
+
   bool operator==(const EnemyState&) const = default;
 
  private:
   friend class EnemyStateBuilder;
-  friend class transition::detail::StateMutator;
 
   sts2::game::Stat hp_;
   sts2::game::Stat block_;
@@ -628,11 +642,44 @@ class CompactState {
     return player_powers_.stacks_of(sts2::game::PowerKind::kFrail);
   }
 
+  // ---- Typed public mutators (wave-31/B: StateMutator deletion) ----
+  [[nodiscard]] EnemyState& get_enemy_mut(std::size_t i) noexcept {
+    assert(i < enemies_.size());
+    return enemies_[i];
+  }
+  void set_phase(Phase value) noexcept { phase_ = value; }
+  void set_energy(sts2::game::Stat value) noexcept { energy_ = value; }
+  void sub_energy(sts2::game::Stat value) noexcept { energy_ -= value.value(); }
+  void set_round(int32_t value) noexcept { round_ = value; }
+  void set_player_block(sts2::game::Stat value) noexcept {
+    player_block_ = value;
+  }
+  void add_player_block(sts2::game::Stat value) noexcept {
+    player_block_ += value.value();
+  }
+  void remove_one_from_hand(sts2::game::CardId id) noexcept { --hand_[id]; }
+  void add_one_to_discard(sts2::game::CardId id) noexcept { ++discard_[id]; }
+  void clear_hand() noexcept { hand_ = CardCounts{}; }
+  void move_hand_to_discard() noexcept {
+    discard_ += hand_;
+    hand_ = CardCounts{};
+  }
+  void reshuffle_discard_into_draw() noexcept {
+    draw_ += discard_;
+    discard_ = CardCounts{};
+  }
+  void apply_draw_from_pile(const CardCounts& drawn) noexcept {
+    hand_ += drawn;
+    draw_ -= drawn;
+  }
+  // Mutable player hp/block refs for apply_to_defender (damage path).
+  sts2::game::Stat& player_hp_mut() noexcept { return player_hp_; }
+  sts2::game::Stat& player_block_mut() noexcept { return player_block_; }
+
   bool operator==(const CompactState&) const = default;
 
  private:
   friend class CompactStateBuilder;
-  friend class transition::detail::StateMutator;
 
   sts2::game::Stat player_hp_;
   sts2::game::Stat player_block_;

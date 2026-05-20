@@ -19,97 +19,6 @@
 
 namespace sts2::ai::transition {
 
-namespace detail {
-
-// Post-wave-29: StateMutator is reduced to non-const ref-accessors over the
-// private fields of EnemyState/CompactState plus the spawn (set_enemy_at) and
-// test (set_enemy_block) seams. All power-management surface (add_*,
-// decrement_*, curl_up_*, just_applied_ritual_*) moved to public member
-// functions on the state classes themselves; see EnemyState::add_power /
-// decrement_power / set_just_applied_ritual etc. in include/sts2/ai/state.h.
-class StateMutator {
- public:
-  [[nodiscard]] static sts2::game::Stat& hp(EnemyState& e) noexcept {
-    return e.hp_;
-  }
-  [[nodiscard]] static sts2::game::Stat& block(EnemyState& e) noexcept {
-    return e.block_;
-  }
-  // Wave-24/K.α: enemy block assignment helper. Direct setter (no
-  // accumulation); test-only seam used via
-  // test_internals::decay_enemy_block_for_test. Production pre-act decay path
-  // is turn_flow.h::EndTurnOps::reset_enemy_block.
-  static void set_enemy_block(EnemyState& e, sts2::game::Stat value) noexcept {
-    e.block_ = value;
-  }
-  [[nodiscard]] static sts2::game::Stat& dark_strike_base(
-      EnemyState& e) noexcept {
-    return e.dark_strike_base_;
-  }
-  [[nodiscard]] static sts2::game::Stat& ritual_amount(EnemyState& e) noexcept {
-    return e.ritual_amount_;
-  }
-  [[nodiscard]] static bool& performed_first_move(EnemyState& e) noexcept {
-    return e.performed_first_move_;
-  }
-  [[nodiscard]] static sts2::game::MoveId& current_move(
-      EnemyState& e) noexcept {
-    return e.current_move_;
-  }
-  [[nodiscard]] static uint8_t& move_index(EnemyState& e) noexcept {
-    return e.move_index_;
-  }
-  [[nodiscard]] static bool& alive(EnemyState& e) noexcept { return e.alive_; }
-  // Wave-30/A: mutable access to the PowerArray for the surprise-spawn seam.
-  [[nodiscard]] static PowerArray& powers_ref(EnemyState& e) noexcept {
-    return e.powers_;
-  }
-  // Wave-26/M.α: set a new EnemyState into a CompactState slot. Used by
-  // do_surprise_spawn to append spawned enemies at index >= enemy_count_.
-  // Caller MUST bump enemy_count separately (no implicit increment).
-  static void set_enemy_at(CompactState& s, std::size_t index,
-                           const EnemyState& value) noexcept {
-    assert(index < s.enemies_.size());
-    s.enemies_[index] = value;
-  }
-
-  [[nodiscard]] static sts2::game::Stat& player_hp(CompactState& s) noexcept {
-    return s.player_hp_;
-  }
-  [[nodiscard]] static sts2::game::Stat& player_block(
-      CompactState& s) noexcept {
-    return s.player_block_;
-  }
-  [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
-    return s.energy_;
-  }
-  // Wave-23/J.beta: round widened uint16_t → int32_t (Q2-ADR-014).
-  [[nodiscard]] static int32_t& round(CompactState& s) noexcept {
-    return s.round_;
-  }
-  [[nodiscard]] static Phase& phase(CompactState& s) noexcept {
-    return s.phase_;
-  }
-  [[nodiscard]] static std::array<EnemyState, kMaxEnemies>& enemies(
-      CompactState& s) noexcept {
-    return s.enemies_;
-  }
-  [[nodiscard]] static uint8_t& enemy_count(CompactState& s) noexcept {
-    return s.enemy_count_;
-  }
-  [[nodiscard]] static CardCounts& hand(CompactState& s) noexcept {
-    return s.hand_;
-  }
-  [[nodiscard]] static CardCounts& draw(CompactState& s) noexcept {
-    return s.draw_;
-  }
-  [[nodiscard]] static CardCounts& discard(CompactState& s) noexcept {
-    return s.discard_;
-  }
-};
-
-}  // namespace detail
-
 namespace {
 
 using sts2::game::CardId;
@@ -121,7 +30,6 @@ using sts2::game::TargetType;
 using sts2::game::card_effects::card_effect_for;
 using sts2::game::card_effects::kCountedCardIds;
 using sts2::game::monster_moves::kMonsterMoveTables;
-using M = detail::StateMutator;
 
 // ---------------------------------------------------------------------------
 // Forward declarations (defined later in this anonymous namespace).
@@ -137,9 +45,9 @@ void do_roll_next_move(EnemyState& e);
 void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
   const int dmg = sts2::damage::compute_outgoing(base, strength, weak);
   const bool was_alive = enemy.get_alive();
-  (void)sts2::damage::apply_to_defender(M::hp(enemy), M::block(enemy), dmg);
+  (void)sts2::damage::apply_to_defender(enemy.hp_mut(), enemy.block_mut(), dmg);
   if (enemy.get_hp().value() <= 0 && was_alive) {
-    M::alive(enemy) = false;
+    enemy.set_alive(false);
   }
 }
 
@@ -178,7 +86,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   assert(state.get_phase() == Phase::kPlayerActing);
 
   if (action.kind == ActionKind::kEndTurn) {
-    M::phase(state) = Phase::kAtChanceDraw;
+    state.set_phase(Phase::kAtChanceDraw);
     return true;
   }
 
@@ -202,11 +110,12 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     }
   }
 
-  --M::hand(state)[id];
-  M::energy(state) -= fx.cost;
+  state.remove_one_from_hand(id);
+  state.sub_energy(sts2::game::Stat{fx.cost});
 
   if (fx.base_damage) {
-    EnemyState& e = action.target_idx.at(M::enemies(state));
+    EnemyState& e =
+        state.get_enemy_mut(static_cast<std::size_t>(action.target_idx.raw()));
     damage_enemy(e, state.get_player_strength().value(),
                  state.get_player_weak().value(), fx.base_damage);
     // CurlUp AfterDamageReceived: if the target is still alive and has CurlUp
@@ -219,7 +128,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
         const PowerInstance* curl_p = powers::find_power(
             e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
         if (curl_p != nullptr) {
-          M::powers_ref(e).set_curl_up_card(id);
+          e.powers_mut().set_curl_up_card(id);
         }
       }
     }
@@ -230,10 +139,11 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     const bool frail = state.get_player_frail() > 0;
     const int block =
         sts2::damage::compute_outgoing_block(fx.base_block, 0, frail, true);
-    M::player_block(state) += block;
+    state.add_player_block(sts2::game::Stat{block});
   }
   if (fx.weak_to_target) {
-    EnemyState& e = action.target_idx.at(M::enemies(state));
+    EnemyState& e =
+        state.get_enemy_mut(static_cast<std::size_t>(action.target_idx.raw()));
     e.add_power(PowerKind::kWeak, fx.weak_to_target);
   }
   if (fx.requires_discard) {
@@ -247,8 +157,8 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
         return false;
       }
       if (action.survivor_discard_id != CardId::kNone) {
-        --M::hand(state)[action.survivor_discard_id];
-        ++M::discard(state)[action.survivor_discard_id];
+        state.remove_one_from_hand(action.survivor_discard_id);
+        state.add_one_to_discard(action.survivor_discard_id);
       }
     }
   }
@@ -260,7 +170,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   // cards are gone for the rest of the combat); modeling it as a one-way
   // deletion matches play semantics and keeps the state shape unchanged.
   if (!fx.exhaust_on_play) {
-    ++M::discard(state)[id];
+    state.add_one_to_discard(id);
   }
   // Wave-22.α TODO — draws_on_play OnPlay-draw chance node is NOT wired in
   // C.2-α scope; Slimed's `Draw 1` effect is a deterministic noop here.
@@ -273,7 +183,7 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   // CurlUp AfterCardPlayed: scan alive enemies for CurlUp with stored card
   // matching this play; if found, enemy gains block and CurlUp is removed.
   for (uint8_t i = 0; i < state.get_enemy_count(); ++i) {
-    EnemyState& e = M::enemies(state)[i];
+    EnemyState& e = state.get_enemy_mut(i);
     if (!e.get_alive()) {
       continue;
     }
@@ -332,8 +242,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     void end_player_turn() {
       // Player power tick is a no-op in v1 (Frail ticks at kAtEnemyTurnEnd
       // side=Enemy in do_enemy_tick_powers below).
-      M::discard(state) += state.get_hand();
-      M::hand(state) = CardCounts{};
+      state.move_hand_to_discard();
     }
     [[nodiscard]] std::size_t enemy_count() const {
       return state.get_enemy_count();
@@ -342,35 +251,35 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
       return is_alive(state.get_enemy(slot));
     }
     void reset_enemy_block(std::size_t slot) {
-      M::block(M::enemies(state)[slot]) = sts2::game::Stat{0};
+      state.get_enemy_mut(slot).set_block(sts2::game::Stat{0});
     }
     void enemy_act(std::size_t slot) {
-      do_enemy_act(state, M::enemies(state)[slot]);
+      do_enemy_act(state, state.get_enemy_mut(slot));
     }
     [[nodiscard]] bool terminal() const {
       return state.get_player_hp() == sts2::game::Stat{0};
     }
     void tick_enemy_powers(std::size_t slot) {
-      do_enemy_tick_powers(state, M::enemies(state)[slot]);
+      do_enemy_tick_powers(state, state.get_enemy_mut(slot));
     }
-    void increment_round() { M::round(state) = state.get_round() + 1; }
+    void increment_round() { state.set_round(state.get_round() + 1); }
     [[nodiscard]] int round() const { return state.get_round(); }
     void roll_enemy_next_move(std::size_t slot) {
-      EnemyState& e = M::enemies(state)[slot];
+      EnemyState& e = state.get_enemy_mut(slot);
       if (has_pending_random_move_roll(e)) {
         // Defer to kAtEnemyMoveRng chance node — leave move_idx unchanged so
         // chance.cc can apply the branch outcome. performed_first_move is
         // advanced here so the chance node only enumerates branches
         // (initial_move_index logic is N/A on deferred rolls).
-        M::performed_first_move(e) = true;
+        e.set_performed_first_move(true);
         any_pending_random_roll = true;
         return;
       }
       do_roll_next_move(e);
     }
-    void reset_player_block() { M::player_block(state) = sts2::game::Stat{0}; }
+    void reset_player_block() { state.set_player_block(sts2::game::Stat{0}); }
     void refill_player_energy(int amount) {
-      M::energy(state) = sts2::game::Stat{amount};
+      state.set_energy(sts2::game::Stat{amount});
     }
   };
 
@@ -381,7 +290,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
   // Otherwise phase stays kAtChanceDraw → card-draw chance enumeration.
   if (ops.any_pending_random_roll &&
       state.get_player_hp() != sts2::game::Stat{0}) {
-    M::phase(state) = Phase::kAtEnemyMoveRng;
+    state.set_phase(Phase::kAtEnemyMoveRng);
   }
   // Else: phase already kAtChanceDraw; the draw step is the chance node.
 }
@@ -397,16 +306,14 @@ void apply_draw_in_place(CompactState& state, CardCounts drawn) {
   // pre-reshuffle cards first then post-reshuffle; for multiset purposes the
   // unioned outcome is identical, so a single up-front reshuffle is sound.
   if (!state.get_draw().covers(drawn)) {
-    M::draw(state) += state.get_discard();
-    M::discard(state) = CardCounts{};
+    state.reshuffle_discard_into_draw();
   }
 
   assert(state.get_draw().covers(drawn));
 
-  M::hand(state) += drawn;
-  M::draw(state) -= drawn;
+  state.apply_draw_from_pile(drawn);
 
-  M::phase(state) = Phase::kPlayerActing;
+  state.set_phase(Phase::kPlayerActing);
 }
 
 // ---------------------------------------------------------------------------
@@ -419,8 +326,8 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
       // Attack 9 (strength/weak modifiers apply).
       const int dmg = sts2::damage::compute_outgoing(
           9, e.get_strength().value(), e.get_weak().value());
-      (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
-                                            dmg);
+      (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
+                                            s.player_block_mut(), dmg);
       // Apply 2 Frail to player.
       s.add_player_frail(2);
       break;
@@ -439,8 +346,8 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
       // Attack 16 (strength/weak modifiers apply).
       const int dmg = sts2::damage::compute_outgoing(
           16, e.get_strength().value(), e.get_weak().value());
-      (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
-                                            dmg);
+      (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
+                                            s.player_block_mut(), dmg);
       break;
     }
     case MoveId::kIncantation:
@@ -550,8 +457,8 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
         const int dmg = sts2::damage::compute_outgoing(
             e.get_dark_strike_base().value(), e.get_strength().value(),
             e.get_weak().value());
-        (void)sts2::damage::apply_to_defender(M::player_hp(s),
-                                              M::player_block(s), dmg);
+        (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
+                                              s.player_block_mut(), dmg);
       });
 }
 
@@ -633,8 +540,7 @@ void do_roll_next_move(EnemyState& e) {
     return;
   }
   const auto& table = kMonsterMoveTables[kind_idx];
-  sts2::game::move_calc::advance_intent_table(
-      M::performed_first_move(e), M::current_move(e), M::move_index(e), table);
+  e.advance_intent(table);
 }
 
 }  // namespace
@@ -763,7 +669,7 @@ void apply_single_move_effect_for_test(
 }
 
 void decay_enemy_block_for_test(EnemyState& e) noexcept {
-  M::set_enemy_block(e, sts2::game::Stat{0});
+  e.set_block(sts2::game::Stat{0});
 }
 
 }  // namespace test_internals
