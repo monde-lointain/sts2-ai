@@ -14,6 +14,7 @@ using sts2::ai::CompactStateBuilder;
 using sts2::ai::EnemyStateBuilder;
 using sts2::ai::from_combat;
 using sts2::ai::Phase;
+using sts2::game::MonsterKind;
 using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::tests::ai::make_counts;
@@ -37,13 +38,9 @@ TEST(AiState, FromCombat_FreshStarter_SnapshotMatches) {
   EXPECT_EQ(s.get_enemy(1).get_current_move(), MoveId::kIncantation);
   EXPECT_TRUE(s.get_enemy(0).get_performed_first_move());
   EXPECT_TRUE(s.get_enemy(1).get_performed_first_move());
-
-  // Calcified Cultist: dark_strike=9, ritual=2.
-  EXPECT_EQ(s.get_enemy(0).get_dark_strike_base(), Stat{9});
-  EXPECT_EQ(s.get_enemy(0).get_ritual_amount(), Stat{2});
-  // Damp Cultist: dark_strike=1, ritual=5.
-  EXPECT_EQ(s.get_enemy(1).get_dark_strike_base(), Stat{1});
-  EXPECT_EQ(s.get_enemy(1).get_ritual_amount(), Stat{5});
+  // Kinds set by from_combat so cultist helpers index correct table entries.
+  EXPECT_EQ(s.get_enemy(0).get_kind(), MonsterKind::kCultistCalcified);
+  EXPECT_EQ(s.get_enemy(1).get_kind(), MonsterKind::kCultistDamp);
 
   // Ring of the Snake: round-1 hand is 7.
   EXPECT_EQ(s.get_hand().total(), 7);
@@ -68,12 +65,11 @@ TEST(AiState, CompactStateBuilder_MatchesDirectSetup) {
           .round(4)
           .phase(Phase::kAtChanceDraw)
           .enemy(0, EnemyStateBuilder{}
+                        .kind(MonsterKind::kCultistCalcified)
                         .hp(Stat{12})
                         .block(Stat{5})
                         .strength(Stat{3})
                         .weak(Stat{1})
-                        .dark_strike_base(Stat{9})
-                        .ritual_amount(Stat{2})
                         .just_applied_ritual(true)
                         .performed_first_move(true)
                         .current_move(MoveId::kDarkStrike)
@@ -99,16 +95,25 @@ TEST(AiState, CompactStateBuilder_MatchesDirectSetup) {
   EXPECT_EQ(built.get_discard(), discard);
 
   const auto& built_enemy = built.get_enemies()[0];
+  EXPECT_EQ(built_enemy.get_kind(), MonsterKind::kCultistCalcified);
   EXPECT_EQ(built_enemy.get_hp(), Stat{12});
   EXPECT_EQ(built_enemy.get_block(), Stat{5});
   EXPECT_EQ(built_enemy.get_strength(), Stat{3});
   EXPECT_EQ(built_enemy.get_weak(), Stat{1});
-  EXPECT_EQ(built_enemy.get_dark_strike_base(), Stat{9});
-  EXPECT_EQ(built_enemy.get_ritual_amount(), Stat{2});
   EXPECT_TRUE(built_enemy.get_just_applied_ritual());
   EXPECT_TRUE(built_enemy.get_performed_first_move());
   EXPECT_EQ(built_enemy.get_current_move(), MoveId::kDarkStrike);
   EXPECT_TRUE(built_enemy.get_alive());
+}
+
+TEST(EnemyState, DefaultKindIsCalcifiedCultist) {
+  // Load-bearing post-wave-35/B.2-β: cultist transition.cc helpers
+  // (cultist_dark_strike_base / cultist_ritual_amount) index
+  // kMonsterMoveTables[kind] for dsb/ritual. Any change to this default
+  // silently changes cultist semantics for tests that don't call .kind()
+  // explicitly. Surface drift loudly. See ADR-031.
+  EXPECT_EQ(EnemyStateBuilder{}.build().get_kind(),
+            MonsterKind::kCultistCalcified);
 }
 
 }  // namespace

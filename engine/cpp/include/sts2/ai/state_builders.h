@@ -37,14 +37,6 @@ class EnemyStateBuilder {
     }
     return *this;
   }
-  EnemyStateBuilder& dark_strike_base(sts2::game::Stat value) noexcept {
-    state_.dark_strike_base_ = value;
-    return *this;
-  }
-  EnemyStateBuilder& ritual_amount(sts2::game::Stat value) noexcept {
-    state_.ritual_amount_ = value;
-    return *this;
-  }
   // just_applied_ritual: delegates to PowerArray (Invariant #5 preserved)
   EnemyStateBuilder& just_applied_ritual(bool value) noexcept {
     state_.powers_.set_just_applied_ritual(value);

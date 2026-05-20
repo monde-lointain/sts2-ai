@@ -33,6 +33,7 @@ using sts2::ai::transition::is_terminal;
 using sts2::ai::transition::legal_actions;
 using sts2::ai::transition::resolve_end_turn_pre_draw;
 using sts2::game::CardId;
+using sts2::game::MonsterKind;
 using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::tests::ai::make_counts;
@@ -385,8 +386,10 @@ TEST(Transition,
   EXPECT_EQ(s.get_round(), 3);
   EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual());
   EXPECT_FALSE(s.get_enemy(1).get_just_applied_ritual());
-  EXPECT_EQ(s.get_enemy(0).get_strength(), s.get_enemy(0).get_ritual_amount());
-  EXPECT_EQ(s.get_enemy(1).get_strength(), s.get_enemy(1).get_ritual_amount());
+  // Strength gained = ritual_amount for each cultist archetype (from table).
+  // Calcified ritual=2, Damp ritual=5.
+  EXPECT_EQ(s.get_enemy(0).get_strength(), Stat{2});
+  EXPECT_EQ(s.get_enemy(1).get_strength(), Stat{5});
   EXPECT_EQ(hp_before_r2.value() - s.get_player_hp().value(), 10);
 }
 
@@ -395,19 +398,21 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeAgainstPlayerBlock) {
   update_state(s, [](CompactStateBuilder& builder) {
     builder.player_hp(Stat{70}).player_block(Stat{20}).round(5).energy(Stat{0});
   });
+  // Calcified: dsb=9 (from kMonsterMoveTables via cultist_dark_strike_base).
   update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
-    enemy.alive(true)
+    enemy.kind(MonsterKind::kCultistCalcified)
+        .alive(true)
         .hp(Stat{30})
         .strength(Stat{10})
-        .dark_strike_base(Stat{9})
         .current_move(MoveId::kDarkStrike)
         .performed_first_move(true);
   });
+  // Damp: dsb=1 (from kMonsterMoveTables via cultist_dark_strike_base).
   update_enemy(s, 1, [](EnemyStateBuilder& enemy) {
-    enemy.alive(true)
+    enemy.kind(MonsterKind::kCultistDamp)
+        .alive(true)
         .hp(Stat{30})
         .strength(Stat{10})
-        .dark_strike_base(Stat{1})
         .current_move(MoveId::kDarkStrike)
         .performed_first_move(true);
   });
@@ -435,17 +440,19 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeKillsPlayer_StopsEarly) {
         .round(4)
         .hand(CardCounts{});
   });
+  // Calcified: dsb=9 from kMonsterMoveTables (kills player at hp=5).
   update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
-    enemy.alive(true)
+    enemy.kind(MonsterKind::kCultistCalcified)
+        .alive(true)
         .hp(Stat{30})
         .strength(Stat{0})
-        .dark_strike_base(Stat{9})
         .current_move(MoveId::kDarkStrike)
         .performed_first_move(true);
   });
   // Enemy[1] should NOT act because combat ends mid-phase.
   update_enemy(s, 1, [](EnemyStateBuilder& enemy) {
-    enemy.alive(true)
+    enemy.kind(MonsterKind::kCultistCalcified)
+        .alive(true)
         .hp(Stat{30})
         .current_move(MoveId::kIncantation)
         .performed_first_move(true)
@@ -746,22 +753,27 @@ TEST(Transition, EnemyBlock_DecaysAtEndOfEnemyTurn) {
 }
 
 TEST(Transition, BuffEnemy_DoesNotTriggerRitualSideEffects) {
-  // Synthesize a cultist with kRitual (just_applied=false, stacks=5) +
-  // ritual_amount_=5. Apply kBuffEnemy(kStrength, +2) via test seam. Assert
-  // just_applied flag NOT set on kRitual, ritual_amount_ unchanged, kStrength
-  // stack accumulated to +2.
+  // Synthesize a DampCultist (ritual=5 from kMonsterMoveTables) with kRitual
+  // power stacks=5 (just_applied=false). Apply kBuffEnemy(kStrength, +2) via
+  // test seam. Assert just_applied flag NOT set, kStrength accumulated to +2,
+  // and Ritual power stacks preserved at 5 (kBuffEnemy has no Ritual coupling).
+  // Wave-35/B.2-β: ritual_amount_ scalar removed; use kCultistDamp (ritual=5)
+  // to match the former test intent (Calcified ritual=2 ≠ 5).
   CompactState s = make_test_state();
   update_enemy(s, 0, [](EnemyStateBuilder& enemy) {
-    enemy.kind(sts2::game::MonsterKind::kCultistCalcified)
+    enemy.kind(MonsterKind::kCultistDamp)
         .hp(sts2::game::Stat{40})
         .alive(true)
-        .ritual_amount(Stat{5})
         .add_power(sts2::game::PowerKind::kRitual, 5)
         .just_applied_ritual(false);
   });
   ASSERT_FALSE(s.get_enemy(0).get_just_applied_ritual());
-  ASSERT_EQ(s.get_enemy(0).get_ritual_amount(), Stat{5});
   ASSERT_EQ(s.get_enemy(0).get_strength(), Stat{0});
+  // Ritual stacks=5 in powers array.
+  ASSERT_EQ(sts2::ai::powers::stacks_of(s.get_enemy(0).get_powers(),
+                                        s.get_enemy(0).get_power_count(),
+                                        sts2::game::PowerKind::kRitual),
+            5);
 
   EnemyState e = s.get_enemy(0);
   const sts2::game::monster_moves::MoveEffect fx{
@@ -779,12 +791,11 @@ TEST(Transition, BuffEnemy_DoesNotTriggerRitualSideEffects) {
   // Ritual side-effects NOT triggered.
   EXPECT_FALSE(e.get_just_applied_ritual())
       << "kBuffEnemy must not set kRitual.just_applied (no Ritual coupling)";
-  EXPECT_EQ(e.get_ritual_amount(), Stat{5})
-      << "kBuffEnemy must not mutate ritual_amount_";
   // Ritual stacks preserved.
   EXPECT_EQ(sts2::ai::powers::stacks_of(e.get_powers(), e.get_power_count(),
                                         sts2::game::PowerKind::kRitual),
-            5);
+            5)
+      << "kBuffEnemy must not mutate Ritual power stacks";
 }
 
 TEST(Transition, EnemyStrength_AppliesToNonCultistAttack) {

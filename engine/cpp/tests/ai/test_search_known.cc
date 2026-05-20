@@ -44,13 +44,17 @@ CompactState make_lethal_position(Stat enemy_hp = Stat{6}) {
       .round(5)
       .phase(Phase::kPlayerActing)
       .enemy(0, EnemyStateBuilder{}
+                    .kind(sts2::game::MonsterKind::kCultistCalcified)
                     .alive(true)
                     .hp(enemy_hp)
                     .current_move(MoveId::kDarkStrike)
-                    .dark_strike_base(Stat{9})
                     .performed_first_move(true)
                     .build())
-      .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+      .enemy(1, EnemyStateBuilder{}
+                    .kind(sts2::game::MonsterKind::kCultistCalcified)
+                    .alive(false)
+                    .hp(Stat{0})
+                    .build())
       .hand(hand)
       .build();
 }
@@ -114,11 +118,10 @@ TEST(Search, OverkillDamage_StillPicksKillingBlow) {
 }
 
 TEST(Search, DefensivePlayPreservesHp) {
-  // EndTurn directly: enemy DarkStrike(8) reduces hp to 2 then we kill on the
-  // next turn -> Score{2, 1}. Defend first: block absorbs 5, hp lands at 7
-  // before next-turn kill -> Score{7, 1}. HP dominates -> Defend wins.
-  // Ritual=2 ensures strength grows so the search terminates (no infinite
-  // defending; eventually damage exceeds any block).
+  // Calcified Cultist (dsb=9, ritual=2 from kMonsterMoveTables).
+  // EndTurn: DarkStrike(9) → 10-9=1 hp; Defend first: 5 block absorbs 5 of 9
+  // → 10-4=6 hp. Both survive next turn; Defend preserves more HP → Defend
+  // wins. Ritual=2 ensures strength grows so search terminates.
   CardCounts hand;
   hand[CardId::kDefend] = 1;
   CardCounts draw;
@@ -134,16 +137,19 @@ TEST(Search, DefensivePlayPreservesHp) {
           .hand(hand)
           .draw(draw)
           .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
                         .alive(true)
                         .hp(Stat{3})  // 1 Strike kills (6 dmg)
                         .strength(Stat{0})
-                        .dark_strike_base(Stat{8})
-                        .ritual_amount(Stat{2})
                         .current_move(MoveId::kDarkStrike)
                         .just_applied_ritual(false)
                         .performed_first_move(true)
                         .build())
-          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .enemy(1, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .hp(Stat{0})
+                        .build())
           .build();
 
   Search search;
@@ -163,13 +169,17 @@ TEST(Search, EmptyHand_PicksEndTurn) {
           .round(2)
           .phase(Phase::kPlayerActing)
           .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
                         .alive(true)
                         .hp(Stat{50})
                         .current_move(MoveId::kDarkStrike)
-                        .dark_strike_base(Stat{9})
                         .performed_first_move(true)
                         .build())
-          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .enemy(1, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .hp(Stat{0})
+                        .build())
           .build();
 
   Search search;
@@ -231,14 +241,17 @@ TEST(Search, HorizonCap_RoundOverLimit_ReturnsHorizonScore) {
           .round(26)  // > kSearchHorizonRounds (25)
           .phase(Phase::kPlayerActing)
           .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
                         .alive(true)
                         .hp(Stat{30})
-                        .kind(sts2::game::MonsterKind::kCultistCalcified)
                         .current_move(MoveId::kDarkStrike)
-                        .dark_strike_base(Stat{9})
                         .performed_first_move(true)
                         .build())
-          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .enemy(1, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .hp(Stat{0})
+                        .build())
           .hand(hand)
           .build();
 

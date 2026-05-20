@@ -91,11 +91,10 @@ struct CardCounts {
 // Shape change from wave-16:
 //   - strength_, weak_, just_applied_ritual_ → powers_ array (PowerInstance)
 //   - kind_, move_index_ added
-//   - dark_strike_base_, ritual_amount_, current_move_ kept as scalars to
-//     avoid excessive test call-site churn (may be removed in a future wave)
-//
-// Existing accessor functions preserved as wrappers so callers compile
-// unchanged.
+//   - current_move_ kept as scalar for intent tracking
+//   - dark_strike_base_, ritual_amount_ removed (wave-35/B.2-β; ADR-031):
+//     now sourced via cultist_dark_strike_base/cultist_ritual_amount helpers
+//     in transition.cc, indexed from kMonsterMoveTables[kind].
 // ---------------------------------------------------------------------------
 class EnemyState {
  public:
@@ -109,15 +108,6 @@ class EnemyState {
   }
   [[nodiscard]] sts2::game::Stat get_weak() const noexcept {
     return sts2::game::Stat{powers_.stacks_of(sts2::game::PowerKind::kWeak)};
-  }
-
-  // dark_strike_base and ritual_amount remain scalar fields for call-site
-  // compatibility with tests that construct synthetic enemies.
-  [[nodiscard]] sts2::game::Stat get_dark_strike_base() const noexcept {
-    return dark_strike_base_;
-  }
-  [[nodiscard]] sts2::game::Stat get_ritual_amount() const noexcept {
-    return ritual_amount_;
   }
 
   [[nodiscard]] bool get_just_applied_ritual() const noexcept {
@@ -192,14 +182,16 @@ class EnemyState {
 
   sts2::game::Stat hp_;
   sts2::game::Stat block_;
-  // scalar fields kept for test call-site compatibility:
-  sts2::game::Stat dark_strike_base_;
-  sts2::game::Stat ritual_amount_;
   bool performed_first_move_ = false;
   sts2::game::MoveId current_move_ = sts2::game::MoveId::kIncantation;
   bool alive_ = false;
 
-  // New polymorphic shape:
+  // kind_ default = kCultistCalcified is LOAD-BEARING post-wave-35/B.2-β:
+  // cultist transition.cc helpers (cultist_dark_strike_base /
+  // cultist_ritual_amount) index kMonsterMoveTables[kind]. Tests that
+  // construct EnemyState without an explicit .kind() call silently inherit
+  // the Calcified default; the DefaultKindIsCalcifiedCultist regression test
+  // guards this. See ADR-031.
   sts2::game::MonsterKind kind_ = sts2::game::MonsterKind::kCultistCalcified;
   uint8_t move_index_ = 0;
   uint8_t _pad = 0;

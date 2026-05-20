@@ -113,8 +113,6 @@ sts2::ai::EnemyState project_one_enemy(const ParsedCreature& cr) {
       .strength(sts2::game::Stat{power_stacks(cr, kPowerIdStrength)})
       .weak(sts2::game::Stat{power_stacks(cr, kPowerIdWeak)})
       .kind(cultist_kind_from_wire_name(cr.name))
-      .dark_strike_base(sts2::game::Stat{archetype->dark_strike_base})
-      .ritual_amount(sts2::game::Stat{archetype->ritual_amount})
       .just_applied_ritual(has_power_with_just_applied(cr, kPowerIdRitual))
       .performed_first_move(false)
       .current_move(current_move)

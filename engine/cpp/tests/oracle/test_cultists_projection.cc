@@ -115,40 +115,21 @@ TEST(CultistsProjection, Fixture1_ProducesSaneCompactState) {
             1);
 }
 
-TEST(CultistsProjection, Fixture1_EnemyParamsMatchCppPrototype) {
-  // Cultist-specific cpp-prototype params must be applied from the name,
-  // not from the wire's Powers (which are empty at smoke boot). Verify:
-  //   CalcifiedCultist: dark_strike_base=9, ritual_amount=2
-  //   DampCultist:      dark_strike_base=1, ritual_amount=5
+TEST(CultistsProjection, Fixture1_EnemyKindMatchesWireName) {
+  // Wave-35/B.2-β: dsb/ritual scalar fields removed. project_one_enemy sets
+  // kind from wire name; cultist helpers in transition.cc index
+  // kMonsterMoveTables[kind] for dsb/ritual. Verify kind is projected
+  // correctly so the table lookup returns the right archetype values.
   const auto combat = parse_fixture("01-cultists-normal-seed42");
   const CompactState s = project_cultists_normal(combat);
 
-  // Find the slot order from the wire and assert per-name.
   for (std::size_t i = 0; i < 2; ++i) {
     const auto& wire = combat.enemies[i];
     const auto& projected = s.get_enemy(i);
     if (wire.name == "CalcifiedCultist") {
-      EXPECT_EQ(projected.get_dark_strike_base(), Stat{9})
-          << "slot " << i << " (Calcified)";
-      EXPECT_EQ(projected.get_ritual_amount(), Stat{2})
-          << "slot " << i << " (Calcified)";
-      // Wave-34/B.1-β HIDDEN-BUG FIX: project_one_enemy must set kind
-      // explicitly; today Damp silently inherits default kCultistCalcified.
-      // After B.2-β removes dsb/ritual scalar fields, helpers index
-      // kMonsterMoveTables[kind] and the wrong-kind default would give
-      // Calcified values for Damp.
       EXPECT_EQ(projected.get_kind(), MonsterKind::kCultistCalcified)
           << "slot " << i << " (Calcified)";
     } else if (wire.name == "DampCultist") {
-      EXPECT_EQ(projected.get_dark_strike_base(), Stat{1})
-          << "slot " << i << " (Damp)";
-      EXPECT_EQ(projected.get_ritual_amount(), Stat{5})
-          << "slot " << i << " (Damp)";
-      // Wave-34/B.1-β HIDDEN-BUG FIX: project_one_enemy must set kind
-      // explicitly; today Damp silently inherits default kCultistCalcified.
-      // After B.2-β removes dsb/ritual scalar fields, helpers index
-      // kMonsterMoveTables[kind] and the wrong-kind default would give
-      // Calcified values for Damp.
       EXPECT_EQ(projected.get_kind(), MonsterKind::kCultistDamp)
           << "slot " << i << " (Damp)";
     } else {
