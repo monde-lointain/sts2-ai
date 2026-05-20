@@ -32,6 +32,7 @@ target_sources(sts2_simulator_tests PRIVATE
     app/test_prompts.cc
     app/test_scenario.cc
     ai/test_chance.cc                   # NEW per wave-22.α / C.2-α
+    ai/test_move_effect_dispatch_parity.cc  # NEW per wave-28/D.1
     ai/test_outcome_calibration.cc
     ai/test_probability.cc
     ai/test_recommend_legality.cc

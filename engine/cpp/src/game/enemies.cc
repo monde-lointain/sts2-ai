@@ -4,6 +4,7 @@
 #include "sts2/game/damage.h"
 #include "sts2/game/monster_moves.h"
 #include "sts2/game/move_calc.h"
+#include "sts2/game/move_effect_dispatch.h"
 #include "sts2/game/powers.h"
 #include "sts2/game/rng.h"
 
@@ -182,6 +183,32 @@ bool is_cultist_kind(sts2::game::MonsterKind k) noexcept {
          k == sts2::game::MonsterKind::kCultistDamp;
 }
 
+struct ProductionTarget {
+  sts2::game::Combat& combat;
+  sts2::game::Enemy& e;
+
+  bool attack_player(int32_t base) noexcept {
+    combat.enemy_attack_player(e, base);
+    return !combat.combat_over();
+  }
+  void gain_self_block(int32_t base) noexcept {
+    e.vitals.block +=
+        sts2::damage::compute_outgoing_block(base, 0, false, true);
+  }
+  void add_self_power(sts2::game::PowerKind kind, int32_t v) noexcept {
+    sts2::powers::apply(e.vitals.powers, kind, v);
+  }
+  // Phase-1 production-unsupported (slime status injection + slime status cards
+  // aren't modelled in the production Combat path; preserve today's
+  // silent-noop).
+  void add_player_frail(int32_t) noexcept { /* unsupported */ }
+  void add_player_weak(int32_t) noexcept { /* unsupported */ }
+  void add_player_vulnerable(int32_t) noexcept { /* unsupported */ }
+  void add_player_discard_slimed(int32_t) noexcept { /* unsupported */ }
+  void unsupported(
+      sts2::game::MoveEffectKind) noexcept { /* mirrors kNone noop */ }
+};
+
 }  // namespace
 
 void roll_next_move(sts2::game::Enemy& e) {
@@ -212,11 +239,7 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
         [&]() { combat.enemy_attack_player(e, e.dark_strike_base.value()); });
     return;
   }
-  // Table-driven dispatch — mirrors ai/transition.cc::do_enemy_act_slime so
-  // production and oracle agree on enemy behavior. Only the MoveEffectKinds
-  // exercised by Nibbit (kAttack, kBlockSelf, kBuffEnemy) are wired; other
-  // table-driven monsters (Louse, slimes, gremlins) remain unsupported in the
-  // production sts2_fight path until separately addressed.
+  // Table-driven dispatch via shared move_effect_dispatch.h.
   const auto kind_idx = static_cast<std::size_t>(e.kind);
   if (kind_idx >= sts2::game::monster_moves::kMonsterMoveTables.size()) {
     return;
@@ -228,30 +251,11 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
     return;
   }
   const auto& move = table.moves[move_index];
+  ProductionTarget target{combat, e};
   for (uint8_t i = 0; i < move.effect_count; ++i) {
-    const auto& fx = move.effects[i];
-    switch (fx.kind) {
-      case sts2::game::MoveEffectKind::kAttack:
-        combat.enemy_attack_player(e, fx.value);
-        if (combat.combat_over()) {
-          return;
-        }
-        break;
-      case sts2::game::MoveEffectKind::kBlockSelf: {
-        const int blk =
-            sts2::damage::compute_outgoing_block(fx.value, 0, false, true);
-        e.vitals.block += blk;
-        break;
-      }
-      case sts2::game::MoveEffectKind::kBuffEnemy:
-        sts2::powers::apply(e.vitals.powers, fx.power_kind, fx.value);
-        break;
-      case sts2::game::MoveEffectKind::kNone:
-      case sts2::game::MoveEffectKind::kDefend:
-      case sts2::game::MoveEffectKind::kBuffSelf:
-      case sts2::game::MoveEffectKind::kDebuffPlayer:
-      case sts2::game::MoveEffectKind::kAddStatusCard:
-        break;
+    sts2::game::apply_move_effect(move.effects[i], target);
+    if (combat.combat_over()) {
+      return;  // matches today's enemies.cc short-circuit
     }
   }
 }
