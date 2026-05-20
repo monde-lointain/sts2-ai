@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "sts2/ai/state.h"
+#include "sts2/ai/state_builders.h"
 #include "sts2/game/card_effects.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/stat.h"

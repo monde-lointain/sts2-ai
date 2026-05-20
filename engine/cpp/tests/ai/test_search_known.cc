@@ -5,6 +5,7 @@
 
 #include "sts2/ai/search.h"
 #include "sts2/ai/state.h"
+#include "sts2/ai/state_builders.h"
 #include "sts2/ai/transition.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/types.h"
