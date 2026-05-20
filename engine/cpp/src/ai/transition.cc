@@ -317,55 +317,6 @@ void apply_draw_in_place(CompactState& state, CardCounts drawn) {
 }
 
 // ---------------------------------------------------------------------------
-// do_enemy_act: kind-dispatched enemy action.
-// ---------------------------------------------------------------------------
-void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
-  using sts2::game::MoveId;
-  switch (e.get_current_move()) {
-    case MoveId::kWebCannon: {
-      // Attack 9 (strength/weak modifiers apply).
-      const int dmg = sts2::damage::compute_outgoing(
-          9, e.get_strength().value(), e.get_weak().value());
-      (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
-                                            s.player_block_mut(), dmg);
-      // Apply 2 Frail to player.
-      s.add_player_frail(2);
-      break;
-    }
-    case MoveId::kCurlAndGrow: {
-      // Defend 14 block (self). Monster move block: powered (ValueProp.Move
-      // set, Unpowered not set) → IsPoweredCardOrMonsterMoveBlock = true. Enemy
-      // has no dexterity or Frail in Phase-1.
-      const int blk = sts2::damage::compute_outgoing_block(14, 0, false, true);
-      e.add_block_amount(blk);
-      // Apply 5 Strength to self.
-      e.add_power(PowerKind::kStrength, 5);
-      break;
-    }
-    case MoveId::kPounce: {
-      // Attack 16 (strength/weak modifiers apply).
-      const int dmg = sts2::damage::compute_outgoing(
-          16, e.get_strength().value(), e.get_weak().value());
-      (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
-                                            s.player_block_mut(), dmg);
-      break;
-    }
-    case MoveId::kIncantation:
-    case MoveId::kDarkStrike:
-    case MoveId::kTackleMove:
-    case MoveId::kGoopMove:
-    case MoveId::kClumpShot:
-    case MoveId::kStickyShot:
-    case MoveId::kPokeyPounce:
-    case MoveId::kButtMove:
-    case MoveId::kSliceMove:
-    case MoveId::kHissMove:
-      // Not louse moves; no-op.
-      break;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // OracleTarget — MoveEffectTarget adapter for the AI transition oracle.
 // Bridges apply_move_effect<> (game namespace, stateless) to the concrete
 // CompactState + EnemyState mutation API. Wave-28/C.1.
@@ -394,15 +345,23 @@ struct OracleTarget {
   void add_player_discard_slimed(int32_t v) noexcept {
     s.add_player_discard_slimed(v);
   }
-  void unsupported(sts2::game::MoveEffectKind) noexcept {}
+  void unsupported(sts2::game::MoveEffectKind kind) noexcept {
+    // wave-32/C.1-α: hardened from silent no-op so monster_moves table typos
+    // (effects with no OracleTarget handler) surface loudly. Cultist uses
+    // act_on_intent, not OracleTarget, so this can't fire on the cultist hot
+    // loop.
+    assert(false &&
+           "OracleTarget: unhandled MoveEffectKind — table typo or new effect "
+           "kind unmapped");
+    (void)kind;
+  }
 };
 
 // ---------------------------------------------------------------------------
-// Slime enemy_act path (wave-22.α framework). Data-driven: walks the
+// Table-driven enemy_act path (wave-22.α framework). Data-driven: walks the
 // MonsterMove.effects[] array on kMonsterMoveTables[kind].moves[move_idx].
-// Slime move tables are zero-filled at C.2-α merge time (C.3-β populates
-// real data); the loop is a noop until then. Cultist + LouseProgenitor
-// paths bypass this entirely (handcoded above).
+// Covers slime, Nibbit, and LouseProgenitor. Cultist bypasses this entirely
+// (act_on_intent path below).
 // ---------------------------------------------------------------------------
 bool kind_is_slime(MonsterKind k) noexcept {
   return k == MonsterKind::kLeafSlimeS || k == MonsterKind::kLeafSlimeM ||
@@ -411,12 +370,13 @@ bool kind_is_slime(MonsterKind k) noexcept {
 
 // Returns true for any MonsterKind whose combat behavior is fully described
 // by a populated kMonsterMoveTables entry. do_enemy_act routes these through
-// do_enemy_act_slime (table-driven dispatch) rather than the cultist default.
+// do_enemy_act_table_driven rather than the cultist default.
 bool kind_is_table_driven(MonsterKind k) noexcept {
-  return kind_is_slime(k) || k == MonsterKind::kNibbit;
+  return k == MonsterKind::kLouseProgenitor || kind_is_slime(k) ||
+         k == MonsterKind::kNibbit;
 }
 
-void do_enemy_act_slime(CompactState& s, EnemyState& e) {
+void do_enemy_act_table_driven(CompactState& s, EnemyState& e) {
   const auto kind_idx = static_cast<std::size_t>(e.get_kind());
   if (kind_idx >= kMonsterMoveTables.size()) {
     return;
@@ -434,12 +394,8 @@ void do_enemy_act_slime(CompactState& s, EnemyState& e) {
 }
 
 void do_enemy_act(CompactState& s, EnemyState& e) {
-  if (e.get_kind() == MonsterKind::kLouseProgenitor) {
-    do_enemy_act_louse_progenitor(s, e);
-    return;
-  }
   if (kind_is_table_driven(e.get_kind())) {
-    do_enemy_act_slime(s, e);
+    do_enemy_act_table_driven(s, e);
     return;
   }
   // Cultist path (kCultistCalcified, kCultistDamp): SEMANTICS UNCHANGED.

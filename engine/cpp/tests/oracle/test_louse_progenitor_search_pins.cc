@@ -15,9 +15,10 @@
 // Mirrors the cultist pin pattern (test_cultists_search_pins.cc) and the
 // adapter round-trip shape (test_adapter_roundtrip.cc).
 //
-// Constants below are captured POST-POUNCE-fix (wave-20.α) via the
-// iterative-pin-capture protocol (plan §20.α): placeholder run prints actuals
-// to stdout; values baked in; second run confirms green.
+// Constants below are captured POST-table-migration (wave-32/C.1-α) via the
+// iterative-pin-capture protocol. The POUNCE damage drifted from the
+// hand-coded path (16) to the A0 table value (14) per kMonsterMoveTables /
+// Q2-ADR-002 (A0-only scope); this is the one-time re-stamp for that delta.
 //
 // DISABLED by default — Search::solve over LouseProgenitor state space is a
 // slow tractability probe (~60s wall-clock on dev machine). Run explicitly:
@@ -44,12 +45,13 @@ using sts2::oracle::registry::PinnedScenarioRow;
 
 // ---------------------------------------------------------------------------
 // PINNED EXPECTED VALUES — fixture #5 (LouseProgenitorNormal, seed 42),
-// captured POST-POUNCE-fix (wave-20.α) on Linux x86_64, GCC + libstdc++.
-// Cross-platform STL pinning noted as a Q2 risk (regression pins are
-// STL-impl-specific); the 1e-6 eps below accommodates float-determinism drift.
+// re-stamped wave-32/C.1-α (POUNCE 16→14, A0 table per Q2-ADR-002) on Linux
+// x86_64, GCC + libstdc++. Cross-platform STL pinning noted as a Q2 risk
+// (regression pins are STL-impl-specific); the 1e-6 eps below accommodates
+// float-determinism drift.
 // ---------------------------------------------------------------------------
-inline constexpr double kFixture5LouseExpectedHp = 0.040793122639484494;
-inline constexpr double kFixture5LouseExpectedRounds = 10.151992676894496;
+inline constexpr double kFixture5LouseExpectedHp = 0.15648927390382314;
+inline constexpr double kFixture5LouseExpectedRounds = 10.942804130255769;
 constexpr double kPinTolerance = 1e-6;
 
 TEST(LouseProgenitorSearchPins,
@@ -119,7 +121,7 @@ TEST(LouseProgenitorSearchPins,
   EXPECT_EQ(row.registry_sha.size(), 64U)
       << "registry_sha is a 64-char hex string (SHA-256 lowercase-hex)";
 
-  // PINNED values — captured POST-POUNCE-fix (wave-20.α).
+  // PINNED values — re-stamped wave-32/C.1-α (POUNCE 16→14).
   EXPECT_NEAR(row.expected_hp, kFixture5LouseExpectedHp, kPinTolerance);
   EXPECT_NEAR(row.expected_rounds, kFixture5LouseExpectedRounds, kPinTolerance);
 }
