@@ -92,29 +92,11 @@ class StateMutator {
     }
     --p->stacks;
     if (p->stacks <= 0) {
-      for (uint8_t i = 0; i < e.power_count_; ++i) {
-        if (e.powers_[i].kind == kind) {
-          for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
-            e.powers_[j] = e.powers_[j + 1];
-          }
-          --e.power_count_;
-          e.powers_[e.power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(e.powers_, e.power_count_, kind);
     }
   }
   static void remove_power(EnemyState& e, sts2::game::PowerKind kind) noexcept {
-    for (uint8_t i = 0; i < e.power_count_; ++i) {
-      if (e.powers_[i].kind == kind) {
-        for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
-          e.powers_[j] = e.powers_[j + 1];
-        }
-        --e.power_count_;
-        e.powers_[e.power_count_] = {};
-        break;
-      }
-    }
+    powers::remove_power(e.powers_, e.power_count_, kind);
   }
   static void decrement_weak(EnemyState& e) noexcept {
     decrement_power(e, sts2::game::PowerKind::kWeak);
@@ -153,16 +135,8 @@ class StateMutator {
     p->flags &= static_cast<uint8_t>(~0x01U);
     if (p->stacks == 0 && p->flags == 0) {
       // Remove the now-empty Ritual entry
-      for (uint8_t i = 0; i < e.power_count_; ++i) {
-        if (e.powers_[i].kind == sts2::game::PowerKind::kRitual) {
-          for (uint8_t j = i; j + 1 < e.power_count_; ++j) {
-            e.powers_[j] = e.powers_[j + 1];
-          }
-          --e.power_count_;
-          e.powers_[e.power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(e.powers_, e.power_count_,
+                           sts2::game::PowerKind::kRitual);
     }
   }
 
@@ -260,16 +234,7 @@ class StateMutator {
     }
     --p->stacks;
     if (p->stacks <= 0) {
-      for (uint8_t i = 0; i < s.player_power_count_; ++i) {
-        if (s.player_powers_[i].kind == kind) {
-          for (uint8_t j = i; j + 1 < s.player_power_count_; ++j) {
-            s.player_powers_[j] = s.player_powers_[j + 1];
-          }
-          --s.player_power_count_;
-          s.player_powers_[s.player_power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(s.player_powers_, s.player_power_count_, kind);
     }
   }
   // Wave-23/J.beta: return widened int16_t → int32_t (Q2-ADR-014).

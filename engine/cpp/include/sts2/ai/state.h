@@ -332,17 +332,8 @@ class EnemyStateBuilder {
                         sts2::game::PowerKind::kStrength, value.value());
     } else {
       // Zero strength: remove from array if present
-      for (uint8_t i = 0; i < state_.power_count_; ++i) {
-        if (state_.powers_[i].kind == sts2::game::PowerKind::kStrength) {
-          // Shift remaining entries left
-          for (uint8_t j = i; j + 1 < state_.power_count_; ++j) {
-            state_.powers_[j] = state_.powers_[j + 1];
-          }
-          --state_.power_count_;
-          state_.powers_[state_.power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(state_.powers_, state_.power_count_,
+                           sts2::game::PowerKind::kStrength);
     }
     return *this;
   }
@@ -351,16 +342,8 @@ class EnemyStateBuilder {
       powers::set_power(state_.powers_, state_.power_count_,
                         sts2::game::PowerKind::kWeak, value.value());
     } else {
-      for (uint8_t i = 0; i < state_.power_count_; ++i) {
-        if (state_.powers_[i].kind == sts2::game::PowerKind::kWeak) {
-          for (uint8_t j = i; j + 1 < state_.power_count_; ++j) {
-            state_.powers_[j] = state_.powers_[j + 1];
-          }
-          --state_.power_count_;
-          state_.powers_[state_.power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(state_.powers_, state_.power_count_,
+                           sts2::game::PowerKind::kWeak);
     }
     return *this;
   }
@@ -547,16 +530,8 @@ class CompactStateBuilder {
       powers::set_power(state_.player_powers_, state_.player_power_count_,
                         sts2::game::PowerKind::kStrength, value.value());
     } else {
-      for (uint8_t i = 0; i < state_.player_power_count_; ++i) {
-        if (state_.player_powers_[i].kind == sts2::game::PowerKind::kStrength) {
-          for (uint8_t j = i; j + 1 < state_.player_power_count_; ++j) {
-            state_.player_powers_[j] = state_.player_powers_[j + 1];
-          }
-          --state_.player_power_count_;
-          state_.player_powers_[state_.player_power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(state_.player_powers_, state_.player_power_count_,
+                           sts2::game::PowerKind::kStrength);
     }
     return *this;
   }
@@ -565,16 +540,8 @@ class CompactStateBuilder {
       powers::set_power(state_.player_powers_, state_.player_power_count_,
                         sts2::game::PowerKind::kWeak, value.value());
     } else {
-      for (uint8_t i = 0; i < state_.player_power_count_; ++i) {
-        if (state_.player_powers_[i].kind == sts2::game::PowerKind::kWeak) {
-          for (uint8_t j = i; j + 1 < state_.player_power_count_; ++j) {
-            state_.player_powers_[j] = state_.player_powers_[j + 1];
-          }
-          --state_.player_power_count_;
-          state_.player_powers_[state_.player_power_count_] = {};
-          break;
-        }
-      }
+      powers::remove_power(state_.player_powers_, state_.player_power_count_,
+                           sts2::game::PowerKind::kWeak);
     }
     return *this;
   }
