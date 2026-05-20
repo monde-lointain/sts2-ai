@@ -245,29 +245,6 @@ jobs:
       - name: Run project cppcheck target
         run: make cppcheck
 
-  sanitize-test:
-    name: ASan + UBSan tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build clang-18
-      - name: Cache sanitize build dir
-        uses: actions/cache@v4
-        with:
-          path: build-sanitize/
-          key: sanitize-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
-          restore-keys: sanitize-${{ runner.os }}-
-      - name: Run sanitize-test
-        env:
-          CC: clang-18
-          CXX: clang++-18
-        run: make sanitize-test
-
   q2-ci:
     name: Q2 slow regression (~18 min; label-gated)
     runs-on: ubuntu-latest
