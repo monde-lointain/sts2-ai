@@ -32,6 +32,40 @@ using sts2::game::card_effects::kCountedCardIds;
 using sts2::game::monster_moves::kMonsterMoveTables;
 
 // ---------------------------------------------------------------------------
+// Cultist dsb/ritual lookups via the kMonsterMoveTables data path.
+// Returns 0 for non-cultist kinds (find_move_index → 0xFF) so
+// do_enemy_tick_powers can call cultist_ritual_amount on ALL enemy kinds
+// without special-casing (slimes/Louse/Nibbit return 0, gate skipped).
+[[nodiscard]] int32_t cultist_dark_strike_base(
+    sts2::game::MonsterKind k) noexcept {
+  const uint8_t idx = sts2::game::monster_moves::find_move_index(
+      k, sts2::game::MoveId::kDarkStrike);
+  if (idx == 0xFF) return 0;
+  const auto& fx =
+      sts2::game::monster_moves::kMonsterMoveTables[static_cast<std::size_t>(k)]
+          .moves[idx]
+          .effects[0];
+  assert(fx.kind == sts2::game::MoveEffectKind::kAttack &&
+         "cultist DarkStrike effect shape changed");
+  return fx.value;
+}
+
+[[nodiscard]] int32_t cultist_ritual_amount(
+    sts2::game::MonsterKind k) noexcept {
+  const uint8_t idx = sts2::game::monster_moves::find_move_index(
+      k, sts2::game::MoveId::kIncantation);
+  if (idx == 0xFF) return 0;
+  const auto& fx =
+      sts2::game::monster_moves::kMonsterMoveTables[static_cast<std::size_t>(k)]
+          .moves[idx]
+          .effects[0];
+  assert(fx.kind == sts2::game::MoveEffectKind::kBuffSelf &&
+         fx.power_kind == sts2::game::PowerKind::kRitual &&
+         "cultist Incantation effect shape changed");
+  return fx.value;
+}
+
+// ---------------------------------------------------------------------------
 // Forward declarations (defined later in this anonymous namespace).
 // ---------------------------------------------------------------------------
 void do_enemy_act(CompactState& s, EnemyState& e);
@@ -411,7 +445,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
       },
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
-            e.get_dark_strike_base().value(), e.get_strength().value(),
+            cultist_dark_strike_base(e.get_kind()), e.get_strength().value(),
             e.get_weak().value());
         (void)sts2::damage::apply_to_defender(s.player_hp_mut(),
                                               s.player_block_mut(), dmg);
@@ -424,18 +458,19 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
 // Cultist Ritual semantics are PRESERVED.
 // ---------------------------------------------------------------------------
 void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
-  // Ritual: driven by ritual_amount_ scalar (not by kRitual being in the
-  // powers array) so strength is granted even after the just_applied
-  // PowerInstance is removed. This preserves cultist semantics exactly:
+  // Ritual: sourced from kMonsterMoveTables[kind] via cultist_ritual_amount
+  // (wave-35/B.2-β; ADR-031). Returns 0 for non-cultist kinds so this gate
+  // safely fires for all enemy kinds without special-casing.
+  // Cultist semantics preserved exactly:
   //   spawn turn → just_applied set by Incantation → tick clears flag (no
-  //   strength gain); subsequent turns → ritual_amount_ > 0 but no kRitual
-  //   entry → grants strength each turn.
-  if (e.get_ritual_amount().value() > 0) {
+  //   strength gain); subsequent turns → ritual > 0, no kRitual entry →
+  //   grants strength each turn.
+  if (cultist_ritual_amount(e.get_kind()) > 0) {
     const bool just_applied = e.get_just_applied_ritual();
     if (just_applied) {
       e.clear_just_applied_ritual();
     } else {
-      e.add_power(PowerKind::kStrength, e.get_ritual_amount().value());
+      e.add_power(PowerKind::kStrength, cultist_ritual_amount(e.get_kind()));
     }
   }
 
@@ -451,7 +486,7 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
   for (uint8_t i = 0; i < snap_count; ++i) {
     switch (snap[i]) {
       case PowerKind::kRitual:
-        // Handled above via ritual_amount_ scalar; skip here.
+        // Handled above via cultist_ritual_amount(kind) helper (ADR-031); skip.
         break;
       case PowerKind::kFrail:
         // Frail on enemy ticks down at kAtEnemyTurnEnd (side=Enemy).
