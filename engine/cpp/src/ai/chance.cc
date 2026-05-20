@@ -1,8 +1,10 @@
 #include "sts2/ai/chance.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <vector>
 
 #include "sts2/ai/probability.h"
@@ -40,12 +42,13 @@ using sts2::game::monster_moves::MonsterMove;
   if (draw_total >= k) {
     const auto draws = probability::enumerate_draws(draw, k);
     outcomes.reserve(draws.size());
-    for (const auto& o : draws) {
-      outcomes.push_back(ChanceOutcome{
-          .probability = o.weight,
-          .child_state = transition::apply_draw(state, o.hand),
-      });
-    }
+    std::transform(draws.begin(), draws.end(), std::back_inserter(outcomes),
+                   [&state](const auto& o) {
+                     return ChanceOutcome{
+                         .probability = o.weight,
+                         .child_state = transition::apply_draw(state, o.hand),
+                     };
+                   });
   } else if (draw_total + discard_total <= k) {
     // Engine semantics (Hand::draw_from): when both piles run dry, draw stops
     // early. Player deterministically gets every remaining card.
@@ -61,13 +64,15 @@ using sts2::game::monster_moves::MonsterMove;
     const int remaining = k - draw_total;
     const auto draws = probability::enumerate_draws(discard, remaining);
     outcomes.reserve(draws.size());
-    for (const auto& o : draws) {
-      const CardCounts full_drawn = forced_from_draw + o.hand;
-      outcomes.push_back(ChanceOutcome{
-          .probability = o.weight,
-          .child_state = transition::apply_draw(state, full_drawn),
-      });
-    }
+    std::transform(
+        draws.begin(), draws.end(), std::back_inserter(outcomes),
+        [&state, &forced_from_draw](const auto& o) {
+          const CardCounts full_drawn = forced_from_draw + o.hand;
+          return ChanceOutcome{
+              .probability = o.weight,
+              .child_state = transition::apply_draw(state, full_drawn),
+          };
+        });
   }
 
   return outcomes;
@@ -142,15 +147,20 @@ using sts2::game::monster_moves::MonsterMove;
 
     std::vector<ChanceOutcome> next;
     next.reserve(frontier.size() * branch_outcomes.size());
-    for (const auto& prev : frontier) {
-      for (const auto& branch : branch_outcomes) {
-        next.push_back(ChanceOutcome{
-            .probability = prev.probability * branch.probability,
-            .child_state = apply_enemy_move_outcome(prev.child_state, slot,
-                                                    branch.new_move_idx),
+    std::for_each(
+        frontier.begin(), frontier.end(),
+        [&next, &branch_outcomes, slot](const ChanceOutcome& prev) {
+          std::transform(
+              branch_outcomes.begin(), branch_outcomes.end(),
+              std::back_inserter(next),
+              [&prev, slot](const BranchOutcome& branch) {
+                return ChanceOutcome{
+                    .probability = prev.probability * branch.probability,
+                    .child_state = apply_enemy_move_outcome(
+                        prev.child_state, slot, branch.new_move_idx),
+                };
+              });
         });
-      }
-    }
     frontier = std::move(next);
   }
 
@@ -197,12 +207,14 @@ std::vector<BranchOutcome> enumerate_branch_outcomes(const MonsterMove& move,
   std::vector<BranchOutcome> outcomes;
   outcomes.reserve(eligible.size());
   const double denom = static_cast<double>(weight_sum);
-  for (const uint8_t i : eligible) {
-    outcomes.push_back(BranchOutcome{
-        .probability = static_cast<double>(move.branch_weights[i]) / denom,
-        .new_move_idx = move.branch_indices[i],
-    });
-  }
+  std::transform(
+      eligible.begin(), eligible.end(), std::back_inserter(outcomes),
+      [&move, denom](uint8_t i) {
+        return BranchOutcome{
+            .probability = static_cast<double>(move.branch_weights[i]) / denom,
+            .new_move_idx = move.branch_indices[i],
+        };
+      });
   return outcomes;
 }
 
@@ -226,15 +238,19 @@ std::vector<ChanceOutcome> enumerate_chance_outcomes(
     const auto move_stage = enumerate_enemy_move_rng_to_draw_phase(state);
     std::vector<ChanceOutcome> outcomes;
     outcomes.reserve(move_stage.size());  // upper bound on size before draws
-    for (const auto& mo : move_stage) {
-      const auto draw_stage = enumerate_draw_outcomes(mo.child_state);
-      for (const auto& d : draw_stage) {
-        outcomes.push_back(ChanceOutcome{
-            .probability = mo.probability * d.probability,
-            .child_state = d.child_state,
+    std::for_each(
+        move_stage.begin(), move_stage.end(),
+        [&outcomes](const ChanceOutcome& mo) {
+          const auto draw_stage = enumerate_draw_outcomes(mo.child_state);
+          std::transform(draw_stage.begin(), draw_stage.end(),
+                         std::back_inserter(outcomes),
+                         [&mo](const ChanceOutcome& d) {
+                           return ChanceOutcome{
+                               .probability = mo.probability * d.probability,
+                               .child_state = d.child_state,
+                           };
+                         });
         });
-      }
-    }
     return outcomes;
   }
 

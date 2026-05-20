@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -69,23 +70,19 @@ namespace powers {
 [[nodiscard]] inline PowerInstance* find_power(
     std::array<PowerInstance, kMaxPowersPerCreature>& arr, uint8_t count,
     sts2::game::PowerKind kind) noexcept {
-  for (uint8_t i = 0; i < count; ++i) {
-    if (arr[i].kind == kind) {
-      return &arr[i];
-    }
-  }
-  return nullptr;
+  auto it =
+      std::find_if(arr.begin(), arr.begin() + count,
+                   [kind](const PowerInstance& p) { return p.kind == kind; });
+  return (it != arr.begin() + count) ? &*it : nullptr;
 }
 
 [[nodiscard]] inline const PowerInstance* find_power(
     const std::array<PowerInstance, kMaxPowersPerCreature>& arr, uint8_t count,
     sts2::game::PowerKind kind) noexcept {
-  for (uint8_t i = 0; i < count; ++i) {
-    if (arr[i].kind == kind) {
-      return &arr[i];
-    }
-  }
-  return nullptr;
+  auto it =
+      std::find_if(arr.begin(), arr.begin() + count,
+                   [kind](const PowerInstance& p) { return p.kind == kind; });
+  return (it != arr.begin() + count) ? &*it : nullptr;
 }
 
 // Add stacks to an existing power, or insert a new entry. Returns ref.
@@ -135,16 +132,18 @@ inline PowerInstance& set_power(
 // re-trigger on the same slot is a no-op).
 inline void remove_power(std::array<PowerInstance, kMaxPowersPerCreature>& arr,
                          uint8_t& count, sts2::game::PowerKind kind) noexcept {
-  for (uint8_t i = 0; i < count; ++i) {
-    if (arr[i].kind == kind) {
-      for (uint8_t j = i; j + 1 < count; ++j) {
-        arr[j] = arr[j + 1];
-      }
-      --count;
-      arr[count] = {};
-      return;
-    }
+  auto it =
+      std::find_if(arr.begin(), arr.begin() + count,
+                   [kind](const PowerInstance& p) { return p.kind == kind; });
+  if (it == arr.begin() + count) {
+    return;
   }
+  const uint8_t i = static_cast<uint8_t>(it - arr.begin());
+  for (uint8_t j = i; j + 1 < count; ++j) {
+    arr[j] = arr[j + 1];
+  }
+  --count;
+  arr[count] = {};
 }
 
 }  // namespace powers

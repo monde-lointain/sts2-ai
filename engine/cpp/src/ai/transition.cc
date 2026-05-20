@@ -622,12 +622,8 @@ bool is_terminal(const CompactState& s) noexcept {
   }
   const auto& enemies = s.get_enemies();
   const uint8_t count = s.get_enemy_count();
-  for (uint8_t i = 0; i < count; ++i) {
-    if (enemies[i].get_alive()) {
-      return false;
-    }
-  }
-  return true;
+  return !std::any_of(enemies.begin(), enemies.begin() + count,
+                      [](const EnemyState& e) { return e.get_alive(); });
 }
 
 int draw_count(const CompactState& s) noexcept {

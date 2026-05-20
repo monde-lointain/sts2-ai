@@ -31,6 +31,7 @@
 
 #include "sts2/ai/zobrist.h"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -177,9 +178,7 @@ void fill_array(std::array<T, N>& a, std::mt19937_64& rng) noexcept;
 
 template <std::size_t N>
 void fill_array(std::array<uint64_t, N>& a, std::mt19937_64& rng) noexcept {
-  for (auto& slot : a) {
-    slot = rng();
-  }
+  std::generate(a.begin(), a.end(), [&rng]() { return rng(); });
 }
 
 template <typename T, std::size_t N>

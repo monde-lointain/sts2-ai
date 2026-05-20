@@ -1,5 +1,8 @@
 #include "sts2/game/encounter_registry.h"
 
+#include <algorithm>
+#include <iterator>
+
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/rng.h"
@@ -65,12 +68,11 @@ const std::vector<EncounterSpec>& all() {
 }
 
 const EncounterSpec* find_by_id(std::string_view id) noexcept {
-  for (const auto& e : all()) {
-    if (e.encounter_id == id) {
-      return &e;
-    }
-  }
-  return nullptr;
+  const auto& registry = all();
+  auto it = std::find_if(
+      registry.begin(), registry.end(),
+      [id](const EncounterSpec& e) { return e.encounter_id == id; });
+  return (it != registry.end()) ? &*it : nullptr;
 }
 
 const EncounterSpec* find_by_monsters(
