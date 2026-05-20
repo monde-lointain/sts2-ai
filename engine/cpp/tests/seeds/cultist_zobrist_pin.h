@@ -18,10 +18,15 @@
 //                       order)
 //   post-fix-4:         Lo=0x471665c4838c298d Hi=0x770eab2147499e6c
 //   post-J.beta:        Lo=0x569115efa81a95dc Hi=0x9a06f1e505846a80
-//   post-damp-kind-fix: Lo=0x2641e6057b9af53a Hi=0x4faed2f7f9f09086 (NEW)
+//   post-damp-kind-fix: Lo=0x2641e6057b9af53a Hi=0x4faed2f7f9f09086
 //     Cause: make_damp_cultist now sets e.kind=kCultistDamp (was defaulting
 //     to kCultistCalcified=0); kCultistDamp folds into the Zobrist hash,
 //     changing the key. Latent-bug fix; renderer prereq.
+//   wave-28/G (gremlin removal): Lo=0x2641e6057b9af53a Hi=0x4faed2f7f9f09086
+//   PRESERVED
+//     PHASE-3-extension was append-only; cultist state never XOR-folds gremlin
+//     slots → removing them does not shift any prior mt19937 position.
+//     Q2-ADR-018 §Zobrist-BYTE-outcome (confirmed empirically 2026-05-19).
 //
 // Used by `Zobrist.CultistRootKey_MatchesPreWave21Pin` (test name preserved
 // for grep continuity, but now pins post-J.beta bytes). Failure = mt19937

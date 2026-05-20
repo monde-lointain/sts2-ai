@@ -27,7 +27,7 @@ then positives).
 | Q2-ADR-015 | Nibbit port — NibbitsWeak pinned + NibbitsNormal deferred (Cap-bust, Case B; A0 only) | Accepted (2026-05-18) |
 | Q2-ADR-016 | GremlinMerc encounter port + Surprise OnDeath substrate + pin deferral | Accepted (2026-05-19) |
 | Q2-ADR-017 | Tombstoned encounter removal — NibbitsNormal + GremlinMercNormal off adapter dispatch; SmallSlimes pin tombstone retired | Accepted (2026-05-19) |
-| Q2-ADR-018 | Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE rotates (7th rotation); search VALUES bit-identical | Accepted (2026-05-19) |
+| Q2-ADR-018 | Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE PRESERVED (PHASE-3-ext was append-only); search VALUES bit-identical | Accepted (2026-05-19) |
 
 ---
 
@@ -2096,7 +2096,7 @@ If NibbitsNormal or GremlinMercNormal pin attempt is revisited:
 
 ---
 
-## Q2-ADR-018 — Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE rotates (7th rotation); search VALUES bit-identical
+## Q2-ADR-018 — Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE PRESERVED (PHASE-3-ext was append-only); search VALUES bit-identical
 
 **Date:** 2026-05-19
 **Status:** Accepted
@@ -2125,15 +2125,15 @@ Remove all gremlin engine substrate introduced in wave-26/M.α+M.β from the Q2 
 9. **render.cc**: Remove kSurprise from power_name() and kFleeSelf from format_intent().
 10. **test files**: Remove 4 gremlin table tests from test_monster_moves_table.cc; remove 10 gremlin substrate tests (tests 1-5 + 11-15) from test_transition.cc.
 
-### Zobrist BYTE rotation outcome
+### Zobrist BYTE outcome
 
-Removing the PHASE-3-extension from generate_table() shifts the mt19937_64 consumption order — cultist hash BYTES rotate (7th rotation event across Q2 history). Search VALUES (HP/rounds) remain bit-identical per the append-only discipline: pre-wave-26 search results were computed from the same mt19937 stream that PHASE 1+2+3 now fully defines. The cultist Zobrist pin is re-stamped in commit 2 of this wave (Cultist-BYTE-outcome).
+Removing the PHASE-3-extension does NOT rotate cultist Zobrist bytes. The PHASE-3-extension only generated table entries for new gremlin symbols (appended after all prior symbols). The cultist state XOR-folds over its own symbols whose mt19937_64 positions are defined by PHASE 1+2+3 — those positions are unchanged by removing the PHASE-3-extension (append-only discipline). Confirmed empirically: `Zobrist.CultistRootKey_MatchesPreWave21Pin` passes without re-stamping (Lo=0x2641e6057b9af53a Hi=0x4faed2f7f9f09086 PRESERVED). cultist_zobrist_pin.h history comment updated to record wave-28/G PRESERVED outcome; no numeric change.
 
 ### Consequences
 
 **Negative:**
 - Loses the GremlinMerc encounter capability; re-adding later would require re-implementing OnDeath spawn semantics.
-- Cultist Zobrist BYTE rotates (7th rotation); pin file must be re-stamped.
+- Cultist Zobrist BYTE is PRESERVED (PHASE-3-ext was append-only; no re-stamp needed, but history comment updated).
 
 **Positive:**
 - Removes ~400 LOC of substrate that has zero active consumers.
