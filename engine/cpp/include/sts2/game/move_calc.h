@@ -151,8 +151,9 @@ void act_on_intent(
     MoveId move, OnRitual&& on_ritual,
     OnDarkStrike&& on_dark_strike) noexcept(noexcept(on_ritual()) &&
                                             noexcept(on_dark_strike())) {
-  // NOTE: adding a MoveId here is not a compile-time call-site signal —
-  // grep act_on_intent users to verify they handle the new case.
+  // cmake/CompilerFlags.cmake -Wswitch-enum + CMakeLists.txt:38
+  // STS2_WARNINGS_AS_ERRORS=ON enforce exhaustive case coverage at every
+  // act_on_intent instantiation; new MoveId surfaces here as a compile error.
   switch (move) {
     case MoveId::kIncantation:
       std::forward<OnRitual>(on_ritual)();
