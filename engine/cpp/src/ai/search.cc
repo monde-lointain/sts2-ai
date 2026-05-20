@@ -130,7 +130,7 @@ SearchResult Search::solve(const CompactState& state) {
   };
 }
 
-Score Search::solve_player(CompactState state) {
+Score Search::solve_player(const CompactState& state) {
   if (cap_hit_) [[unlikely]] {
     return Score{};
   }
