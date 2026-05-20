@@ -50,10 +50,37 @@ struct MoveEffect {
   uint8_t _pad = 0;
   uint8_t _pad2 = 0;
   bool operator==(const MoveEffect&) const = default;
+
+  // Static factories — power_kind=kWeak (=0) for kinds that don't use it, to
+  // preserve operator== invariance with existing aggregate-init convention.
+  static constexpr MoveEffect attack(int32_t damage) noexcept {
+    return {damage, MoveEffectKind::kAttack, PowerKind::kWeak, 0, 0};
+  }
+  static constexpr MoveEffect defend(int32_t block) noexcept {
+    return {block, MoveEffectKind::kDefend, PowerKind::kWeak, 0, 0};
+  }
+  static constexpr MoveEffect buff_self(PowerKind k, int32_t v) noexcept {
+    return {v, MoveEffectKind::kBuffSelf, k, 0, 0};
+  }
+  static constexpr MoveEffect buff_enemy(PowerKind k, int32_t v) noexcept {
+    return {v, MoveEffectKind::kBuffEnemy, k, 0, 0};
+  }
+  static constexpr MoveEffect block_self(int32_t v) noexcept {
+    return {v, MoveEffectKind::kBlockSelf, PowerKind::kWeak, 0, 0};
+  }
+  static constexpr MoveEffect debuff_player(PowerKind k, int32_t v) noexcept {
+    return {v, MoveEffectKind::kDebuffPlayer, k, 0, 0};
+  }
+  static constexpr MoveEffect add_status_card(int32_t v) noexcept {
+    return {v, MoveEffectKind::kAddStatusCard, PowerKind::kWeak, 0, 0};
+  }
 };
 static_assert(
     sizeof(MoveEffect) == 8,
     "Wave-23/J.beta: MoveEffect must be 8 B (int32 value + 4 B bytes)");
+static_assert(std::is_aggregate_v<MoveEffect>,
+              "MoveEffect must remain an aggregate — factories must NOT add a "
+              "user-declared ctor");
 
 struct MonsterMove {
   MoveId id = MoveId::kIncantation;
