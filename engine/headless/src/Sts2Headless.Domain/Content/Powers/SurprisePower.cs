@@ -104,8 +104,8 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                     uint sneakyId = alloc.Next();
                     uint fatId = alloc.Next();
 
-                    var sneakyModel = (MonsterModel)
-                        combatCtx.Monsters.Get(SneakyGremlin.CanonicalId);
+                    var sneakyContent = combatCtx.Monsters.Get(SneakyGremlin.CanonicalId);
+                    var sneakyModel = (MonsterModel)sneakyContent;
                     var fatModel = (MonsterModel)combatCtx.Monsters.Get(FatGremlin.CanonicalId);
 
                     // HP rolled from Niche bucket — same bucket as initial SpawnEnemies.
