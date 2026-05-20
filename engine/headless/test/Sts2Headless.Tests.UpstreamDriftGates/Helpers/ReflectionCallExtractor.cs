@@ -30,7 +30,8 @@ internal static class ReflectionCallExtractor
             Kind switch
             {
                 ReflectionCallKind.TypeOrThrow => $"TypeOrThrow({TypeFullName})",
-                ReflectionCallKind.GetConstructors => $"GetConstructors({TypeFullName}).Single(len=={ParamCount})",
+                ReflectionCallKind.GetConstructors =>
+                    $"GetConstructors({TypeFullName}).Single(len=={ParamCount})",
                 ReflectionCallKind.GetMethod => $"GetMethod({TypeFullName}.{MemberName})",
                 ReflectionCallKind.GetProperty => $"GetProperty({TypeFullName}.{MemberName})",
                 _ => $"{Kind}({TypeFullName}.{MemberName ?? "?"})",
@@ -59,7 +60,10 @@ internal static class ReflectionCallExtractor
         var targets = new List<ReflectionTarget>();
 
         // Collect TypeOrThrow("...") calls.
-        foreach (InvocationExpressionSyntax inv in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        foreach (
+            InvocationExpressionSyntax inv in root.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+        )
         {
             if (inv.Expression is not IdentifierNameSyntax id)
                 continue;
@@ -68,7 +72,9 @@ internal static class ReflectionCallExtractor
             {
                 if (TryGetStringArg(inv, 0) is string typeName)
                 {
-                    targets.Add(new ReflectionTarget(ReflectionCallKind.TypeOrThrow, typeName, null, -1));
+                    targets.Add(
+                        new ReflectionTarget(ReflectionCallKind.TypeOrThrow, typeName, null, -1)
+                    );
                 }
             }
         }
@@ -76,7 +82,10 @@ internal static class ReflectionCallExtractor
         // Collect member accesses: .GetMethod("X"), .GetProperty("Y"), .GetField("Z")
         // and .GetConstructors(...).FirstOrDefault(c => c.GetParameters().Length == N)
         // or .Single(c => c.GetParameters().Length == N).
-        foreach (InvocationExpressionSyntax inv in root.DescendantNodes().OfType<InvocationExpressionSyntax>())
+        foreach (
+            InvocationExpressionSyntax inv in root.DescendantNodes()
+                .OfType<InvocationExpressionSyntax>()
+        )
         {
             if (inv.Expression is not MemberAccessExpressionSyntax ma)
                 continue;
@@ -94,9 +103,10 @@ internal static class ReflectionCallExtractor
                 if (typeName is null)
                     continue;
 
-                var kind = method == "GetMethod"
-                    ? ReflectionCallKind.GetMethod
-                    : ReflectionCallKind.GetProperty;
+                var kind =
+                    method == "GetMethod"
+                        ? ReflectionCallKind.GetMethod
+                        : ReflectionCallKind.GetProperty;
                 targets.Add(new ReflectionTarget(kind, typeName, memberName, -1));
             }
 
@@ -105,25 +115,30 @@ internal static class ReflectionCallExtractor
             if (method is "FirstOrDefault" or "Single")
             {
                 // Is the receiver a .GetConstructors() call?
-                if (ma.Expression is InvocationExpressionSyntax innerInv
+                if (
+                    ma.Expression is InvocationExpressionSyntax innerInv
                     && innerInv.Expression is MemberAccessExpressionSyntax innerMa
-                    && innerMa.Name.Identifier.Text == "GetConstructors")
+                    && innerMa.Name.Identifier.Text == "GetConstructors"
+                )
                 {
                     string? typeName = TryResolveReceiverTypeName(innerMa.Expression, root);
                     if (typeName is null)
                         continue;
 
                     int paramCount = TryExtractParameterCountFromLambda(inv) ?? -1;
-                    targets.Add(new ReflectionTarget(
-                        ReflectionCallKind.GetConstructors, typeName, null, paramCount));
+                    targets.Add(
+                        new ReflectionTarget(
+                            ReflectionCallKind.GetConstructors,
+                            typeName,
+                            null,
+                            paramCount
+                        )
+                    );
                 }
             }
         }
 
-        return targets
-            .GroupBy(t => t.ToString())
-            .Select(g => g.First())
-            .ToList();
+        return targets.GroupBy(t => t.ToString()).Select(g => g.First()).ToList();
     }
 
     private static string LocateUpstreamDriver()
@@ -155,8 +170,10 @@ internal static class ReflectionCallExtractor
         if (inv.ArgumentList.Arguments.Count <= argIndex)
             return null;
         ArgumentSyntax arg = inv.ArgumentList.Arguments[argIndex];
-        if (arg.Expression is LiteralExpressionSyntax lit
-            && lit.IsKind(SyntaxKind.StringLiteralExpression))
+        if (
+            arg.Expression is LiteralExpressionSyntax lit
+            && lit.IsKind(SyntaxKind.StringLiteralExpression)
+        )
         {
             return lit.Token.ValueText;
         }
@@ -168,7 +185,10 @@ internal static class ReflectionCallExtractor
     /// find the variable it was assigned from a TypeOrThrow("...") call in the
     /// same scope.
     /// </summary>
-    private static string? TryResolveReceiverTypeName(ExpressionSyntax receiverExpr, SyntaxNode root)
+    private static string? TryResolveReceiverTypeName(
+        ExpressionSyntax receiverExpr,
+        SyntaxNode root
+    )
     {
         if (receiverExpr is not IdentifierNameSyntax receiverIdent)
             return null;
@@ -176,7 +196,10 @@ internal static class ReflectionCallExtractor
         string varName = receiverIdent.Identifier.Text;
 
         // Find all: Type <varName> = TypeOrThrow("...") or TypeOrThrow(...)
-        foreach (VariableDeclaratorSyntax decl in root.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+        foreach (
+            VariableDeclaratorSyntax decl in root.DescendantNodes()
+                .OfType<VariableDeclaratorSyntax>()
+        )
         {
             if (decl.Identifier.Text != varName)
                 continue;
@@ -202,10 +225,12 @@ internal static class ReflectionCallExtractor
         if (argExpr is SimpleLambdaExpressionSyntax lambda)
         {
             // Body: c.GetParameters().Length == N
-            if (lambda.Body is BinaryExpressionSyntax bin
+            if (
+                lambda.Body is BinaryExpressionSyntax bin
                 && bin.IsKind(SyntaxKind.EqualsExpression)
                 && bin.Right is LiteralExpressionSyntax lit
-                && lit.IsKind(SyntaxKind.NumericLiteralExpression))
+                && lit.IsKind(SyntaxKind.NumericLiteralExpression)
+            )
             {
                 if (int.TryParse(lit.Token.ValueText, out int n))
                     return n;

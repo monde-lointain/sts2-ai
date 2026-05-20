@@ -111,8 +111,8 @@ public class RunRngSetEncounterSpawnTests
     public void ForEncounter_null_encounterId_throws()
     {
         var set = new RunRngSet(stringSeed: "null-check");
-        Assert.Throws<System.ArgumentNullException>(
-            () => set.ForEncounter(totalFloor: 0, encounterId: null!)
+        Assert.Throws<System.ArgumentNullException>(() =>
+            set.ForEncounter(totalFloor: 0, encounterId: null!)
         );
     }
 }

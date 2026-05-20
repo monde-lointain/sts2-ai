@@ -72,13 +72,24 @@ public sealed class SmallSlimes : EncounterModel
 
     // Static spawn list used by base EncounterModel for MonsterIds catalog
     // (fixture tests, manifest). Rng override produces the actual encounter list.
-    private static readonly string[] _smallPool = { LeafSlimeS.CanonicalId, TwigSlimeS.CanonicalId };
-    private static readonly string[] _mediumPool = { LeafSlimeM.CanonicalId, TwigSlimeM.CanonicalId };
+    private static readonly string[] _smallPool =
+    {
+        LeafSlimeS.CanonicalId,
+        TwigSlimeS.CanonicalId,
+    };
+    private static readonly string[] _mediumPool =
+    {
+        LeafSlimeM.CanonicalId,
+        TwigSlimeM.CanonicalId,
+    };
 
     public SmallSlimes()
         // Canonical static spawn list: first small + one medium + second small.
         // Actual encounter uses GenerateMonsters(Rng) override below.
-        : base(CanonicalId, new[] { LeafSlimeS.CanonicalId, LeafSlimeM.CanonicalId, TwigSlimeS.CanonicalId }) { }
+        : base(
+            CanonicalId,
+            new[] { LeafSlimeS.CanonicalId, LeafSlimeM.CanonicalId, TwigSlimeS.CanonicalId }
+        ) { }
 
     /// <summary>
     /// Upstream slug for the encounter Rng seed. Matches
@@ -124,7 +135,16 @@ public sealed class MediumSlimes : EncounterModel
 
     public MediumSlimes()
         // Canonical static spawn list: all 4 slimes; actual encounter uses Rng override.
-        : base(CanonicalId, new[] { TwigSlimeM.CanonicalId, LeafSlimeM.CanonicalId, LeafSlimeS.CanonicalId, TwigSlimeS.CanonicalId }) { }
+        : base(
+            CanonicalId,
+            new[]
+            {
+                TwigSlimeM.CanonicalId,
+                LeafSlimeM.CanonicalId,
+                LeafSlimeS.CanonicalId,
+                TwigSlimeS.CanonicalId,
+            }
+        ) { }
 
     /// <summary>
     /// Upstream slug for the encounter Rng seed. Matches

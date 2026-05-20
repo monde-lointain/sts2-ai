@@ -104,42 +104,45 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                     uint sneakyId = alloc.Next();
                     uint fatId = alloc.Next();
 
-                    var sneakyModel = (MonsterModel)combatCtx.Monsters.Get(SneakyGremlin.CanonicalId);
+                    var sneakyModel = (MonsterModel)
+                        combatCtx.Monsters.Get(SneakyGremlin.CanonicalId);
                     var fatModel = (MonsterModel)combatCtx.Monsters.Get(FatGremlin.CanonicalId);
 
                     // HP rolled from Niche bucket — same bucket as initial SpawnEnemies.
                     int sneakyHp = sneakyModel.RollInitialHp(combatCtx.RunRng.Niche);
                     int fatHp = fatModel.RollInitialHp(combatCtx.RunRng.Niche);
 
-                    combatCtx.AddEnemies(new Creature[]
-                    {
-                        new(
-                            Id: sneakyId,
-                            Name: SneakyGremlin.CanonicalId,
-                            CurrentHp: sneakyHp,
-                            MaxHp: sneakyHp,
-                            Block: 0,
-                            Powers: ImmutableList<PowerInstance>.Empty,
-                            Intent: MonsterIntent.FromContentIntent(
-                                sneakyModel.InitialIntent,
-                                sneakyModel.InitialMoveId
+                    combatCtx.AddEnemies(
+                        new Creature[]
+                        {
+                            new(
+                                Id: sneakyId,
+                                Name: SneakyGremlin.CanonicalId,
+                                CurrentHp: sneakyHp,
+                                MaxHp: sneakyHp,
+                                Block: 0,
+                                Powers: ImmutableList<PowerInstance>.Empty,
+                                Intent: MonsterIntent.FromContentIntent(
+                                    sneakyModel.InitialIntent,
+                                    sneakyModel.InitialMoveId
+                                ),
+                                IsPlayer: false
                             ),
-                            IsPlayer: false
-                        ),
-                        new(
-                            Id: fatId,
-                            Name: FatGremlin.CanonicalId,
-                            CurrentHp: fatHp,
-                            MaxHp: fatHp,
-                            Block: 0,
-                            Powers: ImmutableList<PowerInstance>.Empty,
-                            Intent: MonsterIntent.FromContentIntent(
-                                fatModel.InitialIntent,
-                                fatModel.InitialMoveId
+                            new(
+                                Id: fatId,
+                                Name: FatGremlin.CanonicalId,
+                                CurrentHp: fatHp,
+                                MaxHp: fatHp,
+                                Block: 0,
+                                Powers: ImmutableList<PowerInstance>.Empty,
+                                Intent: MonsterIntent.FromContentIntent(
+                                    fatModel.InitialIntent,
+                                    fatModel.InitialMoveId
+                                ),
+                                IsPlayer: false
                             ),
-                            IsPlayer: false
-                        ),
-                    });
+                        }
+                    );
                 },
                 priority: 0,
                 ownerCreatureId: (ulong)ownerCreatureId

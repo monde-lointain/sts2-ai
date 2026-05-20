@@ -54,12 +54,11 @@ public sealed class DecompileReproducibilityGate
     [Trait("Category", "Reproducibility")]
     public void ExtractTwice_ProducesIdenticalOutput()
     {
-        bool optIn =
-            string.Equals(
-                Environment.GetEnvironmentVariable("DRIFT_GATES_REPRO"),
-                "1",
-                StringComparison.Ordinal
-            );
+        bool optIn = string.Equals(
+            Environment.GetEnvironmentVariable("DRIFT_GATES_REPRO"),
+            "1",
+            StringComparison.Ordinal
+        );
 
         if (!optIn)
         {
@@ -132,7 +131,9 @@ public sealed class DecompileReproducibilityGate
 
         using System.Diagnostics.Process proc =
             System.Diagnostics.Process.Start(psi)
-            ?? throw new InvalidOperationException("Failed to start upstream-sync extract process.");
+            ?? throw new InvalidOperationException(
+                "Failed to start upstream-sync extract process."
+            );
 
         string stderr = proc.StandardError.ReadToEnd();
         proc.WaitForExit();
@@ -219,8 +220,10 @@ public sealed class DecompileReproducibilityGate
         string? dir = AppContext.BaseDirectory;
         while (dir is not null)
         {
-            if (Directory.Exists(Path.Combine(dir, "engine", "headless"))
-                && Directory.Exists(Path.Combine(dir, "tools")))
+            if (
+                Directory.Exists(Path.Combine(dir, "engine", "headless"))
+                && Directory.Exists(Path.Combine(dir, "tools"))
+            )
             {
                 return dir;
             }

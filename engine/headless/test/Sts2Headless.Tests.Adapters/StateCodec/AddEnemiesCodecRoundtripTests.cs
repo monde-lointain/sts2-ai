@@ -77,7 +77,9 @@ public sealed class AddEnemiesCodecRoundtripTests
         );
 
     private static RunRngSet Rng() => new("wave-26-Q1B");
+
     private static PlayerRngSet PlayerRng() => new(7u);
+
     private static TokenMap Tokens() => new();
 
     private static void AssertBitIdentical(CombatState state)
@@ -93,11 +95,14 @@ public sealed class AddEnemiesCodecRoundtripTests
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(first);
         Assert.True(decoded.TrailerValidated, "trailer must validate");
 
-        CombatState rebuilt = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        CombatState rebuilt = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
         (RunRngSet rebuiltRun, PlayerRngSet rebuiltPlayer) =
             global::Sts2Headless.Adapters.StateCodec.StateCodec.ToRngBundle(decoded);
-        TokenMap rebuiltTokens =
-            global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(decoded);
+        TokenMap rebuiltTokens = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToTokenMap(
+            decoded
+        );
 
         byte[] second = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(
             rebuilt,
@@ -152,7 +157,10 @@ public sealed class AddEnemiesCodecRoundtripTests
     public void Dead_merc_plus_2_spawns_3_enemy_state_roundtrips()
     {
         // Dead enemy (hp=0) stays in list per CombatState dead-enemy contract.
-        var mercDead = MakeEnemy(1u, "GremlinMerc", 0) with { CurrentHp = 0 };
+        var mercDead = MakeEnemy(1u, "GremlinMerc", 0) with
+        {
+            CurrentHp = 0,
+        };
         var state = BaseState(mercDead);
 
         var allocator = new CreatureIdAllocator(state);
@@ -180,7 +188,9 @@ public sealed class AddEnemiesCodecRoundtripTests
             Stamp()
         );
         StateBlob decoded = global::Sts2Headless.Adapters.StateCodec.StateCodec.Deserialize(blob);
-        CombatState restored = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(decoded);
+        CombatState restored = global::Sts2Headless.Adapters.StateCodec.StateCodec.ToCombatState(
+            decoded
+        );
 
         var alloc1 = new CreatureIdAllocator(state);
         var alloc2 = new CreatureIdAllocator(restored);

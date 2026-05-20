@@ -58,15 +58,19 @@ public sealed class DllSignatureGate
             // (xUnit 2.9+ supports Assert.Skip.)
             Assert.Fail(
                 "Steam install not found; cannot run DllSignatureGate. "
-                + "Set STEAM_STS2_DIR or install Slay the Spire 2 via Steam. "
-                + "If running on a GHA runner without Steam, this gate is expected to skip — "
-                + "use [Fact(Skip=...)] variant or DRIFT_GATES_SKIP_NO_STEAM=1."
+                    + "Set STEAM_STS2_DIR or install Slay the Spire 2 via Steam. "
+                    + "If running on a GHA runner without Steam, this gate is expected to skip — "
+                    + "use [Fact(Skip=...)] variant or DRIFT_GATES_SKIP_NO_STEAM=1."
             );
         }
 
         // 1. Hash check — gate must fail here if hash drifts, before any reflection.
         string actualSha = DllLocator.ComputeSha256(dllPath);
-        bool hashMatch = string.Equals(actualSha, pin.PinnedDllSha256, StringComparison.OrdinalIgnoreCase);
+        bool hashMatch = string.Equals(
+            actualSha,
+            pin.PinnedDllSha256,
+            StringComparison.OrdinalIgnoreCase
+        );
 
         // 2. Install AssemblyResolve hook so sts2.dll's references (GodotSharp.dll,
         //    0Harmony.dll, etc.) can be located in the Steam install dir. Without
@@ -143,8 +147,8 @@ public sealed class DllSignatureGate
 
             sb.AppendLine(
                 "CONTEXT: upstream-pin.json pins v0.103.2 (22823976); "
-                + "live DLL is v0.105.1 (23156356). Bridge in progress per ADR-026. "
-                + "This FAIL is expected until Phase B completes."
+                    + "live DLL is v0.105.1 (23156356). Bridge in progress per ADR-026. "
+                    + "This FAIL is expected until Phase B completes."
             );
 
             Assert.Fail(sb.ToString());
@@ -205,10 +209,7 @@ public sealed class DllSignatureGate
         return null;
     }
 
-    private static string? VerifyMethod(
-        Type type,
-        ReflectionCallExtractor.ReflectionTarget target
-    )
+    private static string? VerifyMethod(Type type, ReflectionCallExtractor.ReflectionTarget target)
     {
         const BindingFlags All =
             BindingFlags.Public
@@ -223,7 +224,11 @@ public sealed class DllSignatureGate
         if (methods.Length == 0)
         {
             // Collect all method names to help diagnose renames
-            string[] allNames = type.GetMethods(All).Select(m => m.Name).Distinct().OrderBy(n => n).ToArray();
+            string[] allNames = type.GetMethods(All)
+                .Select(m => m.Name)
+                .Distinct()
+                .OrderBy(n => n)
+                .ToArray();
             return $"  {target}\n"
                 + $"    Method '{target.MemberName}' not found on {type.FullName}\n"
                 + $"    Available (sample): [{string.Join(", ", allNames.Take(10))}]";
@@ -245,7 +250,10 @@ public sealed class DllSignatureGate
         PropertyInfo? prop = type.GetProperty(target.MemberName!, All);
         if (prop is null)
         {
-            string[] allNames = type.GetProperties(All).Select(p => p.Name).OrderBy(n => n).ToArray();
+            string[] allNames = type.GetProperties(All)
+                .Select(p => p.Name)
+                .OrderBy(n => n)
+                .ToArray();
             return $"  {target}\n"
                 + $"    Property '{target.MemberName}' not found on {type.FullName}\n"
                 + $"    Available (sample): [{string.Join(", ", allNames.Take(10))}]";
