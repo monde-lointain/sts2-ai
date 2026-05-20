@@ -51,9 +51,20 @@ uint8_t move_index_for(sts2::game::MoveId move) noexcept {
       return 1;
     case MoveId::kPounce:
       return 2;
-    default:
+    case MoveId::kIncantation:
+    case MoveId::kDarkStrike:
+    case MoveId::kTackleMove:
+    case MoveId::kGoopMove:
+    case MoveId::kClumpShot:
+    case MoveId::kStickyShot:
+    case MoveId::kPokeyPounce:
+    case MoveId::kButtMove:
+    case MoveId::kSliceMove:
+    case MoveId::kHissMove:
+      // Not louse moves; should never be reached.
       return 0;
   }
+  return 0;  // unreachable; silence compiler
 }
 
 sts2::ai::EnemyState project_louse(const ParsedCreature& cr) {

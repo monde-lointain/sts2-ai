@@ -606,7 +606,17 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
                                             dmg);
       break;
     }
-    default:
+    case MoveId::kIncantation:
+    case MoveId::kDarkStrike:
+    case MoveId::kTackleMove:
+    case MoveId::kGoopMove:
+    case MoveId::kClumpShot:
+    case MoveId::kStickyShot:
+    case MoveId::kPokeyPounce:
+    case MoveId::kButtMove:
+    case MoveId::kSliceMove:
+    case MoveId::kHissMove:
+      // Not louse moves; no-op.
       break;
   }
 }

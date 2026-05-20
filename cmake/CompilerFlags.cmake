@@ -9,7 +9,7 @@ function(sts2_apply_warnings target)
         endif()
     else()
         target_compile_options(${target} PRIVATE
-            -Wall -Wextra -Wpedantic
+            -Wall -Wextra -Wpedantic -Wswitch-enum
         )
         if(STS2_WARNINGS_AS_ERRORS)
             target_compile_options(${target} PRIVATE -Werror)
