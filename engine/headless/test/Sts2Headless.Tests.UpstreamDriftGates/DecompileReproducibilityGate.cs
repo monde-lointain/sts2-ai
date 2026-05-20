@@ -50,7 +50,7 @@ public sealed class DecompileReproducibilityGate
     ///
     /// <para>Skipped unless <c>DRIFT_GATES_REPRO=1</c> is set.</para>
     /// </summary>
-    [Fact]
+    [SkippableFact]
     [Trait("Category", "Reproducibility")]
     public void ExtractTwice_ProducesIdenticalOutput()
     {
@@ -60,15 +60,11 @@ public sealed class DecompileReproducibilityGate
             StringComparison.Ordinal
         );
 
-        if (!optIn)
-        {
-            // Marked skip (not silent pass). The caller sees "SKIPPED" in test output.
-            // Xunit.SkippableFact: throw SkipException to signal skip to runner.
-            throw new Xunit.SkipException(
-                "DecompileReproducibilityGate is opt-in. "
-                    + "Set DRIFT_GATES_REPRO=1 or use --filter Category=Reproducibility."
-            );
-        }
+        Skip.IfNot(
+            optIn,
+            "DecompileReproducibilityGate is opt-in. "
+                + "Set DRIFT_GATES_REPRO=1 or use --filter Category=Reproducibility."
+        );
 
         string repoRoot = LocateRepoRoot();
         string venv = Path.Combine(repoRoot, ".venv");

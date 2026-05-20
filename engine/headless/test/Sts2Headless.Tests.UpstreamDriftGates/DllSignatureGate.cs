@@ -45,27 +45,21 @@ public sealed class DllSignatureGate
     ///
     /// <para><b>EXPECTED: FAIL on current main.</b> See class docs.</para>
     /// </summary>
-    [Fact]
+    [SkippableFact]
     public void ReflectionTargets_AllResolveInLiveDll()
     {
         PinFile pin = PinFile.Load();
 
         string? dllPath = DllLocator.TryGetDllPath();
-        if (dllPath is null)
-        {
-            // Steam not present — skip with a clear message rather than silently pass.
-            // We use Assert.Skip so the test runner marks it SKIPPED not PASSED.
-            // (xUnit 2.9+ supports Assert.Skip.)
-            Assert.Fail(
-                "Steam install not found; cannot run DllSignatureGate. "
-                    + "Set STEAM_STS2_DIR or install Slay the Spire 2 via Steam. "
-                    + "If running on a GHA runner without Steam, this gate is expected to skip — "
-                    + "use [Fact(Skip=...)] variant or DRIFT_GATES_SKIP_NO_STEAM=1."
-            );
-        }
+        Skip.If(
+            dllPath is null,
+            "Steam install not found; cannot run DllSignatureGate. "
+                + "Set STEAM_STS2_DIR or install Slay the Spire 2 via Steam. "
+                + "Skipped (not silent pass) per A.1 gate semantics."
+        );
 
         // 1. Hash check — gate must fail here if hash drifts, before any reflection.
-        string actualSha = DllLocator.ComputeSha256(dllPath);
+        string actualSha = DllLocator.ComputeSha256(dllPath!);
         bool hashMatch = string.Equals(
             actualSha,
             pin.PinnedDllSha256,
@@ -78,7 +72,7 @@ public sealed class DllSignatureGate
         //    type's base/interface classes can't be loaded — the gate then
         //    misreports every type as "not found". Mirrors UpstreamDriver's
         //    ResolveFromSteamDir.
-        string steamDir = Path.GetDirectoryName(dllPath) ?? "";
+        string steamDir = Path.GetDirectoryName(dllPath!) ?? "";
         AppDomain.CurrentDomain.AssemblyResolve += (object? _, ResolveEventArgs args) =>
         {
             string asmFile = new AssemblyName(args.Name).Name + ".dll";
