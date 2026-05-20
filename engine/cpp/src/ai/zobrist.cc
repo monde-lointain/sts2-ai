@@ -29,7 +29,8 @@
 //                                   kFrail, kVulnerable, kSurprise}. No
 //                                  kPowerKindCount constant in types.h —
 //                                  bound encoded as kPowerKindCardinality
-//                                  below; sync with enum when extended.
+//                                  (types.h; wave-32/C1-β); sync with enum
+//                                  when extended.
 //                                  Wave-26/M.β APPENDS kSurprise(6);
 //                                  cardinality 6 → 7. APPEND-ONLY: new
 //                                  PHASE-3 entries fill AFTER [0,6).
@@ -66,7 +67,8 @@
 //                                  α-stream merge (cultist byte identity).
 //                                  Wave-22 widens to 7 with APPEND fill order.
 //                                  Wave-24/K.β APPENDS kNibbit(7); cardinality
-//                                  7 → 8 (kMonsterKindCardinality).
+//                                  7 → 8 (kMonsterKindCardinality in types.h;
+//                                  wave-32/C1-β).
 //                                  APPEND-ONLY: new Phase-3 entry fills AFTER
 //                                  [0,7). Cultist + Louse + slime BYTE
 //                                  PRESERVED.
@@ -283,8 +285,8 @@ constexpr std::size_t kMaxRound = 256;
 constexpr std::size_t kPhasePreWave22Cardinality = 2;
 constexpr std::size_t kPhaseCardinality = 3;
 // PowerKind enum tail = kVulnerable=5; count = 6.
-// (No kPowerKindCount in types.h — see audit block.)
-constexpr std::size_t kPowerKindCardinality = 6;
+// kPowerKindCardinality migrated to include/sts2/game/types.h (wave-32/C1-β).
+using sts2::game::kPowerKindCardinality;
 // MoveId enum tail = kHissMove=12 post-wave-24/K.β; cardinality 13.
 // Pre-wave-22 value was 5 (only cultist + Louse MoveIds used).
 // Wave-22 widens with APPEND fill order to make slime MoveIds hashable.
@@ -297,7 +299,8 @@ static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
 // (wave-21.β kept at 3 to preserve cultist byte identity). Wave-22 widens
 // to 7 to make slime MonsterKinds hashable.
 // Wave-24/K.β APPENDS kNibbit(7) → cardinality 8.
-constexpr std::size_t kMonsterKindCardinality = 8;
+// kMonsterKindCardinality migrated to include/sts2/game/types.h (wave-32/C1-β).
+using sts2::game::kMonsterKindCardinality;
 constexpr std::size_t kPreWave22MonsterKindCardinality = 3;
 static_assert(kPreWave22MonsterKindCardinality <= kMonsterKindCardinality);
 constexpr std::size_t kMaxStacks = 256;

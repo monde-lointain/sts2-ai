@@ -72,6 +72,13 @@ enum class MoveId : int {
 // lockstep with the enum above; kAllMoveIds (below) static_asserts the match.
 inline constexpr std::size_t kMoveIdCardinality = 13;
 
+// Cardinality constants for Zobrist key-table outer dimensions. Moved here from
+// zobrist.cc local constexpr (wave-32/C1-β consolidation). Update in lockstep
+// with the corresponding enums; APPEND-ONLY fill-order contract in zobrist.cc
+// must be respected when bumping either value.
+inline constexpr std::size_t kMonsterKindCardinality = 8;
+inline constexpr std::size_t kPowerKindCardinality = 6;
+
 // Enumerated list of every MoveId value. C++ has no built-in enum reflection;
 // this array is the manual source of truth for round-trip helpers (move_calc.h)
 // and for any code that needs to iterate every MoveId value.
