@@ -40,11 +40,8 @@ constexpr bool counted_card_ids_are_ordered() noexcept {
 // PowerInstance — generic per-creature power entry (wave-17+).
 // POD; 8 bytes (post-wave-23/J.beta); stable layout (static_assert).
 //
-// Layout: stacks(int32_t, 4) + kind(1) + flags(1) + _pad(1) + _reserved(1)
-// = 8 B, struct alignment 4 (from int32_t stacks). The `_pad` byte is
-// LOAD-BEARING — transition.cc stores the CurlUp card-stamp (CardId, 1..4)
-// in this slot to track which player card last triggered CurlUp. See
-// {get,set}_curl_up_stored_card in src/ai/transition.cc.
+// Layout: stacks(int32_t, 4) + kind(1) + flags(1) + curl_up_card_stamp(1)
+//         + _reserved(1) = 8 B, struct alignment 4 (from int32_t stacks).
 //
 // Wave-23/J.beta widened stacks int16_t → int32_t to match upstream STS2's
 // uniform int stat storage (Q2-ADR-014). PowerKind backing remains uint8_t
@@ -55,16 +52,16 @@ struct PowerInstance {
   sts2::game::PowerKind kind = sts2::game::PowerKind::kWeak;
   // bit 0: just_applied (used by Ritual to skip strength grant on spawn turn)
   uint8_t flags = 0;
-  // LOAD-BEARING: stores CurlUp card-stamp (see header comment +
-  // transition.cc).
-  uint8_t _pad = 0;
+  // Stores CurlUp card-stamp (CardId cast to uint8_t); 0 = kNone / not stored.
+  // Typed accessors: PowerArray::curl_up_card() / set_curl_up_card(CardId).
+  uint8_t curl_up_card_stamp = 0;
   uint8_t _reserved = 0;
 
   bool operator==(const PowerInstance&) const = default;
 };
 static_assert(sizeof(PowerInstance) == 8,
               "Wave-23/J.beta: PowerInstance must be 8 B (int32 stacks + "
-              "1 B kind + 1 B flags + 1 B _pad + 1 B _reserved)");
+              "1 B kind + 1 B flags + 1 B curl_up_card_stamp + 1 B _reserved)");
 
 // Max powers stored per creature (EnemyState or player slot in CompactState).
 // Sized for Phase-1 monsters; cultist uses 1 (Ritual), louse uses 1 (CurlUp),
@@ -226,6 +223,110 @@ struct CardCounts {
 };
 
 // ---------------------------------------------------------------------------
+// PowerArray — append-only value class wrapping the per-creature power array.
+// Insertion order = wire order = Zobrist slot order (load-bearing invariant).
+// All methods are inline so the search hot-loop pays no cross-TU call overhead.
+// ---------------------------------------------------------------------------
+class PowerArray {
+ public:
+  [[nodiscard]] uint8_t count() const noexcept { return count_; }
+  [[nodiscard]] const std::array<PowerInstance, kMaxPowersPerCreature>& data()
+      const noexcept {
+    return data_;
+  }
+
+  [[nodiscard]] int32_t stacks_of(sts2::game::PowerKind kind) const noexcept {
+    return powers::stacks_of(data_, count_, kind);
+  }
+
+  [[nodiscard]] const PowerInstance* find(
+      sts2::game::PowerKind kind) const noexcept {
+    return powers::find_power(data_, count_, kind);
+  }
+
+  PowerInstance& add(sts2::game::PowerKind kind, int32_t stacks) noexcept {
+    return powers::add_power(data_, count_, kind, stacks);
+  }
+
+  PowerInstance& set(sts2::game::PowerKind kind, int32_t stacks) noexcept {
+    return powers::set_power(data_, count_, kind, stacks);
+  }
+
+  void remove(sts2::game::PowerKind kind) noexcept {
+    powers::remove_power(data_, count_, kind);
+  }
+
+  void decrement(sts2::game::PowerKind kind) noexcept {
+    PowerInstance* p = powers::find_power(data_, count_, kind);
+    if (p == nullptr) {
+      return;
+    }
+    --p->stacks;
+    if (p->stacks <= 0) {
+      powers::remove_power(data_, count_, kind);
+    }
+  }
+
+  // CurlUp card-stamp typed accessors.
+  [[nodiscard]] sts2::game::CardId curl_up_card() const noexcept {
+    const PowerInstance* p =
+        powers::find_power(data_, count_, sts2::game::PowerKind::kCurlUp);
+    return (p != nullptr)
+               ? static_cast<sts2::game::CardId>(p->curl_up_card_stamp)
+               : sts2::game::CardId::kNone;
+  }
+  void set_curl_up_card(sts2::game::CardId id) noexcept {
+    PowerInstance* p =
+        powers::find_power(data_, count_, sts2::game::PowerKind::kCurlUp);
+    if (p != nullptr) {
+      p->curl_up_card_stamp = static_cast<uint8_t>(id);
+    }
+  }
+
+  // Ritual just_applied bit (flags bit 0 on the kRitual PowerInstance).
+  [[nodiscard]] bool just_applied_ritual() const noexcept {
+    const PowerInstance* p =
+        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
+    return (p != nullptr) && ((p->flags & 0x01U) != 0);
+  }
+  void set_just_applied_ritual(bool value) noexcept {
+    PowerInstance* p =
+        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
+    if (value) {
+      if (p == nullptr) {
+        // Materialise a kRitual entry with stacks=0; just_applied only persists
+        // with a backing PowerInstance (Invariant #5: load-bearing for
+        // from_combat byte-parity).
+        p = &powers::add_power(data_, count_, sts2::game::PowerKind::kRitual,
+                               0);
+      }
+      p->flags |= 0x01U;
+    } else {
+      if (p != nullptr) {
+        p->flags &= static_cast<uint8_t>(~0x01U);
+      }
+    }
+  }
+  void clear_just_applied_ritual() noexcept {
+    PowerInstance* p =
+        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
+    if (p == nullptr) {
+      return;
+    }
+    p->flags &= static_cast<uint8_t>(~0x01U);
+    if (p->stacks == 0 && p->flags == 0) {
+      powers::remove_power(data_, count_, sts2::game::PowerKind::kRitual);
+    }
+  }
+
+  bool operator==(const PowerArray&) const = default;
+
+ private:
+  std::array<PowerInstance, kMaxPowersPerCreature> data_{};
+  uint8_t count_ = 0;
+};
+
+// ---------------------------------------------------------------------------
 // EnemyState — polymorphic enemy state (wave-17 shape)
 //
 // Shape change from wave-16:
@@ -244,12 +345,11 @@ class EnemyState {
   [[nodiscard]] sts2::game::Stat get_block() const noexcept { return block_; }
 
   [[nodiscard]] sts2::game::Stat get_strength() const noexcept {
-    return sts2::game::Stat{powers::stacks_of(
-        powers_, power_count_, sts2::game::PowerKind::kStrength)};
+    return sts2::game::Stat{
+        powers_.stacks_of(sts2::game::PowerKind::kStrength)};
   }
   [[nodiscard]] sts2::game::Stat get_weak() const noexcept {
-    return sts2::game::Stat{
-        powers::stacks_of(powers_, power_count_, sts2::game::PowerKind::kWeak)};
+    return sts2::game::Stat{powers_.stacks_of(sts2::game::PowerKind::kWeak)};
   }
 
   // dark_strike_base and ritual_amount remain scalar fields for call-site
@@ -262,9 +362,7 @@ class EnemyState {
   }
 
   [[nodiscard]] bool get_just_applied_ritual() const noexcept {
-    const PowerInstance* p = powers::find_power(powers_, power_count_,
-                                                sts2::game::PowerKind::kRitual);
-    return (p != nullptr) && ((p->flags & 0x01U) != 0);
+    return powers_.just_applied_ritual();
   }
   [[nodiscard]] bool get_performed_first_move() const noexcept {
     return performed_first_move_;
@@ -280,81 +378,34 @@ class EnemyState {
   }
   [[nodiscard]] uint8_t get_move_index() const noexcept { return move_index_; }
   [[nodiscard]] uint8_t get_power_count() const noexcept {
-    return power_count_;
+    return powers_.count();
   }
   [[nodiscard]] const std::array<PowerInstance, kMaxPowersPerCreature>&
   get_powers() const noexcept {
-    return powers_;
+    return powers_.data();
   }
+  [[nodiscard]] const PowerArray& powers() const noexcept { return powers_; }
 
   // ---- Mutation helpers for OracleTarget (wave-28/C.1) ----
   // Takes a POST-formula block value (caller computes via
   // damage::compute_outgoing_block).
   void add_block_amount(int32_t v) noexcept { block_ += v; }
   void add_power(sts2::game::PowerKind kind, int32_t stacks) noexcept {
-    sts2::ai::powers::add_power(powers_, power_count_, kind, stacks);
+    powers_.add(kind, stacks);
   }
 
-  // ---- Power-management migration (wave-29/S.1) ----
-  // Lifted from detail::StateMutator so power-mgmt callers route through the
-  // public surface; matches the OracleTarget pattern from wave-28.
+  // ---- Power-management — delegate to PowerArray (wave-30/A) ----
   void decrement_power(sts2::game::PowerKind kind) noexcept {
-    PowerInstance* p = powers::find_power(powers_, power_count_, kind);
-    if (p == nullptr) {
-      return;
-    }
-    --p->stacks;
-    if (p->stacks <= 0) {
-      powers::remove_power(powers_, power_count_, kind);
-    }
+    powers_.decrement(kind);
   }
   void remove_power(sts2::game::PowerKind kind) noexcept {
-    powers::remove_power(powers_, power_count_, kind);
+    powers_.remove(kind);
   }
-  // Ritual just_applied flag lives at bit 0x01 of kRitual.flags.
-  // get_just_applied_ritual() already exists above.
   void set_just_applied_ritual(bool value) noexcept {
-    PowerInstance* p = powers::find_power(powers_, power_count_,
-                                          sts2::game::PowerKind::kRitual);
-    if (value) {
-      if (p == nullptr) {
-        p = &powers::add_power(powers_, power_count_,
-                               sts2::game::PowerKind::kRitual, 0);
-      }
-      p->flags |= 0x01U;
-    } else {
-      if (p != nullptr) {
-        p->flags &= static_cast<uint8_t>(~0x01U);
-      }
-    }
+    powers_.set_just_applied_ritual(value);
   }
-  // Clear just_applied flag; remove the PowerInstance if stacks=0 && flags=0
-  // so from_combat comparison stays consistent.
   void clear_just_applied_ritual() noexcept {
-    PowerInstance* p = powers::find_power(powers_, power_count_,
-                                          sts2::game::PowerKind::kRitual);
-    if (p == nullptr) {
-      return;
-    }
-    p->flags &= static_cast<uint8_t>(~0x01U);
-    if (p->stacks == 0 && p->flags == 0) {
-      powers::remove_power(powers_, power_count_,
-                           sts2::game::PowerKind::kRitual);
-    }
-  }
-  // CurlUp card-stamp: stored in _pad of the kCurlUp PowerInstance.
-  // _pad == 0 means no card stored; CardId enum values are 1..4.
-  [[nodiscard]] uint8_t curl_up_stored_card() const noexcept {
-    const PowerInstance* p = powers::find_power(powers_, power_count_,
-                                                sts2::game::PowerKind::kCurlUp);
-    return (p != nullptr) ? p->_pad : 0U;
-  }
-  void set_curl_up_stored_card(uint8_t card_stamp) noexcept {
-    PowerInstance* p = powers::find_power(powers_, power_count_,
-                                          sts2::game::PowerKind::kCurlUp);
-    if (p != nullptr) {
-      p->_pad = card_stamp;
-    }
+    powers_.clear_just_applied_ritual();
   }
 
   bool operator==(const EnemyState&) const = default;
@@ -375,9 +426,9 @@ class EnemyState {
   // New polymorphic shape:
   sts2::game::MonsterKind kind_ = sts2::game::MonsterKind::kCultistCalcified;
   uint8_t move_index_ = 0;
-  uint8_t power_count_ = 0;
   uint8_t _pad = 0;
-  std::array<PowerInstance, kMaxPowersPerCreature> powers_{};
+  uint8_t _pad2 = 0;
+  PowerArray powers_{};
 };
 
 // ---------------------------------------------------------------------------
@@ -396,25 +447,20 @@ class EnemyStateBuilder {
     state_.block_ = value;
     return *this;
   }
-  // strength/weak: now set into powers_ array
+  // strength/weak: route through PowerArray (nonzero → set, zero → remove)
   EnemyStateBuilder& strength(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
-      powers::set_power(state_.powers_, state_.power_count_,
-                        sts2::game::PowerKind::kStrength, value.value());
+      state_.powers_.set(sts2::game::PowerKind::kStrength, value.value());
     } else {
-      // Zero strength: remove from array if present
-      powers::remove_power(state_.powers_, state_.power_count_,
-                           sts2::game::PowerKind::kStrength);
+      state_.powers_.remove(sts2::game::PowerKind::kStrength);
     }
     return *this;
   }
   EnemyStateBuilder& weak(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
-      powers::set_power(state_.powers_, state_.power_count_,
-                        sts2::game::PowerKind::kWeak, value.value());
+      state_.powers_.set(sts2::game::PowerKind::kWeak, value.value());
     } else {
-      powers::remove_power(state_.powers_, state_.power_count_,
-                           sts2::game::PowerKind::kWeak);
+      state_.powers_.remove(sts2::game::PowerKind::kWeak);
     }
     return *this;
   }
@@ -426,23 +472,9 @@ class EnemyStateBuilder {
     state_.ritual_amount_ = value;
     return *this;
   }
-  // just_applied_ritual: sets flag on kRitual PowerInstance (insert if absent)
+  // just_applied_ritual: delegates to PowerArray (Invariant #5 preserved)
   EnemyStateBuilder& just_applied_ritual(bool value) noexcept {
-    PowerInstance* p = powers::find_power(state_.powers_, state_.power_count_,
-                                          sts2::game::PowerKind::kRitual);
-    if (value) {
-      if (p == nullptr) {
-        // Insert a Ritual entry with 0 stacks but just_applied flag set.
-        // The actual ritual_amount stays in ritual_amount_ scalar.
-        p = &powers::add_power(state_.powers_, state_.power_count_,
-                               sts2::game::PowerKind::kRitual, 0);
-      }
-      p->flags |= 0x01U;
-    } else {
-      if (p != nullptr) {
-        p->flags &= static_cast<uint8_t>(~0x01U);
-      }
-    }
+    state_.powers_.set_just_applied_ritual(value);
     return *this;
   }
   EnemyStateBuilder& performed_first_move(bool value) noexcept {
@@ -467,10 +499,9 @@ class EnemyStateBuilder {
     return *this;
   }
   // Wave-18: generic power setter for powers not covered by typed builders.
-  // Wave-23/J.beta: stacks widened int16_t → int32_t (Q2-ADR-014).
   EnemyStateBuilder& add_power(sts2::game::PowerKind k,
                                int32_t stacks) noexcept {
-    powers::add_power(state_.powers_, state_.power_count_, k, stacks);
+    state_.powers_.add(k, stacks);
     return *this;
   }
 
@@ -520,12 +551,12 @@ class CompactState {
   }
   // player_strength / player_weak: route through player_powers_
   [[nodiscard]] sts2::game::Stat get_player_strength() const noexcept {
-    return sts2::game::Stat{powers::stacks_of(
-        player_powers_, player_power_count_, sts2::game::PowerKind::kStrength)};
+    return sts2::game::Stat{
+        player_powers_.stacks_of(sts2::game::PowerKind::kStrength)};
   }
   [[nodiscard]] sts2::game::Stat get_player_weak() const noexcept {
-    return sts2::game::Stat{powers::stacks_of(
-        player_powers_, player_power_count_, sts2::game::PowerKind::kWeak)};
+    return sts2::game::Stat{
+        player_powers_.stacks_of(sts2::game::PowerKind::kWeak)};
   }
   [[nodiscard]] sts2::game::Stat get_energy() const noexcept { return energy_; }
   // Wave-23/J.beta: round_ widened uint16_t → int32_t (Q2-ADR-014).
@@ -550,10 +581,13 @@ class CompactState {
   }
   // Player powers (wave-17+)
   [[nodiscard]] uint8_t get_player_power_count() const noexcept {
-    return player_power_count_;
+    return player_powers_.count();
   }
   [[nodiscard]] const std::array<PowerInstance, kMaxPowersPerCreature>&
   get_player_powers() const noexcept {
+    return player_powers_.data();
+  }
+  [[nodiscard]] const PowerArray& player_powers() const noexcept {
     return player_powers_;
   }
 
@@ -563,21 +597,18 @@ class CompactState {
   }
   void add_player_frail(int32_t v) noexcept {
     if (v != 0) {
-      sts2::ai::powers::add_power(player_powers_, player_power_count_,
-                                  sts2::game::PowerKind::kFrail, v);
+      player_powers_.add(sts2::game::PowerKind::kFrail, v);
     }
   }
   void add_player_weak(int32_t v) noexcept {
     if (v != 0) {
-      sts2::ai::powers::add_power(player_powers_, player_power_count_,
-                                  sts2::game::PowerKind::kWeak, v);
+      player_powers_.add(sts2::game::PowerKind::kWeak, v);
     }
   }
   // No Phase-1 consumer; exists for snapshot discipline.
   void add_player_vulnerable(int32_t v) noexcept {
     if (v != 0) {
-      sts2::ai::powers::add_power(player_powers_, player_power_count_,
-                                  sts2::game::PowerKind::kVulnerable, v);
+      player_powers_.add(sts2::game::PowerKind::kVulnerable, v);
     }
   }
   void add_player_discard_slimed(int32_t count) noexcept {
@@ -589,21 +620,12 @@ class CompactState {
     }
   }
 
-  // ---- Power-management migration (wave-29/S.1) ----
+  // ---- Power-management — delegate to PowerArray (wave-30/A) ----
   void decrement_player_power(sts2::game::PowerKind kind) noexcept {
-    PowerInstance* p =
-        powers::find_power(player_powers_, player_power_count_, kind);
-    if (p == nullptr) {
-      return;
-    }
-    --p->stacks;
-    if (p->stacks <= 0) {
-      powers::remove_power(player_powers_, player_power_count_, kind);
-    }
+    player_powers_.decrement(kind);
   }
   [[nodiscard]] int32_t get_player_frail() const noexcept {
-    return powers::stacks_of(player_powers_, player_power_count_,
-                             sts2::game::PowerKind::kFrail);
+    return player_powers_.stacks_of(sts2::game::PowerKind::kFrail);
   }
 
   bool operator==(const CompactState&) const = default;
@@ -615,8 +637,7 @@ class CompactState {
   sts2::game::Stat player_hp_;
   sts2::game::Stat player_block_;
   // player_strength_ and player_weak_ replaced by player_powers_:
-  std::array<PowerInstance, kMaxPowersPerCreature> player_powers_{};
-  uint8_t player_power_count_ = 0;
+  PowerArray player_powers_{};
   sts2::game::Stat energy_;
   int32_t round_ = 1;
   Phase phase_ = Phase::kPlayerActing;
@@ -644,24 +665,21 @@ class CompactStateBuilder {
     state_.player_block_ = value;
     return *this;
   }
-  // player_strength / player_weak: route through player_powers_
+  // player_strength / player_weak: route through PowerArray
   CompactStateBuilder& player_strength(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
-      powers::set_power(state_.player_powers_, state_.player_power_count_,
-                        sts2::game::PowerKind::kStrength, value.value());
+      state_.player_powers_.set(sts2::game::PowerKind::kStrength,
+                                value.value());
     } else {
-      powers::remove_power(state_.player_powers_, state_.player_power_count_,
-                           sts2::game::PowerKind::kStrength);
+      state_.player_powers_.remove(sts2::game::PowerKind::kStrength);
     }
     return *this;
   }
   CompactStateBuilder& player_weak(sts2::game::Stat value) noexcept {
     if (value.value() != 0) {
-      powers::set_power(state_.player_powers_, state_.player_power_count_,
-                        sts2::game::PowerKind::kWeak, value.value());
+      state_.player_powers_.set(sts2::game::PowerKind::kWeak, value.value());
     } else {
-      powers::remove_power(state_.player_powers_, state_.player_power_count_,
-                           sts2::game::PowerKind::kWeak);
+      state_.player_powers_.remove(sts2::game::PowerKind::kWeak);
     }
     return *this;
   }

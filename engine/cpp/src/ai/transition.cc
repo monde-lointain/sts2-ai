@@ -60,15 +60,9 @@ class StateMutator {
     return e.move_index_;
   }
   [[nodiscard]] static bool& alive(EnemyState& e) noexcept { return e.alive_; }
-  // Wave-26/M.α: expose powers_ + power_count_ refs so production code can
-  // invoke powers::remove_power (sibling to add_power) without re-rolling
-  // slot-shift logic. Friend-class wraps the private fields uniformly.
-  [[nodiscard]] static std::array<PowerInstance, kMaxPowersPerCreature>&
-  powers_array(EnemyState& e) noexcept {
+  // Wave-30/A: mutable access to the PowerArray for the surprise-spawn seam.
+  [[nodiscard]] static PowerArray& powers_ref(EnemyState& e) noexcept {
     return e.powers_;
-  }
-  [[nodiscard]] static uint8_t& power_count_ref(EnemyState& e) noexcept {
-    return e.power_count_;
   }
   // Wave-26/M.α: set a new EnemyState into a CompactState slot. Used by
   // do_surprise_spawn to append spawned enemies at index >= enemy_count_.
@@ -155,11 +149,11 @@ void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
 // Unpowered semantics — no Frail tax) and CurlUp is removed.
 // ---------------------------------------------------------------------------
 void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
-  const uint8_t stored = e.curl_up_stored_card();
-  if (stored == 0) {
+  const CardId stored = e.powers().curl_up_card();
+  if (stored == CardId::kNone) {
     return;
   }
-  if (static_cast<uint8_t>(played_card) != stored) {
+  if (played_card != stored) {
     return;
   }
   const PowerInstance* p = powers::find_power(
@@ -220,12 +214,12 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     // All card-sourced attacks are powered attacks in the Q2 Phase-1 model
     // (ValueProp.Move set, Unpowered not set → IsPoweredAttack = true).
     if (e.get_alive()) {
-      const uint8_t stored = e.curl_up_stored_card();
-      if (stored == 0) {
+      const CardId stored = e.powers().curl_up_card();
+      if (stored == CardId::kNone) {
         const PowerInstance* curl_p = powers::find_power(
             e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
         if (curl_p != nullptr) {
-          e.set_curl_up_stored_card(static_cast<uint8_t>(id));
+          M::powers_ref(e).set_curl_up_card(id);
         }
       }
     }
