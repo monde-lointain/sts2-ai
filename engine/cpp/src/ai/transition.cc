@@ -21,6 +21,12 @@ namespace sts2::ai::transition {
 
 namespace detail {
 
+// Post-wave-29: StateMutator is reduced to non-const ref-accessors over the
+// private fields of EnemyState/CompactState plus the spawn (set_enemy_at) and
+// test (set_enemy_block) seams. All power-management surface (add_*,
+// decrement_*, curl_up_*, just_applied_ritual_*) moved to public member
+// functions on the state classes themselves; see EnemyState::add_power /
+// decrement_power / set_just_applied_ritual etc. in include/sts2/ai/state.h.
 class StateMutator {
  public:
   [[nodiscard]] static sts2::game::Stat& hp(EnemyState& e) noexcept {
@@ -29,135 +35,13 @@ class StateMutator {
   [[nodiscard]] static sts2::game::Stat& block(EnemyState& e) noexcept {
     return e.block_;
   }
-  // strength/weak now route through the powers_ array.
-  // Wave-23/J.beta: drop the int16_t narrow casts now that PowerInstance.stacks
-  // is int32_t (Q2-ADR-014).
-  static void add_strength(EnemyState& e, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(e.powers_, e.power_count_,
-                      sts2::game::PowerKind::kStrength, delta);
-  }
-  static void add_weak(EnemyState& e, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kWeak,
-                      delta);
-  }
-  static void add_frail_to_enemy(EnemyState& e, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(e.powers_, e.power_count_, sts2::game::PowerKind::kFrail,
-                      delta);
-  }
-  // Generic enemy-power mutator (wave-22.α): data-driven kBuffSelf path uses
-  // this for slime move tables. The kStrength / kFrail wrappers above remain
-  // for backward-compat with cultist + LouseProgenitor hooks. Wave-24/K.α
-  // reuses for kBuffEnemy (Nibbit HISS): GENERIC stack-add, NO Ritual
-  // side-effects (just_applied flag untouched; ritual_amount_ unchanged).
-  static void add_enemy_power(EnemyState& e, sts2::game::PowerKind kind,
-                              int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(e.powers_, e.power_count_, kind, delta);
-  }
-  // Wave-24/K.α: enemy block accumulation helper for kBlockSelf dispatch.
-  // Mirrors player block accumulation (no Frail/dexterity in Phase-1 enemy
-  // block; treated as raw add). Block decays at START of each enemy's turn
-  // via the existing turn_flow.h::EndTurnOps::reset_enemy_block scaffold
-  // (block persists across the player's intervening turn — upstream STS
-  // semantics; same path Louse's kCurlAndGrow block uses).
-  static void add_enemy_block(EnemyState& e, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    e.block_ += delta;
-  }
   // Wave-24/K.α: enemy block assignment helper. Direct setter (no
-  // accumulation); test-only seam uses this via
-  // test_internals::decay_enemy_block_for_test. The production
-  // pre-act decay path is turn_flow.h::EndTurnOps::reset_enemy_block.
+  // accumulation); test-only seam used via
+  // test_internals::decay_enemy_block_for_test. Production pre-act decay path
+  // is turn_flow.h::EndTurnOps::reset_enemy_block.
   static void set_enemy_block(EnemyState& e, sts2::game::Stat value) noexcept {
     e.block_ = value;
   }
-  // Generic remove-power-instance (decrement stacks; remove if <= 0).
-  static void decrement_power(EnemyState& e,
-                              sts2::game::PowerKind kind) noexcept {
-    PowerInstance* p = powers::find_power(e.powers_, e.power_count_, kind);
-    if (p == nullptr) {
-      return;
-    }
-    --p->stacks;
-    if (p->stacks <= 0) {
-      powers::remove_power(e.powers_, e.power_count_, kind);
-    }
-  }
-  static void remove_power(EnemyState& e, sts2::game::PowerKind kind) noexcept {
-    powers::remove_power(e.powers_, e.power_count_, kind);
-  }
-  static void decrement_weak(EnemyState& e) noexcept {
-    decrement_power(e, sts2::game::PowerKind::kWeak);
-  }
-  // Ritual flag manipulation
-  [[nodiscard]] static bool get_just_applied_ritual(
-      const EnemyState& e) noexcept {
-    const PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                                sts2::game::PowerKind::kRitual);
-    return (p != nullptr) && ((p->flags & 0x01U) != 0);
-  }
-  static void set_just_applied_ritual(EnemyState& e, bool value) noexcept {
-    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                          sts2::game::PowerKind::kRitual);
-    if (value) {
-      if (p == nullptr) {
-        p = &powers::add_power(e.powers_, e.power_count_,
-                               sts2::game::PowerKind::kRitual, 0);
-      }
-      p->flags |= 0x01U;
-    } else {
-      if (p != nullptr) {
-        p->flags &= static_cast<uint8_t>(~0x01U);
-      }
-    }
-  }
-  static void clear_just_applied_ritual(EnemyState& e) noexcept {
-    // Clear the just_applied flag. If the resulting PowerInstance has stacks=0
-    // and no flags set, remove it so from_combat comparison stays consistent
-    // (from_combat only inserts kRitual when just_applied=true).
-    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                          sts2::game::PowerKind::kRitual);
-    if (p == nullptr) {
-      return;
-    }
-    p->flags &= static_cast<uint8_t>(~0x01U);
-    if (p->stacks == 0 && p->flags == 0) {
-      // Remove the now-empty Ritual entry
-      powers::remove_power(e.powers_, e.power_count_,
-                           sts2::game::PowerKind::kRitual);
-    }
-  }
-
-  // CurlUp card-stamp: stored in _pad of the kCurlUp PowerInstance.
-  // _pad == 0 means no card stored. CardId enum values are 1..4.
-  [[nodiscard]] static uint8_t get_curl_up_stored_card(
-      const EnemyState& e) noexcept {
-    const PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                                sts2::game::PowerKind::kCurlUp);
-    return (p != nullptr) ? p->_pad : 0U;
-  }
-  static void set_curl_up_stored_card(EnemyState& e,
-                                      uint8_t card_stamp) noexcept {
-    PowerInstance* p = powers::find_power(e.powers_, e.power_count_,
-                                          sts2::game::PowerKind::kCurlUp);
-    if (p != nullptr) {
-      p->_pad = card_stamp;
-    }
-  }
-
   [[nodiscard]] static sts2::game::Stat& dark_strike_base(
       EnemyState& e) noexcept {
     return e.dark_strike_base_;
@@ -201,48 +85,6 @@ class StateMutator {
   [[nodiscard]] static sts2::game::Stat& player_block(
       CompactState& s) noexcept {
     return s.player_block_;
-  }
-  // player_strength / player_weak: route through player_powers_
-  // Wave-23/J.beta: drop the int16_t narrow casts now that PowerInstance.stacks
-  // is int32_t (Q2-ADR-014).
-  static void add_player_strength(CompactState& s, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kStrength, delta);
-  }
-  static void add_player_weak(CompactState& s, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kWeak, delta);
-  }
-  static void add_player_frail(CompactState& s, int delta) noexcept {
-    if (delta == 0) {
-      return;
-    }
-    powers::add_power(s.player_powers_, s.player_power_count_,
-                      sts2::game::PowerKind::kFrail, delta);
-  }
-  static void decrement_player_power(CompactState& s,
-                                     sts2::game::PowerKind kind) noexcept {
-    PowerInstance* p =
-        powers::find_power(s.player_powers_, s.player_power_count_, kind);
-    if (p == nullptr) {
-      return;
-    }
-    --p->stacks;
-    if (p->stacks <= 0) {
-      powers::remove_power(s.player_powers_, s.player_power_count_, kind);
-    }
-  }
-  // Wave-23/J.beta: return widened int16_t → int32_t (Q2-ADR-014).
-  [[nodiscard]] static int32_t get_player_frail(
-      const CompactState& s) noexcept {
-    return powers::stacks_of(s.player_powers_, s.player_power_count_,
-                             sts2::game::PowerKind::kFrail);
   }
   [[nodiscard]] static sts2::game::Stat& energy(CompactState& s) noexcept {
     return s.energy_;
