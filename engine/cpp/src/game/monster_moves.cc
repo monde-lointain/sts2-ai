@@ -54,13 +54,7 @@ constexpr MonsterMove make_incantation(int32_t ritual_amount) {
   MonsterMove m;
   m.id = MoveId::kIncantation;
   m.follow_up_index = 1;  // next move is DarkStrike at index 1
-  m.effects[0] = MoveEffect{
-      .value = ritual_amount,
-      .kind = MoveEffectKind::kBuffSelf,
-      .power_kind = PowerKind::kRitual,
-      ._pad = 0,
-      ._pad2 = 0,
-  };
+  m.effects[0] = MoveEffect::buff_self(PowerKind::kRitual, ritual_amount);
   m.effect_count = 1;
   return m;
 }
@@ -70,13 +64,7 @@ constexpr MonsterMove make_dark_strike(int32_t base_damage) {
   MonsterMove m;
   m.id = MoveId::kDarkStrike;
   m.follow_up_index = 1;  // loops: DarkStrike always follows DarkStrike
-  m.effects[0] = MoveEffect{
-      .value = base_damage,
-      .kind = MoveEffectKind::kAttack,
-      .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
-      ._pad = 0,
-      ._pad2 = 0,
-  };
+  m.effects[0] = MoveEffect::attack(base_damage);
   m.effect_count = 1;
   return m;
 }
@@ -107,20 +95,8 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
     MonsterMove& m = t.moves[0];
     m.id = MoveId::kWebCannon;
     m.follow_up_index = 1;  // → CURL_AND_GROW
-    m.effects[0] = MoveEffect{
-        .value = 9,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
-    m.effects[1] = MoveEffect{
-        .value = 2,
-        .kind = MoveEffectKind::kDebuffPlayer,
-        .power_kind = PowerKind::kFrail,
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(9);
+    m.effects[1] = MoveEffect::debuff_player(PowerKind::kFrail, 2);
     m.effect_count = 2;
   }
 
@@ -129,20 +105,8 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
     MonsterMove& m = t.moves[1];
     m.id = MoveId::kCurlAndGrow;
     m.follow_up_index = 2;  // → POUNCE
-    m.effects[0] = MoveEffect{
-        .value = 14,
-        .kind = MoveEffectKind::kDefend,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kDefend
-        ._pad = 0,
-        ._pad2 = 0,
-    };
-    m.effects[1] = MoveEffect{
-        .value = 5,
-        .kind = MoveEffectKind::kBuffSelf,
-        .power_kind = PowerKind::kStrength,
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::defend(14);
+    m.effects[1] = MoveEffect::buff_self(PowerKind::kStrength, 5);
     m.effect_count = 2;
   }
 
@@ -154,13 +118,7 @@ constexpr MonsterMoveTable make_louse_progenitor_table() {
     MonsterMove& m = t.moves[2];
     m.id = MoveId::kPounce;
     m.follow_up_index = 0;  // → WEB_CANNON
-    m.effects[0] = MoveEffect{
-        .value = 14,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(14);
     m.effect_count = 1;
   }
 
@@ -198,13 +156,7 @@ constexpr MonsterMoveTable make_leaf_slime_s_table() {
     MonsterMove& m = t.moves[0];
     m.id = MoveId::kTackleMove;
     m.follow_up_rule = FollowUpRule::kRandomBranchCannotRepeat;
-    m.effects[0] = MoveEffect{
-        .value = 3,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(3);
     m.effect_count = 1;
     m.branch_indices = {0, 1, 0, 0};
     m.branch_weights = {1, 1, 0, 0};
@@ -218,13 +170,7 @@ constexpr MonsterMoveTable make_leaf_slime_s_table() {
     MonsterMove& m = t.moves[1];
     m.id = MoveId::kGoopMove;
     m.follow_up_rule = FollowUpRule::kRandomBranchCannotRepeat;
-    m.effects[0] = MoveEffect{
-        .value = 1,  // 1 Slimed card added
-        .kind = MoveEffectKind::kAddStatusCard,
-        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::add_status_card(1);
     m.effect_count = 1;
     m.branch_indices = {0, 1, 0, 0};
     m.branch_weights = {1, 1, 0, 0};
@@ -256,13 +202,7 @@ constexpr MonsterMoveTable make_leaf_slime_m_table() {
     m.id = MoveId::kClumpShot;
     m.follow_up_rule = FollowUpRule::kStrict;
     m.follow_up_index = 1;  // → STICKY_SHOT (LeafSlimeM.cs:34)
-    m.effects[0] = MoveEffect{
-        .value = 8,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(8);
     m.effect_count = 1;
   }
 
@@ -273,13 +213,7 @@ constexpr MonsterMoveTable make_leaf_slime_m_table() {
     m.id = MoveId::kStickyShot;
     m.follow_up_rule = FollowUpRule::kStrict;
     m.follow_up_index = 0;  // → CLUMP_SHOT (LeafSlimeM.cs:36)
-    m.effects[0] = MoveEffect{
-        .value = 2,  // 2 Slimed cards added
-        .kind = MoveEffectKind::kAddStatusCard,
-        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::add_status_card(2);
     m.effect_count = 1;
   }
 
@@ -307,13 +241,7 @@ constexpr MonsterMoveTable make_twig_slime_s_table() {
     m.id = MoveId::kTackleMove;
     m.follow_up_rule = FollowUpRule::kStrict;
     m.follow_up_index = 0;  // self-loop (TwigSlimeS.cs:27)
-    m.effects[0] = MoveEffect{
-        .value = 4,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(4);
     m.effect_count = 1;
   }
 
@@ -340,13 +268,7 @@ constexpr MonsterMoveTable make_twig_slime_m_table() {
     MonsterMove& m = t.moves[0];
     m.id = MoveId::kPokeyPounce;
     m.follow_up_rule = FollowUpRule::kWeightedRandomCannotRepeat;
-    m.effects[0] = MoveEffect{
-        .value = 11,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(11);
     m.effect_count = 1;
     m.branch_indices = {0, 1, 0, 0};
     m.branch_weights = {2, 1, 0, 0};
@@ -361,13 +283,7 @@ constexpr MonsterMoveTable make_twig_slime_m_table() {
     MonsterMove& m = t.moves[1];
     m.id = MoveId::kStickyShot;
     m.follow_up_rule = FollowUpRule::kWeightedRandomCannotRepeat;
-    m.effects[0] = MoveEffect{
-        .value = 1,  // 1 Slimed card added
-        .kind = MoveEffectKind::kAddStatusCard,
-        .power_kind = PowerKind::kWeak,  // unused for kAddStatusCard
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::add_status_card(1);
     m.effect_count = 1;
     m.branch_indices = {0, 1, 0, 0};
     m.branch_weights = {2, 1, 0, 0};
@@ -400,13 +316,7 @@ constexpr MonsterMoveTable make_nibbit_table() {
     MonsterMove& m = t.moves[0];
     m.id = MoveId::kButtMove;
     m.follow_up_index = 1;  // → SLICE_MOVE
-    m.effects[0] = MoveEffect{
-        .value = 12,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(12);
     m.effect_count = 1;
     m.follow_up_rule = FollowUpRule::kStrict;
   }
@@ -418,20 +328,8 @@ constexpr MonsterMoveTable make_nibbit_table() {
     MonsterMove& m = t.moves[1];
     m.id = MoveId::kSliceMove;
     m.follow_up_index = 2;  // → HISS_MOVE
-    m.effects[0] = MoveEffect{
-        .value = 6,
-        .kind = MoveEffectKind::kAttack,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kAttack
-        ._pad = 0,
-        ._pad2 = 0,
-    };
-    m.effects[1] = MoveEffect{
-        .value = 5,
-        .kind = MoveEffectKind::kBlockSelf,
-        .power_kind = PowerKind::kWeak,  // power_kind unused for kBlockSelf
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::attack(6);
+    m.effects[1] = MoveEffect::block_self(5);
     m.effect_count = 2;
     m.follow_up_rule = FollowUpRule::kStrict;
   }
@@ -443,13 +341,7 @@ constexpr MonsterMoveTable make_nibbit_table() {
     MonsterMove& m = t.moves[2];
     m.id = MoveId::kHissMove;
     m.follow_up_index = 0;  // → BUTT_MOVE (3-cycle)
-    m.effects[0] = MoveEffect{
-        .value = 2,
-        .kind = MoveEffectKind::kBuffEnemy,
-        .power_kind = PowerKind::kStrength,
-        ._pad = 0,
-        ._pad2 = 0,
-    };
+    m.effects[0] = MoveEffect::buff_enemy(PowerKind::kStrength, 2);
     m.effect_count = 1;
     m.follow_up_rule = FollowUpRule::kStrict;
   }
