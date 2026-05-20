@@ -368,32 +368,33 @@ constexpr MonsterMoveTable make_nibbit_table() {
 // kMonsterMoveTables[MonsterKind::kTwigSlimeS        = 5]
 // kMonsterMoveTables[MonsterKind::kTwigSlimeM        = 6]
 // kMonsterMoveTables[MonsterKind::kNibbit            = 7]   (wave-24/K.β)
-const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables = {{
-    // kCultistCalcified (index 0)
-    // Source: enemies.h kCultistArchetypes[0]
-    make_cultist_table(/*dark_strike_base=*/9, /*ritual_amount=*/2,
-                       /*hp_min=*/38, /*hp_max=*/41),
-    // kCultistDamp (index 1)
-    // Source: enemies.h kCultistArchetypes[1]
-    make_cultist_table(/*dark_strike_base=*/1, /*ritual_amount=*/5,
-                       /*hp_min=*/51, /*hp_max=*/53),
-    // kLouseProgenitor (index 2) — wave-18
-    make_louse_progenitor_table(),
-    // kLeafSlimeS (index 3) — wave-22.β
-    make_leaf_slime_s_table(),
-    // kLeafSlimeM (index 4) — wave-22.β
-    make_leaf_slime_m_table(),
-    // kTwigSlimeS (index 5) — wave-22.β
-    make_twig_slime_s_table(),
-    // kTwigSlimeM (index 6) — wave-22.β
-    make_twig_slime_m_table(),
-    // kNibbit (index 7) — wave-24/K.β
-    make_nibbit_table(),
-}};
+const std::array<MonsterMoveTable, sts2::game::kMonsterKindCardinality>
+    kMonsterMoveTables = {{
+        // kCultistCalcified (index 0)
+        // Source: enemies.h kCultistArchetypes[0]
+        make_cultist_table(/*dark_strike_base=*/9, /*ritual_amount=*/2,
+                           /*hp_min=*/38, /*hp_max=*/41),
+        // kCultistDamp (index 1)
+        // Source: enemies.h kCultistArchetypes[1]
+        make_cultist_table(/*dark_strike_base=*/1, /*ritual_amount=*/5,
+                           /*hp_min=*/51, /*hp_max=*/53),
+        // kLouseProgenitor (index 2) — wave-18
+        make_louse_progenitor_table(),
+        // kLeafSlimeS (index 3) — wave-22.β
+        make_leaf_slime_s_table(),
+        // kLeafSlimeM (index 4) — wave-22.β
+        make_leaf_slime_m_table(),
+        // kTwigSlimeS (index 5) — wave-22.β
+        make_twig_slime_s_table(),
+        // kTwigSlimeM (index 6) — wave-22.β
+        make_twig_slime_m_table(),
+        // kNibbit (index 7) — wave-24/K.β
+        make_nibbit_table(),
+    }};
 
 uint8_t find_move_index(MonsterKind kind, MoveId id) noexcept {
   const auto kind_idx = static_cast<std::size_t>(kind);
-  if (kind_idx >= kMonsterKindCount) {
+  if (kind_idx >= sts2::game::kMonsterKindCardinality) {
     return 0xFF;
   }
   const MonsterMoveTable& table = kMonsterMoveTables[kind_idx];

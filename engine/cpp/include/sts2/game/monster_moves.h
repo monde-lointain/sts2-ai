@@ -10,15 +10,6 @@ namespace sts2::game::monster_moves {
 constexpr uint8_t kMaxEffectsPerMove = 3;
 constexpr uint8_t kMaxMovesPerMonster = 6;
 constexpr uint8_t kMaxSpawnPowers = 3;
-// Wave-21: kLeafSlimeS=3, kLeafSlimeM=4, kTwigSlimeS=5, kTwigSlimeM=6 appended.
-// Wave-24/K.β: kNibbit=7 appended.
-constexpr std::size_t kMonsterKindCount =
-    8;  // kCultistCalcified, kCultistDamp, kLouseProgenitor + 4 slimes + Nibbit
-static_assert(kMonsterKindCount == sts2::game::kMonsterKindCardinality,
-              "kMonsterKindCount (monster-moves table size) must equal "
-              "kMonsterKindCardinality (Zobrist table outer dim) — bump both "
-              "together when adding a new MonsterKind");
-
 // Discriminates how kMonsterMoveTables resolves the next move.
 //   kStrict: deterministic single follow-up via follow_up_index.
 //   kRandomBranchCannotRepeat: RandomBranch across N branches, all
@@ -125,7 +116,8 @@ struct MonsterMoveTable {
   uint8_t spawn_power_count = 0;
 };
 
-extern const std::array<MonsterMoveTable, kMonsterKindCount> kMonsterMoveTables;
+extern const std::array<MonsterMoveTable, sts2::game::kMonsterKindCardinality>
+    kMonsterMoveTables;
 
 // Find the index into kMonsterMoveTables[kind].moves[] for the given MoveId.
 // Returns 0xFF if not found.

@@ -67,7 +67,7 @@ std::string format_powers(std::span<const sts2::game::Power> ps) {
 std::string format_intent(const sts2::game::Enemy& e) {
   namespace mm = sts2::game::monster_moves;
   const auto kind_idx = static_cast<std::size_t>(e.kind);
-  if (kind_idx >= mm::kMonsterKindCount) {
+  if (kind_idx >= sts2::game::kMonsterKindCardinality) {
     return {};
   }
   const uint8_t move_idx = mm::find_move_index(e.kind, e.current_move);
