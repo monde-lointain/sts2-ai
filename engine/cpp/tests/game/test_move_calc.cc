@@ -48,4 +48,24 @@ TEST(MoveCalc,
   EXPECT_FALSE(flag);
 }
 
+// Drift defense: every MoveId in kAllMoveIds must round-trip via
+// move_wire_id → try_move_id_from_wire_id back to the same value. Catches
+// "added a MoveId, forgot to extend kMoveWireNames" at gtest time
+// (constexpr static_assert catches it at compile time, but this test
+// surfaces the failure with the specific MoveId).
+TEST(MoveCalc, AllMoveIdsRoundTrip) {
+  for (sts2::game::MoveId m : sts2::game::kAllMoveIds) {
+    const std::string_view name = move_calc::move_wire_id(m);
+    ASSERT_FALSE(name.empty())
+        << "MoveId " << static_cast<int>(m) << " has empty wire name";
+    sts2::game::MoveId out;
+    ASSERT_TRUE(move_calc::try_move_id_from_wire_id(name, out))
+        << "Wire name '" << name << "' did not round-trip for MoveId "
+        << static_cast<int>(m);
+    EXPECT_EQ(out, m) << "Round-trip mismatch: '" << name << "' → MoveId "
+                      << static_cast<int>(out) << " (expected "
+                      << static_cast<int>(m) << ")";
+  }
+}
+
 }  // namespace

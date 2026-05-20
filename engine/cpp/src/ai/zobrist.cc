@@ -289,7 +289,8 @@ constexpr std::size_t kPowerKindCardinality = 6;
 // Pre-wave-22 value was 5 (only cultist + Louse MoveIds used).
 // Wave-22 widens with APPEND fill order to make slime MoveIds hashable.
 // Wave-24/K.β APPENDS kButtMove(10), kSliceMove(11), kHissMove(12) → 13.
-constexpr std::size_t kMoveIdCardinality = 13;
+// kMoveIdCardinality migrated to include/sts2/game/types.h (wave-28/B.2).
+using sts2::game::kMoveIdCardinality;
 constexpr std::size_t kPreWave22MoveIdCardinality = 5;
 static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
 // MonsterKind cardinality DECOUPLED from monster_moves::kMonsterKindCount

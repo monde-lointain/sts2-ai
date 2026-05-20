@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <string_view>
 #include <utility>
@@ -13,105 +14,72 @@
 
 namespace sts2::game::move_calc {
 
+// Primary mapping: every MoveId has exactly one canonical wire name.
+// Order MUST match kAllMoveIds (types.h); static_assert below enforces.
+// Sources: upstream .cs MoveState name strings per encounter.
+inline constexpr std::array<std::pair<MoveId, std::string_view>,
+                            kMoveIdCardinality>
+    kMoveWireNames = {{
+        {MoveId::kIncantation, "INCANTATION_MOVE"},
+        {MoveId::kDarkStrike, "DARK_STRIKE_MOVE"},
+        // Wave-18: LouseProgenitor moves.
+        {MoveId::kWebCannon, "WEB_CANNON_MOVE"},
+        {MoveId::kCurlAndGrow, "CURL_AND_GROW_MOVE"},
+        {MoveId::kPounce, "POUNCE_MOVE"},
+        // Wave-21: slime moves (canonical forward wire names per upstream .cs).
+        // kTackleMove: "TACKLE_MOVE" (LeafSlimeS.cs:31, TwigSlimeS.cs:26).
+        {MoveId::kTackleMove, "TACKLE_MOVE"},
+        // kGoopMove: "GOOP_MOVE" (LeafSlimeS.cs:32).
+        {MoveId::kGoopMove, "GOOP_MOVE"},
+        // kClumpShot: "CLUMP_SHOT" (LeafSlimeM.cs:33).
+        {MoveId::kClumpShot, "CLUMP_SHOT"},
+        // kStickyShot: LeafSlimeM emits "STICKY_SHOT" (LeafSlimeM.cs:34);
+        // TwigSlimeM emits "STICKY_SHOT_MOVE" (TwigSlimeM.cs:35). Canonical
+        // forward = "STICKY_SHOT"; reverse also accepts "STICKY_SHOT_MOVE"
+        // via kMoveWireAliases.
+        {MoveId::kStickyShot, "STICKY_SHOT"},
+        // kPokeyPounce: "POKEY_POUNCE_MOVE" (TwigSlimeM.cs:34).
+        {MoveId::kPokeyPounce, "POKEY_POUNCE_MOVE"},
+        // Wave-24/K.β: Nibbit moves (Nibbit.cs:71-73 MoveState names).
+        {MoveId::kButtMove, "BUTT_MOVE"},
+        {MoveId::kSliceMove, "SLICE_MOVE"},
+        {MoveId::kHissMove, "HISS_MOVE"},
+    }};
+
+static_assert(kMoveWireNames.size() == kMoveIdCardinality,
+              "kMoveWireNames size must match kMoveIdCardinality");
+
+// Alias wire names that map TO a MoveId but NOT FROM. Currently only the
+// TwigSlimeM-emitted "STICKY_SHOT_MOVE" string, which round-trips to
+// MoveId::kStickyShot (kMoveWireNames already gives the canonical
+// forward "STICKY_SHOT").
+inline constexpr std::array<std::pair<std::string_view, MoveId>, 1>
+    kMoveWireAliases = {{
+        {"STICKY_SHOT_MOVE", MoveId::kStickyShot},
+    }};
+
 [[nodiscard]] constexpr std::string_view move_wire_id(MoveId id) noexcept {
-  switch (id) {
-    case MoveId::kIncantation:
-      return "INCANTATION_MOVE";
-    case MoveId::kDarkStrike:
-      return "DARK_STRIKE_MOVE";
-    // Wave-18: LouseProgenitor moves.
-    case MoveId::kWebCannon:
-      return "WEB_CANNON_MOVE";
-    case MoveId::kCurlAndGrow:
-      return "CURL_AND_GROW_MOVE";
-    case MoveId::kPounce:
-      return "POUNCE_MOVE";
-    // Wave-21: slime moves (canonical forward wire names per upstream .cs).
-    // kTackleMove: "TACKLE_MOVE" (LeafSlimeS.cs:31, TwigSlimeS.cs:26).
-    case MoveId::kTackleMove:
-      return "TACKLE_MOVE";
-    // kGoopMove: "GOOP_MOVE" (LeafSlimeS.cs:32).
-    case MoveId::kGoopMove:
-      return "GOOP_MOVE";
-    // kClumpShot: "CLUMP_SHOT" (LeafSlimeM.cs:33).
-    case MoveId::kClumpShot:
-      return "CLUMP_SHOT";
-    // kStickyShot: LeafSlimeM emits "STICKY_SHOT" (LeafSlimeM.cs:34);
-    // TwigSlimeM emits "STICKY_SHOT_MOVE" (TwigSlimeM.cs:35). Canonical
-    // forward = "STICKY_SHOT"; reverse also accepts "STICKY_SHOT_MOVE".
-    case MoveId::kStickyShot:
-      return "STICKY_SHOT";
-    // kPokeyPounce: "POKEY_POUNCE_MOVE" (TwigSlimeM.cs:34).
-    case MoveId::kPokeyPounce:
-      return "POKEY_POUNCE_MOVE";
-    // Wave-24/K.β: Nibbit moves (Nibbit.cs:71-73 MoveState names).
-    case MoveId::kButtMove:
-      return "BUTT_MOVE";
-    case MoveId::kSliceMove:
-      return "SLICE_MOVE";
-    case MoveId::kHissMove:
-      return "HISS_MOVE";
+  for (const auto& [m, name] : kMoveWireNames) {
+    if (m == id) {
+      return name;
+    }
   }
   return "";
 }
 
 [[nodiscard]] constexpr bool try_move_id_from_wire_id(std::string_view wire_id,
                                                       MoveId& out) noexcept {
-  if (wire_id == "INCANTATION_MOVE") {
-    out = MoveId::kIncantation;
-    return true;
+  for (const auto& [m, name] : kMoveWireNames) {
+    if (name == wire_id) {
+      out = m;
+      return true;
+    }
   }
-  if (wire_id == "DARK_STRIKE_MOVE") {
-    out = MoveId::kDarkStrike;
-    return true;
-  }
-  if (wire_id == "WEB_CANNON_MOVE") {
-    out = MoveId::kWebCannon;
-    return true;
-  }
-  if (wire_id == "CURL_AND_GROW_MOVE") {
-    out = MoveId::kCurlAndGrow;
-    return true;
-  }
-  if (wire_id == "POUNCE_MOVE") {
-    out = MoveId::kPounce;
-    return true;
-  }
-  // Wave-21: slime moves.
-  if (wire_id == "TACKLE_MOVE") {
-    out = MoveId::kTackleMove;
-    return true;
-  }
-  if (wire_id == "GOOP_MOVE") {
-    out = MoveId::kGoopMove;
-    return true;
-  }
-  if (wire_id == "CLUMP_SHOT") {
-    out = MoveId::kClumpShot;
-    return true;
-  }
-  // Accept both upstream variants: LeafSlimeM→"STICKY_SHOT",
-  // TwigSlimeM→"STICKY_SHOT_MOVE".
-  if (wire_id == "STICKY_SHOT" || wire_id == "STICKY_SHOT_MOVE") {
-    out = MoveId::kStickyShot;
-    return true;
-  }
-  if (wire_id == "POKEY_POUNCE_MOVE") {
-    out = MoveId::kPokeyPounce;
-    return true;
-  }
-  // Wave-24/K.β: Nibbit moves (Nibbit.cs:71-73 MoveState canonical names).
-  if (wire_id == "BUTT_MOVE") {
-    out = MoveId::kButtMove;
-    return true;
-  }
-  if (wire_id == "SLICE_MOVE") {
-    out = MoveId::kSliceMove;
-    return true;
-  }
-  if (wire_id == "HISS_MOVE") {
-    out = MoveId::kHissMove;
-    return true;
+  for (const auto& [alias, m] : kMoveWireAliases) {
+    if (alias == wire_id) {
+      out = m;
+      return true;
+    }
   }
   return false;
 }

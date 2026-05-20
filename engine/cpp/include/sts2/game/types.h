@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace sts2::game {
@@ -64,6 +66,25 @@ enum class MoveId : int {
   kSliceMove = 11,  // Nibbit SLICE_MOVE
   kHissMove = 12,   // Nibbit HISS_MOVE
 };
+
+// Cardinality of the MoveId enum. Live source-of-truth for downstream consumers
+// (Zobrist key-table dimensions; move_calc constexpr table sizes). Update in
+// lockstep with the enum above; kAllMoveIds (below) static_asserts the match.
+inline constexpr std::size_t kMoveIdCardinality = 13;
+
+// Enumerated list of every MoveId value. C++ has no built-in enum reflection;
+// this array is the manual source of truth for round-trip helpers (move_calc.h)
+// and for any code that needs to iterate every MoveId value.
+inline constexpr std::array<MoveId, kMoveIdCardinality> kAllMoveIds = {
+    MoveId::kIncantation, MoveId::kDarkStrike, MoveId::kWebCannon,
+    MoveId::kCurlAndGrow, MoveId::kPounce,     MoveId::kTackleMove,
+    MoveId::kGoopMove,    MoveId::kClumpShot,  MoveId::kStickyShot,
+    MoveId::kPokeyPounce, MoveId::kButtMove,   MoveId::kSliceMove,
+    MoveId::kHissMove,
+};
+
+static_assert(kAllMoveIds.size() == kMoveIdCardinality,
+              "kAllMoveIds size must match kMoveIdCardinality");
 
 enum class MonsterKind : uint8_t {
   kCultistCalcified = 0,
