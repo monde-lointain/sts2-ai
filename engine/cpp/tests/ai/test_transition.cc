@@ -40,7 +40,11 @@ using sts2::tests::ai::make_counts;
 using sts2::tests::helpers::make_starter_combat;
 
 CompactState make_test_state() {
-  const EnemyState enemy = EnemyStateBuilder{}.hp(Stat{10}).alive(true).build();
+  const EnemyState enemy = EnemyStateBuilder{}
+                               .kind(MonsterKind::kCultistCalcified)
+                               .hp(Stat{10})
+                               .alive(true)
+                               .build();
   return CompactStateBuilder{}
       .player_hp(Stat{70})
       .player_block(Stat{0})
@@ -602,8 +606,11 @@ CompactState make_slimed_test_state(uint8_t initial_slimed) {
                                .performed_first_move(true)
                                .build();
   // Slot 1: dead enemy — no interaction.
-  const EnemyState dead =
-      EnemyStateBuilder{}.hp(sts2::game::Stat{0}).alive(false).build();
+  const EnemyState dead = EnemyStateBuilder{}
+                              .kind(MonsterKind::kCultistCalcified)
+                              .hp(sts2::game::Stat{0})
+                              .alive(false)
+                              .build();
 
   CardCounts discard_pile{};
   discard_pile[sts2::game::CardId::kSlimed] = initial_slimed;

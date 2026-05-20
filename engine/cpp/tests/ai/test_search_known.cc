@@ -63,7 +63,11 @@ TEST(Search, TerminalState_ReturnsImmediately) {
   CompactState s =
       CompactStateBuilder{}
           .player_hp(Stat{0})  // dead -> terminal
-          .enemy(0, EnemyStateBuilder{}.alive(true).hp(Stat{10}).build())
+          .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(true)
+                        .hp(Stat{10})
+                        .build())
           .phase(Phase::kPlayerActing)
           .round(3)
           .build();
@@ -76,13 +80,20 @@ TEST(Search, TerminalState_ReturnsImmediately) {
 }
 
 TEST(Search, TerminalState_AllEnemiesDead) {
-  CompactState s = CompactStateBuilder{}
-                       .player_hp(Stat{42})
-                       .enemy(0, EnemyStateBuilder{}.alive(false).build())
-                       .enemy(1, EnemyStateBuilder{}.alive(false).build())
-                       .phase(Phase::kPlayerActing)
-                       .round(4)
-                       .build();
+  CompactState s =
+      CompactStateBuilder{}
+          .player_hp(Stat{42})
+          .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .build())
+          .enemy(1, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .build())
+          .phase(Phase::kPlayerActing)
+          .round(4)
+          .build();
 
   Search search;
   const SearchResult r = search.solve(s);
@@ -276,8 +287,16 @@ TEST(Search, HorizonCap_RoundAtLimit_DoesNotShortCircuit) {
           .energy(Stat{3})
           .round(25)  // == kSearchHorizonRounds; NOT triggered (cap uses >)
           .phase(Phase::kPlayerActing)
-          .enemy(0, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
-          .enemy(1, EnemyStateBuilder{}.alive(false).hp(Stat{0}).build())
+          .enemy(0, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .hp(Stat{0})
+                        .build())
+          .enemy(1, EnemyStateBuilder{}
+                        .kind(sts2::game::MonsterKind::kCultistCalcified)
+                        .alive(false)
+                        .hp(Stat{0})
+                        .build())
           .build();
 
   Search search;
