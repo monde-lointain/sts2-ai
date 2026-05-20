@@ -282,38 +282,23 @@ constexpr std::size_t kMaxRound = 256;
 // phase=2, so byte identity holds.
 constexpr std::size_t kPhasePreWave22Cardinality = 2;
 constexpr std::size_t kPhaseCardinality = 3;
-// PowerKind enum tail post-wave-26/M.β = kSurprise=6; count = 7.
-// (No kPowerKindCount in types.h — see audit block.) Pre-M.β was 6
-// (kVulnerable=5). Wave-26/M.β APPENDS kSurprise(6) → cardinality 7;
-// APPEND-only fill in PHASE 3.
-constexpr std::size_t kPowerKindCardinality = 7;
-constexpr std::size_t kPreWave26PowerKindCardinality = 6;
-static_assert(kPreWave26PowerKindCardinality <= kPowerKindCardinality);
-// MoveId enum tail = kPokeyPounce=9 post-wave-21.α; cardinality 10.
+// PowerKind enum tail = kVulnerable=5; count = 6.
+// (No kPowerKindCount in types.h — see audit block.)
+constexpr std::size_t kPowerKindCardinality = 6;
+// MoveId enum tail = kHissMove=12 post-wave-24/K.β; cardinality 13.
 // Pre-wave-22 value was 5 (only cultist + Louse MoveIds used).
 // Wave-22 widens with APPEND fill order to make slime MoveIds hashable.
 // Wave-24/K.β APPENDS kButtMove(10), kSliceMove(11), kHissMove(12) → 13.
-// Wave-26/M.β APPENDS kGimmeMove(13), kDoubleSmashMove(14), kHeheMove(15),
-// kSpawnedMove(16), kFleeMove(17) → 18.
-constexpr std::size_t kMoveIdCardinality = 18;
+constexpr std::size_t kMoveIdCardinality = 13;
 constexpr std::size_t kPreWave22MoveIdCardinality = 5;
-constexpr std::size_t kPreWave26MoveIdCardinality = 13;
 static_assert(kPreWave22MoveIdCardinality <= kMoveIdCardinality);
-static_assert(kPreWave26MoveIdCardinality <= kMoveIdCardinality);
-static_assert(kPreWave22MoveIdCardinality <= kPreWave26MoveIdCardinality);
 // MonsterKind cardinality DECOUPLED from monster_moves::kMonsterKindCount
 // (wave-21.β kept at 3 to preserve cultist byte identity). Wave-22 widens
 // to 7 to make slime MonsterKinds hashable.
 // Wave-24/K.β APPENDS kNibbit(7) → cardinality 8.
-// Wave-26/M.β APPENDS kGremlinMerc(8), kSneakyGremlin(9), kFatGremlin(10)
-// → cardinality 11.
-constexpr std::size_t kMonsterKindCardinality = 11;
+constexpr std::size_t kMonsterKindCardinality = 8;
 constexpr std::size_t kPreWave22MonsterKindCardinality = 3;
-constexpr std::size_t kPreWave26MonsterKindCardinality = 8;
 static_assert(kPreWave22MonsterKindCardinality <= kMonsterKindCardinality);
-static_assert(kPreWave26MonsterKindCardinality <= kMonsterKindCardinality);
-static_assert(kPreWave22MonsterKindCardinality <=
-              kPreWave26MonsterKindCardinality);
 constexpr std::size_t kMaxStacks = 256;
 constexpr std::size_t kMaxFlags = 4;
 constexpr std::size_t kMaxMovesPerMonster =
@@ -476,12 +461,10 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   for (std::size_t i = 0; i < kPhasePreWave22Cardinality; ++i) {
     t.phase[i] = rng();
   }
-  // player_power: manual iteration over pre-wave-26 PowerKind cardinality so
-  // wave-26/M.β's bump (6→7) doesn't shift mt19937 consumption. New
-  // kSurprise(6) entries appended in PHASE 3 below.
+  // player_power: kPowerKindCardinality = 6; full range filled here.
   for (std::size_t ps = 0; ps < static_cast<std::size_t>(kMaxPowersPerCreature);
        ++ps) {
-    for (std::size_t pk = 0; pk < kPreWave26PowerKindCardinality; ++pk) {
+    for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
       for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
         for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
           t.player_power[ps][pk][stacks][flags] = rng();
@@ -514,13 +497,12 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   fill_slots(t.enemy_alive, 0, kPreWave21MaxEnemies, rng);
   fill_slots(t.enemy_pfm, 0, kPreWave21MaxEnemies, rng);
   // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
-  // enemy_power: manual iteration over pre-wave-26 PowerKind cardinality so
-  // wave-26/M.β's bump (6→7) doesn't shift mt19937 consumption. New
-  // kSurprise(6) entries appended in PHASE 3 below.
+  // enemy_power: manual iteration over PowerKind cardinality = 6.
+  // kPowerKindCardinality = 6; full range filled here.
   for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
     for (std::size_t ps = 0;
          ps < static_cast<std::size_t>(kMaxPowersPerCreature); ++ps) {
-      for (std::size_t pk = 0; pk < kPreWave26PowerKindCardinality; ++pk) {
+      for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
         for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
           for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
             t.enemy_power[slot][ps][pk][stacks][flags] = rng();
@@ -569,13 +551,12 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   fill_slots(t.enemy_alive, kPreWave21MaxEnemies, kMaxEnemies, rng);
   fill_slots(t.enemy_pfm, kPreWave21MaxEnemies, kMaxEnemies, rng);
   // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
-  // enemy_power: manual iteration over pre-wave-26 PowerKind cardinality
-  // (kSurprise=6 appended in PHASE 3 below).
+  // enemy_power: kPowerKindCardinality = 6; full range filled here.
   for (std::size_t slot = kPreWave21MaxEnemies;
        slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
     for (std::size_t ps = 0;
          ps < static_cast<std::size_t>(kMaxPowersPerCreature); ++ps) {
-      for (std::size_t pk = 0; pk < kPreWave26PowerKindCardinality; ++pk) {
+      for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
         for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
           for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
             t.enemy_power[slot][ps][pk][stacks][flags] = rng();
@@ -611,86 +592,20 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   // ---- PHASE 3: wave-22 + wave-24/K.β cardinality widening ----
   // Slime MonsterKinds (3..6) + MoveIds (5..9) become runtime-reachable
   //   (wave-22); Nibbit kind (7) + Nibbit MoveIds (10..12) appended in
-  //   wave-24/K.β. New entries [pre-wave-22, kPreWave26*) consume mt19937
-  //   here. Cultist + LouseProgenitor only index kinds 0..2 and MoveIds
+  //   wave-24/K.β. Cultist + LouseProgenitor only index kinds 0..2 and MoveIds
   //   0..4, so byte identity holds.
   for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
        ++slot) {
     for (std::size_t k = kPreWave22MonsterKindCardinality;
-         k < kPreWave26MonsterKindCardinality; ++k) {
-      t.enemy_kind[slot][k] = rng();
-    }
-  }
-  for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
-       ++slot) {
-    for (std::size_t m = kPreWave22MoveIdCardinality;
-         m < kPreWave26MoveIdCardinality; ++m) {
-      t.enemy_current_move[slot][m] = rng();
-    }
-  }
-
-  // ---- PHASE 3-extension: wave-26/M.β cardinality triple-update ----
-  // APPEND-ONLY: pre-wave-26 entries already filled above; only the NEW
-  //   GremlinMerc-encounter entries consume mt19937 here. Drawn order
-  //   matches the PHASE-3 convention (MonsterKind first, then MoveId)
-  //   for symmetry/reviewability; PowerKind appended at the end since
-  //   it's a NEW dimension not previously fanned out per slot.
-  // kSurprise (PowerKind=6) is consumed only by enemies carrying the
-  //   spawn power (currently GremlinMerc); cultist + Louse + slime +
-  //   Nibbit never index PowerKind=6 → cultist BYTE preserved.
-  //
-  // M.β APPENDS:
-  //   - enemy_kind[slot][k]            for k in [8, 11)     (3 kinds)
-  //   - enemy_current_move[slot][m]    for m in [13, 18)    (5 MoveIds)
-  //   - player_power[ps][pk][...][...] for pk in [6, 7)
-  //   - enemy_power[slot][ps][pk][...][...] for pk in [6, 7)
-  for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
-       ++slot) {
-    for (std::size_t k = kPreWave26MonsterKindCardinality;
          k < kMonsterKindCardinality; ++k) {
       t.enemy_kind[slot][k] = rng();
     }
   }
   for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
        ++slot) {
-    for (std::size_t m = kPreWave26MoveIdCardinality; m < kMoveIdCardinality;
+    for (std::size_t m = kPreWave22MoveIdCardinality; m < kMoveIdCardinality;
          ++m) {
       t.enemy_current_move[slot][m] = rng();
-    }
-  }
-  // PowerKind APPEND: kSurprise (6) added to player_power + enemy_power
-  //   tables. The pre-existing PowerKind cardinality entries were filled
-  //   en-bloc via fill_array in PHASE 1 (player_power) + per-slot loop
-  //   via PHASE 1+2 (enemy_power). For APPEND discipline we draw the new
-  //   slice (per power_slot × per stacks × per flags × kSurprise=6 only)
-  //   per slot, mirroring the inner-most fill order to maintain
-  //   determinism.
-  // Loop order: power_slot → stacks → flags (matches fill_array recursive
-  //   walk for std::array<std::array<std::array<uint64_t, kMaxFlags>,
-  //   kMaxStacks>, kPowerKindCardinality>).
-  for (std::size_t ps = 0; ps < static_cast<std::size_t>(kMaxPowersPerCreature);
-       ++ps) {
-    for (std::size_t pk = kPreWave26PowerKindCardinality;
-         pk < kPowerKindCardinality; ++pk) {
-      for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
-        for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
-          t.player_power[ps][pk][stacks][flags] = rng();
-        }
-      }
-    }
-  }
-  for (std::size_t slot = 0; slot < static_cast<std::size_t>(kMaxEnemies);
-       ++slot) {
-    for (std::size_t ps = 0;
-         ps < static_cast<std::size_t>(kMaxPowersPerCreature); ++ps) {
-      for (std::size_t pk = kPreWave26PowerKindCardinality;
-           pk < kPowerKindCardinality; ++pk) {
-        for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
-          for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
-            t.enemy_power[slot][ps][pk][stacks][flags] = rng();
-          }
-        }
-      }
     }
   }
 

@@ -44,10 +44,6 @@ const char* power_name(sts2::game::PowerKind kind) {
       return "Frail";
     case sts2::game::PowerKind::kVulnerable:
       return "Vulnerable";
-    // Wave-26/M.α: OnDeath trigger power; rendered as "Surprise" for parity
-    // with upstream STS conventions.
-    case sts2::game::PowerKind::kSurprise:
-      return "Surprise";
   }
   return "";
 }
@@ -105,12 +101,6 @@ std::string format_intent(const sts2::game::Enemy& e) {
         break;
       case sts2::game::MoveEffectKind::kAddStatusCard:
         tok << ansi::kYellow << glyphs::kArrowDown << "Cards" << ansi::kReset;
-        break;
-      case sts2::game::MoveEffectKind::kFleeSelf:
-        // sts2-cli "Escape" token. No glyphs::kRunner constant yet — emit
-        // inline 🏃 bytes (out-of-scope move; see plan §Decisions baked in).
-        tok << ansi::kDim << "\xf0\x9f\x8f\x83"
-            << "Escape" << ansi::kReset;
         break;
       case sts2::game::MoveEffectKind::kNone:
         continue;

@@ -175,72 +175,6 @@ sts2::game::Enemy make_nibbit_back(sts2::game::Rng& rng) {
   return e;
 }
 
-// ---------------------------------------------------------------------------
-// Wave-26/M.β: GremlinMerc encounter factories
-// ---------------------------------------------------------------------------
-// Source: GremlinMerc.cs:28,30 (HP range); :70 (initial move = GIMME); :49
-//   (SurprisePower(1) spawn power). kThievery(20) at :54 is DROPPED at the
-//   data layer (Q2 combat-only oracle; adapter silent-drop via Q2-ADR-005).
-
-// make_gremlin_merc — GremlinMercNormal encounter entry; HP rolled in [47,49];
-//   starts on GIMME_MOVE; carries kSurprise(1) spawn power so the OnDeath
-//   trigger fires when GremlinMerc dies via damage.
-// GremlinMerc.cs:28 MinInitialHp A0=47; :30 MaxInitialHp A0=49; :70 initial
-//   state = GIMME; :49 AfterAddedToRoom applies SurprisePower(1m).
-sts2::game::Enemy make_gremlin_merc(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Gremlin Merc";
-  e.kind = sts2::game::MonsterKind::kGremlinMerc;
-  const int hp = rng.uniform_int(47, 49);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kGimmeMove;  // GremlinMerc.cs:70
-  e.performed_first_move = false;
-  // Spawn power: kSurprise(1) — drives OnDeath spawn of Sneaky + Fat
-  //   (GremlinMerc.cs:49 PowerCmd.Apply<SurprisePower>(... 1m ...)).
-  // kThievery(20) at GremlinMerc.cs:54 is intentionally NOT modeled — Q2 is
-  //   combat-only; adapter silent-drop via Q2-ADR-005.
-  sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kSurprise, 1);
-  return e;
-}
-
-// make_sneaky_gremlin — OnDeath spawn entry; HP defaults to deterministic
-//   median 12 (median of [10,14]). Rng unused along the override path; kept
-//   for API parity with sibling factories.
-// SneakyGremlin.cs:21 MinInitialHp A0=10; :23 MaxInitialHp A0=14; :54 initial
-//   state = SPAWNED_MOVE. No spawn powers; no OnDeath.
-sts2::game::Enemy make_sneaky_gremlin(sts2::game::Rng& rng,
-                                      int32_t hp_override) {
-  // Rng intentionally unused along the deterministic override path — see
-  // header comment + Q2-ADR-029 §Path A for the B1 mode rationale.
-  (void)rng;
-  sts2::game::Enemy e;
-  e.name = "Sneaky Gremlin";
-  e.kind = sts2::game::MonsterKind::kSneakyGremlin;
-  e.vitals.max_hp = sts2::game::Stat{hp_override};
-  e.vitals.hp = sts2::game::Stat{hp_override};
-  e.current_move = sts2::game::MoveId::kSpawnedMove;  // SneakyGremlin.cs:54
-  e.performed_first_move = false;
-  return e;
-}
-
-// make_fat_gremlin — OnDeath spawn entry; HP defaults to deterministic median
-//   15 (median of [13,17]). Rng unused along the override path; kept for API
-//   parity with sibling factories.
-// FatGremlin.cs:28 MinInitialHp A0=13; :30 MaxInitialHp A0=17; :57 initial
-//   state = SPAWNED_MOVE. No spawn powers; no OnDeath.
-sts2::game::Enemy make_fat_gremlin(sts2::game::Rng& rng, int32_t hp_override) {
-  (void)rng;  // see make_sneaky_gremlin comment
-  sts2::game::Enemy e;
-  e.name = "Fat Gremlin";
-  e.kind = sts2::game::MonsterKind::kFatGremlin;
-  e.vitals.max_hp = sts2::game::Stat{hp_override};
-  e.vitals.hp = sts2::game::Stat{hp_override};
-  e.current_move = sts2::game::MoveId::kSpawnedMove;  // FatGremlin.cs:57
-  e.performed_first_move = false;
-  return e;
-}
-
 namespace {
 
 bool is_cultist_kind(sts2::game::MonsterKind k) noexcept {
@@ -317,7 +251,6 @@ void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
       case sts2::game::MoveEffectKind::kBuffSelf:
       case sts2::game::MoveEffectKind::kDebuffPlayer:
       case sts2::game::MoveEffectKind::kAddStatusCard:
-      case sts2::game::MoveEffectKind::kFleeSelf:
         break;
     }
   }

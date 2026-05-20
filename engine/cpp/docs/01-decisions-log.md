@@ -27,6 +27,7 @@ then positives).
 | Q2-ADR-015 | Nibbit port — NibbitsWeak pinned + NibbitsNormal deferred (Cap-bust, Case B; A0 only) | Accepted (2026-05-18) |
 | Q2-ADR-016 | GremlinMerc encounter port + Surprise OnDeath substrate + pin deferral | Accepted (2026-05-19) |
 | Q2-ADR-017 | Tombstoned encounter removal — NibbitsNormal + GremlinMercNormal off adapter dispatch; SmallSlimes pin tombstone retired | Accepted (2026-05-19) |
+| Q2-ADR-018 | Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE rotates (7th rotation); search VALUES bit-identical | Accepted (2026-05-19) |
 
 ---
 
@@ -2092,3 +2093,58 @@ If NibbitsNormal or GremlinMercNormal pin attempt is revisited:
 - Q2-ADR-015 Amendment 1 (NibbitsNormal pin deferral; superseded at the adapter layer by Q2-ADR-017 — pin context retained for the historical record).
 - Q2-ADR-016 (GremlinMercNormal pin deferral; superseded at the adapter layer by Q2-ADR-017 — pin context retained for the historical record).
 - ADR-029 Path A roadmap (rows for SmallSlimes / NibbitsNormal / GremlinMercNormal updated to REMOVED-FROM-Q2 wave-27).
+
+---
+
+## Q2-ADR-018 — Gremlin substrate removal — revert wave-26/M.α+M.β engine additions; cultist Zobrist BYTE rotates (7th rotation); search VALUES bit-identical
+
+**Date:** 2026-05-19
+**Status:** Accepted
+**Wave:** wave-28/G
+
+### Context
+
+Wave-26/M added the GremlinMerc encounter substrate to the Q2 C++ engine:
+- M.α: kSurprise PowerKind, kGimmeMove..kFleeMove MoveIds, kGremlinMerc..kFatGremlin MonsterKinds, kFleeSelf MoveEffectKind, SpawnEntry struct, OnDeath helpers in transition.cc, Zobrist cardinality bumps via kPreWave26* sentinel constants.
+- M.β: monster_moves.cc table data for all three gremlin kinds.
+
+Q2-ADR-017 removed GremlinMercNormal from the adapter dispatch layer (wave-27). The engine substrate now has zero active consumers — no encounter fixture exercises it, no adapter projection routes to it. Wave-28 planning determined that the substrate complexity (OnDeath spawn chain, kFleeSelf FatGremlin escape, kSurprise trigger) significantly complicates the transition.cc refactor planned for wave-28/B+C+D streams. Removing the substrate now is lower risk than carrying it forward.
+
+### Decision
+
+Remove all gremlin engine substrate introduced in wave-26/M.α+M.β from the Q2 C++ codebase:
+
+1. **types.h**: Remove kSurprise(6) from PowerKind, kGimmeMove(13)..kFleeMove(17) from MoveId, kGremlinMerc(8)/kSneakyGremlin(9)/kFatGremlin(10) from MonsterKind, kFleeSelf(8) from MoveEffectKind.
+2. **monster_moves.h**: Remove kMaxOnDeathSpawns constant, SpawnEntry struct, on_death_spawns/on_death_spawn_count fields from MonsterMoveTable. Revert kMonsterKindCount 11→8.
+3. **move_calc.h**: Remove gremlin MoveId cases from move_wire_id(), try_move_id_from_wire_id(), act_on_intent().
+4. **transition.h**: Remove apply_damage_to_enemy_with_ondeath_check_for_test() and apply_surprise_spawn_for_test() from test_internals namespace.
+5. **enemies.cc**: Remove make_gremlin_merc(), make_sneaky_gremlin(), make_fat_gremlin() factories; remove kFleeSelf case from act() switch.
+6. **monster_moves.cc**: Remove make_gremlin_merc_table(), make_sneaky_gremlin_table(), make_fat_gremlin_table() builders; remove indices 8/9/10 from kMonsterMoveTables.
+7. **transition.cc**: Remove apply_damage_to_enemy_with_ondeath_check(), do_surprise_spawn(), their using declarations and forward declarations; restore damage_enemy() to pre-wave-26 direct idiom (apply_to_defender + alive=false, no OnDeath chain); remove kFleeSelf and kSurprise cases; remove gremlin entries from kind_is_table_driven().
+8. **zobrist.cc**: Revert kPowerKindCardinality 7→6, kMoveIdCardinality 18→13, kMonsterKindCardinality 11→8; remove kPreWave26* sentinel constants and their static_asserts; remove PHASE-3-extension block.
+9. **render.cc**: Remove kSurprise from power_name() and kFleeSelf from format_intent().
+10. **test files**: Remove 4 gremlin table tests from test_monster_moves_table.cc; remove 10 gremlin substrate tests (tests 1-5 + 11-15) from test_transition.cc.
+
+### Zobrist BYTE rotation outcome
+
+Removing the PHASE-3-extension from generate_table() shifts the mt19937_64 consumption order — cultist hash BYTES rotate (7th rotation event across Q2 history). Search VALUES (HP/rounds) remain bit-identical per the append-only discipline: pre-wave-26 search results were computed from the same mt19937 stream that PHASE 1+2+3 now fully defines. The cultist Zobrist pin is re-stamped in commit 2 of this wave (Cultist-BYTE-outcome).
+
+### Consequences
+
+**Negative:**
+- Loses the GremlinMerc encounter capability; re-adding later would require re-implementing OnDeath spawn semantics.
+- Cultist Zobrist BYTE rotates (7th rotation); pin file must be re-stamped.
+
+**Positive:**
+- Removes ~400 LOC of substrate that has zero active consumers.
+- Simplifies transition.cc damage path (no OnDeath chain); removes dependency on StateMutator friends for spawn writes.
+- Reduces Zobrist cardinality (11→8 kinds, 18→13 moves, 7→6 powers) slightly shrinking the key-table static storage.
+
+### Superseded
+
+- Q2-ADR-016 §Substrate-preserved: the gremlin substrate is removed rather than preserved.
+
+### Related
+
+- Q2-ADR-016 (original GremlinMerc port; substrate-preserved rationale now moot).
+- Q2-ADR-017 (removed GremlinMercNormal from adapter dispatch; this ADR removes the underlying engine substrate).
