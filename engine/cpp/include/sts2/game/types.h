@@ -3,8 +3,27 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 
 namespace sts2::game {
+
+namespace detail {
+
+// Returns true iff the values in arr are exactly 0, 1, 2, …, N-1 in order.
+// Used to static_assert that kAll<Enum>s arrays are dense and contiguous so
+// that array[static_cast<std::size_t>(e)] indexing is always safe.
+template <typename Enum, std::size_t N>
+constexpr bool enum_is_contiguous(const std::array<Enum, N>& arr) {
+  for (std::size_t i = 0; i < N; ++i) {
+    if (static_cast<std::underlying_type_t<Enum>>(arr[i]) !=
+        static_cast<std::underlying_type_t<Enum>>(i)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace detail
 
 // CardType: kAttack=0, kSkill=1 preserved from original.
 // Wave-22 APPENDED kStatus=2 for the Slimed status card port (must NOT
@@ -45,6 +64,14 @@ enum class PowerKind : uint8_t {
   kVulnerable = 5,  // reserved for future use
 };
 
+inline constexpr std::array<PowerKind, 6> kAllPowerKinds = {
+    PowerKind::kWeak,   PowerKind::kStrength, PowerKind::kRitual,
+    PowerKind::kCurlUp, PowerKind::kFrail,    PowerKind::kVulnerable,
+};
+static_assert(detail::enum_is_contiguous(kAllPowerKinds));
+
+inline constexpr std::size_t kPowerKindCardinality = kAllPowerKinds.size();
+
 // kIncantation=0, kDarkStrike=1 preserved from original definition.
 // kWebCannon, kCurlAndGrow, kPounce reserved for wave-17 (LouseProgenitor).
 // Wave-21: slime moves appended (data populated in wave-22.β).
@@ -67,31 +94,23 @@ enum class MoveId : int {
   kHissMove = 12,   // Nibbit HISS_MOVE
 };
 
-// Cardinality of the MoveId enum. Live source-of-truth for downstream consumers
-// (Zobrist key-table dimensions; move_calc constexpr table sizes). Update in
-// lockstep with the enum above; kAllMoveIds (below) static_asserts the match.
-inline constexpr std::size_t kMoveIdCardinality = 13;
-
-// Cardinality constants for Zobrist key-table outer dimensions. Moved here from
-// zobrist.cc local constexpr (wave-32/C1-β consolidation). Update in lockstep
-// with the corresponding enums; APPEND-ONLY fill-order contract in zobrist.cc
-// must be respected when bumping either value.
-inline constexpr std::size_t kMonsterKindCardinality = 8;
-inline constexpr std::size_t kPowerKindCardinality = 6;
-
 // Enumerated list of every MoveId value. C++ has no built-in enum reflection;
-// this array is the manual source of truth for round-trip helpers (move_calc.h)
+// this array is the source-of-truth for round-trip helpers (move_calc.h)
 // and for any code that needs to iterate every MoveId value.
-inline constexpr std::array<MoveId, kMoveIdCardinality> kAllMoveIds = {
+inline constexpr std::array<MoveId, 13> kAllMoveIds = {
     MoveId::kIncantation, MoveId::kDarkStrike, MoveId::kWebCannon,
     MoveId::kCurlAndGrow, MoveId::kPounce,     MoveId::kTackleMove,
     MoveId::kGoopMove,    MoveId::kClumpShot,  MoveId::kStickyShot,
     MoveId::kPokeyPounce, MoveId::kButtMove,   MoveId::kSliceMove,
     MoveId::kHissMove,
 };
+static_assert(detail::enum_is_contiguous(kAllMoveIds));
 
-static_assert(kAllMoveIds.size() == kMoveIdCardinality,
-              "kAllMoveIds size must match kMoveIdCardinality");
+// Cardinality of the MoveId enum, derived from the source-of-truth array.
+// Downstream consumers (Zobrist key-table dimensions; move_calc constexpr
+// table sizes) use this constant; adding a MoveId entry to kAllMoveIds above
+// automatically updates it.
+inline constexpr std::size_t kMoveIdCardinality = kAllMoveIds.size();
 
 enum class MonsterKind : uint8_t {
   kCultistCalcified = 0,
@@ -104,6 +123,19 @@ enum class MonsterKind : uint8_t {
   kTwigSlimeM = 6,
   kNibbit = 7,  // wave-24/K.β APPEND-ONLY
 };
+
+inline constexpr std::array<MonsterKind, 8> kAllMonsterKinds = {
+    MonsterKind::kCultistCalcified, MonsterKind::kCultistDamp,
+    MonsterKind::kLouseProgenitor,  MonsterKind::kLeafSlimeS,
+    MonsterKind::kLeafSlimeM,       MonsterKind::kTwigSlimeS,
+    MonsterKind::kTwigSlimeM,       MonsterKind::kNibbit,
+};
+static_assert(detail::enum_is_contiguous(kAllMonsterKinds));
+
+// Cardinality constants for Zobrist key-table outer dimensions. Derived from
+// source-of-truth arrays (wave-33/A.α); APPEND-ONLY fill-order contract in
+// zobrist.cc must be respected when bumping either value.
+inline constexpr std::size_t kMonsterKindCardinality = kAllMonsterKinds.size();
 
 enum class HookPoint : uint8_t {
   kOnSpawn,
@@ -140,5 +172,16 @@ enum class MoveEffectKind : uint8_t {
   kBuffEnemy = 6,      // wave-24/K.α (Nibbit HISS — Strength self-buff)
   kBlockSelf = 7,      // wave-24/K.α (Nibbit SLICE — block self)
 };
+
+inline constexpr std::array<MoveEffectKind, 8> kAllMoveEffectKinds = {
+    MoveEffectKind::kNone,         MoveEffectKind::kAttack,
+    MoveEffectKind::kDefend,       MoveEffectKind::kBuffSelf,
+    MoveEffectKind::kDebuffPlayer, MoveEffectKind::kAddStatusCard,
+    MoveEffectKind::kBuffEnemy,    MoveEffectKind::kBlockSelf,
+};
+static_assert(detail::enum_is_contiguous(kAllMoveEffectKinds));
+
+inline constexpr std::size_t kMoveEffectKindCardinality =
+    kAllMoveEffectKinds.size();
 
 }  // namespace sts2::game
