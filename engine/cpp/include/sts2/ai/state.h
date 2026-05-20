@@ -8,6 +8,7 @@
 #include <optional>
 
 #include "sts2/game/card_effects.h"
+#include "sts2/game/damage_calc.h"
 #include "sts2/game/monster_moves.h"
 #include "sts2/game/stat.h"
 #include "sts2/game/types.h"
@@ -286,6 +287,14 @@ class EnemyState {
     return powers_;
   }
 
+  // ---- Mutation helpers for OracleTarget (wave-28/C.1) ----
+  // Takes a POST-formula block value (caller computes via
+  // damage::compute_outgoing_block).
+  void add_block_amount(int32_t v) noexcept { block_ += v; }
+  void add_power(sts2::game::PowerKind kind, int32_t stacks) noexcept {
+    sts2::ai::powers::add_power(powers_, power_count_, kind, stacks);
+  }
+
   bool operator==(const EnemyState&) const = default;
 
  private:
@@ -484,6 +493,38 @@ class CompactState {
   [[nodiscard]] const std::array<PowerInstance, kMaxPowersPerCreature>&
   get_player_powers() const noexcept {
     return player_powers_;
+  }
+
+  // ---- Mutation helpers for OracleTarget (wave-28/C.1) ----
+  void apply_to_player(int32_t dmg) noexcept {
+    (void)sts2::damage::apply_to_defender(player_hp_, player_block_, dmg);
+  }
+  void add_player_frail(int32_t v) noexcept {
+    if (v != 0) {
+      sts2::ai::powers::add_power(player_powers_, player_power_count_,
+                                  sts2::game::PowerKind::kFrail, v);
+    }
+  }
+  void add_player_weak(int32_t v) noexcept {
+    if (v != 0) {
+      sts2::ai::powers::add_power(player_powers_, player_power_count_,
+                                  sts2::game::PowerKind::kWeak, v);
+    }
+  }
+  // No Phase-1 consumer; exists for snapshot discipline.
+  void add_player_vulnerable(int32_t v) noexcept {
+    if (v != 0) {
+      sts2::ai::powers::add_power(player_powers_, player_power_count_,
+                                  sts2::game::PowerKind::kVulnerable, v);
+    }
+  }
+  void add_player_discard_slimed(int32_t count) noexcept {
+    for (int32_t i = 0; i < count; ++i) {
+      if (discard_[sts2::game::CardId::kSlimed] <
+          sts2::game::card_effects::kMaxSlimedAccumulation) {
+        ++discard_[sts2::game::CardId::kSlimed];
+      }
+    }
   }
 
   bool operator==(const CompactState&) const = default;
