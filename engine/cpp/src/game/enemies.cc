@@ -1,6 +1,7 @@
 #include "sts2/game/enemies.h"
 
 #include "sts2/game/combat.h"
+#include "sts2/game/damage.h"
 #include "sts2/game/monster_moves.h"
 #include "sts2/game/move_calc.h"
 #include "sts2/game/powers.h"
@@ -240,18 +241,86 @@ sts2::game::Enemy make_fat_gremlin(sts2::game::Rng& rng, int32_t hp_override) {
   return e;
 }
 
+namespace {
+
+bool is_cultist_kind(sts2::game::MonsterKind k) noexcept {
+  return k == sts2::game::MonsterKind::kCultistCalcified ||
+         k == sts2::game::MonsterKind::kCultistDamp;
+}
+
+}  // namespace
+
 void roll_next_move(sts2::game::Enemy& e) {
-  sts2::game::move_calc::advance_intent(e.performed_first_move, e.current_move);
+  if (is_cultist_kind(e.kind)) {
+    sts2::game::move_calc::advance_intent(e.performed_first_move,
+                                          e.current_move);
+    return;
+  }
+  const auto kind_idx = static_cast<std::size_t>(e.kind);
+  if (kind_idx >= sts2::game::monster_moves::kMonsterMoveTables.size()) {
+    return;
+  }
+  const auto& table = sts2::game::monster_moves::kMonsterMoveTables[kind_idx];
+  uint8_t move_index =
+      sts2::game::monster_moves::find_move_index(e.kind, e.current_move);
+  sts2::game::move_calc::advance_intent_table(
+      e.performed_first_move, e.current_move, move_index, table);
 }
 
 void act(sts2::game::Enemy& e, sts2::game::Combat& combat) {
-  sts2::game::move_calc::act_on_intent(
-      e.current_move,
-      [&]() {
-        sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kRitual,
-                            e.ritual_amount.value());
-      },
-      [&]() { combat.enemy_attack_player(e, e.dark_strike_base.value()); });
+  if (is_cultist_kind(e.kind)) {
+    sts2::game::move_calc::act_on_intent(
+        e.current_move,
+        [&]() {
+          sts2::powers::apply(e.vitals.powers, sts2::game::PowerKind::kRitual,
+                              e.ritual_amount.value());
+        },
+        [&]() { combat.enemy_attack_player(e, e.dark_strike_base.value()); });
+    return;
+  }
+  // Table-driven dispatch — mirrors ai/transition.cc::do_enemy_act_slime so
+  // production and oracle agree on enemy behavior. Only the MoveEffectKinds
+  // exercised by Nibbit (kAttack, kBlockSelf, kBuffEnemy) are wired; other
+  // table-driven monsters (Louse, slimes, gremlins) remain unsupported in the
+  // production sts2_fight path until separately addressed.
+  const auto kind_idx = static_cast<std::size_t>(e.kind);
+  if (kind_idx >= sts2::game::monster_moves::kMonsterMoveTables.size()) {
+    return;
+  }
+  const auto& table = sts2::game::monster_moves::kMonsterMoveTables[kind_idx];
+  const uint8_t move_index =
+      sts2::game::monster_moves::find_move_index(e.kind, e.current_move);
+  if (move_index >= table.move_count) {
+    return;
+  }
+  const auto& move = table.moves[move_index];
+  for (uint8_t i = 0; i < move.effect_count; ++i) {
+    const auto& fx = move.effects[i];
+    switch (fx.kind) {
+      case sts2::game::MoveEffectKind::kAttack:
+        combat.enemy_attack_player(e, fx.value);
+        if (combat.combat_over()) {
+          return;
+        }
+        break;
+      case sts2::game::MoveEffectKind::kBlockSelf: {
+        const int blk =
+            sts2::damage::compute_outgoing_block(fx.value, 0, false, true);
+        e.vitals.block += blk;
+        break;
+      }
+      case sts2::game::MoveEffectKind::kBuffEnemy:
+        sts2::powers::apply(e.vitals.powers, fx.power_kind, fx.value);
+        break;
+      case sts2::game::MoveEffectKind::kNone:
+      case sts2::game::MoveEffectKind::kDefend:
+      case sts2::game::MoveEffectKind::kBuffSelf:
+      case sts2::game::MoveEffectKind::kDebuffPlayer:
+      case sts2::game::MoveEffectKind::kAddStatusCard:
+      case sts2::game::MoveEffectKind::kFleeSelf:
+        break;
+    }
+  }
 }
 
 }  // namespace sts2::enemies

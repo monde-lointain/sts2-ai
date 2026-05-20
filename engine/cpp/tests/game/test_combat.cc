@@ -707,6 +707,62 @@ TEST(CombatEnemyPhase, T_CMB_210_PlayerDeathShortCircuitsActLoop) {
                    {make_power(PowerKind::kRitual, 5, /*just_applied=*/false)});
 }
 
+// T-CMB-212 — Nibbit BUTT_MOVE applies 12 damage to player on enemy_phase.
+// Production parity: ai/transition.cc's do_enemy_act_slime already dispatches
+// table-driven moves correctly; enemies::act must do the same so a played-
+// through Combat tracks the oracle's predictions.
+TEST(CombatEnemyPhase, T_CMB_212_NibbitButtMoveAppliesTwelveDamage) {
+  Combat c{kCombatTestSeed};
+  Rng enemy_rng{kCombatTestSeed};
+  c.add_enemy(sts2::enemies::make_nibbit_alone(enemy_rng));
+  c.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
+  c.start(sts2::cards::make_silent_starter_deck());
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kButtMove);
+  const Stat hp_before = c.player().vitals.hp;
+
+  c.enemy_phase();
+
+  EXPECT_EQ(c.player().vitals.hp, Stat{hp_before.value() - 12});
+}
+
+// T-CMB-213 — Nibbit's intent advances kButtMove → kSliceMove after one
+// end_turn (table-driven follow_up_index per make_nibbit_table:
+// BUTT→SLICE→HISS→BUTT cycle).
+TEST(CombatStartPlayerTurn, T_CMB_213_NibbitIntentAdvancesButtToSlice) {
+  Combat c{kCombatTestSeed};
+  Rng enemy_rng{kCombatTestSeed};
+  c.add_enemy(sts2::enemies::make_nibbit_alone(enemy_rng));
+  c.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
+  c.start(sts2::cards::make_silent_starter_deck());
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kButtMove);
+
+  c.end_turn();
+
+  EXPECT_EQ(c.enemies()[0].current_move, MoveId::kSliceMove);
+}
+
+// T-CMB-214 — Nibbit's SLICE_MOVE has two effects: attack 6 + block-self 5.
+// Verifies multi-effect dispatch in production parity with
+// do_enemy_act_slime's switch on MoveEffectKind.
+TEST(CombatEnemyPhase, T_CMB_214_NibbitSliceMoveAttackAndBlock) {
+  Combat c{kCombatTestSeed};
+  Rng enemy_rng{kCombatTestSeed};
+  c.add_enemy(sts2::enemies::make_nibbit_alone(enemy_rng));
+  c.set_pick_discard_callback(
+      [](const Combat&) { return sts2::game::HandIndex{0}; });
+  c.start(sts2::cards::make_silent_starter_deck());
+  c.end_turn();  // R1→R2: BUTT_MOVE acts, intent → SLICE_MOVE
+  ASSERT_EQ(c.enemies()[0].current_move, MoveId::kSliceMove);
+  const Stat hp_before_slice = c.player().vitals.hp;
+
+  c.enemy_phase();
+
+  EXPECT_EQ(c.player().vitals.hp, Stat{hp_before_slice.value() - 6});
+  EXPECT_EQ(c.enemies()[0].vitals.block, Stat{5});
+}
+
 // -------------------------------------------------------------------------
 // 10.9  end_turn
 // -------------------------------------------------------------------------
