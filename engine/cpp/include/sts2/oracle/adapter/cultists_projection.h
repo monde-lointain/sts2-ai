@@ -28,8 +28,10 @@ namespace sts2::oracle::adapter {
 //    action turn=1 maps to round=1 (Ring-of-the-Snake 7-card draw).
 //  - Enemy slot order preserved from the wire — Q1 emits Calcified first,
 //    Damp second per the fixture dump, but we accept either order.
-//  - just_applied_ritual / performed_first_move = false; current_move =
-//    kIncantation (matches the wire's INCANTATION_MOVE on the first turn).
+//  - performed_first_move = false; just_applied_ritual set via
+//    sts2::ai::powers::set_just_applied_ritual when the wire's Ritual power
+//    has just_applied=true; current_move = kIncantation (matches the wire's
+//    INCANTATION_MOVE on the first turn).
 //  - Card pile projection: ModelId strings -> CardId enum via
 //    map_card_model_id. Unknown ModelIds throw StateCodecError (Phase-1A
 //    Silent starter deck is enumerable: StrikeSilent, DefendSilent,

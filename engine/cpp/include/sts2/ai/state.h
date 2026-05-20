@@ -110,9 +110,6 @@ class EnemyState {
     return sts2::game::Stat{powers_.stacks_of(sts2::game::PowerKind::kWeak)};
   }
 
-  [[nodiscard]] bool get_just_applied_ritual() const noexcept {
-    return powers_.just_applied_ritual();
-  }
   [[nodiscard]] bool get_performed_first_move() const noexcept {
     return performed_first_move_;
   }
@@ -150,13 +147,6 @@ class EnemyState {
   void remove_power(sts2::game::PowerKind kind) noexcept {
     powers_.remove(kind);
   }
-  void set_just_applied_ritual(bool value) noexcept {
-    powers_.set_just_applied_ritual(value);
-  }
-  void clear_just_applied_ritual() noexcept {
-    powers_.clear_just_applied_ritual();
-  }
-
   // ---- Typed public mutators (wave-31/B: StateMutator deletion) ----
   void set_block(sts2::game::Stat value) noexcept { block_ = value; }
   void set_performed_first_move(bool value) noexcept {

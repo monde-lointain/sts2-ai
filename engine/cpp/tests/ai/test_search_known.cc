@@ -153,7 +153,6 @@ TEST(Search, DefensivePlayPreservesHp) {
                         .hp(Stat{3})  // 1 Strike kills (6 dmg)
                         .strength(Stat{0})
                         .current_move(MoveId::kDarkStrike)
-                        .just_applied_ritual(false)
                         .performed_first_move(true)
                         .build())
           .enemy(1, EnemyStateBuilder{}

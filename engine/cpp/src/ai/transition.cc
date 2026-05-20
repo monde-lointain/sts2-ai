@@ -91,7 +91,7 @@ void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
 // Unpowered semantics — no Frail tax) and CurlUp is removed.
 // ---------------------------------------------------------------------------
 void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
-  const CardId stored = e.powers().curl_up_card();
+  const CardId stored = sts2::ai::powers::curl_up_card(e.powers());
   if (stored == CardId::kNone) {
     return;
   }
@@ -157,12 +157,12 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     // All card-sourced attacks are powered attacks in the Q2 Phase-1 model
     // (ValueProp.Move set, Unpowered not set → IsPoweredAttack = true).
     if (e.get_alive()) {
-      const CardId stored = e.powers().curl_up_card();
+      const CardId stored = sts2::ai::powers::curl_up_card(e.powers());
       if (stored == CardId::kNone) {
         const PowerInstance* curl_p = powers::find_power(
             e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
         if (curl_p != nullptr) {
-          e.powers_mut().set_curl_up_card(id);
+          sts2::ai::powers::set_curl_up_card(e.powers_mut(), id);
         }
       }
     }
@@ -441,7 +441,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
         // but in v1 Ritual is applied once -> Power.amount stays at
         // ritual_amount. We model the dynamic Ritual state purely via
         // just_applied flag on the kRitual PowerInstance.
-        e.set_just_applied_ritual(true);
+        sts2::ai::powers::set_just_applied_ritual(e.powers_mut(), true);
       },
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
@@ -466,9 +466,9 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
   //   strength gain); subsequent turns → ritual > 0, no kRitual entry →
   //   grants strength each turn.
   if (cultist_ritual_amount(e.get_kind()) > 0) {
-    const bool just_applied = e.get_just_applied_ritual();
+    const bool just_applied = sts2::ai::powers::just_applied_ritual(e.powers());
     if (just_applied) {
-      e.clear_just_applied_ritual();
+      sts2::ai::powers::clear_just_applied_ritual(e.powers_mut());
     } else {
       e.add_power(PowerKind::kStrength, cultist_ritual_amount(e.get_kind()));
     }

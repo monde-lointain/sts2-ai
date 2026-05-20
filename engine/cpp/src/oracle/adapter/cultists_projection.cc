@@ -106,17 +106,21 @@ sts2::ai::EnemyState project_one_enemy(const ParsedCreature& cr) {
   const sts2::game::MoveId current_move =
       cr.intent_present ? map_move_id(cr.intent.move_id)
                         : sts2::game::MoveId::kIncantation;
-  return sts2::ai::EnemyStateBuilder{}
-      .alive(cr.current_hp > 0)
-      .hp(sts2::game::Stat{cr.current_hp})
-      .block(sts2::game::Stat{cr.block})
-      .strength(sts2::game::Stat{power_stacks(cr, kPowerIdStrength)})
-      .weak(sts2::game::Stat{power_stacks(cr, kPowerIdWeak)})
-      .kind(cultist_kind_from_wire_name(cr.name))
-      .just_applied_ritual(has_power_with_just_applied(cr, kPowerIdRitual))
-      .performed_first_move(false)
-      .current_move(current_move)
-      .build();
+  sts2::ai::EnemyState result =
+      sts2::ai::EnemyStateBuilder{}
+          .alive(cr.current_hp > 0)
+          .hp(sts2::game::Stat{cr.current_hp})
+          .block(sts2::game::Stat{cr.block})
+          .strength(sts2::game::Stat{power_stacks(cr, kPowerIdStrength)})
+          .weak(sts2::game::Stat{power_stacks(cr, kPowerIdWeak)})
+          .kind(cultist_kind_from_wire_name(cr.name))
+          .performed_first_move(false)
+          .current_move(current_move)
+          .build();
+  if (has_power_with_just_applied(cr, kPowerIdRitual)) {
+    sts2::ai::powers::set_just_applied_ritual(result.powers_mut(), true);
+  }
+  return result;
 }
 
 }  // namespace

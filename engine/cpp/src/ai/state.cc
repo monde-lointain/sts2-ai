@@ -37,27 +37,32 @@ EnemyState build_enemy_state(const sts2::game::Enemy& e) {
   // needed by chance.cc + transition.cc to dispatch enemy semantics.
   const uint8_t move_idx =
       sts2::game::monster_moves::find_move_index(e.kind, e.current_move);
-  // Build via builder; strength/weak/just_applied_ritual route through powers_.
-  // dark_strike_base and ritual_amount are now sourced from
-  // kMonsterMoveTables[kind] via helpers in transition.cc (wave-35/B.2-β;
-  // ADR-031). kind + move_index must be set so do_enemy_act + chance.cc
-  // route slime states through their table-driven semantics instead of
-  // falling through to the cultist act_on_intent stub (which is a silent
+  // Build via builder; strength/weak route through powers_.
+  // just_applied_ritual is set via free helper after build (typed setter
+  // removed per wave-36/B.1-β). dark_strike_base and ritual_amount are now
+  // sourced from kMonsterMoveTables[kind] via helpers in transition.cc
+  // (wave-35/B.2-β; ADR-031). kind + move_index must be set so do_enemy_act +
+  // chance.cc route slime states through their table-driven semantics instead
+  // of falling through to the cultist act_on_intent stub (which is a silent
   // no-op for slime MoveIds → infinite recursion).
-  return EnemyStateBuilder{}
-      .alive(e.vitals.hp > sts2::game::Stat{0})
-      .hp(e.vitals.hp)
-      .block(e.vitals.block)
-      .strength(sts2::game::Stat{sts2::powers::amount(
-          e.vitals.powers, sts2::game::PowerKind::kStrength)})
-      .weak(sts2::game::Stat{
-          sts2::powers::amount(e.vitals.powers, sts2::game::PowerKind::kWeak)})
-      .just_applied_ritual(ritual != nullptr && ritual->just_applied)
-      .performed_first_move(e.performed_first_move)
-      .current_move(e.current_move)
-      .kind(e.kind)
-      .move_index(move_idx == 0xFF ? 0U : move_idx)
-      .build();
+  EnemyState result =
+      EnemyStateBuilder{}
+          .alive(e.vitals.hp > sts2::game::Stat{0})
+          .hp(e.vitals.hp)
+          .block(e.vitals.block)
+          .strength(sts2::game::Stat{sts2::powers::amount(
+              e.vitals.powers, sts2::game::PowerKind::kStrength)})
+          .weak(sts2::game::Stat{sts2::powers::amount(
+              e.vitals.powers, sts2::game::PowerKind::kWeak)})
+          .performed_first_move(e.performed_first_move)
+          .current_move(e.current_move)
+          .kind(e.kind)
+          .move_index(move_idx == 0xFF ? 0U : move_idx)
+          .build();
+  if (ritual != nullptr && ritual->just_applied) {
+    sts2::ai::powers::set_just_applied_ritual(result.powers_mut(), true);
+  }
+  return result;
 }
 
 }  // namespace

@@ -26,7 +26,7 @@ struct PowerInstance {
   // bit 0: just_applied (used by Ritual to skip strength grant on spawn turn)
   uint8_t flags = 0;
   // Stores CurlUp card-stamp (CardId cast to uint8_t); 0 = kNone / not stored.
-  // Typed accessors: PowerArray::curl_up_card() / set_curl_up_card(CardId).
+  // Accessed via: sts2::ai::powers::curl_up_card / set_curl_up_card.
   uint8_t curl_up_card_stamp = 0;
   uint8_t _reserved = 0;
 
@@ -149,6 +149,37 @@ inline void remove_power(std::array<PowerInstance, kMaxPowersPerCreature>& arr,
 
 }  // namespace powers
 
+// Forward-declared here; defined after PowerArray below.
+class PowerArray;
+
+namespace powers {
+
+// ---------------------------------------------------------------------------
+// Free helpers for Ritual just_applied flag and CurlUp card-stamp.
+// These live in the powers:: namespace to keep PowerArray's public surface
+// generic. They use ONLY PowerArray's public API (find, find_mut, add,
+// remove) — no raw data_/count_ access.
+//
+// CRITICAL semantic distinction (set_just_applied_ritual(false) vs clear):
+//   set(false)  — if entry exists: clears bit, KEEPS entry even if empty.
+//                 if absent: early return (no-op, no materialize).
+//   clear()     — if entry exists: clears bit, REMOVES entry if stacks==0
+//                 && flags==0.
+//                 if absent: early return.
+// DO NOT collapse these two helpers — the distinction is load-bearing for
+// Builder{}.just_applied_ritual(true).just_applied_ritual(false).build()
+// byte-parity (and thus the cultist Zobrist BYTE pin).
+// ---------------------------------------------------------------------------
+
+[[nodiscard]] inline sts2::game::CardId curl_up_card(
+    const PowerArray& p) noexcept;
+inline void set_curl_up_card(PowerArray& p, sts2::game::CardId id) noexcept;
+[[nodiscard]] inline bool just_applied_ritual(const PowerArray& p) noexcept;
+inline void set_just_applied_ritual(PowerArray& p, bool value) noexcept;
+inline void clear_just_applied_ritual(PowerArray& p) noexcept;
+
+}  // namespace powers
+
 // ---------------------------------------------------------------------------
 // PowerArray — append-only value class wrapping the per-creature power array.
 // Insertion order = wire order = Zobrist slot order (load-bearing invariant).
@@ -168,6 +199,10 @@ class PowerArray {
 
   [[nodiscard]] const PowerInstance* find(
       sts2::game::PowerKind kind) const noexcept {
+    return powers::find_power(data_, count_, kind);
+  }
+
+  [[nodiscard]] PowerInstance* find_mut(sts2::game::PowerKind kind) noexcept {
     return powers::find_power(data_, count_, kind);
   }
 
@@ -194,63 +229,70 @@ class PowerArray {
     }
   }
 
-  // CurlUp card-stamp typed accessors.
-  [[nodiscard]] sts2::game::CardId curl_up_card() const noexcept {
-    const PowerInstance* p =
-        powers::find_power(data_, count_, sts2::game::PowerKind::kCurlUp);
-    return (p != nullptr)
-               ? static_cast<sts2::game::CardId>(p->curl_up_card_stamp)
-               : sts2::game::CardId::kNone;
-  }
-  void set_curl_up_card(sts2::game::CardId id) noexcept {
-    PowerInstance* p =
-        powers::find_power(data_, count_, sts2::game::PowerKind::kCurlUp);
-    if (p != nullptr) {
-      p->curl_up_card_stamp = static_cast<uint8_t>(id);
-    }
-  }
-
-  // Ritual just_applied bit (flags bit 0 on the kRitual PowerInstance).
-  [[nodiscard]] bool just_applied_ritual() const noexcept {
-    const PowerInstance* p =
-        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
-    return (p != nullptr) && ((p->flags & 0x01U) != 0);
-  }
-  void set_just_applied_ritual(bool value) noexcept {
-    PowerInstance* p =
-        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
-    if (value) {
-      if (p == nullptr) {
-        // Materialise a kRitual entry with stacks=0; just_applied only persists
-        // with a backing PowerInstance (Invariant #5: load-bearing for
-        // from_combat byte-parity).
-        p = &powers::add_power(data_, count_, sts2::game::PowerKind::kRitual,
-                               0);
-      }
-      p->flags |= 0x01U;
-    } else {
-      if (p != nullptr) {
-        p->flags &= static_cast<uint8_t>(~0x01U);
-      }
-    }
-  }
-  void clear_just_applied_ritual() noexcept {
-    PowerInstance* p =
-        powers::find_power(data_, count_, sts2::game::PowerKind::kRitual);
-    if (p == nullptr) {
-      return;
-    }
-    p->flags &= static_cast<uint8_t>(~0x01U);
-    if (p->stacks == 0 && p->flags == 0) {
-      powers::remove_power(data_, count_, sts2::game::PowerKind::kRitual);
-    }
-  }
-
   bool operator==(const PowerArray&) const = default;
 
  private:
   std::array<PowerInstance, kMaxPowersPerCreature> data_{};
   uint8_t count_ = 0;
 };
+
+// ---------------------------------------------------------------------------
+// powers:: free helper bodies (inline; defined after PowerArray is complete).
+// ---------------------------------------------------------------------------
+namespace powers {
+
+[[nodiscard]] inline sts2::game::CardId curl_up_card(
+    const PowerArray& p) noexcept {
+  const PowerInstance* inst = p.find(sts2::game::PowerKind::kCurlUp);
+  return (inst != nullptr)
+             ? static_cast<sts2::game::CardId>(inst->curl_up_card_stamp)
+             : sts2::game::CardId::kNone;
+}
+
+inline void set_curl_up_card(PowerArray& p, sts2::game::CardId id) noexcept {
+  PowerInstance* inst = p.find_mut(sts2::game::PowerKind::kCurlUp);
+  if (inst != nullptr) {
+    inst->curl_up_card_stamp = static_cast<uint8_t>(id);
+  }
+}
+
+[[nodiscard]] inline bool just_applied_ritual(const PowerArray& p) noexcept {
+  const PowerInstance* inst = p.find(sts2::game::PowerKind::kRitual);
+  return (inst != nullptr) && ((inst->flags & 0x01U) != 0);
+}
+
+inline void set_just_applied_ritual(PowerArray& p, bool value) noexcept {
+  if (value) {
+    PowerInstance* inst = p.find_mut(sts2::game::PowerKind::kRitual);
+    if (inst == nullptr) {
+      // Materialise kRitual entry with stacks=0 (Invariant #5: load-bearing
+      // for from_combat byte-parity). Mirror existing PowerArray method
+      // exactly.
+      inst = &p.add(sts2::game::PowerKind::kRitual, 0);
+    }
+    inst->flags |= 0x01U;
+  } else {
+    PowerInstance* inst = p.find_mut(sts2::game::PowerKind::kRitual);
+    if (inst != nullptr) {
+      // Clear bit; KEEP entry even if stacks==0 + flags==0 after clear.
+      // This differs from clear_just_applied_ritual which REMOVES the entry.
+      inst->flags &= static_cast<uint8_t>(~0x01U);
+    }
+    // If absent: early return (no-op, no materialize).
+  }
+}
+
+inline void clear_just_applied_ritual(PowerArray& p) noexcept {
+  PowerInstance* inst = p.find_mut(sts2::game::PowerKind::kRitual);
+  if (inst == nullptr) {
+    return;
+  }
+  inst->flags &= static_cast<uint8_t>(~0x01U);
+  if (inst->stacks == 0 && inst->flags == 0) {
+    p.remove(sts2::game::PowerKind::kRitual);
+  }
+}
+
+}  // namespace powers
 
 }  // namespace sts2::ai
