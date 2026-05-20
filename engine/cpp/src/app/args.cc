@@ -1,6 +1,7 @@
 #include "sts2/app/args.h"
 
 #include <cstdint>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <string>
@@ -27,8 +28,11 @@ bool parse_uint64(const std::string& s, std::uint64_t& out) {
 }
 
 bool parse_args(int argc, char** argv, std::uint64_t& seed_out,
-                bool& seed_provided, std::ostream& err) {
+                bool& seed_provided,
+                std::optional<std::string>& scenario_path_out,
+                std::ostream& err) {
   seed_provided = false;
+  scenario_path_out.reset();
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg == "--seed") {
@@ -42,6 +46,13 @@ bool parse_args(int argc, char** argv, std::uint64_t& seed_out,
         return false;
       }
       seed_provided = true;
+      ++i;
+    } else if (arg == "--scenario") {
+      if (i + 1 >= argc) {
+        err << "error: --scenario requires a path\n";
+        return false;
+      }
+      scenario_path_out = argv[i + 1];
       ++i;
     } else {
       err << "error: unknown argument '" << arg << "'\n";

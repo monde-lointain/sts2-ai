@@ -12,6 +12,7 @@
 #include <array>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -20,7 +21,6 @@
 
 namespace {
 
-using sts2::app::parse_args;
 using sts2::app::parse_uint64;
 using sts2::app::random_seed;
 using ::testing::HasSubstr;
@@ -35,6 +35,17 @@ std::vector<char*> make_argv(std::vector<std::string>& storage) {
     argv.push_back(s.data());
   }
   return argv;
+}
+
+// Thin wrapper: the existing parse_args tests pre-date the --scenario flag
+// added wave-28. Reuses the original 5-arg signature by dropping the new
+// scenario-path out-param on a discardable local. New tests below use
+// sts2::app::parse_args directly to assert --scenario behavior.
+bool parse_args(int argc, char** argv, std::uint64_t& seed_out,
+                bool& seed_provided, std::ostream& err) {
+  std::optional<std::string> unused;
+  return sts2::app::parse_args(argc, argv, seed_out, seed_provided, unused,
+                               err);
 }
 
 // -------------------------------------------------------------------------
@@ -239,6 +250,78 @@ TEST(AppRandomSeed, T_MAIN_090_NotAllZero) {
     }
   }
   EXPECT_TRUE(any_nonzero) << "10 calls to random_seed() all returned 0";
+}
+
+// -------------------------------------------------------------------------
+// 13.4  parse_args --scenario  (T-MAIN-100..115; wave-28)
+// -------------------------------------------------------------------------
+
+// T-MAIN-100 — BP — `[prog, --scenario, foo.json]` → captures path, no seed.
+TEST(AppParseArgsScenario, T_MAIN_100_ScenarioPathCaptured) {
+  std::vector<std::string> storage{"prog", "--scenario", "foo.json"};
+  auto argv = make_argv(storage);
+  std::uint64_t seed = 0;
+  bool seed_provided = true;  // sentinel: should flip to false
+  std::optional<std::string> scenario_path;
+  std::ostringstream err;
+
+  EXPECT_TRUE(sts2::app::parse_args(static_cast<int>(argv.size()), argv.data(),
+                                    seed, seed_provided, scenario_path, err));
+  EXPECT_FALSE(seed_provided);
+  ASSERT_TRUE(scenario_path.has_value());
+  EXPECT_EQ(*scenario_path, "foo.json");
+  EXPECT_TRUE(err.str().empty());
+}
+
+// T-MAIN-105 — BP, EG — `[prog, --scenario]` (missing value) → false.
+TEST(AppParseArgsScenario, T_MAIN_105_MissingPathErrors) {
+  std::vector<std::string> storage{"prog", "--scenario"};
+  auto argv = make_argv(storage);
+  std::uint64_t seed = 0;
+  bool seed_provided = false;
+  std::optional<std::string> scenario_path;
+  std::ostringstream err;
+
+  EXPECT_FALSE(sts2::app::parse_args(static_cast<int>(argv.size()), argv.data(),
+                                     seed, seed_provided, scenario_path, err));
+  EXPECT_THAT(err.str(), HasSubstr("--scenario requires a path"));
+  EXPECT_FALSE(scenario_path.has_value());
+}
+
+// T-MAIN-110 — BP — `[prog, --scenario, foo.json, --seed, 42]` → both set.
+TEST(AppParseArgsScenario, T_MAIN_110_BothFlagsCoexist) {
+  std::vector<std::string> storage{"prog", "--scenario", "foo.json", "--seed",
+                                   "42"};
+  auto argv = make_argv(storage);
+  std::uint64_t seed = 0;
+  bool seed_provided = false;
+  std::optional<std::string> scenario_path;
+  std::ostringstream err;
+
+  EXPECT_TRUE(sts2::app::parse_args(static_cast<int>(argv.size()), argv.data(),
+                                    seed, seed_provided, scenario_path, err));
+  EXPECT_TRUE(seed_provided);
+  EXPECT_EQ(seed, 42U);
+  ASSERT_TRUE(scenario_path.has_value());
+  EXPECT_EQ(*scenario_path, "foo.json");
+}
+
+// T-MAIN-115 — BP — Argument order independence: --seed before --scenario.
+TEST(AppParseArgsScenario, T_MAIN_115_FlagOrderIndependent) {
+  std::vector<std::string> storage{"prog", "--seed", "7", "--scenario",
+                                   "bar.json"};
+  auto argv = make_argv(storage);
+  std::uint64_t seed = 0;
+  bool seed_provided = false;
+  std::optional<std::string> scenario_path;
+  std::ostringstream err;
+
+  EXPECT_TRUE(sts2::app::parse_args(static_cast<int>(argv.size()), argv.data(),
+                                    seed, seed_provided, scenario_path, err));
+  EXPECT_TRUE(seed_provided);
+  EXPECT_EQ(seed, 7U);
+  ASSERT_TRUE(scenario_path.has_value());
+  EXPECT_EQ(*scenario_path, "bar.json");
 }
 
 }  // namespace

@@ -1,9 +1,15 @@
 #include <cstdint>
 #include <iostream>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "sts2/ai/recommend.h"
 #include "sts2/app/args.h"
 #include "sts2/app/prompts.h"
+#include "sts2/app/scenario.h"
+#include "sts2/game/card.h"
 #include "sts2/game/cards.h"
 #include "sts2/game/combat.h"
 #include "sts2/game/enemies.h"
@@ -18,7 +24,9 @@
 int main(int argc, char** argv) {
   uint64_t seed = 0;
   bool seed_provided = false;
-  if (!sts2::app::parse_args(argc, argv, seed, seed_provided, std::cerr)) {
+  std::optional<std::string> scenario_path;
+  if (!sts2::app::parse_args(argc, argv, seed, seed_provided, scenario_path,
+                             std::cerr)) {
     return 1;
   }
   if (!seed_provided) {
@@ -27,20 +35,39 @@ int main(int argc, char** argv) {
 
   sts2::console::enable_ansi_and_utf8();
 
+  // Build the Combat + deck. Two paths converge on a (Combat, deck) pair so
+  // the same callback-then-start sequence runs unconditionally below.
   sts2::game::Combat combat{seed};
+  std::vector<sts2::game::Card> deck;
 
-  // Intentional: enemy rolls use a separate Rng to keep Combat::rng_ private.
-  // Same seed is still deterministic; bit-identical replay across versions is
-  // not required.
-  sts2::game::Rng enemy_rng{seed};
-  combat.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
-  combat.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
+  if (scenario_path.has_value()) {
+    try {
+      sts2::app::Scenario s = sts2::app::load_scenario(*scenario_path);
+      sts2::app::BuiltCombat bc = sts2::app::build_combat(
+          s, seed_provided ? std::optional<std::uint64_t>{seed} : std::nullopt);
+      combat = std::move(bc.combat);
+      deck = std::move(bc.deck);
+    } catch (const std::exception& e) {
+      std::cerr << "scenario load failed: " << e.what() << "\n";
+      return 1;
+    }
+  } else {
+    // Legacy path: Calcified + Damp cultists, silent starter deck.
+    // Intentional: enemy rolls use a separate Rng to keep Combat::rng_
+    // private. Same seed is still deterministic; bit-identical replay across
+    // versions is not required.
+    sts2::game::Rng enemy_rng{seed};
+    combat.add_enemy(sts2::enemies::make_calcified_cultist(enemy_rng));
+    combat.add_enemy(sts2::enemies::make_damp_cultist(enemy_rng));
+    deck = sts2::cards::make_silent_starter_deck();
+  }
 
+  // Register discard callback BEFORE start() — preserves the legacy ordering.
   combat.set_pick_discard_callback([](const sts2::game::Combat& c) {
     return sts2::app::prompt_discard(c, std::cin, std::cout);
   });
 
-  combat.start(sts2::cards::make_silent_starter_deck());
+  combat.start(std::move(deck));
 
   sts2::ai::Recommender ai;
 
