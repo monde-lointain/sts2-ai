@@ -295,6 +295,68 @@ class EnemyState {
     sts2::ai::powers::add_power(powers_, power_count_, kind, stacks);
   }
 
+  // ---- Power-management migration (wave-29/S.1) ----
+  // Lifted from detail::StateMutator so power-mgmt callers route through the
+  // public surface; matches the OracleTarget pattern from wave-28.
+  void decrement_power(sts2::game::PowerKind kind) noexcept {
+    PowerInstance* p = powers::find_power(powers_, power_count_, kind);
+    if (p == nullptr) {
+      return;
+    }
+    --p->stacks;
+    if (p->stacks <= 0) {
+      powers::remove_power(powers_, power_count_, kind);
+    }
+  }
+  void remove_power(sts2::game::PowerKind kind) noexcept {
+    powers::remove_power(powers_, power_count_, kind);
+  }
+  // Ritual just_applied flag lives at bit 0x01 of kRitual.flags.
+  // get_just_applied_ritual() already exists above.
+  void set_just_applied_ritual(bool value) noexcept {
+    PowerInstance* p = powers::find_power(powers_, power_count_,
+                                          sts2::game::PowerKind::kRitual);
+    if (value) {
+      if (p == nullptr) {
+        p = &powers::add_power(powers_, power_count_,
+                               sts2::game::PowerKind::kRitual, 0);
+      }
+      p->flags |= 0x01U;
+    } else {
+      if (p != nullptr) {
+        p->flags &= static_cast<uint8_t>(~0x01U);
+      }
+    }
+  }
+  // Clear just_applied flag; remove the PowerInstance if stacks=0 && flags=0
+  // so from_combat comparison stays consistent.
+  void clear_just_applied_ritual() noexcept {
+    PowerInstance* p = powers::find_power(powers_, power_count_,
+                                          sts2::game::PowerKind::kRitual);
+    if (p == nullptr) {
+      return;
+    }
+    p->flags &= static_cast<uint8_t>(~0x01U);
+    if (p->stacks == 0 && p->flags == 0) {
+      powers::remove_power(powers_, power_count_,
+                           sts2::game::PowerKind::kRitual);
+    }
+  }
+  // CurlUp card-stamp: stored in _pad of the kCurlUp PowerInstance.
+  // _pad == 0 means no card stored; CardId enum values are 1..4.
+  [[nodiscard]] uint8_t curl_up_stored_card() const noexcept {
+    const PowerInstance* p = powers::find_power(powers_, power_count_,
+                                                sts2::game::PowerKind::kCurlUp);
+    return (p != nullptr) ? p->_pad : 0U;
+  }
+  void set_curl_up_stored_card(uint8_t card_stamp) noexcept {
+    PowerInstance* p = powers::find_power(powers_, power_count_,
+                                          sts2::game::PowerKind::kCurlUp);
+    if (p != nullptr) {
+      p->_pad = card_stamp;
+    }
+  }
+
   bool operator==(const EnemyState&) const = default;
 
  private:
@@ -525,6 +587,23 @@ class CompactState {
         ++discard_[sts2::game::CardId::kSlimed];
       }
     }
+  }
+
+  // ---- Power-management migration (wave-29/S.1) ----
+  void decrement_player_power(sts2::game::PowerKind kind) noexcept {
+    PowerInstance* p =
+        powers::find_power(player_powers_, player_power_count_, kind);
+    if (p == nullptr) {
+      return;
+    }
+    --p->stacks;
+    if (p->stacks <= 0) {
+      powers::remove_power(player_powers_, player_power_count_, kind);
+    }
+  }
+  [[nodiscard]] int32_t get_player_frail() const noexcept {
+    return powers::stacks_of(player_powers_, player_power_count_,
+                             sts2::game::PowerKind::kFrail);
   }
 
   bool operator==(const CompactState&) const = default;
