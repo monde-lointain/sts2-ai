@@ -459,7 +459,13 @@ public sealed class UpstreamDriver
         List<(object mutableMonster, string? slot)> spawnList;
         if (plan.Kind == EncounterCatalog.PlanKind.UpstreamEncounterRng)
         {
-            spawnList = ResolveViaUpstreamEncounterRng(plan, runState, modelDbType, modelDbMonsterGeneric, monsterModelType);
+            spawnList = ResolveViaUpstreamEncounterRng(
+                plan,
+                runState,
+                modelDbType,
+                modelDbMonsterGeneric,
+                monsterModelType
+            );
         }
         else
         {
@@ -468,11 +474,17 @@ public sealed class UpstreamDriver
             {
                 string monsterId = plan.MonsterIds[mi];
                 string? slot = plan.Slots[mi];
-                Type monsterClassType = TypeOrThrow($"MegaCrit.Sts2.Core.Models.Monsters.{monsterId}");
-                MethodInfo modelDbMonster = modelDbMonsterGeneric.MakeGenericMethod(monsterClassType);
+                Type monsterClassType = TypeOrThrow(
+                    $"MegaCrit.Sts2.Core.Models.Monsters.{monsterId}"
+                );
+                MethodInfo modelDbMonster = modelDbMonsterGeneric.MakeGenericMethod(
+                    monsterClassType
+                );
                 object canonicalMonster =
                     modelDbMonster.Invoke(null, null)
-                    ?? throw new InvalidOperationException($"ModelDb.Monster<{monsterId}> returned null.");
+                    ?? throw new InvalidOperationException(
+                        $"ModelDb.Monster<{monsterId}> returned null."
+                    );
                 object mutableMonster =
                     monsterModelType
                         .GetMethod("ToMutable", BindingFlags.Public | BindingFlags.Instance)!
@@ -490,8 +502,10 @@ public sealed class UpstreamDriver
         {
             monsters.Add(mutableMonster);
             object creature =
-                createCreatureMi.Invoke(combatState, new object?[] { mutableMonster, combatSideEnemy, slot })
-                ?? throw new InvalidOperationException("CreateCreature returned null.");
+                createCreatureMi.Invoke(
+                    combatState,
+                    new object?[] { mutableMonster, combatSideEnemy, slot }
+                ) ?? throw new InvalidOperationException("CreateCreature returned null.");
             combatStateType
                 .GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!
                 .Invoke(combatState, new object[] { creature });
@@ -517,7 +531,10 @@ public sealed class UpstreamDriver
             .SetValue(combatManagerInstance, combatState);
 
         // L196: _state.MultiplayerScalingModel?.OnCombatEntered(_state)
-        object? multiplayerScaling = ReflectionFlex.TryGetProperty(combatState, "MultiplayerScalingModel");
+        object? multiplayerScaling = ReflectionFlex.TryGetProperty(
+            combatState,
+            "MultiplayerScalingModel"
+        );
         if (multiplayerScaling is not null)
         {
             multiplayerScaling
@@ -527,10 +544,9 @@ public sealed class UpstreamDriver
         }
 
         // L197: StateTracker.SetState(state)
-        object stateTracker =
-            combatManagerType
-                .GetProperty("StateTracker", BindingFlags.Public | BindingFlags.Instance)!
-                .GetValue(combatManagerInstance)!;
+        object stateTracker = combatManagerType
+            .GetProperty("StateTracker", BindingFlags.Public | BindingFlags.Instance)!
+            .GetValue(combatManagerInstance)!;
         stateTracker
             .GetType()
             .GetMethod("SetState", BindingFlags.Public | BindingFlags.Instance)!
@@ -541,29 +557,33 @@ public sealed class UpstreamDriver
 
         // L202-205: foreach player: player.ResetCombatState()
         // L206-209: foreach player: player.PopulateCombatState(player.RunState.Rng.Shuffle, state)
-        MethodInfo resetMi =
-            playerType.GetMethod("ResetCombatState", BindingFlags.Public | BindingFlags.Instance)!;
-        MethodInfo populateMi =
-            playerType.GetMethod("PopulateCombatState", BindingFlags.Public | BindingFlags.Instance)!;
-        object playersList =
-            combatState.GetType()
-                .GetProperty("Players", BindingFlags.Public | BindingFlags.Instance)!
-                .GetValue(combatState)!;
+        MethodInfo resetMi = playerType.GetMethod(
+            "ResetCombatState",
+            BindingFlags.Public | BindingFlags.Instance
+        )!;
+        MethodInfo populateMi = playerType.GetMethod(
+            "PopulateCombatState",
+            BindingFlags.Public | BindingFlags.Instance
+        )!;
+        object playersList = combatState
+            .GetType()
+            .GetProperty("Players", BindingFlags.Public | BindingFlags.Instance)!
+            .GetValue(combatState)!;
         foreach (object p in (IEnumerable)playersList)
             resetMi.Invoke(p, null);
         foreach (object p in (IEnumerable)playersList)
         {
-            object runState_p =
-                playerType.GetProperty("RunState", BindingFlags.Public | BindingFlags.Instance)!
-                    .GetValue(p)!;
-            object rngSet =
-                runState_p.GetType()
-                    .GetProperty("Rng", BindingFlags.Public | BindingFlags.Instance)!
-                    .GetValue(runState_p)!;
-            object shuffleRng =
-                rngSet.GetType()
-                    .GetProperty("Shuffle", BindingFlags.Public | BindingFlags.Instance)!
-                    .GetValue(rngSet)!;
+            object runState_p = playerType
+                .GetProperty("RunState", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(p)!;
+            object rngSet = runState_p
+                .GetType()
+                .GetProperty("Rng", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(runState_p)!;
+            object shuffleRng = rngSet
+                .GetType()
+                .GetProperty("Shuffle", BindingFlags.Public | BindingFlags.Instance)!
+                .GetValue(rngSet)!;
             populateMi.Invoke(p, new object[] { shuffleRng, combatState });
         }
 
@@ -572,12 +592,14 @@ public sealed class UpstreamDriver
         // Our byte snapshot omits net-ids; skipping is semantically a no-op here.
 
         // L211-214: foreach creature: combatManager.AddCreature(creature)
-        MethodInfo addCreatureMi =
-            combatManagerType.GetMethod("AddCreature", BindingFlags.Public | BindingFlags.Instance)!;
-        object creaturesList =
-            combatState.GetType()
-                .GetProperty("Creatures", BindingFlags.Public | BindingFlags.Instance)!
-                .GetValue(combatState)!;
+        MethodInfo addCreatureMi = combatManagerType.GetMethod(
+            "AddCreature",
+            BindingFlags.Public | BindingFlags.Instance
+        )!;
+        object creaturesList = combatState
+            .GetType()
+            .GetProperty("Creatures", BindingFlags.Public | BindingFlags.Instance)!
+            .GetValue(combatState)!;
         foreach (object c in (IEnumerable)creaturesList)
             addCreatureMi.Invoke(combatManagerInstance, new object[] { c });
 
@@ -985,9 +1007,7 @@ public sealed class UpstreamDriver
         }
         object canonicalEncounter =
             modelDbEncounterMethod.MakeGenericMethod(encounterType).Invoke(null, null)
-            ?? throw new InvalidOperationException(
-                $"ModelDb.Encounter<{typeName}> returned null."
-            );
+            ?? throw new InvalidOperationException($"ModelDb.Encounter<{typeName}> returned null.");
 
         // Step 2: call encounter.ToMutable().
         object mutableEncounter =
@@ -1035,7 +1055,9 @@ public sealed class UpstreamDriver
             object monsterObj =
                 pairType.GetField("Item1")?.GetValue(pair)
                 ?? pairType.GetProperty("Item1")?.GetValue(pair)
-                ?? throw new InvalidOperationException("Cannot read Item1 from MonstersWithSlots pair.");
+                ?? throw new InvalidOperationException(
+                    "Cannot read Item1 from MonstersWithSlots pair."
+                );
             object? slotObj =
                 pairType.GetField("Item2")?.GetValue(pair)
                 ?? pairType.GetProperty("Item2")?.GetValue(pair);

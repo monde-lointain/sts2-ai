@@ -50,26 +50,21 @@ public sealed class DecompileReproducibilityGate
     ///
     /// <para>Skipped unless <c>DRIFT_GATES_REPRO=1</c> is set.</para>
     /// </summary>
-    [Fact]
+    [SkippableFact]
     [Trait("Category", "Reproducibility")]
     public void ExtractTwice_ProducesIdenticalOutput()
     {
-        bool optIn =
-            string.Equals(
-                Environment.GetEnvironmentVariable("DRIFT_GATES_REPRO"),
-                "1",
-                StringComparison.Ordinal
-            );
+        bool optIn = string.Equals(
+            Environment.GetEnvironmentVariable("DRIFT_GATES_REPRO"),
+            "1",
+            StringComparison.Ordinal
+        );
 
-        if (!optIn)
-        {
-            // Marked skip (not silent pass). The caller sees "SKIPPED" in test output.
-            // Xunit.SkippableFact: throw SkipException to signal skip to runner.
-            throw new Xunit.SkipException(
-                "DecompileReproducibilityGate is opt-in. "
-                    + "Set DRIFT_GATES_REPRO=1 or use --filter Category=Reproducibility."
-            );
-        }
+        Skip.IfNot(
+            optIn,
+            "DecompileReproducibilityGate is opt-in. "
+                + "Set DRIFT_GATES_REPRO=1 or use --filter Category=Reproducibility."
+        );
 
         string repoRoot = LocateRepoRoot();
         string venv = Path.Combine(repoRoot, ".venv");
@@ -132,7 +127,9 @@ public sealed class DecompileReproducibilityGate
 
         using System.Diagnostics.Process proc =
             System.Diagnostics.Process.Start(psi)
-            ?? throw new InvalidOperationException("Failed to start upstream-sync extract process.");
+            ?? throw new InvalidOperationException(
+                "Failed to start upstream-sync extract process."
+            );
 
         string stderr = proc.StandardError.ReadToEnd();
         proc.WaitForExit();
@@ -219,8 +216,10 @@ public sealed class DecompileReproducibilityGate
         string? dir = AppContext.BaseDirectory;
         while (dir is not null)
         {
-            if (Directory.Exists(Path.Combine(dir, "engine", "headless"))
-                && Directory.Exists(Path.Combine(dir, "tools")))
+            if (
+                Directory.Exists(Path.Combine(dir, "engine", "headless"))
+                && Directory.Exists(Path.Combine(dir, "tools"))
+            )
             {
                 return dir;
             }

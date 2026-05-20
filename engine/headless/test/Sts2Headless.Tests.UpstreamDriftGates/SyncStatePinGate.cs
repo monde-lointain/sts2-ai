@@ -57,7 +57,11 @@ public sealed class SyncStatePinGate
         // EXPECTED FAILURE during bridge work; pin advances at Phase B end.
         // Pin: v0.103.2 (22823976). SyncState: v0.105.1 (23156356).
         Assert.True(
-            string.Equals(pin.PinnedBuildId, syncState!.LastSyncedBuildId, StringComparison.Ordinal),
+            string.Equals(
+                pin.PinnedBuildId,
+                syncState!.LastSyncedBuildId,
+                StringComparison.Ordinal
+            ),
             $"BUILD-ID MISMATCH — EXPECTED FAILURE during bridge work; pin advances at Phase B end.\n"
                 + $"  upstream-pin.json:pinned_buildid   = {pin.PinnedBuildId} ({pin.PinnedVersion})\n"
                 + $"  .upstream-sync-state.json:last_synced_buildid = {syncState.LastSyncedBuildId} ({syncState.LastSyncedVersion})\n"

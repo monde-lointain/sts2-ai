@@ -51,8 +51,14 @@ public class SneakyGremlinTests
     public void SneakyGremlin_rotation_is_SPAWNED_then_TACKLE_self_loop()
     {
         SneakyGremlin m = new();
-        Assert.Equal(SneakyGremlin.TackleMoveId, m.GetMove(SneakyGremlin.SpawnedMoveId).FollowUpMoveId);
-        Assert.Equal(SneakyGremlin.TackleMoveId, m.GetMove(SneakyGremlin.TackleMoveId).FollowUpMoveId);
+        Assert.Equal(
+            SneakyGremlin.TackleMoveId,
+            m.GetMove(SneakyGremlin.SpawnedMoveId).FollowUpMoveId
+        );
+        Assert.Equal(
+            SneakyGremlin.TackleMoveId,
+            m.GetMove(SneakyGremlin.TackleMoveId).FollowUpMoveId
+        );
     }
 
     [Fact]

@@ -255,8 +255,16 @@ public sealed class GremlinMerc : MonsterModel
                 // Upstream: moveState.FollowUpState = moveState2;
                 //           moveState2.FollowUpState = moveState3;
                 //           moveState3.FollowUpState = moveState (loop).
-                new(GimmeMoveId, Intent.MultiAttack(GimmeDamage, GimmeHitCount), FollowUpMoveId: DoubleSmashMoveId),
-                new(DoubleSmashMoveId, Intent.MultiAttack(DoubleSmashDamage, DoubleSmashHitCount), FollowUpMoveId: HeheMoveId),
+                new(
+                    GimmeMoveId,
+                    Intent.MultiAttack(GimmeDamage, GimmeHitCount),
+                    FollowUpMoveId: DoubleSmashMoveId
+                ),
+                new(
+                    DoubleSmashMoveId,
+                    Intent.MultiAttack(DoubleSmashDamage, DoubleSmashHitCount),
+                    FollowUpMoveId: HeheMoveId
+                ),
                 new(HeheMoveId, Intent.Attack(HeheDamage), FollowUpMoveId: GimmeMoveId),
             },
             initialMoveId: GimmeMoveId,
@@ -418,12 +426,16 @@ public sealed class GreenLouse : MonsterModel
 public sealed class LeafSlimeS : MonsterModel
 {
     public const string CanonicalId = "LeafSlimeS";
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 12, 11) → 11
     public const int MinHp = 11;
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 16, 15) → 15
     public const int MaxHp = 15;
+
     // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 4, 3) → 3
     public const int TackleDamage = 3;
+
     // TODO Phase-2 ascension: ToughEnemies MinHp=12, MaxHp=16; DeadlyEnemies TackleDamage=4
     public const int GoopStatusCount = 1;
 
@@ -476,12 +488,16 @@ public sealed class LeafSlimeS : MonsterModel
 public sealed class LeafSlimeM : MonsterModel
 {
     public const string CanonicalId = "LeafSlimeM";
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 33, 32) → 32
     public const int MinHp = 32;
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 36, 35) → 35
     public const int MaxHp = 35;
+
     // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 9, 8) → 8
     public const int ClumpDamage = 8;
+
     // TODO Phase-2 ascension: ToughEnemies MinHp=33, MaxHp=36; DeadlyEnemies ClumpDamage=9
     public const int StickyStatusCount = 2;
 
@@ -497,7 +513,11 @@ public sealed class LeafSlimeM : MonsterModel
             {
                 // Upstream: CLUMP_SHOT.FollowUpState = STICKY_SHOT; STICKY_SHOT.FollowUpState = CLUMP_SHOT.
                 new(ClumpShotMoveId, Intent.Attack(ClumpDamage), FollowUpMoveId: StickyShotMoveId),
-                new(StickyShotMoveId, Intent.Status(StickyStatusCount), FollowUpMoveId: ClumpShotMoveId),
+                new(
+                    StickyShotMoveId,
+                    Intent.Status(StickyStatusCount),
+                    FollowUpMoveId: ClumpShotMoveId
+                ),
             },
             // Upstream initial state: moveState2 = STICKY_SHOT.
             initialMoveId: StickyShotMoveId
@@ -512,12 +532,16 @@ public sealed class LeafSlimeM : MonsterModel
 public sealed class TwigSlimeS : MonsterModel
 {
     public const string CanonicalId = "TwigSlimeS";
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 8, 7) → 7
     public const int MinHp = 7;
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 12, 11) → 11
     public const int MaxHp = 11;
+
     // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 5, 4) → 4
     public const int TackleDamage = 4;
+
     // TODO Phase-2 ascension: ToughEnemies MinHp=8, MaxHp=12; DeadlyEnemies TackleDamage=5
 
     public const string TackleMoveId = "TACKLE_MOVE";
@@ -547,12 +571,16 @@ public sealed class TwigSlimeS : MonsterModel
 public sealed class TwigSlimeM : MonsterModel
 {
     public const string CanonicalId = "TwigSlimeM";
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 27, 26) → 26
     public const int MinHp = 26;
+
     // A0: AscensionHelper.GetValueIfAscension(ToughEnemies, 29, 28) → 28
     public const int MaxHp = 28;
+
     // A0: AscensionHelper.GetValueIfAscension(DeadlyEnemies, 12, 11) → 11
     public const int ClumpDamage = 11;
+
     // TODO Phase-2 ascension: ToughEnemies MinHp=27, MaxHp=29; DeadlyEnemies ClumpDamage=12
     public const int StickyStatusCount = 1;
 

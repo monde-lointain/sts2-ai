@@ -81,9 +81,8 @@ std::string detect_encounter_id(
   // Adapter the registry's string_view-based API to our string-based input.
   std::vector<std::string_view> sv;
   sv.reserve(sorted_wire_names.size());
-  for (const auto& s : sorted_wire_names) {
-    sv.emplace_back(s);
-  }
+  std::copy(sorted_wire_names.begin(), sorted_wire_names.end(),
+            std::back_inserter(sv));
   const auto* spec = sts2::game::encounter_registry::find_by_monsters(sv);
   return spec ? std::string(spec->encounter_id) : std::string("<unknown>");
 }

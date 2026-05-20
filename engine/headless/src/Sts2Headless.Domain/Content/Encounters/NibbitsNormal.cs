@@ -22,8 +22,10 @@ public sealed class NibbitsNormal : EncounterModel
     /// Returns a fixed list; no Rng ticks.
     /// Slot 0 → SLICE_MOVE (front Nibbit); slot 1 → HISS_MOVE (back Nibbit).
     /// </remarks>
-    public override IReadOnlyList<(string MonsterId, string? InitialMoveIdOverride)>
-        GenerateMonstersWithMoves(Rng rng) =>
+    public override IReadOnlyList<(
+        string MonsterId,
+        string? InitialMoveIdOverride
+    )> GenerateMonstersWithMoves(Rng rng) =>
         new (string, string?)[]
         {
             (Nibbit.CanonicalId, Nibbit.SliceMoveId),

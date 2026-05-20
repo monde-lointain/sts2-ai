@@ -91,7 +91,7 @@ void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
 // Unpowered semantics — no Frail tax) and CurlUp is removed.
 // ---------------------------------------------------------------------------
 void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
-  const CardId stored = e.powers().curl_up_card();
+  const CardId stored = sts2::ai::powers::curl_up_card(e.powers());
   if (stored == CardId::kNone) {
     return;
   }
@@ -157,12 +157,12 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     // All card-sourced attacks are powered attacks in the Q2 Phase-1 model
     // (ValueProp.Move set, Unpowered not set → IsPoweredAttack = true).
     if (e.get_alive()) {
-      const CardId stored = e.powers().curl_up_card();
+      const CardId stored = sts2::ai::powers::curl_up_card(e.powers());
       if (stored == CardId::kNone) {
         const PowerInstance* curl_p = powers::find_power(
             e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
         if (curl_p != nullptr) {
-          e.powers_mut().set_curl_up_card(id);
+          sts2::ai::powers::set_curl_up_card(e.powers_mut(), id);
         }
       }
     }
@@ -274,7 +274,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() {
-      // Player power tick is a no-op in v1 (Frail ticks at kAtEnemyTurnEnd
+      // Player power tick is a no-op in v1 (Frail ticks at enemy turn-end
       // side=Enemy in do_enemy_tick_powers below).
       state.move_hand_to_discard();
     }
@@ -441,7 +441,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
         // but in v1 Ritual is applied once -> Power.amount stays at
         // ritual_amount. We model the dynamic Ritual state purely via
         // just_applied flag on the kRitual PowerInstance.
-        e.set_just_applied_ritual(true);
+        sts2::ai::powers::set_just_applied_ritual(e.powers_mut(), true);
       },
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
@@ -453,7 +453,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
 }
 
 // ---------------------------------------------------------------------------
-// do_enemy_tick_powers: generic hook dispatch at kAtEnemyTurnEnd.
+// do_enemy_tick_powers: generic hook dispatch at enemy turn end.
 // Fires for each active power on the enemy and for player's Frail.
 // Cultist Ritual semantics are PRESERVED.
 // ---------------------------------------------------------------------------
@@ -466,9 +466,9 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
   //   strength gain); subsequent turns → ritual > 0, no kRitual entry →
   //   grants strength each turn.
   if (cultist_ritual_amount(e.get_kind()) > 0) {
-    const bool just_applied = e.get_just_applied_ritual();
+    const bool just_applied = sts2::ai::powers::just_applied_ritual(e.powers());
     if (just_applied) {
-      e.clear_just_applied_ritual();
+      sts2::ai::powers::clear_just_applied_ritual(e.powers_mut());
     } else {
       e.add_power(PowerKind::kStrength, cultist_ritual_amount(e.get_kind()));
     }
@@ -489,7 +489,7 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
         // Handled above via cultist_ritual_amount(kind) helper (ADR-031); skip.
         break;
       case PowerKind::kFrail:
-        // Frail on enemy ticks down at kAtEnemyTurnEnd (side=Enemy).
+        // Frail on enemy ticks down at enemy turn end (side=Enemy).
         e.decrement_power(PowerKind::kFrail);
         break;
       case PowerKind::kWeak:
@@ -506,7 +506,7 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
     }
   }
 
-  // Player's Frail ticks down at kAtEnemyTurnEnd (side=Enemy) per upstream
+  // Player's Frail ticks down at enemy turn end (side=Enemy) per upstream
   // FrailPower.cs AfterTurnEnd(side=Enemy → PowerCmd.TickDownDuration).
   if (s.get_player_frail() > 0) {
     s.decrement_player_power(PowerKind::kFrail);
@@ -622,12 +622,8 @@ bool is_terminal(const CompactState& s) noexcept {
   }
   const auto& enemies = s.get_enemies();
   const uint8_t count = s.get_enemy_count();
-  for (uint8_t i = 0; i < count; ++i) {
-    if (enemies[i].get_alive()) {
-      return false;
-    }
-  }
-  return true;
+  return !std::any_of(enemies.begin(), enemies.begin() + count,
+                      [](const EnemyState& e) { return e.get_alive(); });
 }
 
 int draw_count(const CompactState& s) noexcept {

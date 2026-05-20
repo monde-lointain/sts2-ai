@@ -89,7 +89,9 @@ public sealed class SurprisePowerTests
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
 
         // Find a Strike in hand and play it targeting the gremlin.
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, targetEnemyId: gremlinId);
 
         // After the kill, SurprisePower's AfterDeath should have fired and added
@@ -108,7 +110,9 @@ public sealed class SurprisePowerTests
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
 
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, targetEnemyId: gremlinId);
 
         Creature sneaky = ctx.State.Enemies.Single(e => e.Name == SneakyGremlin.CanonicalId);
@@ -135,7 +139,9 @@ public sealed class SurprisePowerTests
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
 
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, targetEnemyId: gremlinId);
 
         Creature sneaky = ctx.State.Enemies.Single(e => e.Name == SneakyGremlin.CanonicalId);
@@ -147,10 +153,7 @@ public sealed class SurprisePowerTests
             sneaky.Id > gremlinId,
             $"SneakyGremlin id {sneaky.Id} <= GremlinMerc id {gremlinId}"
         );
-        Assert.True(
-            fat.Id > gremlinId,
-            $"FatGremlin id {fat.Id} <= GremlinMerc id {gremlinId}"
-        );
+        Assert.True(fat.Id > gremlinId, $"FatGremlin id {fat.Id} <= GremlinMerc id {gremlinId}");
     }
 
     // =========================================================================
@@ -166,7 +169,9 @@ public sealed class SurprisePowerTests
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
 
-        CardInstance strike = ctx.State.HandPile.Cards.First(c => c.ModelId == StrikeSilent.CanonicalId);
+        CardInstance strike = ctx.State.HandPile.Cards.First(c =>
+            c.ModelId == StrikeSilent.CanonicalId
+        );
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, targetEnemyId: gremlinId);
 
         // The spawn must have landed; the combat should still be going.

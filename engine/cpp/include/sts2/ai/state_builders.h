@@ -37,11 +37,6 @@ class EnemyStateBuilder {
     }
     return *this;
   }
-  // just_applied_ritual: delegates to PowerArray (Invariant #5 preserved)
-  EnemyStateBuilder& just_applied_ritual(bool value) noexcept {
-    state_.powers_.set_just_applied_ritual(value);
-    return *this;
-  }
   EnemyStateBuilder& performed_first_move(bool value) noexcept {
     state_.performed_first_move_ = value;
     return *this;

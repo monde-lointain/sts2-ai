@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "sts2/ai/power_array.h"
 #include "sts2/ai/state.h"
 #include "sts2/ai/state_builders.h"
 #include "sts2/ai/transition.h"
@@ -343,8 +344,8 @@ TEST(Transition, EndTurn_PreDrawResolution_EnemyBlockResetAndAct) {
   // Engine semantics (powers::tick_at_turn_end): Ritual::just_applied set by
   // act and cleared by the tick that runs in the same enemy_phase. Strength
   // gain is suppressed for that one cycle.
-  EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual());
-  EXPECT_FALSE(s.get_enemy(1).get_just_applied_ritual());
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(0).powers()));
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(1).powers()));
   EXPECT_EQ(s.get_enemy(0).get_strength(), Stat{0});
   EXPECT_EQ(s.get_enemy(1).get_strength(), Stat{0});
   EXPECT_EQ(s.get_player_hp(), hp_before);
@@ -369,8 +370,8 @@ TEST(Transition,
   apply_or_fail(s, end_turn());
   s = resolve_end_turn_pre_draw(s);
   ASSERT_EQ(s.get_round(), 2);
-  ASSERT_FALSE(s.get_enemy(0).get_just_applied_ritual());
-  ASSERT_FALSE(s.get_enemy(1).get_just_applied_ritual());
+  ASSERT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(0).powers()));
+  ASSERT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(1).powers()));
   ASSERT_EQ(s.get_enemy(0).get_strength(), Stat{0});
   ASSERT_EQ(s.get_enemy(1).get_strength(), Stat{0});
   ASSERT_EQ(s.get_enemy(0).get_current_move(), MoveId::kDarkStrike);
@@ -388,8 +389,8 @@ TEST(Transition,
   apply_or_fail(s, end_turn());
   s = resolve_end_turn_pre_draw(s);
   EXPECT_EQ(s.get_round(), 3);
-  EXPECT_FALSE(s.get_enemy(0).get_just_applied_ritual());
-  EXPECT_FALSE(s.get_enemy(1).get_just_applied_ritual());
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(0).powers()));
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(1).powers()));
   // Strength gained = ritual_amount for each cultist archetype (from table).
   // Calcified ritual=2, Damp ritual=5.
   EXPECT_EQ(s.get_enemy(0).get_strength(), Stat{2});
@@ -459,8 +460,8 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeKillsPlayer_StopsEarly) {
         .alive(true)
         .hp(Stat{30})
         .current_move(MoveId::kIncantation)
-        .performed_first_move(true)
-        .just_applied_ritual(false);
+        .performed_first_move(true);
+    // just_applied_ritual=false is explicit no-op when kRitual absent; omitted.
   });
 
   apply_or_fail(s, end_turn());
@@ -469,7 +470,7 @@ TEST(Transition, EndTurn_PreDrawResolution_DarkStrikeKillsPlayer_StopsEarly) {
   EXPECT_EQ(s.get_player_hp(), Stat{0});
   EXPECT_TRUE(is_terminal(s));
   // Enemy[1] act would have set just_applied_ritual; verify it didn't run.
-  EXPECT_FALSE(s.get_enemy(1).get_just_applied_ritual());
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(1).powers()));
   EXPECT_EQ(s.get_enemy(1).get_current_move(), MoveId::kIncantation);
   // round NOT incremented because we returned before round_++ logic.
   EXPECT_EQ(s.get_round(), 4);
@@ -771,10 +772,11 @@ TEST(Transition, BuffEnemy_DoesNotTriggerRitualSideEffects) {
     enemy.kind(MonsterKind::kCultistDamp)
         .hp(sts2::game::Stat{40})
         .alive(true)
-        .add_power(sts2::game::PowerKind::kRitual, 5)
-        .just_applied_ritual(false);
+        .add_power(sts2::game::PowerKind::kRitual, 5);
+    // just_applied_ritual=false is explicit no-op (add_power sets flags=0,
+    // set(false) clears bit 0 which is already 0); omitted.
   });
-  ASSERT_FALSE(s.get_enemy(0).get_just_applied_ritual());
+  ASSERT_FALSE(sts2::ai::powers::just_applied_ritual(s.get_enemy(0).powers()));
   ASSERT_EQ(s.get_enemy(0).get_strength(), Stat{0});
   // Ritual stacks=5 in powers array.
   ASSERT_EQ(sts2::ai::powers::stacks_of(s.get_enemy(0).get_powers(),
@@ -796,7 +798,7 @@ TEST(Transition, BuffEnemy_DoesNotTriggerRitualSideEffects) {
   // Strength stack accumulated.
   EXPECT_EQ(e.get_strength(), Stat{2});
   // Ritual side-effects NOT triggered.
-  EXPECT_FALSE(e.get_just_applied_ritual())
+  EXPECT_FALSE(sts2::ai::powers::just_applied_ritual(e.powers()))
       << "kBuffEnemy must not set kRitual.just_applied (no Ritual coupling)";
   // Ritual stacks preserved.
   EXPECT_EQ(sts2::ai::powers::stacks_of(e.get_powers(), e.get_power_count(),

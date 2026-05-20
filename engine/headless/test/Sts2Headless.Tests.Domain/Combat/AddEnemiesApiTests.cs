@@ -140,9 +140,7 @@ public sealed class AddEnemiesApiTests
         var state = MakeState();
         var notAnEnemy = MakePlayer();
 
-        Assert.Throws<ArgumentException>(() =>
-            state.WithSpawnedEnemies(new[] { notAnEnemy })
-        );
+        Assert.Throws<ArgumentException>(() => state.WithSpawnedEnemies(new[] { notAnEnemy }));
     }
 
     [Fact]
@@ -154,9 +152,7 @@ public sealed class AddEnemiesApiTests
         // Deliberately use id=1 again — must throw.
         var duplicate = MakeEnemy(1u, "SneakyGremlin");
 
-        Assert.Throws<ArgumentException>(() =>
-            state.WithSpawnedEnemies(new[] { duplicate })
-        );
+        Assert.Throws<ArgumentException>(() => state.WithSpawnedEnemies(new[] { duplicate }));
     }
 
     [Fact]
@@ -242,7 +238,10 @@ public sealed class AddEnemiesApiTests
         var state = MakeState(null, e1, e2);
 
         // Simulate a serialize/deserialize cycle by cloning via with-expression.
-        var restored = state with { TurnCounter = state.TurnCounter };
+        var restored = state with
+        {
+            TurnCounter = state.TurnCounter,
+        };
 
         var allocator1 = new CreatureIdAllocator(state);
         var allocator2 = new CreatureIdAllocator(restored);
@@ -323,7 +322,7 @@ public sealed class AddEnemiesApiTests
         var after = state.WithSpawnedEnemies(new[] { sneaky, fat });
 
         Assert.Equal(3, after.Enemies.Count);
-        Assert.Equal(0, after.Enemies[0].CurrentHp);  // dead merc retained
+        Assert.Equal(0, after.Enemies[0].CurrentHp); // dead merc retained
         Assert.Equal(10, after.Enemies[1].CurrentHp); // sneaky alive
         Assert.Equal(13, after.Enemies[2].CurrentHp); // fat alive
     }

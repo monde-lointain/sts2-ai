@@ -98,7 +98,7 @@ class Search {
  private:
   struct TtData;  // PIMPL — definition in search.cc.
 
-  Score solve_player(CompactState state);
+  Score solve_player(const CompactState& state);
   Score solve_chance(CompactState state);
 
   // Returns false (and sets cap_hit_) when at capacity; caller MUST stop

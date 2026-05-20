@@ -75,8 +75,14 @@ public class GremlinMercTests
     public void GremlinMerc_rotation_is_GIMME_DOUBLE_SMASH_HEHE_loop()
     {
         GremlinMerc m = new();
-        Assert.Equal(GremlinMerc.DoubleSmashMoveId, m.GetMove(GremlinMerc.GimmeMoveId).FollowUpMoveId);
-        Assert.Equal(GremlinMerc.HeheMoveId, m.GetMove(GremlinMerc.DoubleSmashMoveId).FollowUpMoveId);
+        Assert.Equal(
+            GremlinMerc.DoubleSmashMoveId,
+            m.GetMove(GremlinMerc.GimmeMoveId).FollowUpMoveId
+        );
+        Assert.Equal(
+            GremlinMerc.HeheMoveId,
+            m.GetMove(GremlinMerc.DoubleSmashMoveId).FollowUpMoveId
+        );
         Assert.Equal(GremlinMerc.GimmeMoveId, m.GetMove(GremlinMerc.HeheMoveId).FollowUpMoveId);
     }
 
@@ -84,8 +90,14 @@ public class GremlinMercTests
     public void GremlinMerc_spawn_powers_include_SurprisePower_1_and_ThieveryPower_20()
     {
         GremlinMerc m = new();
-        Assert.Contains(m.SpawnPowers, p => p.PowerId == PowerIds.Surprise && p.Stacks == GremlinMerc.SurprisePowerStacks);
-        Assert.Contains(m.SpawnPowers, p => p.PowerId == PowerIds.Thievery && p.Stacks == GremlinMerc.ThieveryPowerGold);
+        Assert.Contains(
+            m.SpawnPowers,
+            p => p.PowerId == PowerIds.Surprise && p.Stacks == GremlinMerc.SurprisePowerStacks
+        );
+        Assert.Contains(
+            m.SpawnPowers,
+            p => p.PowerId == PowerIds.Thievery && p.Stacks == GremlinMerc.ThieveryPowerGold
+        );
         Assert.Equal(1, GremlinMerc.SurprisePowerStacks);
         Assert.Equal(20, GremlinMerc.ThieveryPowerGold);
     }
