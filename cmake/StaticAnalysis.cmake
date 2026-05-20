@@ -28,6 +28,7 @@ if(CPPCHECK_EXECUTABLE)
     COMMAND ${CPPCHECK_EXECUTABLE}
       --enable=all
       --suppress=checkersReport
+      --suppress=missingInclude
       --suppress=missingIncludeSystem
       --suppress=unmatchedSuppression
       --suppress=unusedFunction
@@ -49,6 +50,7 @@ if(CPPCHECK_EXECUTABLE)
     COMMAND ${CPPCHECK_EXECUTABLE}
       --enable=all
       --suppress=checkersReport
+      --suppress=missingInclude
       --suppress=missingIncludeSystem
       --suppress=unmatchedSuppression
       --suppress=unusedFunction
