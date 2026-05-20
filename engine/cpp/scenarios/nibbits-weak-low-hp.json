@@ -1,0 +1,8 @@
+{
+  "seed": 42,
+  "encounter": "NibbitsWeak",
+  "player": {
+    "hp": 30,
+    "max_hp": 70
+  }
+}
