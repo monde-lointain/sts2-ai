@@ -27,6 +27,13 @@
 //     PHASE-3-extension was append-only; cultist state never XOR-folds gremlin
 //     slots → removing them does not shift any prior mt19937 position.
 //     Q2-ADR-018 §Zobrist-BYTE-outcome (confirmed empirically 2026-05-19).
+//   wave-33/A.β (fill_enemy_slot helper): Lo=0xa5d5769283d589b5
+//   Hi=0x403677d8cd214204
+//     Cause: fill_enemy_slot restructures PHASE-1/PHASE-2 from all-slots-per-
+//     table to all-fields-per-slot, changing mt19937 consumption order within
+//     each phase. Search semantics invariant (per-state XOR contributions
+//     unchanged in reachable stat ranges). Re-stamped via
+//     DumpCultistZobristKey.
 //
 // Used by `Zobrist.CultistRootKey_MatchesPreWave21Pin` (test name preserved
 // for grep continuity, but now pins post-J.beta bytes). Failure = mt19937
@@ -40,7 +47,7 @@
 
 namespace sts2::tests::seeds {
 
-inline constexpr uint64_t kCultistZobristKeyLo = 0x2641e6057b9af53aULL;
-inline constexpr uint64_t kCultistZobristKeyHi = 0x4faed2f7f9f09086ULL;
+inline constexpr uint64_t kCultistZobristKeyLo = 0xa5d5769283d589b5ULL;
+inline constexpr uint64_t kCultistZobristKeyHi = 0x403677d8cd214204ULL;
 
 }  // namespace sts2::tests::seeds

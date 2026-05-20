@@ -423,6 +423,32 @@ void fill_slots(std::array<T, N>& a, std::size_t slot_lo, std::size_t slot_hi,
   }
 }
 
+// Fill the 7 non-phased per-slot enemy fields for a given slot in EXACTLY this
+// order (preserves mt19937_64 consumption order within each slot):
+//   hp → block → move_idx → alive → pfm → power (4-level loop) → power_count.
+// DO NOT include enemy_kind or enemy_current_move — they have phased
+// cardinality and their manual inner loops MUST stay inline at PHASE-1 and
+// PHASE-2 sites.
+static void fill_enemy_slot(ZobristTables& t, std::size_t slot,
+                            std::mt19937_64& rng) noexcept {
+  fill_array(t.enemy_hp[slot], rng);
+  fill_array(t.enemy_block[slot], rng);
+  fill_array(t.enemy_move_idx[slot], rng);
+  fill_array(t.enemy_alive[slot], rng);
+  fill_array(t.enemy_pfm[slot], rng);
+  for (std::size_t ps = 0; ps < static_cast<std::size_t>(kMaxPowersPerCreature);
+       ++ps) {
+    for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
+      for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
+        for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
+          t.enemy_power[slot][ps][pk][stacks][flags] = rng();
+        }
+      }
+    }
+  }
+  fill_array(t.enemy_power_count[slot], rng);
+}
+
 // Generate one half-table seeded by the given 64-bit seed. Deterministic and
 // platform-independent (std::mt19937_64 is portable).
 //
@@ -478,44 +504,21 @@ ZobristTables generate_table(uint64_t seed) noexcept {
   }
   fill_array(t.player_power_count, rng);
   // enemy_* tables — outer slot dimension iterates only [0,
-  // kPreWave21MaxEnemies).
-  fill_slots(t.enemy_hp, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_block, 0, kPreWave21MaxEnemies, rng);
-  // enemy_kind: manual iteration over pre-wave-22 cardinality so wave-22's
-  // bump (3→7) doesn't shift mt19937 consumption. New kinds appended in
-  // PHASE 3 below.
+  // kPreWave21MaxEnemies). Per-slot fill: 7 non-phased fields via
+  // fill_enemy_slot; phased fields (kind, current_move) inline with pre-wave-22
+  // cardinality so wave-22's bumps don't shift mt19937 consumption.
+  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
   for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
+    fill_enemy_slot(t, slot, rng);
+    // enemy_kind: pre-wave-22 cardinality; new kinds appended in PHASE 3.
     for (std::size_t k = 0; k < kPreWave22MonsterKindCardinality; ++k) {
       t.enemy_kind[slot][k] = rng();
     }
-  }
-  fill_slots(t.enemy_move_idx, 0, kPreWave21MaxEnemies, rng);
-  // enemy_current_move: manual iteration over pre-wave-22 cardinality so
-  // wave-22's bump (5→10) doesn't shift mt19937 consumption. New MoveIds
-  // appended in PHASE 3 below.
-  for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
+    // enemy_current_move: pre-wave-22 cardinality; new MoveIds in PHASE 3.
     for (std::size_t m = 0; m < kPreWave22MoveIdCardinality; ++m) {
       t.enemy_current_move[slot][m] = rng();
     }
   }
-  fill_slots(t.enemy_alive, 0, kPreWave21MaxEnemies, rng);
-  fill_slots(t.enemy_pfm, 0, kPreWave21MaxEnemies, rng);
-  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
-  // enemy_power: manual iteration over PowerKind cardinality = 6.
-  // kPowerKindCardinality = 6; full range filled here.
-  for (std::size_t slot = 0; slot < kPreWave21MaxEnemies; ++slot) {
-    for (std::size_t ps = 0;
-         ps < static_cast<std::size_t>(kMaxPowersPerCreature); ++ps) {
-      for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
-        for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
-          for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
-            t.enemy_power[slot][ps][pk][stacks][flags] = rng();
-          }
-        }
-      }
-    }
-  }
-  fill_slots(t.enemy_power_count, 0, kPreWave21MaxEnemies, rng);
   // enemy_count[0..kPreWave21MaxEnemies] — 3 entries: ec=0, 1, 2.
   for (std::size_t i = 0; i <= kPreWave21MaxEnemies; ++i) {
     t.enemy_count[i] = rng();
@@ -534,42 +537,21 @@ ZobristTables generate_table(uint64_t seed) noexcept {
 
   // ---- PHASE 2: APPEND new enemy slots [kPreWave21MaxEnemies, kMaxEnemies)
   // --- Same table-fill order as PHASE 1 for symmetry / reviewability.
-  fill_slots(t.enemy_hp, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_block, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  // enemy_kind: manual iteration over pre-wave-22 cardinality (new kinds
-  // appended in PHASE 3 below).
+  // Per-slot fill for slots [kPreWave21MaxEnemies, kMaxEnemies): 7 non-phased
+  // fields via fill_enemy_slot; phased fields inline with pre-wave-22
+  // cardinality. Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual dropped.
   for (std::size_t slot = kPreWave21MaxEnemies;
        slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
+    fill_enemy_slot(t, slot, rng);
+    // enemy_kind: pre-wave-22 cardinality; new kinds appended in PHASE 3.
     for (std::size_t k = 0; k < kPreWave22MonsterKindCardinality; ++k) {
       t.enemy_kind[slot][k] = rng();
     }
-  }
-  fill_slots(t.enemy_move_idx, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  // enemy_current_move: manual iteration over pre-wave-22 cardinality.
-  for (std::size_t slot = kPreWave21MaxEnemies;
-       slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
+    // enemy_current_move: pre-wave-22 cardinality; new MoveIds in PHASE 3.
     for (std::size_t m = 0; m < kPreWave22MoveIdCardinality; ++m) {
       t.enemy_current_move[slot][m] = rng();
     }
   }
-  fill_slots(t.enemy_alive, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  fill_slots(t.enemy_pfm, kPreWave21MaxEnemies, kMaxEnemies, rng);
-  // Wave-22-fix-4/H.gamma: enemy_dsb + enemy_ritual fill_slots dropped.
-  // enemy_power: kPowerKindCardinality = 6; full range filled here.
-  for (std::size_t slot = kPreWave21MaxEnemies;
-       slot < static_cast<std::size_t>(kMaxEnemies); ++slot) {
-    for (std::size_t ps = 0;
-         ps < static_cast<std::size_t>(kMaxPowersPerCreature); ++ps) {
-      for (std::size_t pk = 0; pk < kPowerKindCardinality; ++pk) {
-        for (std::size_t stacks = 0; stacks < kMaxStacks; ++stacks) {
-          for (std::size_t flags = 0; flags < kMaxFlags; ++flags) {
-            t.enemy_power[slot][ps][pk][stacks][flags] = rng();
-          }
-        }
-      }
-    }
-  }
-  fill_slots(t.enemy_power_count, kPreWave21MaxEnemies, kMaxEnemies, rng);
   // enemy_count[kPreWave21MaxEnemies+1 .. kMaxEnemies] — entries ec=3, 4.
   for (std::size_t i = kPreWave21MaxEnemies + 1;
        i <= static_cast<std::size_t>(kMaxEnemies); ++i) {
