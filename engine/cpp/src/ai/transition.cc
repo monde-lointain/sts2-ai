@@ -313,7 +313,7 @@ void damage_enemy(EnemyState& enemy, int strength, int weak, int base) {
 // Unpowered semantics — no Frail tax) and CurlUp is removed.
 // ---------------------------------------------------------------------------
 void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
-  const uint8_t stored = M::get_curl_up_stored_card(e);
+  const uint8_t stored = e.curl_up_stored_card();
   if (stored == 0) {
     return;
   }
@@ -331,8 +331,8 @@ void apply_curl_up_after_card(EnemyState& e, CardId played_card) noexcept {
   // → no Frail tax. Enemy dexterity = 0 in Phase-1.
   const int block_gained =
       sts2::damage::compute_outgoing_block(stacks, 0, false, false);
-  M::block(e) += block_gained;
-  M::remove_power(e, PowerKind::kCurlUp);
+  e.add_block_amount(block_gained);
+  e.remove_power(PowerKind::kCurlUp);
 }
 
 // ---------------------------------------------------------------------------
@@ -378,12 +378,12 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
     // All card-sourced attacks are powered attacks in the Q2 Phase-1 model
     // (ValueProp.Move set, Unpowered not set → IsPoweredAttack = true).
     if (e.get_alive()) {
-      const uint8_t stored = M::get_curl_up_stored_card(e);
+      const uint8_t stored = e.curl_up_stored_card();
       if (stored == 0) {
         const PowerInstance* curl_p = powers::find_power(
             e.get_powers(), e.get_power_count(), PowerKind::kCurlUp);
         if (curl_p != nullptr) {
-          M::set_curl_up_stored_card(e, static_cast<uint8_t>(id));
+          e.set_curl_up_stored_card(static_cast<uint8_t>(id));
         }
       }
     }
@@ -391,14 +391,14 @@ bool apply_player_action_in_place(CompactState& state, const Action& action) {
   if (fx.base_block) {
     // Block from a card play: IsPoweredCardOrMonsterMoveBlock = true.
     // Player dexterity = 0 in Phase-1.
-    const bool frail = M::get_player_frail(state) > 0;
+    const bool frail = state.get_player_frail() > 0;
     const int block =
         sts2::damage::compute_outgoing_block(fx.base_block, 0, frail, true);
     M::player_block(state) += block;
   }
   if (fx.weak_to_target) {
     EnemyState& e = action.target_idx.at(M::enemies(state));
-    M::add_weak(e, fx.weak_to_target);
+    e.add_power(PowerKind::kWeak, fx.weak_to_target);
   }
   if (fx.requires_discard) {
     if (state.get_hand().total() == 0) {
@@ -586,7 +586,7 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
       (void)sts2::damage::apply_to_defender(M::player_hp(s), M::player_block(s),
                                             dmg);
       // Apply 2 Frail to player.
-      M::add_player_frail(s, 2);
+      s.add_player_frail(2);
       break;
     }
     case MoveId::kCurlAndGrow: {
@@ -594,9 +594,9 @@ void do_enemy_act_louse_progenitor(CompactState& s, EnemyState& e) {
       // set, Unpowered not set) → IsPoweredCardOrMonsterMoveBlock = true. Enemy
       // has no dexterity or Frail in Phase-1.
       const int blk = sts2::damage::compute_outgoing_block(14, 0, false, true);
-      M::block(e) += blk;
+      e.add_block_amount(blk);
       // Apply 5 Strength to self.
-      M::add_strength(e, 5);
+      e.add_power(PowerKind::kStrength, 5);
       break;
     }
     case MoveId::kPounce: {
@@ -708,7 +708,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
         // but in v1 Ritual is applied once -> Power.amount stays at
         // ritual_amount. We model the dynamic Ritual state purely via
         // just_applied flag on the kRitual PowerInstance.
-        M::set_just_applied_ritual(e, true);
+        e.set_just_applied_ritual(true);
       },
       [&]() {
         const int dmg = sts2::damage::compute_outgoing(
@@ -732,11 +732,11 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
   //   strength gain); subsequent turns → ritual_amount_ > 0 but no kRitual
   //   entry → grants strength each turn.
   if (e.get_ritual_amount().value() > 0) {
-    const bool just_applied = M::get_just_applied_ritual(e);
+    const bool just_applied = e.get_just_applied_ritual();
     if (just_applied) {
-      M::clear_just_applied_ritual(e);
+      e.clear_just_applied_ritual();
     } else {
-      M::add_strength(e, e.get_ritual_amount().value());
+      e.add_power(PowerKind::kStrength, e.get_ritual_amount().value());
     }
   }
 
@@ -756,11 +756,11 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
         break;
       case PowerKind::kFrail:
         // Frail on enemy ticks down at kAtEnemyTurnEnd (side=Enemy).
-        M::decrement_power(e, PowerKind::kFrail);
+        e.decrement_power(PowerKind::kFrail);
         break;
       case PowerKind::kWeak:
         // Weak on enemy ticks down.
-        M::decrement_weak(e);
+        e.decrement_power(PowerKind::kWeak);
         break;
       case PowerKind::kCurlUp:
         // No turn-end behavior for CurlUp.
@@ -774,8 +774,8 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
 
   // Player's Frail ticks down at kAtEnemyTurnEnd (side=Enemy) per upstream
   // FrailPower.cs AfterTurnEnd(side=Enemy → PowerCmd.TickDownDuration).
-  if (M::get_player_frail(s) > 0) {
-    M::decrement_player_power(s, PowerKind::kFrail);
+  if (s.get_player_frail() > 0) {
+    s.decrement_player_power(PowerKind::kFrail);
   }
 }
 
