@@ -117,8 +117,11 @@ SearchResult Search::solve(const CompactState& state) {
   // Converged. Re-derive root best_action via 1-ply argmax (TT no longer
   // caches it). For chance-node roots, recommendation is the default
   // kEndTurn (no player choice available; matches pre-wave behavior).
+  // Horizon-capped roots have no TT children (solve_player early-returned);
+  // skip derive_best_action to avoid asserting under sanitizer builds.
   transition::Action best{};
-  if (state.get_phase() == Phase::kPlayerActing) {
+  if (state.get_phase() == Phase::kPlayerActing &&
+      state.get_round() <= kSearchHorizonRounds) {
     best = derive_best_action(*this, state, score);
   }
   return SearchResult{
