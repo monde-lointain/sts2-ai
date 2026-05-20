@@ -1,5 +1,8 @@
 #include "sts2/game/enemies.h"
 
+#include <cassert>
+#include <string_view>
+
 #include "sts2/game/combat.h"
 #include "sts2/game/damage.h"
 #include "sts2/game/monster_moves.h"
@@ -11,6 +14,31 @@
 namespace sts2::enemies {
 
 namespace {
+
+// Table-driven factory for enemy kinds with NO spawn powers (current slimes
+// + Nibbit). Louse-style spawn-power application is deliberately not inlined
+// here — keeps the helper minimal and surfaces a foot-gun immediately if a
+// future slime variant gains a SpawnPowerEntry.
+sts2::game::Enemy build_table_driven_enemy(sts2::game::MonsterKind kind,
+                                           sts2::game::MoveId initial_move,
+                                           std::string_view name,
+                                           sts2::game::Rng& rng) {
+  const auto& table =
+      sts2::game::monster_moves::kMonsterMoveTables[static_cast<std::size_t>(
+          kind)];
+  assert(table.spawn_power_count == 0 &&
+         "build_table_driven_enemy: table has spawn_powers; "
+         "promote caller to a Louse-style explicit factory");
+  sts2::game::Enemy e;
+  e.name = name;
+  e.kind = kind;
+  const int hp = rng.uniform_int(table.min_hp, table.max_hp);
+  e.vitals.max_hp = sts2::game::Stat{hp};
+  e.vitals.hp = sts2::game::Stat{hp};
+  e.current_move = initial_move;
+  e.performed_first_move = false;
+  return e;
+}
 
 sts2::game::Enemy make_cultist(const CultistArchetype& archetype,
                                sts2::game::Rng& rng) {
@@ -58,122 +86,56 @@ sts2::game::Enemy make_louse_progenitor(sts2::game::Rng& rng) {
   return e;
 }
 
-// Wave-22.β: slime factories — HP roll + initial move per upstream.
-// Upstream A0 HP ranges per Models/Monsters/{LeafSlimeS,LeafSlimeM,
-// TwigSlimeS,TwigSlimeM}.cs MinInitialHp/MaxInitialHp.
-// Initial moves match the MonsterMoveStateMachine start state in each .cs.
-
-// LeafSlimeS: HP 11-15 (A0). Source: LeafSlimeS.cs:20,22.
-// Initial move: TACKLE_MOVE (kTackleMove). Source: LeafSlimeS.cs:39
-// (randomBranchState start; TACKLE is list index 0).
+// Wave-22.β: slime factories — table-driven shims. HP ranges + initial moves
+// per upstream A0 Models/Monsters/{Leaf,Twig}Slime{S,M}.cs; now single source
+// of truth in kMonsterMoveTables (monster_moves.cc).
 sts2::game::Enemy make_leaf_slime_s(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Leaf Slime (S)";
-  e.kind = sts2::game::MonsterKind::kLeafSlimeS;
-  const int hp = rng.uniform_int(11, 15);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kTackleMove;
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kLeafSlimeS,
+                                  sts2::game::MoveId::kTackleMove,
+                                  "Leaf Slime (S)", rng);
 }
 
-// LeafSlimeM: HP 32-35 (A0). Source: LeafSlimeM.cs:22,24.
-// Initial move: STICKY_SHOT (kStickyShot). Source: LeafSlimeM.cs:40
-// (MonsterMoveStateMachine initial=moveState2 = STICKY_SHOT).
 sts2::game::Enemy make_leaf_slime_m(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Leaf Slime (M)";
-  e.kind = sts2::game::MonsterKind::kLeafSlimeM;
-  const int hp = rng.uniform_int(32, 35);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kStickyShot;
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kLeafSlimeM,
+                                  sts2::game::MoveId::kStickyShot,
+                                  "Leaf Slime (M)", rng);
 }
 
-// TwigSlimeS: HP 7-11 (A0). Source: TwigSlimeS.cs:15,17.
-// Initial move: TACKLE_MOVE (kTackleMove). Source: TwigSlimeS.cs:26
-// (single move, self-loop).
 sts2::game::Enemy make_twig_slime_s(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Twig Slime (S)";
-  e.kind = sts2::game::MonsterKind::kTwigSlimeS;
-  const int hp = rng.uniform_int(7, 11);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kTackleMove;
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kTwigSlimeS,
+                                  sts2::game::MoveId::kTackleMove,
+                                  "Twig Slime (S)", rng);
 }
 
-// TwigSlimeM: HP 26-28 (A0). Source: TwigSlimeM.cs:23,25.
-// Initial move: STICKY_SHOT_MOVE (kStickyShot). Source: TwigSlimeM.cs:42
-// (MonsterMoveStateMachine initial=moveState2 = STICKY_SHOT_MOVE).
 sts2::game::Enemy make_twig_slime_m(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Twig Slime (M)";
-  e.kind = sts2::game::MonsterKind::kTwigSlimeM;
-  const int hp = rng.uniform_int(26, 28);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kStickyShot;
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kTwigSlimeM,
+                                  sts2::game::MoveId::kStickyShot,
+                                  "Twig Slime (M)", rng);
 }
 
 // ---------------------------------------------------------------------------
-// Wave-24/K.β: Nibbit factories
+// Wave-24/K.β: Nibbit factories — table-driven shims.
 // ---------------------------------------------------------------------------
-// Source: Nibbit.cs:26,28 (A0 HP range 42-46).
-// Three variants per ConditionalBranchState (Nibbit.cs:74-88):
+// Source: Nibbit.cs:26,28 (A0 HP range 42-46); now single source of truth in
+// kMonsterMoveTables. Three variants per ConditionalBranchState
+// (Nibbit.cs:74-88):
 //   alone  → init BUTT_MOVE  (IsAlone=true, Nibbit.cs:76-77)
 //   front  → init SLICE_MOVE (IsFront=true, Nibbit.cs:82)
 //   back   → init HISS_MOVE  (IsFront=false, Nibbit.cs:81)
-// move_index consistency: build_enemy_state resolves via find_move_index;
-//   kButtMove→0, kSliceMove→1, kHissMove→2 per make_nibbit_table().
-
-// make_nibbit_alone — NibbitsWeak encounter (IsAlone=true); starts BUTT_MOVE.
-// Nibbit.cs:26: MinInitialHp A0=42; :28: MaxInitialHp A0=46.
 sts2::game::Enemy make_nibbit_alone(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Nibbit";
-  e.kind = sts2::game::MonsterKind::kNibbit;
-  const int hp = rng.uniform_int(42, 46);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kButtMove;  // Nibbit.cs:76-77 IsAlone
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kNibbit,
+                                  sts2::game::MoveId::kButtMove, "Nibbit", rng);
 }
 
-// make_nibbit_front — multi-Nibbit encounter front position; starts SLICE_MOVE.
-// Nibbit.cs:82: IsFront=true branch → moveState2 (SLICE_MOVE).
 sts2::game::Enemy make_nibbit_front(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Nibbit";
-  e.kind = sts2::game::MonsterKind::kNibbit;
-  const int hp = rng.uniform_int(42, 46);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kSliceMove;  // Nibbit.cs:82 IsFront
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kNibbit,
+                                  sts2::game::MoveId::kSliceMove, "Nibbit",
+                                  rng);
 }
 
-// make_nibbit_back — multi-Nibbit encounter back position; starts HISS_MOVE.
-// Nibbit.cs:81: IsFront=false branch → moveState3 (HISS_MOVE).
 sts2::game::Enemy make_nibbit_back(sts2::game::Rng& rng) {
-  sts2::game::Enemy e;
-  e.name = "Nibbit";
-  e.kind = sts2::game::MonsterKind::kNibbit;
-  const int hp = rng.uniform_int(42, 46);
-  e.vitals.max_hp = sts2::game::Stat{hp};
-  e.vitals.hp = sts2::game::Stat{hp};
-  e.current_move = sts2::game::MoveId::kHissMove;  // Nibbit.cs:81 IsFront=false
-  e.performed_first_move = false;
-  return e;
+  return build_table_driven_enemy(sts2::game::MonsterKind::kNibbit,
+                                  sts2::game::MoveId::kHissMove, "Nibbit", rng);
 }
 
 namespace {
