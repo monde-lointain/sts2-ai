@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "sts2/ai/state.h"
+#include "sts2/ai/state_builders.h"
 #include "sts2/game/card_effects.h"
 #include "sts2/game/enemies.h"
 #include "sts2/game/move_calc.h"
@@ -76,6 +77,16 @@ bool is_calcified_or_damp_name(std::string_view name) {
   return sts2::enemies::cultist_archetype_from_wire_name(name) != nullptr;
 }
 
+sts2::game::MonsterKind cultist_kind_from_wire_name(std::string_view name) {
+  if (name == "CalcifiedCultist") {
+    return sts2::game::MonsterKind::kCultistCalcified;
+  }
+  if (name == "DampCultist") {
+    return sts2::game::MonsterKind::kCultistDamp;
+  }
+  throw StateCodecError("unknown cultist wire name: " + std::string(name));
+}
+
 sts2::ai::EnemyState project_one_enemy(const ParsedCreature& cr) {
   const sts2::enemies::CultistArchetype* archetype =
       sts2::enemies::cultist_archetype_from_wire_name(cr.name);
@@ -101,6 +112,7 @@ sts2::ai::EnemyState project_one_enemy(const ParsedCreature& cr) {
       .block(sts2::game::Stat{cr.block})
       .strength(sts2::game::Stat{power_stacks(cr, kPowerIdStrength)})
       .weak(sts2::game::Stat{power_stacks(cr, kPowerIdWeak)})
+      .kind(cultist_kind_from_wire_name(cr.name))
       .dark_strike_base(sts2::game::Stat{archetype->dark_strike_base})
       .ritual_amount(sts2::game::Stat{archetype->ritual_amount})
       .just_applied_ritual(has_power_with_just_applied(cr, kPowerIdRitual))

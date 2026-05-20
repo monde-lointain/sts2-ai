@@ -12,6 +12,7 @@ namespace {
 using sts2::ai::CompactState;
 using sts2::ai::Phase;
 using sts2::game::CardId;
+using sts2::game::MonsterKind;
 using sts2::game::MoveId;
 using sts2::game::Stat;
 using sts2::oracle::adapter::is_cultists_normal;
@@ -131,10 +132,24 @@ TEST(CultistsProjection, Fixture1_EnemyParamsMatchCppPrototype) {
           << "slot " << i << " (Calcified)";
       EXPECT_EQ(projected.get_ritual_amount(), Stat{2})
           << "slot " << i << " (Calcified)";
+      // Wave-34/B.1-β HIDDEN-BUG FIX: project_one_enemy must set kind
+      // explicitly; today Damp silently inherits default kCultistCalcified.
+      // After B.2-β removes dsb/ritual scalar fields, helpers index
+      // kMonsterMoveTables[kind] and the wrong-kind default would give
+      // Calcified values for Damp.
+      EXPECT_EQ(projected.get_kind(), MonsterKind::kCultistCalcified)
+          << "slot " << i << " (Calcified)";
     } else if (wire.name == "DampCultist") {
       EXPECT_EQ(projected.get_dark_strike_base(), Stat{1})
           << "slot " << i << " (Damp)";
       EXPECT_EQ(projected.get_ritual_amount(), Stat{5})
+          << "slot " << i << " (Damp)";
+      // Wave-34/B.1-β HIDDEN-BUG FIX: project_one_enemy must set kind
+      // explicitly; today Damp silently inherits default kCultistCalcified.
+      // After B.2-β removes dsb/ritual scalar fields, helpers index
+      // kMonsterMoveTables[kind] and the wrong-kind default would give
+      // Calcified values for Damp.
+      EXPECT_EQ(projected.get_kind(), MonsterKind::kCultistDamp)
           << "slot " << i << " (Damp)";
     } else {
       FAIL() << "unexpected cultist name: " << wire.name;
