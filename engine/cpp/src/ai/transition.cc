@@ -274,7 +274,7 @@ void resolve_end_turn_pre_draw_in_place(CompactState& state) {
     // NOLINTEND(cppcoreguidelines-avoid-const-or-ref-data-members)
 
     void end_player_turn() {
-      // Player power tick is a no-op in v1 (Frail ticks at kAtEnemyTurnEnd
+      // Player power tick is a no-op in v1 (Frail ticks at enemy turn-end
       // side=Enemy in do_enemy_tick_powers below).
       state.move_hand_to_discard();
     }
@@ -453,7 +453,7 @@ void do_enemy_act(CompactState& s, EnemyState& e) {
 }
 
 // ---------------------------------------------------------------------------
-// do_enemy_tick_powers: generic hook dispatch at kAtEnemyTurnEnd.
+// do_enemy_tick_powers: generic hook dispatch at enemy turn end.
 // Fires for each active power on the enemy and for player's Frail.
 // Cultist Ritual semantics are PRESERVED.
 // ---------------------------------------------------------------------------
@@ -489,7 +489,7 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
         // Handled above via cultist_ritual_amount(kind) helper (ADR-031); skip.
         break;
       case PowerKind::kFrail:
-        // Frail on enemy ticks down at kAtEnemyTurnEnd (side=Enemy).
+        // Frail on enemy ticks down at enemy turn end (side=Enemy).
         e.decrement_power(PowerKind::kFrail);
         break;
       case PowerKind::kWeak:
@@ -506,7 +506,7 @@ void do_enemy_tick_powers(CompactState& s, EnemyState& e) {
     }
   }
 
-  // Player's Frail ticks down at kAtEnemyTurnEnd (side=Enemy) per upstream
+  // Player's Frail ticks down at enemy turn end (side=Enemy) per upstream
   // FrailPower.cs AfterTurnEnd(side=Enemy → PowerCmd.TickDownDuration).
   if (s.get_player_frail() > 0) {
     s.decrement_player_power(PowerKind::kFrail);

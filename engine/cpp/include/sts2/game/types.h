@@ -137,18 +137,6 @@ static_assert(detail::enum_is_contiguous(kAllMonsterKinds));
 // zobrist.cc must be respected when bumping either value.
 inline constexpr std::size_t kMonsterKindCardinality = kAllMonsterKinds.size();
 
-enum class HookPoint : uint8_t {
-  kOnSpawn,
-  kBeforeAttackDamage,
-  kBeforeBlockGain,
-  kAfterDamageReceived,
-  kAfterCardPlayedFinished,
-  kAtEnemyTurnStart,
-  kAtEnemyTurnEnd,
-  kAtPlayerTurnStart,
-  kAtPlayerTurnEnd,
-};
-
 // Wave-21 schema for the slime port; data-driven enemy actions consume this
 // enum. Existing cultist + LouseProgenitor code paths bypass it (handcoded
 // dispatch). Wave-22.α APPENDS kAddStatusCard for slime GOOP / STICKY_SHOT

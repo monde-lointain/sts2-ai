@@ -147,6 +147,8 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 - *Negative:* no end-to-end backpressure from trainer to worker. Workers won't slow down if Q3 is full; we rely on retention to drop oldest.
 - *Positive:* standard pipeline pattern; either side scales independently; replay-as-event-log enables retroactive analysis (re-train from same data, replay debugging).
 
+> NOTE (wave-36): the C++ `HookPoint` enum declaration was removed from types.h — unreferenced today; reintroduce when polymorphic hook dispatch is wired.
+
 ---
 
 ## ADR-007 — Model Registry Separated from Serving Authority
