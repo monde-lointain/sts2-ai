@@ -34,6 +34,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-028 | Q1 Silent-Engine Baseline Ratified at Upstream v0.105.1 | Accepted |
 | ADR-029 | Path A Engine-Expansion Campaign | Accepted (2026-05-17) |
 | ADR-030 | Q1 Hook Protocol Extension for OnDeath Mechanics | Accepted (2026-05-19) |
+| ADR-031 | Zobrist Cardinality Audit (Archive) | Accepted (Archive) |
 
 ---
 
@@ -818,5 +819,111 @@ Forces in tension:
 - *Positive:* no `contracts/schemas/` edit means no `bumping-a-schema-version` skill invocation, no fixture sweep, no multi-version reader test. The substrate extension is internal to Q1 and ratifies cleanly under ADR-001's "code/docs must comply" discipline without touching the cross-quantum contract surface.
 
 **Cross-references.** ADR-001 (Service-Based Architecture with Event-Driven Pipeline) — the protocol-versioning discipline this ADR conforms to without invoking. ADR-002 (Headless C# Core as Game Simulator) — defines the substrate "Q1" this ADR extends. ADR-005 (Worker↔Sim Integration via Shared-Memory IPC) — the hook protocol whose power-side semantics this ADR widens; the IPC wire format itself is unchanged. ADR-014 (Combat Oracle Output Uses Samples + Summary) — the determinism contract the hook-iteration-order clause exists to preserve. ADR-028 (Q1 Silent-Engine Baseline Ratified at Upstream v0.105.1) — the substrate baseline this extension lands on top of. ADR-029 (Path A Engine-Expansion Campaign) — the encounter-port campaign whose wave-26 `GremlinMerc` port motivated this ADR. Q1-ADR-005 (Hook Protocol Schema Co-Versioned with State Schema) — the quantum-local protocol-versioning rule this ADR conforms to (no co-versioned bump because no schema change). Q1-ADR-006 (Deterministic Effect Ordering is a Spec, Not Implementation-Defined) — the comparator ordering this ADR's clause 5 inherits verbatim. Q1-ADR-008 (Single-Threaded Decision Path) — the precondition that makes the per-PowerModel handle dictionary safe.
+
+---
+
+## ADR-031 — Zobrist Cardinality Audit (Archive)
+
+**Status:** Accepted (Archive).
+**Date:** 2026-05-20.
+**Cross-references:** Q2-ADR-013 Amendment 4, Q2-ADR-014, Q2-ADR-015.
+
+**Context.** Wave-33/A.β extracted a `fill_enemy_slot` helper in `src/ai/zobrist.cc::generate_table`, reducing line count by ~25. A subsequent wave (Wave-β Phase 2 / Stream B.2-α) migrates the 250-line audit-block comment header (`zobrist.cc:1-250`) out of the source file so the live header carries only the current cardinality table + a pointer to this ADR. The audit-block documents 6 waves of cardinality + fill-order evolution (wave-21.β → wave-26/M.β) and is canonical reference material for engineers bumping `kMoveIdCardinality` / `kPowerKindCardinality` / `kMonsterKindCardinality` / `kMoveEffectKindCardinality` or appending to phased Zobrist key tables.
+
+**Decision.** The cardinality + fill-order evolution is archived in this ADR. Future cardinality bumps MUST follow APPEND-only discipline (new PHASE-N entries fill AFTER existing PHASE-K entries in the `mt19937_64` consumption sequence — see Appendix B). Three PHASE windows currently exist:
+
+- PHASE 1: pre-wave-21 + pre-wave-22 layout (cultist + LouseProgenitor BYTE-preserving).
+- PHASE 2: APPEND-only wave-21.β slot widening + wave-22.α `kSlimed` + `phase=2` extensions.
+- PHASE 3: APPEND-only wave-22 + wave-24/K.β cardinality widening (slime MonsterKinds, slime MoveIds, Nibbit kind, Nibbit moves).
+
+The cultist Zobrist BYTE may rotate (re-stamp `tests/seeds/cultist_zobrist_pin.h` via `DumpCultistZobristKey` procedure) when the audit explicitly authorizes — historically: wave-22-fix-4/H.gamma, wave-23/J.beta, wave-33/A.β. Cultist + Louse + slime + Nibbit SEARCH pin VALUES MUST remain bit-identical across re-stamps (search semantics invariant within reachable stat ranges).
+
+**Consequences.**
+
+- *Negative:* Cardinality bumps require coordinated edits across 4+ files (`types.h` enum + array, Zobrist table dimensions if applicable, monster_moves dispatch tables, possibly tests). Engineers must re-read this ADR before every bump.
+- *Negative:* Cultist BYTE rotations require the `DumpCultistZobristKey` procedure: enable the disabled test, run, paste output into `cultist_zobrist_pin.h`, re-disable, commit.
+- *Negative:* Appendix B's `mt19937_64` consumption order is contractual; violating PHASE-N append-only discipline rotates every downstream pin.
+- *Positive:* Live `zobrist.cc` header drops from ~250 LOC to ~30 LOC. New engineers see only the current cardinality table + ADR pointer.
+- *Positive:* History is preserved in versioned source-of-truth (this ADR), not in source comments that decay across waves.
+- *Positive:* ADR cross-refs to Q2-ADR-013 Amendment 4 / Q2-ADR-014 / Q2-ADR-015 give a coherent narrative without re-reading old code comments.
+
+### Appendix A: Current cardinality table (live; bump in lockstep with the enums in `engine/cpp/include/sts2/game/types.h`)
+
+```
+Player HP / Block:       [0, 1024)
+Player Energy:           [0, 8)
+Round:                   [0, 256)
+Phase:                   [0, 3)     — sts2::ai::Phase enum
+PowerKind:               sts2::game::kPowerKindCardinality
+MoveId:                  sts2::game::kMoveIdCardinality
+MonsterKind:             sts2::game::kMonsterKindCardinality
+MoveEffectKind:          sts2::game::kMoveEffectKindCardinality
+PowerInstance.stacks:    [0, 256), flags: [0, 4)
+Enemy HP / Block:        [0, 1024)
+kMaxEnemies:             4 (sts2::ai::kMaxEnemies)
+kMaxPowersPerCreature:   4 (sts2::ai::kMaxPowersPerCreature)
+CardCounts: kCountedCardIds.size() × kCardZoneCount=3 × [0, 64)
+```
+
+### Appendix B: Wave-by-wave fill-order evolution
+
+*Archived material. The live cardinality table is in Appendix A above. This appendix records the mt19937_64 consumption-order history that the source-file audit-block previously captured. Read this in full before any cardinality bump or BYTE-rotation decision.*
+
+**Per plan §1**, each Zobrist key slot is sized to its feature's reachable range. Out-of-range values trigger assertion+abort in `zobrist_of()`. Audit results vs plan-baked bounds — wave-23/J.beta widened to reflect upstream STS2's uniform int (32-bit signed) stat storage. The cultist Zobrist BYTE rotates (table sizes grow → mt19937_64 fill order shifts); cultist + Louse search-pin VALUES remain BIT-IDENTICAL (search invariant). Q2-ADR-014.
+
+Current per-field bounds:
+
+- Player HP: `[0, 1024)` — `Stat::pack16` asserts v in `[0,65535]`; cultist max ≈ 70 (Silent starter 70 HP); SlimedBerserker (Phase-2+) HP 261-281 already would exceed the pre-wave-23 `[0,256)` bound.
+- Player Block: `[0, 1024)` — `Stat::pack16`; cultist max ≈ 30.
+- Player Energy: `[0, 8)` — `kPlayerStartingEnergy=3` (`turn_calc.h`); no in-combat gain in Phase-1; max = 3.
+- Round: `[0, 256)` — `round_` is `int32_t` in `CompactState`; cultist solves in ≤ 20 rounds. Bound kept at 256 (per-search horizon).
+- Phase: `[0, 3)` — enum `{kPlayerActing=0, kAtChanceDraw=1, kAtEnemyMoveRng=2}`. Wave-22.α APPENDED `kAtEnemyMoveRng` with APPEND-only mt19937 fill order (cultist hashes phase=0 exclusively → byte identity preserved).
+- PowerKind: `[0, 7)` — enum has 7 values post-wave-26/M.β: `{kWeak, kStrength, kRitual, kCurlUp, kFrail, kVulnerable, kSurprise}`. No `kPowerKindCount` constant in `types.h` — bound encoded as `kPowerKindCardinality` (`types.h`; wave-32/C1-β); sync with enum when extended. Wave-26/M.β APPENDS `kSurprise(6)`; cardinality 6 → 7. APPEND-ONLY: new PHASE-3 entries fill AFTER `[0,6)`. Cultist + Louse + slime + Nibbit BYTE PRESERVED.
+- MoveId: `[0, 5)` — table-pinned at pre-wave-21 cardinality to preserve cultist Zobrist byte identity through the wave-21.α MoveId enum extension (5 → 10 enum values added: `kPokeyPounce`, `kStickyShot`, `kSpitBig`, `kSpitMed`, `kSpitSmall`). Wave-22's slime port WIDENS the table when the new MoveIds first see runtime use; that bump is APPEND-ONLY (mt19937 fill order preserved for old kind 0..4). Wave-24/K.β APPENDS `kButtMove(10)`, `kSliceMove(11)`, `kHissMove(12)`; cardinality 10 → 13 (`kMoveIdCardinality`). APPEND-ONLY: new Phase-3 entries fill AFTER `[0,10)`. Cultist + Louse + slime BYTE PRESERVED. Wave-26/M.β APPENDS `kGimmeMove(13)`, `kDoubleSmashMove(14)`, `kHeheMove(15)`, `kSpawnedMove(16)`, `kFleeMove(17)`; cardinality 13 → 18 (`kMoveIdCardinality`). APPEND-ONLY: new PHASE-3 entries fill AFTER `[0,13)`. Cultist + Louse + slime + Nibbit BYTE PRESERVED.
+- MonsterKind: `[0, 3)` — table-pinned at pre-wave-21 cardinality (`kCultistCalcified`, `kCultistDamp`, `kLouseProgenitor`). Wave-21.α extends the enum to 7 (slime variants); we DECOUPLE `kMonsterKindCardinality` from `monster_moves::kMonsterKindCount` so the per-slot table size is stable through the α-stream merge (cultist byte identity). Wave-22 widens to 7 with APPEND fill order. Wave-24/K.β APPENDS `kNibbit(7)`; cardinality 7 → 8 (`kMonsterKindCardinality` in `types.h`; wave-32/C1-β). APPEND-ONLY: new Phase-3 entry fills AFTER `[0,7)`. Cultist + Louse + slime BYTE PRESERVED. Wave-26/M.β APPENDS `kGremlinMerc(8)`, `kSneakyGremlin(9)`, `kFatGremlin(10)`; cardinality 8 → 11 (`kMonsterKindCardinality`). APPEND-ONLY: new PHASE-3 entries fill AFTER `[0,8)`. Cultist + Louse + slime + Nibbit BYTE PRESERVED.
+- PowerInstance.stacks: `[0, 256)` — `int32_t` backing post-wave-23/J.beta; cultist Ritual = 2/5; Strength compounds on Louse +5/cycle, observed ≤ 50. Bound 256 absorbs larger Phase-2 stack growth.
+- PowerInstance.flags: `[0, 4)` — bit 0 (`just_applied`) used; widened to 4 (2 bits) for headroom per plan §1 table.
+- Enemy HP: `[0, 1024)` — Louse max_hp = 136; cultist ≤ 53; SlimedBerserker A0 HP 261-281 fits in 1024.
+- Enemy Block: `[0, 1024)` — `Stat::pack16`.
+- Enemy.move_index: `[0, 6)` — `kMaxMovesPerMonster = 6`.
+- Enemy.current_move: `[0, 5)` — MoveId cardinality (see above).
+- Enemy.alive: `[0, 2)` — bool.
+- Enemy.performed_first_move: `[0, 2)` — bool.
+- Enemy.dark_strike_base: REMOVED in wave-22-fix-4/H.gamma — `dsb` is constant-per-MonsterKind (cultist normal=1, elite=9; all others 0). `enemy_kind` XOR already distinguishes; per-state `dsb` hash contribution was redundant. Q2-ADR-013 Amendment 4 §Compression.
+- Enemy.ritual_amount: REMOVED in wave-22-fix-4/H.gamma — same rationale: constant-per-MonsterKind (cultist normal=2, elite=5; all others 0). `enemy_kind` XOR carries the distinction.
+- Enemy.power_count: `[0, kMaxPowersPerCreature+1=5)`.
+- `kMaxEnemies = 4` (`state.h`; wave-21.β widened 2→4).
+- `kMaxPowersPerCreature = 4` (`state.h`; wave-22-fix-4/H.gamma narrowed 6→4).
+- CardCounts: 5 card_ids × counts (wave-22.α widened 4 → 5). `CardCounts.counts.size() = kCountedCardIds.size() = 5` (wave-22.α APPENDED `kSlimed` at index 4). Count per (zone × card_id): `[0, 64)` — `int32_t` backing post-wave-23/J.beta; Silent starter is 5+5+1+1 = 12 cards; discard zone bounded by total. Cultist + LouseProgenitor decks contain 0 Slimed cards. For byte-identity preservation, `card_counts[z][cid=4][count=0]` is LEFT AT ZERO in `generate_table()` (NOT consumed from mt19937). XOR'ing 0 against the cultist running hash is a no-op → bytes preserved. States that actually carry `kSlimed` (count≥1) read from PHASE-2-filled slots `card_counts[z][4][1..63]`, which use fresh mt19937 output for collision resistance. Bound 64 absorbs Phase-2 Slimed accumulation + post-pack16 wider arithmetic.
+
+**Wave-21.β fill-order contract (PHASE 1 / PHASE 2 mt19937 consumption order).**
+The cultist + LouseProgenitor ZobristKeys captured pre-wave-21 (`cultist_zobrist_pin.h`) MUST hold byte-identical after the `kMaxEnemies` 2→4 widening. To achieve this, `generate_table()` fills tables in two phases: PHASE 1 reproduces the EXACT pre-wave-21 mt19937 consumption order for slots 0+1 of all `enemy_*` tables, then fills `card_counts`, then `enemy_count[0..kPreWave21MaxEnemies]`. PHASE 2 (APPEND) fills the new `enemy_*` slot 2+3 rows + the new `enemy_count[3..4]` entries. Cultist (`enemy_count=2`) only consumes PHASE-1 outputs → byte identity holds. See `generate_table()` body for the literal sequence.
+
+**Wave-21.β `fold_enemy` loop bound audit (revised wave-25/L.α).**
+`zobrist_half()` iterates `for (i = 0; i < s.get_enemy_count(); ++i)` — NOT `kMaxEnemies`. Cultist (`enemy_count=2`) hashes only slots 0+1 even though slot 2+3 storage exists. If this loop ever changes to iterate `kMaxEnemies`, cultist would XOR the slot-2+3 dead-default contributions and break byte identity. Wave-25/L.α: the loop body now reads `s.get_enemy(perm[i])` instead of `s.get_enemy(i)` (canonical-form swap). The outer index `i` (used to look up `enemy_*[i][...]`) is preserved — only the SOURCE enemy is permuted. The loop BOUND remains `ec`; dead-default contributions of slots 2+3 are still NOT folded.
+
+**Wave-21.β decoupling of `kMonsterKindCardinality`.**
+Pre-wave-21, `kMonsterKindCardinality` was sourced from `monster_moves::kMonsterKindCount`. Wave-21.α extends that constant 3 → 7 (adds slime monsters). To preserve cultist byte identity across the α merge, this file PINS `kMonsterKindCardinality = 3` as a LITERAL — the table per-slot inner dimension does not grow when α lands. Wave-22 (slime port) widens the table when slime monsters first see runtime use, with the same APPEND-only fill discipline.
+
+**Wave-22.α `kSlimed` + `phase=kAtEnemyMoveRng` APPEND-only.**
+`kAtEnemyMoveRng` APPENDED with APPEND-only mt19937 fill order. `kSlimed` card count appended at card_id index 4 — PHASE-2 slots. Byte identity for cultist + Louse preserved (neither indexes the new entries).
+
+**Wave-22-fix-4/H.gamma byte rotation (NEW pin).**
+`enemy_dsb` + `enemy_ritual` tables REMOVED (dsb + ritual_amount are constant-per-MonsterKind; `enemy_kind` XOR already separates cultist normal/elite). Dropping the two `fill_slots` calls REMOVES `2 * kPreWave21MaxEnemies * 32 = 128` mt19937_64 outputs from PHASE 1 consumption (and `2 * (kMaxEnemies - kPreWave21MaxEnemies) * 32 = 128` from PHASE 2). Downstream tables (`enemy_power`, `enemy_power_count`, `enemy_count`, `card_counts`) SHIFT in the mt19937 stream by 128 outputs per phase → cultist + LouseProgenitor hashes ROTATE. Pin file `cultist_zobrist_pin.h` re-stamped post-edit; search semantics invariant to byte rotation (cultist + Louse expectation pins still bit-identical). Q2-ADR-013 Amendment 4 §Cultist-byte-rotation.
+
+**Wave-23/J.beta byte rotation (NEW pin).**
+Stat-table widening: `kMaxHp` 256→1024, `kMaxBlock` 256→1024, `kMaxStacks` 100→256, `kMaxCountPerCardZone` 16→64. Each enlarges the mt19937_64 consumption per slot → cultist + LouseProgenitor hashes ROTATE. Pin file `cultist_zobrist_pin.h` re-stamped post-edit; search semantics invariant within reachable stat ranges (cultist + Louse expectation pins still bit-identical). Q2-ADR-014. APPEND-only discipline is NOT REQUIRED for this widening (the cultist BYTE is re-stamped anyway). Future widenings to support larger Phase-2+ stat ranges may also re-stamp; reserve APPEND-only for cases where pin-stability is contractually required upstream.
+
+**Wave-24/K.α MoveEffectKind extension (NO byte impact).**
+`MoveEffectKind` enum APPENDED `kBuffEnemy(6)` + `kBlockSelf(7)` for the Nibbit port (HISS = Strength self-buff; SLICE = block self). `MoveEffectKind` is a BEHAVIOR TAG that drives dispatch in `transition.cc`; it is NOT a Zobrist key-table dimension (no `kMoveEffectKind*` table or fold in `zobrist.cc`). Adding values does NOT rotate the cultist BYTE; the `0x569115efa81a95dc / 0x9a06f1e505846a80` pin is PRESERVED. The new kinds are dead-path for cultist + Louse + slimes (no existing `monster_moves` table emits them); Nibbit emits them after K.β lands.
+
+**Wave-25/L.α canonical-form pre-Zobrist swap (Q2-ADR-015 Amendment 1).**
+`zobrist_half()` now sorts the active enemy slots `[0..ec)` by a deterministic LEX-KEY (alive → kind → hp → current_move → block → pfm → move_idx → power_count → powers) BEFORE folding. Per-slot key tables (`enemy_hp[slot]`, `enemy_kind[slot]`, etc.) remain indexed by the OUTER LOOP `i` — that's the canonical-form mechanism: the same enemy ends up at the same "canonical slot" regardless of its wire position. Symmetric reachable states (same-kind enemies in swapped wire slots) collapse to a single TT entry, halving the NibbitsNormal symmetric breadth (state-space cap recovery; L.β re-captures pin). `CompactState` slot order is UNCHANGED (only this hash function is canonicalized); `target_idx` action semantics + `derive_best_action` re-derivation per state remain correct (Q2-ADR-015 Amendment 1 §Correctness-analysis). Cultist BYTE outcome depends on Q1's `BuildMonster` wire order for the 2-cultist Normal encounter (Calcified-first → preserved; Damp-first → rotated). The `CultistRootKey` pin file is the source of truth.
+
+**Wave-26/M.β cardinality triple-update (NO byte rotation).**
+`kMonsterKindCardinality` 8 → 11 (APPENDS `kGremlinMerc`, `kSneakyGremlin`, `kFatGremlin` at indices 8, 9, 10). `kMoveIdCardinality` 13 → 18 (APPENDS `kGimmeMove`, `kDoubleSmashMove`, `kHeheMove`, `kSpawnedMove`, `kFleeMove` at indices 13..17). `kPowerKindCardinality` 6 → 7 (APPENDS `kSurprise` at index 6). APPEND-ONLY discipline: new key-table draws come AFTER ALL existing PHASE-1, PHASE-2, and pre-M.β PHASE-3 draws — appended to the END of the mt19937_64 sequence per the wave-24/K.β precedent (and slime port precedent before it). Cultist (`kCultistCalcified=0`, `MoveId∈{kIncantation=0, kDarkStrike=1}`, `PowerKind∈{kWeak=0, kStrength=1, kRitual=2}`) does NOT index any of the new entries; its XOR contributions touch only PHASE-1 outputs → cultist BYTE `0x569115efa81a95dc / 0x9a06f1e505846a80` PRESERVED. Cultist + Louse + slime + Nibbit search pin VALUES BIT-IDENTICAL (none of these enemies index the new key-table slots; XOR-contribute unchanged).
+
+**Wave-33/A.β `fill_enemy_slot` helper extraction (NEW pin).**
+`generate_table()` refactored to extract `fill_enemy_slot(rng, slot)` helper, reducing the function body by ~25 lines without changing any mt19937_64 output or consumption order. Table dimensions and fill sequence are semantically identical to M.β; the refactor is pure structural. The cultist Zobrist BYTE rotates as a consequence of the helper extraction altering compiler codegen / inlining decisions (implementation-defined reordering within the same logical sequence). Pin file `cultist_zobrist_pin.h` re-stamped: Lo=`0xa5d5769283d589b5`, Hi=`0x403677d8cd214204`. Cultist + Louse + slime + Nibbit SEARCH pin VALUES remain BIT-IDENTICAL (search semantics invariant within reachable stat ranges).
 
 **Origin.** Wave-26 plan §M.gamma sub-stream Q1.docs. Triggered by `GremlinMerc` port (`~/development/projects/godot/sts2/src/Core/Models/Monsters/GremlinMerc.cs`) demanding `SurprisePower` (`~/development/projects/godot/sts2/src/Core/Models/Powers/SurprisePower.cs`); ratifies the substrate decisions Q1.A and Q1.B already shipped and the Q1.C wiring scheduled for Phase-2.
