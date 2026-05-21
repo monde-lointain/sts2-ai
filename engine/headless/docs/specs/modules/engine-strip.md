@@ -1,6 +1,8 @@
 # Module: Engine Strip / Mod Layer (M8)
 
-> Replaces Godot rendering, audio, animation, UI, scene-tree, lifecycle, platform-integration, and telemetry-vendor surfaces with deterministic no-ops or test doubles. Implemented as out-of-tree mod via `Core/Modding` where possible (per pipeline ADR-002 and Q1-ADR-004's tier discipline).
+> **[2026-05-21: This module is HISTORICAL under pipeline ADR-034.]** Originally documented EngineStrip/M8 as the "headless port with Godot stubbed" approach per pipeline ADR-002 (out-of-tree mod via `Core/Modding`, Q1-ADR-004's T1/T2/T3 tier discipline). That approach was empirically blocked at Wave-6.5 by a P/Invoke cctor wall in `Core/Logging/Logger..cctor`. Q1 is now a behavior-mirroring parallel C# substrate in `Sts2Headless.Domain.*`; the M8 stub registry (`Sts2Headless.EngineStrip/` — 18 stub files) is dead code pending future cleanup wave. This spec is preserved for audit-trail purposes; the tier discipline below was never exercised against live `Core/Modding`. **See pipeline ADR-034.**
+>
+> _(Historical description, preserved:)_ Replaces Godot rendering, audio, animation, UI, scene-tree, lifecycle, platform-integration, and telemetry-vendor surfaces with deterministic no-ops or test doubles.
 
 ## Responsibilities
 

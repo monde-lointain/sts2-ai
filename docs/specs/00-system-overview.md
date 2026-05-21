@@ -12,7 +12,7 @@ In scope of this spec: the **infrastructure** that produces, evaluates, and serv
 
 External actors:
 
-- **Megacrit STS2 source** — read-only. Drives Q1's headless port and patch-adaptation cadence.
+- **Megacrit STS2 source** — read-only. Drives Q1's parallel-substrate behavior-mirror and patch-adaptation cadence (per ADR-034 — Q1 is a behavior-mirroring parallel C# substrate, not a literal headless port).
 - **Research team** — submits training jobs, reads dashboards, signs off model promotions.
 - **CI system** — runs determinism + regression battery; blocks merges on divergence.
 

@@ -108,6 +108,6 @@ Between S13-T5 (`ced8eb6`) and 2026-05-12, parallel work on the **initial-state-
 - **Phase-1A** (infrastructure + smoke per-step Godot parity + 16-encounter initial-state Godot parity + 22-encounter self-consistency) — **ratified** by project lead on 2026-05-12.
 - **Phase-1.5** (14-encounter per-step behavior fill-in + live-Godot per-step across full corpus + B.1-ε encounter-RNG) — **OPEN**, required for Q1 Phase-1 close per `docs/specs/modules/game-simulator.md` and `docs/plans/q1-implementation-plan.md` §6.1.
 
-Risk-register impact: R4 (headless port ≤2 mo) is **SUBSTANTIALLY MITIGATED**, not DISCHARGED, as of 2026-05-12.
+Risk-register impact: R4 (headless port ≤2 mo) is **SUBSTANTIALLY MITIGATED**, not DISCHARGED, as of 2026-05-12. [Note (2026-05-21): "headless port" framing preceded pipeline ADR-034; Q1 is a behavior-mirroring parallel C# substrate, not a literal headless port. See pipeline ADR-034. R4's discharge calc stands on bounded development timeline regardless of substrate approach.]
 
 Pointers: `docs/specs/02-encounter-port-decisions.md` § "B.1-final addendum" (encounter-by-encounter rationale); `docs/q1-stage-manifest.md` (upstream genealogy SHAs).

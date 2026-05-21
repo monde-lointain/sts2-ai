@@ -249,7 +249,7 @@ Run-level search composes these outcomes with reward generation, reward-choice h
 
 **Status:** Accepted.
 
-**Context.** Q1 (after the headless port) emits a versioned binary state. Q2 (Oracle) needs `CompactState` for expectimax. Someone owns the adapter. Either Q1 emits CompactState directly (couples Q1 to verifier semantics) or Q2 reads Q1's binary and derives CompactState.
+**Context.** Q1 (after the headless port [per ADR-034 now reads as "parallel C# substrate"]) emits a versioned binary state. Q2 (Oracle) needs `CompactState` for expectimax. Someone owns the adapter. Either Q1 emits CompactState directly (couples Q1 to verifier semantics) or Q2 reads Q1's binary and derives CompactState.
 
 **Decision.** Q2 owns the adapter. Q1 emits its versioned binary; Q2 consumes it and produces `CompactState`. Q2 is the single owner of verifier-side types.
 
@@ -284,7 +284,7 @@ Run-level search composes these outcomes with reward generation, reward-choice h
 
 **Context.** `scaling-strategy.md` Appendix A #2. If Megacrit exposes an official headless / automation API, much of Q1's port collapses from months to weeks.
 
-**Decision deferred.** We proceed with our own headless port (ADR-002) on the assumption that no official API will exist. If one materializes, we re-baseline Q1 — most of the rest of the architecture is unaffected because Q1's interface (hook protocol, save/restore, replay) stays the same.
+**Decision deferred.** We proceed with our own headless port (ADR-002) on the assumption that no official API will exist. If one materializes, we re-baseline Q1 — most of the rest of the architecture is unaffected because Q1's interface (hook protocol, save/restore, replay) stays the same. [Note (2026-05-21): "headless port (ADR-002)" framing preceded pipeline ADR-034. ADR-013 remains Deferred but reads correctly as: if Megacrit ships a headless/automation API, the parallel-substrate per-patch port treadmill could collapse to a thin upstream-driver adapter. See pipeline ADR-034. The wave-43/B option-B spike memory at `reference_godot_headless_spike_patterns.md` (cctor bypass discovery + Godot-mono boot mechanics) is the input artifact for any future ADR-013 unfreeze.]
 
 **Consequences of deferral.**
 
@@ -1121,15 +1121,21 @@ All three waves of the smell-refactor preserve binary wire bytes. Old replay fil
 
 **R11 (OPEN until Stream B spike returns).** Option B feasibility spike (ADR-002 option b: `godot --headless` + `Core/AutoSlay/AutoSlayer.cs`) may also fail at save/restore (no upstream serialization primitive for mid-combat `CombatState`) or hook injection (`Core/Modding` is event-notification only with no decision-boundary override surface) → option C (parallel substrate) becomes terminal operating mode → per-patch port treadmill budgeted into Phase-1.5 permanently. Discharges DISCHARGED on green spike (option B viable); ESCALATES to permanent risk on negative spike (parallel-substrate is the only path).
 
-**§Known-stale-docs (NOT in scope of this PR — surface for follow-up).** The following files reference "headless port" language or falsified ADR-002 positives but are outside Stream A's owned surfaces:
-- `engine/headless/docs/specs/00-system-overview.md:21` — "out-of-tree mod via `Core/Modding` wherever possible, per pipeline ADR-002."
-- `engine/headless/docs/specs/modules/engine-strip.md:3,8` — references to `Core/Modding` as the T1 tier.
-- `engine/headless/docs/q1-stage-manifest.md:111` — "R4 (headless port ≤ 2 mo)."
-- `engine/headless/docs/phase1-gate-report.md:111` — "R4 (headless port ≤2 mo)."
-- `engine/headless/docs/specs/01-decisions-log.md:90,92,202` — Q1-internal ADR-004/ADR-010 references to `Core/Modding` tiers (these are Q1-internal ADRs about the former headless-port discipline; under parallel-substrate they describe aspirational T1/T2 discipline that was never exercised against live `Core/Modding`).
-- `docs/specs/00-system-overview.md:15` — "Drives Q1's headless port and patch-adaptation cadence."
-- `docs/specs/01-decisions-log.md:277` — ADR-013 references "our own headless port (ADR-002)" (this is a Deferred ADR describing a hypothetical API — historically accurate language, not a falsified claim, but may confuse readers).
-Surface to project lead for a broader-sweep follow-up wave.
+**§Known-stale-docs (resolved 2026-05-21 by wave-44/B doc-sweep).** All 8 sites surfaced by the wave-43/A grep sweep have been addressed in wave-44/B. Three were rewritten in place to parallel-substrate framing; five were preserved with `[Note (2026-05-21): ... see pipeline ADR-034]`-style historical-annotation because the original prose documents pre-ADR-034 reasoning artifacts rather than making current claims.
+
+*(a)-category — rewritten in place:*
+- `docs/specs/00-system-overview.md:15` — rewritten to "parallel-substrate behavior-mirror"
+- `engine/headless/docs/specs/00-system-overview.md:21` — Section 3 retitled "Patch Adaptability via Parallel-Substrate Behavior-Mirror"; Wave-6.5 cctor-wall context inlined
+- `engine/headless/docs/specs/modules/engine-strip.md:1-3` — module retagged HISTORICAL; original descriptive content preserved below disclaimer
+
+*(b)-category — preserved with historical annotation:*
+- `engine/headless/docs/q1-stage-manifest.md` R4 line — historical risk-register status (annotated)
+- `engine/headless/docs/phase1-gate-report.md` R4 line — historical gate report (annotated)
+- `engine/headless/docs/specs/01-decisions-log.md` Q1-ADR-004 — Status amended to "Accepted (now HISTORICAL — superseded post-Wave-6.5)"; Context-note block inserted
+- `engine/headless/docs/specs/01-decisions-log.md` Q1-ADR-010 — Status amended to "Accepted (Context now HISTORICAL)"; Context-note block inserted; pattern-reuse Decision still stands
+- `docs/specs/01-decisions-log.md` ADR-013 — annotated; remains Deferred status; spike memory `reference_godot_headless_spike_patterns.md` flagged as input artifact for future unfreeze
+
+R10 status flips OPEN → DISCHARGED on merge of wave-44/B (no falsified-positive references remain unannotated in `docs/specs/` or `engine/headless/docs/`).
 
 **§Future work.** `Sts2Headless.EngineStrip/` cleanup wave (18 stub files dead under this ratification); if R11 ESCALATES (option B negative spike), drift-gate hardening (mid-combat semantic drift detection beyond inline-comment convention) becomes a Phase-1.5 prerequisite.
 

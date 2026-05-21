@@ -85,9 +85,11 @@ These ADRs are **subordinate** to pipeline-level ADRs at `~/development/projects
 
 ## Q1-ADR-004 — Mod-Layer Discipline for Engine Strip (M8)
 
-**Status:** Accepted.
+**Status:** Accepted (now HISTORICAL — superseded post-Wave-6.5 by pipeline ADR-034; M8 tier discipline never exercised against live `Core/Modding`; preserved for audit trail).
 
-**Context.** Pipeline ADR-002 commits to "out-of-tree mod via `Core/Modding` where possible; minimize patches to the upstream tree." The "where possible" is the load-bearing phrase. Some Godot surfaces cannot be cleanly replaced via mod hooks (e.g., main-loop replacement, `Engine.GetMainLoop()` substitution, scene-tree elision). For those, in-tree edits are required. Without explicit discipline, in-tree edits accumulate and the rebase cost grows monotonically.
+**Context.** [Note (2026-05-21): The Context, Decision, and Consequences below were authored when Q1 was planned as a headless C# port with Godot stubs (pipeline ADR-002 option (a)). That approach was empirically blocked at Wave-6.5 by a P/Invoke cctor wall in `Core/Logging/Logger..cctor`. Q1 is now a behavior-mirroring parallel C# substrate in `Sts2Headless.Domain.*` (pipeline ADR-034); the T1/T2/T3 tier discipline below was never exercised. `Sts2Headless.EngineStrip/` is dead code pending future cleanup wave. Content below preserved for audit-trail purposes — do NOT treat as current guidance.]
+
+Pipeline ADR-002 commits to "out-of-tree mod via `Core/Modding` where possible; minimize patches to the upstream tree." The "where possible" is the load-bearing phrase. Some Godot surfaces cannot be cleanly replaced via mod hooks (e.g., main-loop replacement, `Engine.GetMainLoop()` substitution, scene-tree elision). For those, in-tree edits are required. Without explicit discipline, in-tree edits accumulate and the rebase cost grows monotonically.
 
 **Decision.** M8 organizes Godot-surface replacements into three tiers, in order of preference: (T1) **mod hook** via `Core/Modding` — preferred, zero upstream edits; (T2) **dependency injection at composition root** — replace a Godot type with a stub via M9 wiring, no upstream edit; (T3) **upstream tree edit** — patch the inherited file. Every T3 edit must be documented with a comment block (`// Q1: <reason>`) and tracked in `modules/engine-strip.md`'s explicit T3 ledger. Quarterly review: are any T3 edits eligible to be promoted to T1 or T2?
 
@@ -197,9 +199,11 @@ These ADRs are **subordinate** to pipeline-level ADRs at `~/development/projects
 
 ## Q1-ADR-010 — Soft Reuse of `Core/AutoSlay/AutoSlayer.cs` Patterns Where Aligned
 
-**Status:** Accepted.
+**Status:** Accepted (Context now HISTORICAL — pipeline ADR-002 positive about `Core/AutoSlay` was falsified by pipeline ADR-034; the Decision's pattern-level reuse guidance still stands but `AutoSlayer.cs` was never lifted in practice; wave-43/B option-B spike further confirmed AutoSlayer is structurally blocked by scene-tree dependencies — see `reference_godot_headless_spike_patterns.md` memory).
 
-**Context.** Pipeline ADR-002 Positives: "`Core/AutoSlay/AutoSlayer.cs` already implies an internal automation harness we can lift." It suggests Megacrit has an internal automation pattern with handlers and helpers that approximates an action-decision loop. Reusing it directly couples M2 (Hook Protocol) to upstream patterns that may evolve.
+**Context.** [Note (2026-05-21): Pipeline ADR-002 positive #2 (Core/AutoSlay lift) is FALSIFIED per pipeline ADR-034. The Decision below — pattern-level study with no inheritance — is unaffected; pattern reuse remains valid guidance. The reference to "AutoSlayer implies an internal automation harness we can lift" reads as historical motivation, not current claim.]
+
+Pipeline ADR-002 Positives: "`Core/AutoSlay/AutoSlayer.cs` already implies an internal automation harness we can lift." It suggests Megacrit has an internal automation pattern with handlers and helpers that approximates an action-decision loop. Reusing it directly couples M2 (Hook Protocol) to upstream patterns that may evolve.
 
 **Decision.** M2 and M4 study `AutoSlayer.cs` and reuse its patterns *where they align with Q1's hook protocol* (action surface naming, decision-boundary identification). Where upstream patterns conflict with Q1's needs (e.g., upstream's reliance on Godot-engine signaling), Q1 deviates without apology. Reuse is at the *pattern* level, not the *code* level — no inheritance from `AutoSlayer`, no subclass extension. The reuse is documented in M2's spec.
 

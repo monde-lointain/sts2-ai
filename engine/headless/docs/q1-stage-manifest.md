@@ -108,5 +108,5 @@ Tag `v0.105.1-engine-pinned` names this shift point.
 - **B.1-ε** — CLOSED 2026-05-17 (Wave 14 slime port; probe gate 160/0).
 - **v0.105.1 catch-up** — COMPLETE 2026-05-17 (Wave 15 pin-advance ceremony).
 - **Phase-1 (per `docs/plans/q1-implementation-plan.md` §6.1)** — Phase-1.5 substantially advanced. 14-encounter per-step + live-Godot per-step full corpus still pending.
-- **R4 (headless port ≤ 2 mo)** — SUBSTANTIALLY MITIGATED (further mitigated by v0.105.1 catch-up automation per ADR-026 upstream-sync pipeline).
+- **R4 (headless port ≤ 2 mo)** — SUBSTANTIALLY MITIGATED (further mitigated by v0.105.1 catch-up automation per ADR-026 upstream-sync pipeline). [Note (2026-05-21): "headless port" framing preceded pipeline ADR-034; Q1 is a behavior-mirroring parallel C# substrate, not a literal headless port. See pipeline ADR-034. R4's discharge stands on the bounded development timeline regardless of approach.]
 - **R9 (Phase-1.5 scope/timing)** — NEW, IN PROGRESS; target date + live-Godot approach pending.
