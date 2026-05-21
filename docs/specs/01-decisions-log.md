@@ -38,6 +38,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-032 | Consolidate Monster Move Payloads onto MonsterIntent.AppliesPowers + SelfBlockGain | Accepted |
 | ADR-033 | Typed Creature Ids Across the Domain Surface | Accepted |
 | ADR-034 | Q1 Substrate is C# Parallel-Implementation, Not Headless Port — Wave-6.5 Retrofit | Accepted (2026-05-21) |
+| ADR-035 | Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor | Accepted |
 
 ---
 
@@ -1142,3 +1143,149 @@ R10 status flips OPEN → DISCHARGED on merge of wave-44/B (no falsified-positiv
 **Cross-references.** ADR-002 (amended; positives #1+#2 falsified by this entry). ADR-026 (upstream-sync pipeline — alignment mechanism). ADR-027 (Q4 fixture growth policy — alignment mechanism). ADR-028 (substrate baseline ratified at v0.105.1 — clarified by this entry as parallel-substrate baseline). ADR-029 (Path A engine-expansion campaign — continues against parallel substrate). ADR-033 (typed creature ids — recent refactor on this substrate).
 
 **Origin.** Q1-lead audit 2026-05-21. Plan: `/home/clydew372/.claude/plans/re-adr-002-falsification-compressed-marble.md`.
+
+---
+
+## ADR-035 — Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor
+
+**Status:** Accepted (2026-05-21).
+
+**Context.** ADR-034 closes the substrate question (parallel C# substrate is
+terminal operating mode) and surfaces R12 in §Future work: "mid-combat semantic
+drift (beyond inline-comment convention) becomes a Phase-1.5 prerequisite if
+R11 ESCALATES." R11 escalated post wave-43 spike (proof-of-absence on
+`godot --headless` save/restore + hook injection). Existing drift gates
+(`SyncStatePinGate`, `DllSignatureGate`, `probe-upstream-initial-state`) cover
+content-baseline shape, reflection-call shape, and start-of-combat byte parity
+respectively; nothing covers per-turn behavior on unchanged signatures.
+Wave-32 (ADR-032) is a concrete example of this drift class: the
+`Defend(N)`-routing bug existed for ~1 year with no structural gate firing.
+The wave-43 architect commission asks for a structural mitigation, not learned
+or ML-based detection, since R12 must clear before Phase-1.5 resumes.
+
+Three sub-decisions in this ADR:
+
+1. **Probe granularity** — per-turn-side (post-player-EndTurn, post-enemy-Turn)
+   vs per-action vs terminal-only.
+2. **Q4-side semantic DSL population mechanism** — AST extraction from upstream
+   source vs hand-port per encounter wave.
+3. **Inline-upstream-comment enforcement** — Roslyn analyzer vs grep-based
+   pre-commit hook.
+
+These three are coupled: 1 catches Q1 substrate behavior drift, 2 catches
+Q4 registry-vs-upstream drift, 3 catches code-review-only drift not visible
+to either of the above. Ratifying as a single ADR — they constitute the
+drift-gate hardening package; isolating any one would leave a known coverage
+gap.
+
+**Decision.**
+
+1. **Mid-combat probe is per-turn-side, with per-action opt-in for encounters
+   that exhibit per-turn divergence under triage.** Probe extends the wave-6
+   `UpstreamDriver.SetUpCombat` manual-replay pattern to drive
+   `StartTurn → ExecuteEnemyTurn → AfterAllPlayersReadyToEndTurn` via
+   reflection, skipping audio/scene-tree/action-queue plumbing lines exactly
+   as the existing `NetCombatCardDb.StartCombat` skip works at
+   `UpstreamDriver.cs:590-592`. `CombatState.GodotTimerTask` is **not** on
+   the critical path (only `GetCreatureAsync` invokes it; `GetCreatureAsync`
+   is not in the EndTurn chain — verified by read of
+   `~/development/projects/godot/sts2/src/Core/Combat/CombatState.cs:211-244,
+   455-459` and `CombatManager.cs:255-432`). Wave-43 spike's
+   "FAIL by proof-of-absence" referenced save/restore primitives, not
+   `GodotTimerTask`; this ADR resolves that ambiguity in favor of feasibility.
+2. **Q4 card-text DSL populates via AST extraction from
+   `~/development/projects/godot/sts2/src/Core/Models/Cards/`**, with explicit
+   `op: "unknown"` for patterns that don't fit the constrained DSL shape
+   (`attack`, `block_self`, `apply_power`, `draw`). Hand-port rejected
+   because the per-patch cost (R11 says 1-3 weeks per major patch; +8
+   hours of hand-DSL ≈ 5% tax) compounds across the ongoing operating mode.
+   `K_UNKNOWN_MAX` starts at post-extraction count and ratchets down on
+   ADR-style PRs only.
+3. **Inline-upstream-comment enforcement is a Roslyn analyzer**
+   (`STS2_UPSTREAM_001`) at per-method granularity. Grep-based pre-commit
+   rejected: doesn't fire for teammates without `.claude/settings.local.json`
+   registration (gitignored per existing precedent). Warn-only at landing;
+   promotes to error after 2 wave cycles green per ADR-024 precedent.
+
+**Consequences.**
+
+- *Negative:* mid-combat probe couples R12 mitigation to the reflection-harness's
+  continued tractability against upstream. A future upstream patch that
+  introduces `GodotTimerTask` (or any scene-tree singleton call) inside the
+  EndTurn critical path breaks the harness; engineer-side mitigation is
+  re-extending the skip list, which is exactly the per-patch port treadmill
+  ADR-034 ratifies. The reflection harness has the same per-patch fragility
+  as the rest of the substrate; no architectural fix.
+- *Negative:* mid-combat goldens grow git repo by ~3.5 MB (22 encounters ×
+  10 seeds × ≤20 turns × 2 sides × ~200 bytes/snapshot). Existing
+  `goldens-upstream/initial-state/` is ~2.2 MB; this ~2.5× the precedent.
+  Merge friction proportional. Mitigation: file-per-encounter-per-seed shape
+  (record-prefixed binary) keeps diffs legible; per-turn CRC32 prefix
+  short-circuits failure summary on first divergence.
+- *Negative:* AST extractor for Q4 DSL is regex-based (matches `entity_extract.py`
+  precedent), not full Roslyn parser. Multi-pattern card bodies and
+  unconventional `OnPlay` shapes emit `op: "unknown"` — semantic loss vs
+  hand-port. Bounded honestly via `K_UNKNOWN_MAX` invariant; not silent.
+- *Negative:* Roslyn analyzer at per-method granularity has a false-negative
+  blind spot — a method with a stale `upstream-source:` comment passes the
+  analyzer but provides incorrect ground truth at code review. Mitigation:
+  the comment must include an SHA fragment matching a recent upstream-pin
+  commit (analyzer verifies the fragment exists in `upstream-pin.json`'s
+  `pinned_dll_sha256` prefix); stale comments older than 2 pin advances are
+  flagged. This converts "stale" from silent failure to analyzer warn.
+- *Negative:* per-encounter parity tests for Phase-1.5 encounters rely on
+  hand-authored representative action sequences (no Q2 oracle to derive
+  them outside cultist). Action-sequence coverage gap is an engineer-judgement
+  artifact, peer-reviewed at wave dispatch with Q2-lead sign-off; this is
+  a known weakness vs cultist's oracle-derived sequence.
+- *Negative:* the package adds ~17s to `make q1-ci` (Roslyn analyzer ~2s,
+  mid-combat smoke ~8s, per-encounter smoke ~6s, Q4 tests ~1s). Existing
+  budget is ~35s; new total ~52s, ≤60s commit holds with ~8s headroom.
+  Future gate additions further compress the headroom.
+- *Negative:* nightly `make probe-upstream-mid-combat` adds ~8 min CI cost
+  on path-filtered triggers. ADR-026 §Negatives already accepted "~10 GHA-hours
+  total for bridge work"; this is an ongoing cost, not a one-time.
+- *Negative:* red-team validation requires destructive injection into a
+  temporary upstream-source mirror (`/tmp/sts2-redteam-upstream/`); the
+  ceremony is per-gate and adds ~10min total to wave-1 close. Mitigation:
+  ceremony is one-time per R12 close, not per future wave.
+- *Negative:* R12 only DISCHARGES on red-team artifact landing. Project-lead
+  acceptance criterion (commission §3); skipping the artifact reverts the
+  decision to "untested gate set."
+- *Positive:* R12 closes with a structural, code-review-independent mitigation.
+  Future Q4-cards or monster behavior drift is caught at gate-run time, not
+  at code-review-only.
+- *Positive:* the three sub-decisions are individually testable and individually
+  reversible; if a Q4-side DSL extraction shows <70% coverage on Silent's
+  98 cards at wave-1 close, Q4-B1/B2 ratchet back without affecting Q1
+  sub-streams.
+- *Positive:* Phase-1.5 resumption gate is explicit and observable (wave-1
+  close criteria); no implicit "is R12 closed yet?" ambiguity blocking wave
+  dispatch.
+- *Positive:* mid-combat probe extension reuses the wave-6 SetUpCombat shim
+  pattern verbatim; no new infrastructure category.
+
+**Cross-references.** ADR-023 (status-badge convention; this ADR's plan-doc
+follows). ADR-024 (`doc-only:` flag + warn→block promotion precedent for
+analyzer ratchet). ADR-026 (upstream-sync pipeline; §1 sub-stream Q4-B4 wires
+the DSL extractor into `make sync`'s detect-and-propose flow; §1 sub-stream
+3 inline-comment Roslyn analyzer enforces ADR-026 §Negative concern #1
+mechanically). ADR-027 (Q4 fixture growth policy; §1 sub-stream Q4-B3
+canonical-vs-fixture drift gate ratifies ADR-027 gate-wise). ADR-028 (substrate
+baseline at v0.105.1; mid-combat goldens captured against this pin). ADR-032
+(MonsterIntent v4 wire format; mid-combat probe inherits without schema bump).
+ADR-034 (parallel-substrate ratification; §Future work "drift-gate hardening"
+named this ADR).
+
+**Origin.** Project-lead commission 2026-05-21 (post-ADR-034 close). Quantum-architect
+draft addressing R12 mitigation prerequisite before Phase-1.5 resumption.
+Three load-bearing factual decisions resolved per commission's "Known unknowns
+you MUST resolve" list:
+- `CombatState.GodotTimerTask` not on EndTurn critical path (read of upstream
+  source).
+- Granularity = per-turn-side, not per-action (storage-vs-diagnosis tradeoff
+  per §2.1).
+- Roslyn analyzer over grep-based hook (cross-engineer enforcement guarantee).
+- AST extraction over hand-port for Q4 DSL (per-patch cost amortization).
+- Goldens file-per-encounter-per-seed binary record sequence (diff-localizability
+  vs walk-cost tradeoff).
