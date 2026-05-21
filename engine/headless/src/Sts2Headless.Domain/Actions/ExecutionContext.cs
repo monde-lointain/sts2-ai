@@ -42,12 +42,14 @@ public sealed class ExecutionContext
     public IRngSource Rng { get; }
     public HookRegistry Hooks { get; }
     public ActionQueue Queue { get; }
+    public IActionObserver? Observer { get; }
 
-    public ExecutionContext(IClock clock, IRngSource rng, HookRegistry hooks, ActionQueue queue)
+    public ExecutionContext(IClock clock, IRngSource rng, HookRegistry hooks, ActionQueue queue, IActionObserver? observer = null)
     {
         Clock = clock ?? throw new ArgumentNullException(nameof(clock));
         Rng = rng ?? throw new ArgumentNullException(nameof(rng));
         Hooks = hooks ?? throw new ArgumentNullException(nameof(hooks));
         Queue = queue ?? throw new ArgumentNullException(nameof(queue));
+        Observer = observer;
     }
 }
