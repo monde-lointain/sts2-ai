@@ -448,13 +448,21 @@ public static class Program
 
         // Action sequence mapping (encounter → JSON file).
         //
-        // Schema note (wave-46/A.0, per plan T3):
+        // Schema note (wave-47a/A; supersedes wave-46/A.0 T3):
         //   - target_creature_id in each action JSON refers to the ENCOUNTER-START
         //     enemy-order index (0-indexed). Both Q1 + upstream resolve this
         //     index to the live creature ID at replay time.
-        //   - target_creature_id = null means "any alive enemy" (resolved
-        //     deterministically by Q1/upstream); use for mid-combat-spawn targets
-        //     (e.g., GremlinMerc post-death spawns).
+        //   - target_creature_id = null does NOT mean "any alive enemy" —
+        //     CardPlayer.cs:71-75 THROWS on null target for AnyEnemy cards
+        //     (discovered wave-46/Q1-A2 GremlinMerc work; supersedes wave-46/A.0's
+        //     incorrect "any alive enemy" doc).
+        //   - For mid-combat-spawn targets (e.g., GremlinMerc post-death
+        //     spawns of SneakyGremlin + FatGremlin), use the encounter-start
+        //     enemy-order index that will resolve to the spawn slot at replay
+        //     time (slot 2 + slot 3 for 2-Nibbit spawns; verify per encounter).
+        //   - Dead-creature targeting is a NO-OP (engine finds dead body in
+        //     Enemies list; DealDamage to 0-HP is harmless). Sequences can
+        //     target a dead enemy slot to consume the action without error.
         //
         // Stub entries (wave-46/A.0): point at JSON files NOT YET EXISTING. Cohorts
         // land the JSON files. The probe loop below checks File.Exists(seqPath)
