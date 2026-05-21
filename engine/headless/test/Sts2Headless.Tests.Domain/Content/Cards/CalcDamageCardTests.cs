@@ -94,13 +94,13 @@ public sealed class CalcDamageCardTests
             if (finisher is null)
                 continue;
             // Make sure no prior attacks this turn.
-            Assert.Equal(0, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(0, ctx.State.Trail.AttacksPlayedThisTurn);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, finisher!.InstanceId, enemyId);
             int hpAfter = ctx.State.GetEnemy(enemyId).CurrentHp;
             Assert.Equal(hpBefore, hpAfter); // 0 attacks × 6 = 0 damage
             // But Finisher itself is now counted.
-            Assert.Equal(1, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(1, ctx.State.Trail.AttacksPlayedThisTurn);
             return;
         }
         Assert.Fail("Could not find seed where Finisher is in opening hand.");
@@ -127,13 +127,13 @@ public sealed class CalcDamageCardTests
             // Play 2 strikes (2 attacks played); then Finisher.
             CombatEngine.PlayerPlayCard(ctx, strikes[0].InstanceId, enemyId);
             CombatEngine.PlayerPlayCard(ctx, strikes[1].InstanceId, enemyId);
-            Assert.Equal(2, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(2, ctx.State.Trail.AttacksPlayedThisTurn);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, finisher!.InstanceId, enemyId);
             int hpAfter = ctx.State.GetEnemy(enemyId).CurrentHp;
             // Finisher: 6 × 2 = 12 damage.
             Assert.Equal(hpBefore - 12, hpAfter);
-            Assert.Equal(3, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(3, ctx.State.Trail.AttacksPlayedThisTurn);
             return;
         }
         Assert.Fail("Could not find seed with Finisher + 2 Strikes in opening hand.");
@@ -158,7 +158,7 @@ public sealed class CalcDamageCardTests
             }
             if (murder is null)
                 continue;
-            int drawnSoFar = ctx.State.CardsDrawnThisCombat;
+            int drawnSoFar = ctx.State.Trail.CardsDrawnThisCombat;
             Assert.True(drawnSoFar > 0, "Initial hand draw should have happened.");
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, murder!.InstanceId, enemyId);
@@ -209,12 +209,12 @@ public sealed class CalcDamageCardTests
         (CombatContext ctx, _) = StartBasicCombat(seed: 42u);
         // Initial hand draw at combat start brings HandPile.Cards.Count cards
         // — the counter should match.
-        Assert.Equal(ctx.State.HandPile.Cards.Count, ctx.State.CardsDrawnThisCombat);
+        Assert.Equal(ctx.State.HandPile.Cards.Count, ctx.State.Trail.CardsDrawnThisCombat);
 
-        int drawnSoFar = ctx.State.CardsDrawnThisCombat;
+        int drawnSoFar = ctx.State.Trail.CardsDrawnThisCombat;
         // Draw 1 — should always succeed because draw pile has the rest of the deck.
         ctx.DrawCards(1);
-        Assert.Equal(drawnSoFar + 1, ctx.State.CardsDrawnThisCombat);
+        Assert.Equal(drawnSoFar + 1, ctx.State.Trail.CardsDrawnThisCombat);
     }
 
     [Fact]
@@ -235,14 +235,14 @@ public sealed class CalcDamageCardTests
             if (strike is null)
                 continue;
             CombatEngine.PlayerPlayCard(ctx, strike!.InstanceId, enemyId);
-            Assert.Equal(1, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(1, ctx.State.Trail.AttacksPlayedThisTurn);
             // End turn, enemy turn, then a new player turn.
             CombatEngine.EndPlayerTurn(ctx);
             CombatEngine.EnemyTurn(ctx);
             if (ctx.State.IsCombatOver)
                 return; // ignore if combat ended
             CombatEngine.StartPlayerTurn(ctx);
-            Assert.Equal(0, ctx.State.AttacksPlayedThisTurn);
+            Assert.Equal(0, ctx.State.Trail.AttacksPlayedThisTurn);
             return;
         }
         Assert.Fail("Could not find seed with StrikeSilent for AttacksPlayedThisTurn test.");
@@ -306,7 +306,7 @@ public sealed class CalcDamageCardTests
             CombatEngine.PlayerPlayCard(ctx, skewer!.InstanceId, enemyId);
             // X = 3: deal 8 dmg x 3 = 24.
             Assert.Equal(0, ctx.State.Energy);
-            Assert.Equal(3, ctx.State.LastSpentEnergy);
+            Assert.Equal(3, ctx.State.Trail.LastSpentEnergy);
             int hpAfter = ctx.State.GetEnemy(enemyId).CurrentHp;
             Assert.Equal(hpBefore - (Skewer.BaseDamage * 3), hpAfter);
             return;
@@ -390,7 +390,7 @@ public sealed class CalcDamageCardTests
             if (trap is null)
                 continue;
             // Smoke set has no Shiv generators, so ExhaustedShivCount stays at 0.
-            Assert.Equal(0, ctx.State.ExhaustedShivCount);
+            Assert.Equal(0, ctx.State.Trail.ExhaustedShivCount);
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, trap!.InstanceId, enemyId);
             // 0 Shivs × 4 damage = 0; enemy HP unchanged.
@@ -412,7 +412,7 @@ public sealed class CalcDamageCardTests
             );
             if (trap is null)
                 continue;
-            ctx.SetState(ctx.State with { ExhaustedShivCount = 3 });
+            ctx.SetState(ctx.State with { Trail = ctx.State.Trail with { ExhaustedShivCount = 3 } });
             int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
             CombatEngine.PlayerPlayCard(ctx, trap!.InstanceId, enemyId);
             // 3 Shivs × 4 damage = 12 raw; JawWorm has no Vulnerable / etc.
