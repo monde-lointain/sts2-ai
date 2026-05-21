@@ -5,7 +5,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | # | Title | Status |
 |---|---|---|
 | ADR-001 | Service-Based Architecture with Event-Driven Pipeline | Accepted |
-| ADR-002 | Headless C# Core as Game Simulator | Accepted |
+| ADR-002 | Headless C# Core as Game Simulator | Accepted — Amended 2026-05-21 (see ADR-034) |
 | ADR-003 | Single Shared Token Registry as Patch-Adaptation Lever | Accepted |
 | ADR-004 | Two State Representations — CompactState (verifier) and RichState (network) | Accepted |
 | ADR-005 | Worker↔Sim Integration via Shared-Memory IPC | Accepted (default) |
@@ -35,6 +35,9 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-029 | Path A Engine-Expansion Campaign | Accepted (2026-05-17) |
 | ADR-030 | Q1 Hook Protocol Extension for OnDeath Mechanics | Accepted (2026-05-19) |
 | ADR-031 | Zobrist Cardinality Audit (Archive) | Accepted (Archive) |
+| ADR-032 | Consolidate Monster Move Payloads onto MonsterIntent.AppliesPowers + SelfBlockGain | Accepted |
+| ADR-033 | Typed Creature Ids Across the Domain Surface | Accepted |
+| ADR-034 | Q1 Substrate is C# Parallel-Implementation, Not Headless Port — Wave-6.5 Retrofit | Accepted (2026-05-21) |
 
 ---
 
@@ -58,7 +61,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 
 ## ADR-002 — Headless C# Core as Game Simulator
 
-**Status:** Accepted (per project direction).
+**Status:** Accepted — Amended 2026-05-21 (see ADR-034).
 
 **Context.** Three options for Q1: (a) headless C# Core with Godot rendering/audio/main-loop stripped; (b) Godot in headless mode; (c) full C++ reimplementation. Strategy doc (§0, §2.3, end-of-doc) recommends (a). Project decision confirms.
 
@@ -73,6 +76,13 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 - *Positive:* leverages all existing game logic — no reimplementation risk, no card-mechanic divergence, no whole-game test plan to write.
 - *Positive:* mod-shaped extension via `Core/Modding` rebases cleanly across STS2 patches.
 - *Positive:* `Core/AutoSlay/AutoSlayer.cs` already implies an internal automation harness we can lift.
+
+**Amendment (2026-05-21) — see ADR-034 for full rationale.**
+
+Wave-6.5 (commit `c2be7c0`) empirically blocked option (a): `Core/Logging/Logger..cctor` → `Godot.OS.GetCmdlineArgs()` → uninitialized GodotSharp GDExtension function-pointer table → hard SIGSEGV. `RuntimeHelpers.GetUninitializedObject` also fires precise-init cctors (CoreCLR `reflectioninvocation.cpp:1957-1960`), so the Logger type cannot be bypassed via reflection. The project transitioned to a C# parallel-substrate reimplementation in `Sts2Headless.Domain.*` over Waves 6.5–42 without amending this ADR. Two original positives are FALSIFIED:
+
+- *FALSIFIED post-Wave-6.5 — Positive #1: "leverages all existing game logic — no reimplementation risk, no card-mechanic divergence, no whole-game test plan to write."* Q1 is a behavior-mirroring parallel substrate with zero runtime reflection into `MegaCrit.Sts2.Core.*`; all game logic was reimplemented in `Sts2Headless.Domain.*` (~25k LOC, 308 files). See ADR-034.
+- *FALSIFIED post-Wave-6.5 — Positive #2: "mod-shaped extension via `Core/Modding` rebases cleanly across STS2 patches."* `Core/Modding` and `Core/AutoSlay` are never used by the parallel substrate; the per-patch treadmill is a manual behavioral port, not a rebase. See ADR-034.
 
 ---
 
@@ -722,6 +732,8 @@ Without an explicit anchor declaring "the Q1 silent-engine substrate is stable a
 
 **Origin.** Project-lead session 2026-05-17 (status report following Wave 15 close, commit `093cb37`). User directive: "Do #1-3" — ratify ADR-028 alongside push-to-origin + spec-edit-tracker cleanup as the three highest-priority post-bridge operational items.
 
+**Note (2026-05-21).** The "SHIPPED against upstream v0.105.1" language in this ADR's Decision §Scope reads correctly as "SHIPPED on the parallel C# substrate, behaviorally aligned to upstream v0.105.1 via the ADR-026 sync pipeline." Q1 is not a headless port of `MegaCrit.Sts2.Core.*` — it is a behavior-mirroring parallel reimplementation in `Sts2Headless.Domain.*` that treats upstream as a behavioral spec, not a runtime dependency. See ADR-034 for the substrate-vs-port distinction and the Wave-6.5 retrofit history.
+
 ---
 
 ## ADR-029 — Path A Engine-Expansion Campaign
@@ -1078,3 +1090,49 @@ All three waves of the smell-refactor preserve binary wire bytes. Old replay fil
 ### Origin
 
 `/detect-smells` audit (2026-05-21) identified Primitive Obsession as smell #2 of the top-3-pungent set. Plan ratified after 3 rounds of "what's unclear" iteration; user approval at `plan-your-refactors-for-silly-pretzel.md` ExitPlanMode.
+
+---
+
+## ADR-034 — Q1 Substrate is C# Parallel-Implementation, Not Headless Port — Wave-6.5 Retrofit
+
+**Status:** Accepted (2026-05-21).
+
+**Context.** ADR-002 chose option (a) "headless C# Core with Godot stripped." Wave-6.5 (commit `c2be7c0`, May 2026) empirically blocked it: `Core/Logging/Logger..cctor` → `Godot.OS.GetCmdlineArgs()` → uninitialized GodotSharp GDExtension function-pointer table → hard SIGSEGV. CoreCLR `RuntimeHelpers.GetUninitializedObject` also fires precise-init cctors (`reflectioninvocation.cpp:1957-1960`), so the Logger type cannot be bypassed via reflection. Additionally, 12 SceneTree-coupled singletons in `CombatManager.StartCombatInternal` make engine-strip via DI insufficient for live-Godot approaches. The project transitioned silently to a behavior-mirroring parallel substrate in `Sts2Headless.Domain.*` (~25k LOC across 308 files; zero runtime reflection into `MegaCrit.Sts2.Core.*`; `Core/Modding` + `Core/AutoSlay` never used) over Waves 6.5–42 without amending ADR-002. `upstream-pin.json:rationale` confesses verbatim: "Q1 substrate is parallel-substrate to upstream … NOT class-hierarchy-inherited."
+
+**Decision.** Q1 is a behavior-mirroring parallel substrate in `Sts2Headless.Domain.*`. Upstream `MegaCrit.Sts2.Core.*` is treated as **behavioral spec, not runtime dependency**. Alignment is maintained via:
+- ADR-026 upstream-sync pipeline (detect → categorize → port);
+- `probe-upstream-initial-state` (160/0 PASS against v0.105.1 initial-state corpus);
+- `DllSignatureGate` (41 signature assertions against live DLL);
+- ADR-027 fixture growth policy (Q4 manifest + Q1 test fixture grow with upstream content);
+- inline upstream-code comments at behavior-change sites (ADR-026 § Negative concern #1) as the mid-combat drift-detection mechanism.
+
+**Consequences.**
+
+- *Negative:* per-patch port treadmill ~1-3 weeks per major upstream patch; no "rebase" — it is a behavioral re-porting exercise.
+- *Negative:* mid-combat behavioral drift is not caught by structural gates (`DllSignatureGate` + `SyncStatePinGate`); it is caught only by inline-comment review during port. A missed inline-comment site is a silent drift vector.
+- *Negative:* `Core/Modding` + `Core/AutoSlay` lift opportunities permanently forfeit unless option B (ADR-002 option b, Godot-headless spike) succeeds; ADR-002 positive #3 ("AutoSlay harness we can lift") is also moot under parallel-substrate.
+- *Negative:* Phase-1.5 env-mod prerequisite #4 (`RichState` derivation with stable serialization) is re-scoped against the parallel substrate; no upstream primitive available.
+- *Negative:* `Sts2Headless.EngineStrip/` (18 stub files) becomes dead code under this ratification — cleanup deferred to a future wave.
+- *Positive:* determinism guarantees are under Q1-side control (Q1-ADR-006 comparator ordering, Q1-ADR-008 single-threaded decision path); no upstream GC or SceneTree timing leaks into the pipeline.
+- *Positive:* substrate-independent contracts — Q3/Q8/Q9/Q10 are unaffected; they see Q1's wire boundary (M1/M2/M3/M4 schemas) not the substrate internals.
+- *Positive:* clean Q1↔Q8 wire boundary via M1/M2/M3/M4 schemas enables future substrate swap (e.g., option B success) without touching downstream quanta.
+
+**R10 (OPEN until this PR merges).** ADR-002 silently falsified post-Wave-6.5 → subagent grounding mis-briefs against parallel-substrate reality → Phase-1.5 plan inherits falsified positives #1 and #2. Discharges to SUBSTANTIALLY MITIGATED on merge of this PR (ADR documentation honest; `.claude/CLAUDE.md` + `game-simulator.md` updated in same PR).
+
+**R11 (OPEN until Stream B spike returns).** Option B feasibility spike (ADR-002 option b: `godot --headless` + `Core/AutoSlay/AutoSlayer.cs`) may also fail at save/restore (no upstream serialization primitive for mid-combat `CombatState`) or hook injection (`Core/Modding` is event-notification only with no decision-boundary override surface) → option C (parallel substrate) becomes terminal operating mode → per-patch port treadmill budgeted into Phase-1.5 permanently. Discharges DISCHARGED on green spike (option B viable); ESCALATES to permanent risk on negative spike (parallel-substrate is the only path).
+
+**§Known-stale-docs (NOT in scope of this PR — surface for follow-up).** The following files reference "headless port" language or falsified ADR-002 positives but are outside Stream A's owned surfaces:
+- `engine/headless/docs/specs/00-system-overview.md:21` — "out-of-tree mod via `Core/Modding` wherever possible, per pipeline ADR-002."
+- `engine/headless/docs/specs/modules/engine-strip.md:3,8` — references to `Core/Modding` as the T1 tier.
+- `engine/headless/docs/q1-stage-manifest.md:111` — "R4 (headless port ≤ 2 mo)."
+- `engine/headless/docs/phase1-gate-report.md:111` — "R4 (headless port ≤2 mo)."
+- `engine/headless/docs/specs/01-decisions-log.md:90,92,202` — Q1-internal ADR-004/ADR-010 references to `Core/Modding` tiers (these are Q1-internal ADRs about the former headless-port discipline; under parallel-substrate they describe aspirational T1/T2 discipline that was never exercised against live `Core/Modding`).
+- `docs/specs/00-system-overview.md:15` — "Drives Q1's headless port and patch-adaptation cadence."
+- `docs/specs/01-decisions-log.md:277` — ADR-013 references "our own headless port (ADR-002)" (this is a Deferred ADR describing a hypothetical API — historically accurate language, not a falsified claim, but may confuse readers).
+Surface to project lead for a broader-sweep follow-up wave.
+
+**§Future work.** `Sts2Headless.EngineStrip/` cleanup wave (18 stub files dead under this ratification); if R11 ESCALATES (option B negative spike), drift-gate hardening (mid-combat semantic drift detection beyond inline-comment convention) becomes a Phase-1.5 prerequisite.
+
+**Cross-references.** ADR-002 (amended; positives #1+#2 falsified by this entry). ADR-026 (upstream-sync pipeline — alignment mechanism). ADR-027 (Q4 fixture growth policy — alignment mechanism). ADR-028 (substrate baseline ratified at v0.105.1 — clarified by this entry as parallel-substrate baseline). ADR-029 (Path A engine-expansion campaign — continues against parallel substrate). ADR-033 (typed creature ids — recent refactor on this substrate).
+
+**Origin.** Q1-lead audit 2026-05-21. Plan: `/home/clydew372/.claude/plans/re-adr-002-falsification-compressed-marble.md`.

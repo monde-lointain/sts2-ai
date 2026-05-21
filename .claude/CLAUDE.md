@@ -42,7 +42,7 @@ wave-dispatch / schema-bump / ADR-ratification variants.
 
 | Q | Name | Substrate | Module spec |
 |---|---|---|---|
-| Q1 | Game Simulator | `engine/headless/` (C#) | `docs/specs/modules/game-simulator.md` |
+| Q1 | Game Simulator | `engine/headless/` (C#) — **parallel substrate** `Sts2Headless.Domain.*`, NOT a headless port of `MegaCrit.Sts2.Core.*` (see ADR-034) | `docs/specs/modules/game-simulator.md` |
 | Q2 | Oracle Verifier | `engine/cpp/` (expectimax) | `docs/specs/modules/oracle.md` |
 | Q3 | Experience Store | `pipeline/experience-store/` | `docs/specs/modules/experience-store.md` |
 | Q4 | Content Registry | `contracts/registry/` | `docs/specs/modules/content-registry.md` |
