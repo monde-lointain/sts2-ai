@@ -28,6 +28,20 @@
 
   <ItemGroup>
     <!--
+      wave-47a/C fix: CaptureMidCombat in UpstreamDriver.cs uses types from
+      DeterminismProbe (MidCombatRecord / MidCombatActionPlan / MidCombatAction /
+      PowerStackEntry / EnemySnapshot). The reference was missing since wave-45/Q1-A1
+      when CaptureMidCombat was added; standalone builds of UpstreamCapture failed
+      with CS0234. Adding the ProjectReference lets the compiler resolve the types.
+      CaptureMidCombat is not called from this program's Main path (probe-upstream-
+      capture only drives initial-state capture); this reference is build-correctness,
+      not a runtime dispatch change.
+    -->
+    <ProjectReference Include="..\determinism-probe\Sts2Headless.DeterminismProbe.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
       Reference the Steam-install upstream DLL plus its companion assemblies.
       Path is hard-coded — the upstream tree is a developer-machine artifact,
       not portable. CI never builds this project (it's out of the solution).

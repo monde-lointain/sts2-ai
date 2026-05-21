@@ -93,6 +93,11 @@ public static class EncounterCatalog
             "KaiserCrabBoss",
             "CeremonialBeastBoss",
             "LouseProgenitorNormal",
+            // wave-47a/C: NibbitsWeak + NibbitsNormal (substrate wired wave-38/B;
+            // no V1 divergence — upstream Nibbit INIT_MOVE conditional produces
+            // exactly BUTT for IsAlone + SLICE/HISS per IsFront flag; Q1 port matches).
+            "NibbitsWeak",
+            "NibbitsNormal",
         };
 
     /// <summary>
@@ -218,6 +223,32 @@ public static class EncounterCatalog
                 PlanKind.UpstreamComparable,
                 null,
                 MidCombatActionSequenceId: "louse-progenitor-normal-strategy.json"
+            ),
+            // wave-47a/C: NibbitsWeak — 1 Nibbit (IsAlone=true), starts BUTT_MOVE.
+            // Upstream NibbitsWeak.cs:20-23: single Nibbit, IsAlone=true; INIT_MOVE
+            // branches to BUTT_MOVE via ConditionalBranchState.IsAlone predicate.
+            // Q1 port has no initial-move override; default BUTT_MOVE correct.
+            "NibbitsWeak" => new EncounterPlan(
+                id,
+                new[] { "Nibbit" },
+                new string?[] { null },
+                PlanKind.UpstreamComparable,
+                null,
+                MidCombatActionSequenceId: "nibbits-weak-strategy.json"
+            ),
+            // wave-47a/C: NibbitsNormal — 2 Nibbits with per-slot initial-move
+            // overrides matching upstream Nibbit.GenerateMoveStateMachine:
+            //   Slot 0 (front, IsFront=true) → SLICE_MOVE (ConditionalBranch IsFront predicate).
+            //   Slot 1 (back, IsFront=false) → HISS_MOVE (ConditionalBranch !IsFront predicate).
+            // Upstream NibbitsNormal.cs:24-29: front slot has IsFront=true; back is default.
+            // No V1 divergence — Q1 port GenerateMonstersWithMoves returns SLICE/HISS per slot.
+            "NibbitsNormal" => new EncounterPlan(
+                id,
+                new[] { "Nibbit", "Nibbit" },
+                new string?[] { "front", "back" },
+                PlanKind.UpstreamComparable,
+                null,
+                MidCombatActionSequenceId: "nibbits-normal-strategy.json"
             ),
             // B.1-ε RESOLVED Wave 14: SmallSlimes / MediumSlimes now drive the
             // upstream encounter's GenerateMonstersWithSlots via UpstreamEncounterRng.

@@ -223,7 +223,8 @@ public static class Program
             return ExitError;
         }
 
-        // 16 encounters x 10 seeds — matches the corpus + upstream-capture EncounterCatalog.
+        // 18 encounters x 10 seeds — matches the corpus + upstream-capture EncounterCatalog.
+        // wave-47a/C: added NibbitsWeak + NibbitsNormal (wave-46 deferred item; 160→180).
         IReadOnlyList<string> encounters = new[]
         {
             "CultistsNormal",
@@ -242,6 +243,8 @@ public static class Program
             "KaiserCrabBoss",
             "CeremonialBeastBoss",
             "LouseProgenitorNormal",
+            "NibbitsWeak",
+            "NibbitsNormal",
         };
         int[] seeds = Enumerable.Range(42, 10).ToArray();
 
@@ -442,6 +445,10 @@ public static class Program
                 "GremlinMercNormal",
                 "KaiserCrabBoss",
                 "CeremonialBeastBoss",
+                // wave-47a/C: NibbitsWeak + NibbitsNormal (wave-46 deferred item;
+                // no V1 divergence; substrate wired wave-38/B).
+                "NibbitsWeak",
+                "NibbitsNormal",
             };
 
         int[] seeds = smokeOnly ? new[] { 42 } : Enumerable.Range(42, 10).ToArray();
@@ -476,6 +483,9 @@ public static class Program
             ["LagavulinElite"] = "lagavulin-elite-strategy.json",
             ["CeremonialBeastBoss"] = "ceremonial-beast-boss-strategy.json",
             ["ExoskeletonsNormal"] = "exoskeletons-normal-strategy.json",
+            // wave-47a/C: NibbitsWeak + NibbitsNormal action sequences.
+            ["NibbitsWeak"] = "nibbits-weak-strategy.json",
+            ["NibbitsNormal"] = "nibbits-normal-strategy.json",
         };
 
         var driver = new Q1MidCombatCaptureDriver();
