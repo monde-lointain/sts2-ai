@@ -447,9 +447,27 @@ public static class Program
         int[] seeds = smokeOnly ? new[] { 42 } : Enumerable.Range(42, 10).ToArray();
 
         // Action sequence mapping (encounter → JSON file).
+        //
+        // Schema note (wave-46/A.0, per plan T3):
+        //   - target_creature_id in each action JSON refers to the ENCOUNTER-START
+        //     enemy-order index (0-indexed). Both Q1 + upstream resolve this
+        //     index to the live creature ID at replay time.
+        //   - target_creature_id = null means "any alive enemy" (resolved
+        //     deterministically by Q1/upstream); use for mid-combat-spawn targets
+        //     (e.g., GremlinMerc post-death spawns).
+        //
+        // Stub entries (wave-46/A.0): point at JSON files NOT YET EXISTING. Cohorts
+        // land the JSON files. The probe loop below checks File.Exists(seqPath)
+        // and skips with `SKIP-NO-JSON` when missing (NOT an error).
         var actionSeqIds = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["CultistsNormal"] = "cultist-strategy.json",
+            ["LouseProgenitorNormal"] = "louse-progenitor-normal-strategy.json",
+            ["GremlinMercNormal"] = "gremlin-merc-normal-strategy.json",
+            ["KaiserCrabBoss"] = "kaiser-crab-boss-strategy.json",
+            ["LagavulinElite"] = "lagavulin-elite-strategy.json",
+            ["CeremonialBeastBoss"] = "ceremonial-beast-boss-strategy.json",
+            ["ExoskeletonsNormal"] = "exoskeletons-normal-strategy.json",
         };
 
         var driver = new Q1MidCombatCaptureDriver();
@@ -474,6 +492,18 @@ public static class Program
             }
 
             string seqPath = Path.Combine(actionSeqDir, seqFile);
+
+            // Wave-46/A.0 (per plan T1): skip stub entries whose JSON file
+            // does not yet exist on disk. Cohorts land the JSON files; until
+            // then, the entry is a stub.
+            if (!File.Exists(seqPath))
+            {
+                if (cli.Verbose)
+                    stdout.WriteLine($"  SKIP-NO-JSON {encId} (action-seq stub pending cohort; {seqFile})");
+                skipped += seeds.Length;
+                continue;
+            }
+
             MidCombatActionPlan plan;
             try
             {

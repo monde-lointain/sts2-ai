@@ -125,7 +125,8 @@ public static class EncounterCatalog
                 new[] { "Exoskeleton", "Exoskeleton", "Exoskeleton" },
                 new string?[] { null, null, null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "exoskeletons-normal-strategy.json"
             ),
             "BowlbugsTrio" => new EncounterPlan(
                 id,
@@ -162,7 +163,8 @@ public static class EncounterCatalog
                 new[] { "LagavulinMatriarch" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "lagavulin-elite-strategy.json"
             ),
             "HauntedShipSolo" => new EncounterPlan(
                 id,
@@ -184,7 +186,8 @@ public static class EncounterCatalog
                 new[] { "GremlinMerc" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "gremlin-merc-normal-strategy.json"
             ),
             // B.1-final-T2b: KaiserCrabBoss reshaped to upstream's two-monster
             // spawn (Crusher + Rocket). Q1 monster classes ported from upstream
@@ -194,14 +197,16 @@ public static class EncounterCatalog
                 new[] { "Crusher", "Rocket" },
                 new string?[] { "crusher", "rocket" },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "kaiser-crab-boss-strategy.json"
             ),
             "CeremonialBeastBoss" => new EncounterPlan(
                 id,
                 new[] { "CeremonialBeast" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "ceremonial-beast-boss-strategy.json"
             ),
             // B.1-final-T2c: LouseProgenitorNormal added — upstream encounter
             // with single LouseProgenitor spawn (Q1 monster class already exists
@@ -211,7 +216,8 @@ public static class EncounterCatalog
                 new[] { "LouseProgenitor" },
                 new string?[] { null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "louse-progenitor-normal-strategy.json"
             ),
             // B.1-ε RESOLVED Wave 14: SmallSlimes / MediumSlimes now drive the
             // upstream encounter's GenerateMonstersWithSlots via UpstreamEncounterRng.
