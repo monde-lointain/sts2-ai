@@ -80,6 +80,32 @@ git merge --ff-only main
 If HEAD != expected SHA or FF fails → STOP and report back immediately.
 ```
 
+## Step 3.5 — W7 4-file audit protocol (encounter-port pre-verification)
+
+Baked wave-49/C 2026-05-22 in response to wave-47b/B's V1-DROPPED finding: Q1-lead's plan-time pre-verification missed upstream Monster class, leading to a wasted subagent dispatch on the HauntedShipSolo substrate stub. The W7 4-file protocol below is **mandatory** at both plan-time (Q1 lead) and dispatch-time (engineer subagent) for ANY sub-stream that ports / extends a Q1 encounter substrate.
+
+**Read ALL FOUR files in full** (not just snippets / first N lines):
+
+1. Q1 substrate `engine/headless/src/Sts2Headless.Domain/Content/Monsters/<MonsterName>.cs` (current state — Q1's port).
+2. Q1 substrate `engine/headless/src/Sts2Headless.Domain/Content/Encounters/<EncounterName>.cs` (Q1's encounter wrapper).
+3. Upstream `~/development/projects/godot/sts2/src/Core/Models/Monsters/<MonsterName>.cs` (target behavior — ground truth per project-lead 2026-05-21).
+4. Upstream `~/development/projects/godot/sts2/src/Core/Models/Encounters/<EncounterName>.cs` (upstream encounter wrapper).
+
+**Pre-verification deliverable** (Step 0b in dispatch prompts; bake into every encounter-port plan):
+- Monster move pool: Q1 vs upstream (move IDs + damage values + branching state machine).
+- Encounter shape: Q1 vs upstream (monster count + per-slot initial-move overrides + RNG-driven vs static).
+- Per-slot logic: explicit listing of upstream's `ConditionalBranchState` / `RandomBranchState` keys + Q1's port-equivalent (e.g., `GenerateMonstersWithMoves` per-slot tuples).
+
+**V1 scope-reduction protocol** (when audit reveals substrate divergence):
+- Cohort STOPs without committing partial work for diverging encounter.
+- Surfaces with full upstream-vs-Q1 diff.
+- Q1 lead handles substrate-fix as separate substream OR defers to later wave.
+
+**Common false-positive in plan-time read** (avoid):
+- Reading only Q1 substrate + upstream encounter wrapper (2 of 4 files). The upstream MONSTER class often contains the behavioral complexity (move-table, branching, power application) that the encounter wrapper merely instantiates. Wave-47b/B's HauntedShipSolo finding: upstream wrapper is `1 monster, no flags`; upstream MONSTER has 4 moves + RandomBranchState + Weak/Dazed power application — but Q1's port was a 1-move ATTACK stub. 2-of-4 read missed the substrate stub.
+
+**See also:** wave-48 Q1 substrate stub audit (`engine/headless/docs/specs/q1-substrate-stub-audit.md`) for catalog-wide inventory of 25 in-scope monsters classified FULL/PARTIAL/STUB per this protocol.
+
 ## Step 4 — Parallel dispatch
 
 Invoke `[[superpowers:dispatching-parallel-agents]]` before issuing parallel Agent calls. Fire all independent sub-streams in a single message with multiple Agent tool calls. Serial dependencies (stream β consumes α output) must be explicit — β waits for α merge before dispatch.
@@ -100,6 +126,8 @@ Verify file-by-file before dispatch. If two streams need the same file, serializ
 - [ ] Serial dependencies between streams stated
 - [ ] Wave-N>0 preflight clause included in every prompt
 - [ ] `.claude/state/active-worktrees.json` checked for idempotency
+- [ ] **W7 4-file protocol** invoked at plan-time for encounter-port sub-streams (Step 3.5)
+- [ ] V1 scope-reduction protocol referenced in dispatch prompt for encounter-port sub-streams
 
 ## Cross-references
 
