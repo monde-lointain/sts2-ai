@@ -77,9 +77,17 @@ TARGET_BRANCH_REGEX = re.compile(
     r"([\w\-./]+)"  # branch name
 )
 
-# Main repo path — parameterized via env var for portability.
+# Main repo path — 3-tier resolution (wave-47b/A X1):
+#   1. STS2_MAIN_REPO_PATH env var (explicit override; highest priority)
+#   2. CLAUDE_PROJECT_DIR env var (Claude-Code-provided; portable across machines
+#      per existing hook-registration pattern $CLAUDE_PROJECT_DIR/.claude/hooks/...)
+#   3. Hardcoded default — Q1 lead's machine fallback for non-Claude-Code shells
 DEFAULT_MAIN_REPO_PATH = "/home/clydew372/development/projects/cpp/sts2-ai"
-MAIN_REPO_PATH = os.environ.get("STS2_MAIN_REPO_PATH", DEFAULT_MAIN_REPO_PATH)
+MAIN_REPO_PATH = (
+    os.environ.get("STS2_MAIN_REPO_PATH")
+    or os.environ.get("CLAUDE_PROJECT_DIR")
+    or DEFAULT_MAIN_REPO_PATH
+)
 
 # Carve-out env var: orchestrators set to bypass.
 ALLOW_ENV_VAR = "STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH"
@@ -98,7 +106,7 @@ def main() -> int:
         if data.get("tool_name") != "Bash":
             return 0
 
-        command = data.get("tool_input", {}).get("command", "") or ""
+        command = data.get("tool_input", {}).get("command", "")
         if not command:
             return 0
 
