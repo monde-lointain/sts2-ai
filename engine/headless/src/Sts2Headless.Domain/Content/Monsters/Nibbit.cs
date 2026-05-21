@@ -1,4 +1,7 @@
+using System.Collections.Immutable;
+using Sts2Headless.Domain.Combat;
 using Sts2Headless.Domain.Content.Models;
+using Sts2Headless.Domain.Content.Powers;
 
 namespace Sts2Headless.Domain.Content.Monsters;
 
@@ -15,10 +18,11 @@ namespace Sts2Headless.Domain.Content.Monsters;
 ///         NibbitsNormal overrides per slot).</item>
 /// </list>
 /// <remarks>
-/// Per Q1-ADR-014: HISS Strength is applied via <c>CombatEngine.ExtractBuffEffect</c>
-/// per-monster dispatch; SLICE self-block is applied via
-/// <c>CombatEngine.ExtractAttackSelfBlock</c> per-monster dispatch. NibbitsNormal's
-/// per-slot initial-move overrides flow through <c>EncounterModel.GenerateMonstersWithMoves</c>.
+/// Wave-38/B: HISS Strength is carried on <c>MonsterMove.AppliesPowers</c>;
+/// SLICE self-block is carried on <c>MonsterMove.SelfBlockGain</c>. Both are
+/// read by <c>CombatEngine.ResolveMove</c> via the live <c>MonsterIntent</c> —
+/// no per-monster dispatch in the engine. NibbitsNormal's per-slot initial-move
+/// overrides flow through <c>EncounterModel.GenerateMonstersWithMoves</c>.
 /// </remarks>
 public sealed class Nibbit : MonsterModel
 {
@@ -54,8 +58,22 @@ public sealed class Nibbit : MonsterModel
             moves: new MonsterMove[]
             {
                 new(ButtMoveId, Intent.Attack(ButtDamage), FollowUpMoveId: SliceMoveId),
-                new(SliceMoveId, Intent.Attack(SliceDamage), FollowUpMoveId: HissMoveId),
-                new(HissMoveId, Intent.Buff(), FollowUpMoveId: ButtMoveId),
+                // SLICE: Attack 6 + self-block +5 (AttackDefend hybrid).
+                new(
+                    SliceMoveId,
+                    Intent.Attack(SliceDamage),
+                    FollowUpMoveId: HissMoveId,
+                    SelfBlockGain: SliceSelfBlock
+                ),
+                // HISS: Buff + Strength +2 to self.
+                new(
+                    HissMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: ButtMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, HissStrengthStacks)
+                    )
+                ),
             },
             initialMoveId: ButtMoveId
         ) { }

@@ -1,4 +1,7 @@
+using System.Collections.Immutable;
+using Sts2Headless.Domain.Combat;
 using Sts2Headless.Domain.Content.Models;
+using Sts2Headless.Domain.Content.Powers;
 
 namespace Sts2Headless.Domain.Content.Monsters;
 
@@ -39,7 +42,15 @@ public sealed class DampCultist : MonsterModel
             maxInitialHp: MaxHp,
             moves: new MonsterMove[]
             {
-                new(IncantationMoveId, Intent.Buff(), FollowUpMoveId: DarkStrikeMoveId),
+                // INCANTATION: Buff + Ritual +5 to self.
+                new(
+                    IncantationMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: DarkStrikeMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Ritual, IncantationRitualStacks)
+                    )
+                ),
                 new(
                     DarkStrikeMoveId,
                     Intent.Attack(DarkStrikeDamage),

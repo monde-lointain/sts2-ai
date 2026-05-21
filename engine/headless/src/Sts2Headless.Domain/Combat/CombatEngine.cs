@@ -752,7 +752,7 @@ public static class CombatEngine
             // enemy itself via reflection / Thorns) announces AfterDeath
             // BEFORE the next enemy acts.
             ImmutableArray<uint> aliveBeforeMove = SnapshotAliveIds(ctx);
-            ResolveMove(ctx, aliveEnemy.Id, enemyModel, moveId);
+            ResolveMove(ctx, aliveEnemy.Id);
             FireAfterDeathForNewDeaths(ctx, aliveBeforeMove);
 
             CheckCombatEnd(ctx);
@@ -1074,125 +1074,61 @@ public static class CombatEngine
     }
 
     /// <summary>
-    /// Resolve a single monster move. Per Phase-1 smoke needs:
-    /// - DARK_STRIKE / SingleAttack → DealDamage to player.
-    /// - INCANTATION (CalcifiedCultist/DampCultist) → apply Ritual to self.
-    /// More moves added in S12.
+    /// Resolve a single monster move from the live <see cref="MonsterIntent"/> on the
+    /// creature (populated by <see cref="ResolveEnemyIntents"/> at turn-start).
+    /// Flat dispatch off <c>intent.Kind</c>, <c>intent.SelfBlockGain</c>, and
+    /// <c>intent.AppliesPowers</c> — no per-monster switch. Wave-38/B.
     /// </summary>
-    private static void ResolveMove(
-        CombatContext ctx,
-        uint enemyId,
-        MonsterModel model,
-        string moveId
-    )
+    private static void ResolveMove(CombatContext ctx, uint enemyId)
     {
-        MonsterMove move = model.GetMove(moveId);
-        var dispatch = new EffectDispatcher.DispatchContext(
-            PlayerId: PlayerId,
-            PrimaryTargetId: PlayerId,
-            SourceCreatureId: enemyId
-        );
+        // Read the live intent that was stamped during ResolveEnemyIntents.
+        // The creature is alive at this point (caller checked); use a local var
+        // for clarity. MonsterIntent.None is the safe fallback.
+        Creature? creature = ctx.State.FindEnemy(enemyId);
+        MonsterIntent intent = creature?.Intent ?? MonsterIntent.None;
 
-        if (move.Intent.Kind == IntentKind.Attack)
+        // 1. Damage (Attack and AttackDefend both deal damage to player).
+        if (
+            intent.Kind is MonsterIntentKind.Attack
+                or MonsterIntentKind.AttackDefend
+        )
         {
-            // Attack damages player. HitCount honored for multi-hit attacks
-            // (Stream-B-T3: Chomper CLAMP 2x8, Exoskeleton SKITTER 3x1). Damage
-            // modifiers (Strength/Weak/Vulnerable) recompute PER HIT, matching
-            // upstream's per-hit DamageCmd loop where each hit goes through the
-            // modifier pipeline independently.
-            int raw = move.Intent.Value;
-            int hits = move.Intent.HitCount > 0 ? move.Intent.HitCount : 1;
+            // HitCount honored for multi-hit attacks (Chomper CLAMP 2x8,
+            // Exoskeleton SKITTER 3x1, etc.). Damage modifiers (Strength/Weak/
+            // Vulnerable) recompute per hit — upstream's per-hit DamageCmd loop.
+            int hits = intent.HitCount > 0 ? intent.HitCount : 1;
             for (int i = 0; i < hits; i++)
             {
-                // Re-check liveness between hits — the player can die mid-stream.
+                // Re-check liveness between hits.
                 if (ctx.State.Player.IsDead)
                     break;
-                int modified = DamageModifier.Modify(ctx.State, enemyId, PlayerId, raw);
+                int modified = DamageModifier.Modify(
+                    ctx.State,
+                    enemyId,
+                    PlayerId,
+                    intent.DamagePerHit
+                );
                 ctx.DealDamage(PlayerId, modified, enemyId);
             }
-            // Wave-24/K.q1: per-monster, per-moveId attack side-effects applied
-            // AFTER all damage hits. Nibbit's SLICE grants +5 self-block.
-            int selfBlock = ExtractAttackSelfBlock(model, moveId);
-            if (selfBlock > 0)
-            {
-                ctx.GainBlock(enemyId, selfBlock);
-            }
         }
-        else if (move.Intent.Kind == IntentKind.Buff)
-        {
-            // Buff pattern: apply a power to self. Power id + stack count come from
-            // the concrete monster type (CalcifiedCultist/DampCultist → Ritual;
-            // Nibbit → Strength). Wave-24/K.q1: generalised from Ritual-only.
-            (string powerId, int stacks) = ExtractBuffEffect(model, moveId);
-            if (stacks > 0)
-            {
-                ctx.ApplyPower(enemyId, powerId, stacks, enemyId);
-            }
-        }
-        // Defend / Debuff / Status: no engine-side payload yet. Defend would gain
-        // block on the enemy (engine has GainBlock); Debuff would apply a debuff
-        // power to player; Status would add a status card to player discard. The
-        // intent rotation still updates correctly even when the payload is a
-        // no-op, which is what we need for the determinism probe.
-    }
 
-    /// <summary>
-    /// Returns the (powerId, stacks) pair a monster's Buff-intent move applies to
-    /// self. Per Q1-ADR-014: generalised from ExtractIncantationStacks (Ritual-only)
-    /// to support Nibbit's HISS_MOVE → Strength:2 via per-monster dispatch.
-    /// Returns ("", 0) when the move has no buff payload.
-    /// </summary>
-    private static (string PowerId, int Stacks) ExtractBuffEffect(MonsterModel model, string moveId)
-    {
-        if (
-            model is Sts2Headless.Domain.Content.Monsters.CalcifiedCultist
-            && moveId == Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationMoveId
-        )
+        // 2. Self-block (Defend, AttackDefend, or any kind with SelfBlockGain > 0).
+        if (intent.SelfBlockGain > 0)
         {
-            return (
-                PowerIds.Ritual,
-                Sts2Headless.Domain.Content.Monsters.CalcifiedCultist.IncantationRitualStacks
-            );
+            ctx.GainBlock(enemyId, intent.SelfBlockGain);
         }
-        if (
-            model is Sts2Headless.Domain.Content.Monsters.DampCultist
-            && moveId == Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationMoveId
-        )
-        {
-            return (
-                PowerIds.Ritual,
-                Sts2Headless.Domain.Content.Monsters.DampCultist.IncantationRitualStacks
-            );
-        }
-        if (
-            model is Sts2Headless.Domain.Content.Monsters.Nibbit
-            && moveId == Sts2Headless.Domain.Content.Monsters.Nibbit.HissMoveId
-        )
-        {
-            return (
-                PowerIds.Strength,
-                Sts2Headless.Domain.Content.Monsters.Nibbit.HissStrengthStacks
-            );
-        }
-        return (string.Empty, 0);
-    }
 
-    /// <summary>
-    /// Returns the self-block an enemy gains after executing an Attack-intent move.
-    /// Per Q1-ADR-014: Nibbit's SLICE_MOVE grants +5 self-block after damage via
-    /// per-monster Attack-branch side-effect dispatch.
-    /// Returns 0 when the move has no self-block side-effect.
-    /// </summary>
-    private static int ExtractAttackSelfBlock(MonsterModel model, string moveId)
-    {
-        if (
-            model is Sts2Headless.Domain.Content.Monsters.Nibbit
-            && moveId == Sts2Headless.Domain.Content.Monsters.Nibbit.SliceMoveId
-        )
+        // 3. Power applications — iterate in declaration order, respecting
+        //    PowerTarget.Self vs Player.
+        for (int i = 0; i < intent.AppliesPowers.Count; i++)
         {
-            return Sts2Headless.Domain.Content.Monsters.Nibbit.SliceSelfBlock;
+            MonsterIntentPower p = intent.AppliesPowers[i];
+            uint target = p.Target == PowerTarget.Player ? PlayerId : enemyId;
+            ctx.ApplyPower(target, p.PowerId, p.Stacks, enemyId);
         }
-        return 0;
+
+        // 4. Status kind: no engine payload yet (card-pollution path deferred);
+        //    intent rotation still advances normally via the caller.
     }
 
     /// <summary>
