@@ -144,8 +144,8 @@ public static class EffectDispatcher
 
             case XCostDamageAction xDmg:
             {
-                // Skewer: damage_per_hit, with hit_count = LastSpentEnergy.
-                int hits = ctx.State.LastSpentEnergy;
+                // Skewer: damage_per_hit, with hit_count = Trail.LastSpentEnergy.
+                int hits = ctx.State.Trail.LastSpentEnergy;
                 if (hits <= 0)
                     return;
                 uint? target = ResolveTarget(xDmg.Target, dispatch);
@@ -173,8 +173,8 @@ public static class EffectDispatcher
             case XCostApplyPowerAction xPwr:
             {
                 // Malaise: applies SignMultiplier * (X + Bonus) stacks of
-                // PowerId to Target. X is LastSpentEnergy.
-                int x = ctx.State.LastSpentEnergy;
+                // PowerId to Target. X is Trail.LastSpentEnergy.
+                int x = ctx.State.Trail.LastSpentEnergy;
                 int total = (x + xPwr.Bonus) * xPwr.SignMultiplier;
                 if (total == 0)
                     return;
@@ -188,8 +188,8 @@ public static class EffectDispatcher
             case CalcDamageFromShivExhaustAction shivDmg:
             {
                 // KnifeTrap: damage scales with the count of Shiv-tagged
-                // cards in the player's exhaust pile (ExhaustedShivCount).
-                int raw = shivDmg.BasePerShiv * ctx.State.ExhaustedShivCount;
+                // cards in the player's exhaust pile (Trail.ExhaustedShivCount).
+                int raw = shivDmg.BasePerShiv * ctx.State.Trail.ExhaustedShivCount;
                 if (raw <= 0)
                     return;
                 uint? target = ResolveTarget(shivDmg.Target, dispatch);
@@ -303,10 +303,10 @@ public static class EffectDispatcher
             case "attacks_played_this_turn":
                 // Finisher: hits == attacks-finished-this-turn (THIS card not yet
                 // counted; engine bumps after OnPlay drains).
-                return state.AttacksPlayedThisTurn;
+                return state.Trail.AttacksPlayedThisTurn;
             case "cards_drawn_this_combat":
                 // Murder: damage = base × cards drawn this combat.
-                return state.CardsDrawnThisCombat;
+                return state.Trail.CardsDrawnThisCombat;
             case "poison_total_on_enemies":
             {
                 // Mirage: block = base + sum(Poison.Stacks for living enemies).

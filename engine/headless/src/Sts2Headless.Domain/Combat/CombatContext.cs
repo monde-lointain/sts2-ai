@@ -248,7 +248,7 @@ public sealed class CombatContext : ICombatContext
         _state = s with
         {
             PlayerRngCounter = Rng.Counter,
-            CardsDrawnThisCombat = s.CardsDrawnThisCombat + drawnThisCall,
+            Trail = s.Trail with { CardsDrawnThisCombat = s.Trail.CardsDrawnThisCombat + drawnThisCall },
         };
     }
 
@@ -280,7 +280,7 @@ public sealed class CombatContext : ICombatContext
     }
 
     /// <inheritdoc />
-    public int AllRemainingEnergy() => _state.LastSpentEnergy;
+    public int AllRemainingEnergy() => _state.Trail.LastSpentEnergy;
 
     /// <inheritdoc />
     public void AddEnemies(IEnumerable<Creature> enemies)

@@ -83,12 +83,15 @@ internal static class CardPlayer
         // --- Consume energy ----------------------------------------------
         // B.1-gamma-T5: also snapshot the spent energy for X-cost cards so the
         // card's OnPlay body can read it via CombatContext.AllRemainingEnergy()
-        // / CombatState.LastSpentEnergy.
+        // / TrailCounters.LastSpentEnergy.
         ctx.SetState(
             ctx.State with
             {
                 Energy = ctx.State.Energy - cost,
-                LastSpentEnergy = cardModel.IsXCost ? cost : ctx.State.LastSpentEnergy,
+                Trail = ctx.State.Trail with
+                {
+                    LastSpentEnergy = cardModel.IsXCost ? cost : ctx.State.Trail.LastSpentEnergy,
+                },
             }
         );
 
@@ -143,12 +146,12 @@ internal static class CardPlayer
         // the prior count — matching upstream's CardPlaysFinished semantics
         // (the entry for THIS card is recorded only after its play completes).
         int newAttacks =
-            ctx.State.AttacksPlayedThisTurn + (cardModel.Type == CardType.Attack ? 1 : 0);
+            ctx.State.Trail.AttacksPlayedThisTurn + (cardModel.Type == CardType.Attack ? 1 : 0);
         ctx.SetState(
             ctx.State with
             {
                 PlayerRngCounter = ctx.Rng.Counter,
-                AttacksPlayedThisTurn = newAttacks,
+                Trail = ctx.State.Trail with { AttacksPlayedThisTurn = newAttacks },
             }
         );
 

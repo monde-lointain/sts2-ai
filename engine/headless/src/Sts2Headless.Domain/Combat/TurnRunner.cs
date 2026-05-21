@@ -43,7 +43,7 @@ internal static class TurnRunner
                     Block = 0,
                 },
                 // Stream-B-T4: reset per-turn attacks counter (Finisher etc.).
-                AttacksPlayedThisTurn = 0,
+                Trail = s.Trail with { AttacksPlayedThisTurn = 0 },
             }
         );
 
