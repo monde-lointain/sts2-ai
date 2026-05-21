@@ -394,10 +394,10 @@ public static class StateCodec
     ///   CardPile ExhaustPile
     ///   i32 PlayerRngCounter
     ///   i32 MonsterRngCounter
-    ///   i32 AttacksPlayedThisTurn   (Stream-B-T4 addition)
-    ///   i32 CardsDrawnThisCombat    (Stream-B-T4 addition)
-    ///   i32 LastSpentEnergy         (B.1-gamma-T5 addition)
-    ///   i32 ExhaustedShivCount      (B.1-gamma-T5 addition)
+    ///   TrailCounters Trail (4 × i32 in declaration order — see
+    ///                        <see cref="WriteTrailCounters"/>; encapsulates
+    ///                        AttacksPlayedThisTurn, CardsDrawnThisCombat,
+    ///                        LastSpentEnergy, ExhaustedShivCount)
     /// </code>
     /// Future additive fields are appended at the end; the
     /// <see cref="StateCodecConstants.SchemaVersion"/> bump documents the
@@ -428,13 +428,25 @@ public static class StateCodec
         w.WriteI32(state.PlayerRngCounter);
         w.WriteI32(state.MonsterRngCounter);
 
-        // Stream-B-T4 additive fields. Order is part of the wire schema; do
-        // not reorder.
-        w.WriteI32(state.AttacksPlayedThisTurn);
-        w.WriteI32(state.CardsDrawnThisCombat);
-        // B.1-gamma-T5 additive fields (X-cost snapshot + Shiv-exhaust counter).
-        w.WriteI32(state.LastSpentEnergy);
-        w.WriteI32(state.ExhaustedShivCount);
+        WriteTrailCounters(w, state.Trail);
+    }
+
+    /// <summary>
+    /// TrailCounters byte layout — 4 × i32 in record-struct declaration order.
+    /// Byte-identical to the pre-wave-41 flat-field emission; no schema bump.
+    /// <code>
+    ///   i32 AttacksPlayedThisTurn   (Stream-B-T4 addition)
+    ///   i32 CardsDrawnThisCombat    (Stream-B-T4 addition)
+    ///   i32 LastSpentEnergy         (B.1-gamma-T5 addition)
+    ///   i32 ExhaustedShivCount      (B.1-gamma-T5 addition)
+    /// </code>
+    /// </summary>
+    private static void WriteTrailCounters(ByteWriter w, TrailCounters t)
+    {
+        w.WriteI32(t.AttacksPlayedThisTurn);
+        w.WriteI32(t.CardsDrawnThisCombat);
+        w.WriteI32(t.LastSpentEnergy);
+        w.WriteI32(t.ExhaustedShivCount);
     }
 
     /// <summary>
@@ -597,12 +609,7 @@ public static class StateCodec
 
         int playerRng = r.ReadI32();
         int monsterRng = r.ReadI32();
-        // Stream-B-T4 additive fields.
-        int attacksPlayedThisTurn = r.ReadI32();
-        int cardsDrawnThisCombat = r.ReadI32();
-        // B.1-gamma-T5 additive fields.
-        int lastSpentEnergy = r.ReadI32();
-        int exhaustedShivCount = r.ReadI32();
+        TrailCounters trail = ReadTrailCounters(ref r);
 
         return new CombatState(
             turnCounter,
@@ -618,11 +625,21 @@ public static class StateCodec
             exhaust,
             playerRng,
             monsterRng,
+            trail
+        );
+    }
+
+    private static TrailCounters ReadTrailCounters(ref ByteReader r)
+    {
+        int attacksPlayedThisTurn = r.ReadI32();
+        int cardsDrawnThisCombat = r.ReadI32();
+        int lastSpentEnergy = r.ReadI32();
+        int exhaustedShivCount = r.ReadI32();
+        return new TrailCounters(
             attacksPlayedThisTurn,
             cardsDrawnThisCombat,
             lastSpentEnergy,
-            exhaustedShivCount
-        );
+            exhaustedShivCount);
     }
 
     private static Creature ReadCreature(ref ByteReader r)

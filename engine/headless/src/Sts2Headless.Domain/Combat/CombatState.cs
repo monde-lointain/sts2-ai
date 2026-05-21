@@ -62,32 +62,11 @@ namespace Sts2Headless.Domain.Combat;
 /// for Phase 1 smoke we collapse to a single counter since the smoke encounter
 /// is deterministic (Cultists have no RNG-branching moves). S12 will split.
 /// </param>
-/// <param name="AttacksPlayedThisTurn">
-/// Stream-B-T4: number of Attack-type cards the player has played in the
-/// current player turn. Reset to 0 at <c>StartPlayerTurn</c>; incremented
-/// per attack-card play. Powers calc-damage cards like Finisher
-/// (<c>damage = base × attacks-played-this-turn</c>).
-/// </param>
-/// <param name="CardsDrawnThisCombat">
-/// Stream-B-T4: cumulative card-draw count across all turns this combat.
-/// Incremented per draw (whether by turn-start draw, relic, or card effect).
-/// Powers calc-damage cards like Murder
-/// (<c>damage = base × cards-drawn-this-combat</c>).
-/// </param>
-/// <param name="LastSpentEnergy">
-/// B.1-gamma-T5: energy consumed by the most recently played X-cost card.
-/// Engine snapshots <see cref="Energy"/> immediately before consumption when
-/// the card is X-cost, then sets this field so the card's <c>OnPlay</c> body
-/// can read it. Mirrors upstream's <c>CardModel.ResolveEnergyXValue()</c>.
-/// Defaults to 0 (no X-cost card played yet this combat).
-/// </param>
-/// <param name="ExhaustedShivCount">
-/// B.1-gamma-T5: count of Shiv-tagged cards that have landed in the exhaust
-/// pile this combat. Drives KnifeTrap's calc-damage formula
-/// (<c>damage = base + ExhaustedShivCount</c>). Q1's smoke set does not
-/// produce Shivs (no Shiv-generating cards in the Silent starter deck),
-/// so this counter stays at 0 in current scenarios — KnifeTrap then deals
-/// its base damage. Wired ahead of Shiv-generator content.
+/// <param name="Trail">
+/// Per-combat accumulator counters (attacks-this-turn, cards-drawn-this-combat,
+/// X-cost-snapshot, Shiv-exhaust). Extracted to <see cref="TrailCounters"/> in
+/// wave-41 so additive integer fields touch one record + the codec helper pair,
+/// not 5 sites. Wire bytes unchanged from the prior flat layout.
 /// </param>
 public sealed record CombatState(
     int TurnCounter,
@@ -103,10 +82,7 @@ public sealed record CombatState(
     CardPile ExhaustPile,
     int PlayerRngCounter,
     int MonsterRngCounter,
-    int AttacksPlayedThisTurn = 0,
-    int CardsDrawnThisCombat = 0,
-    int LastSpentEnergy = 0,
-    int ExhaustedShivCount = 0
+    TrailCounters Trail = default
 )
 {
     /// <summary>
@@ -273,13 +249,7 @@ public sealed record CombatState(
             || MonsterRngCounter != other.MonsterRngCounter
         )
             return false;
-        if (AttacksPlayedThisTurn != other.AttacksPlayedThisTurn)
-            return false;
-        if (CardsDrawnThisCombat != other.CardsDrawnThisCombat)
-            return false;
-        if (LastSpentEnergy != other.LastSpentEnergy)
-            return false;
-        if (ExhaustedShivCount != other.ExhaustedShivCount)
+        if (!Trail.Equals(other.Trail))
             return false;
         if (!Player.Equals(other.Player))
             return false;
@@ -312,10 +282,7 @@ public sealed record CombatState(
         h.Add(HandDrawSize);
         h.Add(PlayerRngCounter);
         h.Add(MonsterRngCounter);
-        h.Add(AttacksPlayedThisTurn);
-        h.Add(CardsDrawnThisCombat);
-        h.Add(LastSpentEnergy);
-        h.Add(ExhaustedShivCount);
+        h.Add(Trail);
         h.Add(Player);
         h.Add(DrawPile);
         h.Add(HandPile);

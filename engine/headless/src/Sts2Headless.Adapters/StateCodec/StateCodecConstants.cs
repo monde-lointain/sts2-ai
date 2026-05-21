@@ -45,6 +45,14 @@ internal static class StateCodecConstants
     /// Current schema version. Bumped when wire layout changes.
     ///
     /// <para>
+    /// <b>v4 — wave-41 structural rewrite (no wire change):</b> the four
+    /// <c>CombatState</c> trail-counter fields (AttacksPlayedThisTurn,
+    /// CardsDrawnThisCombat, LastSpentEnergy, ExhaustedShivCount) are
+    /// encapsulated in a <c>TrailCounters</c> record struct. Wire bytes are
+    /// byte-identical; <see cref="SchemaVersion"/> stays at 4.
+    /// </para>
+    ///
+    /// <para>
     /// <b>v4 (Wave-38/B)</b> — appends two fields to the MonsterIntent wire layout:
     /// <list type="bullet">
     ///   <item><c>MonsterIntentPower.Target</c> (i32) appended after each
