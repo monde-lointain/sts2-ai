@@ -38,7 +38,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-032 | Consolidate Monster Move Payloads onto MonsterIntent.AppliesPowers + SelfBlockGain | Accepted |
 | ADR-033 | Typed Creature Ids Across the Domain Surface | Accepted |
 | ADR-034 | Q1 Substrate is C# Parallel-Implementation, Not Headless Port — Wave-6.5 Retrofit | Accepted (2026-05-21) |
-| ADR-035 | Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor | Accepted |
+| ADR-035 | Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor | Accepted — Amended 2026-05-21 |
 
 ---
 
@@ -1148,7 +1148,7 @@ R10 status flips OPEN → DISCHARGED on merge of wave-44/B (no falsified-positiv
 
 ## ADR-035 — Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor
 
-**Status:** Accepted (2026-05-21).
+**Status:** Accepted (2026-05-21) — Amended 2026-05-21 (Q4 pre-execution survey deltas; see Amendment §1–§4 below).
 
 **Context.** ADR-034 closes the substrate question (parallel C# substrate is
 terminal operating mode) and surfaces R12 in §Future work: "mid-combat semantic
@@ -1289,3 +1289,127 @@ you MUST resolve" list:
 - AST extraction over hand-port for Q4 DSL (per-patch cost amortization).
 - Goldens file-per-encounter-per-seed binary record sequence (diff-localizability
   vs walk-cost tradeoff).
+
+## Amendment 2026-05-21 (Q4 pre-execution survey deltas)
+
+Following Q4-architect pre-execution survey (commission 2026-05-21 by
+project-lead), three corrections / refinements to §2.3 sub-stream Q4-B1
+and §2.6 question 3 land here without re-ratifying the ADR.
+
+### 1. Pattern table — superseded by upstream-verified syntax
+
+The 5-pattern table at §2.3 sub-stream Q4-B1 of
+`engine/headless/docs/specs/drift-gate-hardening-plan.md` was authored
+against an inferred upstream API and does not match the actual
+`~/development/projects/godot/sts2/src/Core/Models/Cards/` surface as of
+v0.105.1 pin. As written it extracts ZERO Silent cards (verified via direct
+read of `StrikeSilent.cs:25-28` — actual call is
+`DamageCmd.Attack(base.DynamicVars.Damage.BaseValue).FromCard(this).Targeting(cardPlay.Target)...Execute(choiceContext)`,
+not `DamageCmd.Attack(N).FromCard(...).Targeting(cardPlay.Target).Execute(...)`).
+
+Replace the table with the verified 12-pattern surface:
+
+| Upstream pattern | DSL emission |
+|---|---|
+| `DamageCmd.Attack(<BV>).FromCard(this).Targeting(cardPlay.Target).…Execute(choiceContext)` | `{op: "attack", base_var: "<Name>", target: "single"}` |
+| `DamageCmd.Attack(<BV>).…TargetingAllOpponents(base.CombatState).…Execute(...)` | `{op: "attack", base_var: "<Name>", target: "all_enemies"}` |
+| `DamageCmd.Attack(<BV>).…TargetingRandomOpponents(base.CombatState).WithHitCount(<DV>).…Execute(...)` | `{op: "attack", base_var: "<Name>", target: "random_enemies", hits_var: "<Name>"}` |
+| `DamageCmd.Attack(<BV>).WithHitCount(<lit>\|<DV.IntValue>).…Execute(...)` | `{op: "attack", base_var: "<Name>", hits: <N>\|hits_var: "<Name>"}` |
+| `CreatureCmd.GainBlock(base.Owner.Creature, base.DynamicVars.<Block>, cardPlay)` | `{op: "block_self", base_var: "<Name>"}` |
+| `PowerCmd.Apply<T>(choiceContext, base.Owner.Creature, <BV>, base.Owner.Creature, this)` | `{op: "apply_power", power: "<T>", base_var: "<Name>", target: "self"}` |
+| `PowerCmd.Apply<T>(choiceContext, cardPlay.Target, <BV>, base.Owner.Creature, this)` | `{op: "apply_power", power: "<T>", base_var: "<Name>", target: "single"}` |
+| `foreach Creature in CombatState.HittableEnemies → PowerCmd.Apply<T>(..., e, <BV>, ...)` | `{op: "apply_power", power: "<T>", base_var: "<Name>", target: "all_enemies"}` |
+| `CardPileCmd.Draw(choiceContext, <BV>\|<lit>, base.Owner)` | `{op: "draw", base_var: "<Name>"\|base: <lit>}` |
+| `PlayerCmd.GainEnergy(<DV.IntValue>, base.Owner)` | `{op: "gain_energy", base_var: "Energy"}` |
+| `Shiv.CreateInHand(base.Owner, <DV.IntValue>\|<lit>, base.CombatState)` | `{op: "create_shivs", base_var: "<Name>"\|base: <lit>}` |
+| Unplayable curse/status (no `OnPlay` body) | `{op: "noop"}` with `coverage: "noop"` |
+| anything else | `{op: "unknown", source: "card-extractor", upstream_line: <N>}` |
+
+`<BV>` denotes `base.DynamicVars.<Name>.BaseValue` (decimal); `<DV.IntValue>`
+denotes `base.DynamicVars.<Name>.IntValue` (int). Extractor records the
+DynamicVar name (e.g. `"Damage"`, `"Block"`, `"Cards"`, named like `"Shivs"`,
+`"Skills"`, `"PoisonPerTurn"`), not the numeric BaseValue, because the literal
+value is recoverable from the card's `CanonicalVars` declaration. This sidesteps
+the "upstream-rebalance changes numeric only, not method shape" red-team
+scenario at §2.5: numeric drift surfaces via canonical-registry re-seed
+comparison, not via DSL drift.
+
+### 2. Pattern coverage — Silent at 76.5% extractable, K_UNKNOWN_MAX = 25
+
+Per-card classification of all 98 Silent cards against the revised table:
+- 67 cards: extractable via 1-3 of the patterns above (68.4% strict, 76.5%
+  including curse/status `noop` and `OnTurnEndInHand`).
+- 5 cards: extractable only after `WithHitCount` literal+`DynVar.IntValue`
+  extension (Skewer, Ricochet, Finisher, Flechettes, FollowThrough). The
+  table above includes this extension.
+- 23 cards: genuinely unknown (calculated damage from history, X-cost
+  conditional, choose-N targeting, transform, sideboard mutation).
+  Representative: Acrobatics (choose-discard), Survivor, HandTrick,
+  BladeOfInk (Enchant), BouncingFlask (RNG loop), Murder/MementoMori
+  /PreciseCut (CalculatedDamageVar), Expose (LoseBlock+Remove<Artifact>),
+  Nightmare (selected-card capture), Mirage (CalculatedBlock from enemy
+  poison sum), KnifeTrap (auto-play from exhaust), TheHunt (conditional
+  reward).
+
+`K_UNKNOWN_MAX` ratifies at **25** for wave-1 (post-extraction). Ratchet
+target: **18** after first Q4-B1 extension wave (adds calculated-damage op
+support if Q4-lead approves). Ratcheting down requires explicit ADR delta
+per architect plan §2.3 Q4-B2.
+
+### 3. card_dsl schema v0 → v1 with `coverage` field — APPROVED
+
+Bump minor version `{major:0,minor:0} → {major:0,minor:1}`. Additive only.
+
+Per-card_dsl[] entry gains `coverage: "extracted" | "hand" | "stub" | "noop"`.
+Q10 trainer (`pipeline/trainer/content_registry.py:208-227`) is forward-compat
+(unknown row fields silently dropped). No `contracts/schemas/` protobuf bump
+(registry is JSON-only). The `bumping-a-schema-version` skill's wire-format
+codegen sweep does NOT apply; this amendment + `seed_phase1_registry.py`
+field-emit update + `validate_registry.py` field-validation extension cover
+the bump mechanically.
+
+The `manifest.schema_version` field's enforcement is decorative today (no
+loader rejects on minor mismatch). The bump establishes the convention for
+future bumps where Q10 will need to branch on minor.
+
+### 4. Canonical-vs-fixture per-kind tally correction
+
+Plan-doc §2.3 sub-stream Q4-B3 and §2.6 question 3 both reference incorrect
+per-kind tallies. Verified 2026-05-21 against commit `a69b357`:
+
+| Kind | Canonical | Q1 fixture | Δ |
+|---|---|---|---|
+| card | 98 | 98 | 0 |
+| relic | 59 | 59 | 0 |
+| power | 45 | 45 | 0 |
+| enemy/monster | 37 | 34 | **+3 canonical** |
+| potion | 21 | 21 | 0 |
+| encounter | 0 | (no key) | 0 |
+| special | 6 | (omitted) | n/a |
+
+Plan-doc claim "0 encounters in canonical, 22 in Q1 fixture" (§2.6) is
+incorrect; Q1 fixture has no `encounters` key at all. Both artifacts are at
+0 encounters. Drift-gate `test_canonical_vs_q1_fixture_token_set` SHOULD
+treat absent kind-keys in the Q1 fixture as `len==0`, not as malformed.
+
+(Q4-architect survey reported 33 Q1 monsters; project-lead recount via Python
+inspection of `engine/headless/test/fixtures/q4-manifest-phase1.json:monsters[]`
+returned 34. This amendment uses the verified count.)
+
+### 5. Canonical-vs-fixture ratchet promotion schedule (refines §2.3 Q4-B3)
+
+Replace "ships in report-only for one wave, then promotes to fail" with:
+
+| Wave | Posture | Behavior |
+|---|---|---|
+| Wave-1 (this dispatch) | warn-only ALL kinds | Logs per-kind deltas; never fails CI. |
+| Wave-2 (Phase-1.5 first port) | fail card/relic/power/potion, warn enemy/encounter | The +3 monster delta is grandfathered for one wave. |
+| Wave-3 (Phase-1.5 second port) | fail ALL kinds | Grandfathered +3 monsters landed in Q1 fixture, or removed from canonical via ADR. |
+
+Q4-lead owns ratchet promotion; not a wave-1 sub-stream blocker.
+
+**Origin of this amendment.** Project-lead commission 2026-05-21 (post-ADR-035
+ratification at `a69b357`) of quantum-architect pre-execution survey covering
+the three deferred Q4 questions in plan-doc §2.6. Survey return identified
+the load-bearing pattern-table syntax error that would have shipped Q4-B1
+as a no-op extractor; correction applied here without re-ratifying ADR-035.

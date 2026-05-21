@@ -375,7 +375,12 @@ matching (no full Roslyn parser — same constraint that `entity_extract.py`
 operates under per its docstring lines 14-26). Recognizes a constrained set
 of `OnPlay` patterns:
 
-| Upstream pattern | Registry DSL emission |
+> **Superseded — see ADR-035 Amendment 2026-05-21 §1.** Original 5-pattern table
+> below extracted zero Silent cards against actual upstream syntax. Verified
+> 12-pattern surface is in the ADR amendment; engineer brief MUST quote the
+> amendment, not this section's original table.
+
+| Upstream pattern (ORIGINAL — INCORRECT) | Registry DSL emission |
 |---|---|
 | `DamageCmd.Attack(N).FromCard(...).Targeting(cardPlay.Target).Execute(...)` | `{op: "attack", base: N, target: "single"}` |
 | `DamageCmd.AttackAll(N)...Execute(...)` | `{op: "attack", base: N, target: "all_enemies"}` |
