@@ -297,13 +297,13 @@ public static class ControlPlaneRpcHandlers
                         );
                     }
                     uint cardId = idElem.GetUInt32();
-                    uint? targetId = null;
+                    Sts2Headless.Domain.Combat.CreatureId? targetId = null;
                     if (
                         actionElem.TryGetProperty("target_enemy_id", out JsonElement tgtElem)
                         && tgtElem.ValueKind == JsonValueKind.Number
                     )
                     {
-                        targetId = tgtElem.GetUInt32();
+                        targetId = new Sts2Headless.Domain.Combat.CreatureId(tgtElem.GetUInt32());
                     }
                     CombatEngine.PlayerPlayCard(ctx, cardId, targetId);
                     break;

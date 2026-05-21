@@ -41,7 +41,7 @@ internal static class ReplayActionCodec
                     data[4] = 1;
                     BinaryPrimitives.WriteUInt32LittleEndian(
                         data.AsSpan(5, 4),
-                        pc.TargetEnemyId.Value
+                        pc.TargetEnemyId.Value.Value
                     );
                 }
                 return (ReplayActionType.PlayCard, data);
@@ -90,7 +90,7 @@ internal static class ReplayActionCodec
                         );
                     }
                     uint targetId = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(5, 4));
-                    return new PlayerAction.PlayCard(cardId, targetId);
+                    return new PlayerAction.PlayCard(cardId, new Sts2Headless.Domain.Combat.CreatureId(targetId));
                 }
                 throw new ReplayException(
                     $"ReplayActionCodec.Decode: PlayCard HasTarget byte 0x{hasTarget:X2} is not 0 or 1."

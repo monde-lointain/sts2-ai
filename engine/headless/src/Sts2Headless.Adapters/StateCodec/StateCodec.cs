@@ -464,7 +464,7 @@ public static class StateCodec
     /// </summary>
     private static void WriteCreature(ByteWriter w, Creature c)
     {
-        w.WriteU32(c.Id);
+        w.WriteU32(c.Id.Value);
         w.WriteLengthPrefixedString(c.Name);
         w.WriteI32(c.CurrentHp);
         w.WriteI32(c.MaxHp);
@@ -499,7 +499,7 @@ public static class StateCodec
     {
         w.WriteLengthPrefixedString(p.ModelId);
         w.WriteI32(p.Stacks);
-        w.WriteU32(p.SourceCreatureId);
+        w.WriteU32(p.SourceCreatureId.Value);
         w.WriteBool(p.JustApplied);
     }
 
@@ -674,7 +674,7 @@ public static class StateCodec
         bool isPlayer = r.ReadBool();
 
         return new Creature(
-            id,
+            new CreatureId(id),
             name,
             currentHp,
             maxHp,
@@ -691,7 +691,7 @@ public static class StateCodec
         int stacks = r.ReadI32();
         uint source = r.ReadU32();
         bool justApplied = r.ReadBool();
-        return new PowerInstance(modelId, stacks, source, justApplied);
+        return new PowerInstance(modelId, stacks, new CreatureId(source), justApplied);
     }
 
     private static MonsterIntent ReadMonsterIntent(ref ByteReader r)
