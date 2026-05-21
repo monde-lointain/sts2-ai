@@ -495,11 +495,17 @@ public static class StateCodec
     /// MonsterIntent byte layout (field-declaration order):
     /// <code>
     ///   i32 Kind, i32 DamagePerHit, i32 HitCount,
-    ///   i32 AppliesCount, AppliesCount * (string PowerId, i32 Stacks),
+    ///   i32 AppliesCount, AppliesCount * (string PowerId, i32 Stacks, i32 Target),
+    ///   i32 SelfBlockGain,
     ///   string MoveId
     /// </code>
     /// <para>
-    /// <b>Stream-B-T3 schema bump:</b> <c>MoveId</c> appended as the last field.
+    /// <b>Wave-38/B schema bump (v4):</b> <c>Target</c> (i32) appended after each
+    /// <c>Stacks</c> in the AppliesPowers loop; <c>SelfBlockGain</c> (i32) appended
+    /// after the loop and before <c>MoveId</c>.
+    /// </para>
+    /// <para>
+    /// <b>Stream-B-T3 schema bump (v2):</b> <c>MoveId</c> appended as the last field.
     /// Roundtrip stability preserved: pre-T3 blobs are not compatible (the
     /// stream codec versions in lockstep with the S6 state shape).
     /// </para>
@@ -515,7 +521,9 @@ public static class StateCodec
             MonsterIntentPower mp = m.AppliesPowers[i];
             w.WriteLengthPrefixedString(mp.PowerId);
             w.WriteI32(mp.Stacks);
+            w.WriteI32((int)mp.Target);
         }
+        w.WriteI32(m.SelfBlockGain);
         w.WriteLengthPrefixedString(m.MoveId);
     }
 
@@ -684,11 +692,15 @@ public static class StateCodec
         {
             string powerId = r.ReadLengthPrefixedString();
             int stacks = r.ReadI32();
-            applies.Add(new MonsterIntentPower(powerId, stacks));
+            // Wave-38/B schema addition: PowerTarget per entry.
+            PowerTarget target = (PowerTarget)r.ReadI32();
+            applies.Add(new MonsterIntentPower(powerId, stacks, target));
         }
+        // Wave-38/B schema addition: SelfBlockGain after the loop.
+        int selfBlockGain = r.ReadI32();
         // Stream-B-T3 schema addition.
         string moveId = r.ReadLengthPrefixedString();
-        return new MonsterIntent(kind, damagePerHit, hitCount, applies.ToImmutable(), moveId);
+        return new MonsterIntent(kind, damagePerHit, hitCount, applies.ToImmutable(), moveId, selfBlockGain);
     }
 
     private static CardPile ReadCardPile(ref ByteReader r)

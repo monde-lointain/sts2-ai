@@ -45,6 +45,18 @@ internal static class StateCodecConstants
     /// Current schema version. Bumped when wire layout changes.
     ///
     /// <para>
+    /// <b>v4 (Wave-38/B)</b> — appends two fields to the MonsterIntent wire layout:
+    /// <list type="bullet">
+    ///   <item><c>MonsterIntentPower.Target</c> (i32) appended after each
+    ///         <c>Stacks</c> field in the AppliesPowers loop. Decodes as
+    ///         <c>PowerTarget.Self = 0</c> for pre-v4 blobs (old blobs are
+    ///         incompatible via version gate anyway).</item>
+    ///   <item><c>MonsterIntent.SelfBlockGain</c> (i32) appended after the
+    ///         AppliesPowers loop, before <c>MoveId</c>.</item>
+    /// </list>
+    /// </para>
+    ///
+    /// <para>
     /// <b>v3 (B.1-gamma-T5)</b> — appends two CombatState fields for the
     /// deferred X-cost and Shiv-tracking infrastructure:
     /// <list type="bullet">
@@ -74,7 +86,7 @@ internal static class StateCodecConstants
     /// Stream-B fields; no per-creature MoveId on MonsterIntent.
     /// </para>
     /// </summary>
-    public const ushort SchemaVersion = 3;
+    public const ushort SchemaVersion = 4;
 
     /// <summary>Trailer size on wire: u32 magic + 32-byte SHA-256.</summary>
     public const int TrailerSizeBytes = 4 + 32;

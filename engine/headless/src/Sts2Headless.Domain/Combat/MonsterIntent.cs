@@ -18,12 +18,25 @@ public enum MonsterIntentKind
     Buff,
     Debuff,
     Sleep,
+
+    /// <summary>
+    /// Status-card-pollution intent (e.g., SCREECH, STICKY_SHOT). Maps to upstream's
+    /// <c>IntentKind.Status(N)</c> where N is the number of status cards added.
+    /// Engine payload (adding status cards to player discard) is deferred; rotation
+    /// advances normally.
+    /// </summary>
+    Status,
 }
 
-/// <summary>One (powerId, stacks) pair that a monster intent will apply on resolution.</summary>
+/// <summary>One (powerId, stacks, target) triple that a monster intent will apply on resolution.</summary>
 /// <param name="PowerId">String id matching <c>PowerCatalog</c>.</param>
 /// <param name="Stacks">Stack count to apply (Counter) or assign (Single).</param>
-public sealed record MonsterIntentPower(string PowerId, int Stacks);
+/// <param name="Target">
+/// Which side receives the power application. Defaults to <see cref="PowerTarget.Self"/>
+/// so existing two-argument construction sites compile unchanged and pre-Wave-B
+/// serialized blobs decode correctly after the schema version bump.
+/// </param>
+public sealed record MonsterIntentPower(string PowerId, int Stacks, PowerTarget Target = PowerTarget.Self);
 
 /// <summary>
 /// What a monster intends to do on its next turn — already-resolved (the monster's
@@ -60,17 +73,24 @@ public sealed record MonsterIntentPower(string PowerId, int Stacks);
 /// monsters that don't advance their rotation between turns (most Phase-1
 /// single-state monsters).
 /// </param>
+/// <param name="SelfBlockGain">
+/// Block the monster gains when executing this intent. Used by
+/// <see cref="MonsterIntentKind.Defend"/> (from <c>Intent.Defend(N)</c>) and
+/// <see cref="MonsterIntentKind.AttackDefend"/> (attack + self-block hybrid).
+/// Zero for pure attack/buff/debuff moves.
+/// </param>
 public sealed record MonsterIntent(
     MonsterIntentKind Kind,
     int DamagePerHit,
     int HitCount,
     ImmutableList<MonsterIntentPower> AppliesPowers,
-    string MoveId = ""
+    string MoveId = "",
+    int SelfBlockGain = 0
 )
 {
     /// <summary>"No intent resolved yet" sentinel — Kind=Unknown, no damage, no powers.</summary>
     public static MonsterIntent None { get; } =
-        new(MonsterIntentKind.Unknown, 0, 0, ImmutableList<MonsterIntentPower>.Empty, string.Empty);
+        new(MonsterIntentKind.Unknown, 0, 0, ImmutableList<MonsterIntentPower>.Empty, string.Empty, 0);
 
     /// <summary>
     /// Override record-default equality so the AppliesPowers list is compared
@@ -85,6 +105,8 @@ public sealed record MonsterIntent(
         if (Kind != other.Kind)
             return false;
         if (DamagePerHit != other.DamagePerHit || HitCount != other.HitCount)
+            return false;
+        if (SelfBlockGain != other.SelfBlockGain)
             return false;
         if (!string.Equals(MoveId, other.MoveId, System.StringComparison.Ordinal))
             return false;
@@ -105,6 +127,7 @@ public sealed record MonsterIntent(
         h.Add(Kind);
         h.Add(DamagePerHit);
         h.Add(HitCount);
+        h.Add(SelfBlockGain);
         h.Add(MoveId);
         for (int i = 0; i < AppliesPowers.Count; i++)
             h.Add(AppliesPowers[i]);

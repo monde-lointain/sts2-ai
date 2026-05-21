@@ -52,8 +52,10 @@ public sealed class MockOrchestratorEndToEndTests : IDisposable
     //
     // B.1-gamma-T5 (2026-05-11): codec schema 2->3 (LastSpentEnergy +
     // ExhaustedShivCount appended to CombatState). Mechanical regen.
+    // Wave-38/B: codec schema 3->4 (MonsterIntentPower.Target + MonsterIntent.SelfBlockGain
+    // appended to MonsterIntent wire layout). Mechanical regen.
     private static readonly string GoldenFinalHash =
-        "910d8d962639c3f060a2fc6f1edc39fbab02a686cf020fb1123d0528899532e4";
+        "3dedd79f487c64204cf992958df379074adb32460e55024a1126d4016e4ced86";
 
     private const string PinSentinel = "PIN_AT_FIRST_RUN";
 

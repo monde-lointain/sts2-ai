@@ -46,8 +46,10 @@ public sealed class EndToEndReferenceCombatTests
     // B.1-gamma-T3 also reshaped Exoskeleton/Lagavulin/Louse intent rotation,
     // which changes the per-step state — but the smoke encounter is Cultists
     // and so isn't affected by those monsters. The shift is purely codec.
+    // Wave-38/B: codec schema 3->4 (MonsterIntentPower.Target + MonsterIntent.SelfBlockGain).
+    // Mechanical regen — cultists encounter not affected by monster payload changes.
     private const string GoldenFinalStateSha =
-        "30e234fdca323a95740580a2fb0c7279571662c067ae80198dc3a8184d905d80";
+        "9862d9feeb0d221160e34fd0935152907f9aef8773a3955267a461ee53f5f5f5";
 
     // The same fixed end-turn script is used for both Domain-level golden and
     // this E2E test. Driving end_turn repeatedly is deterministic because the

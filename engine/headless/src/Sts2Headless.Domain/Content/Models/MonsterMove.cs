@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Sts2Headless.Domain.Combat;
 using Sts2Headless.Domain.Determinism;
 
 namespace Sts2Headless.Domain.Content.Models;
@@ -31,7 +32,9 @@ public sealed record MonsterMove(
     string Id,
     Intent Intent,
     string FollowUpMoveId,
-    IMoveBranchResolver? BranchResolver = null
+    IMoveBranchResolver? BranchResolver = null,
+    ImmutableList<MonsterIntentPower>? AppliesPowers = null,
+    int SelfBlockGain = 0
 );
 
 /// <summary>

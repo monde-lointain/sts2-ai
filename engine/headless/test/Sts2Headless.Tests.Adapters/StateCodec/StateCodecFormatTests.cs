@@ -17,9 +17,9 @@ public class StateCodecFormatTests
         // The constants are part of the wire contract; pinning them here so a
         // typo-rename doesn't silently bump the schema.
         Assert.Equal(0x53435443u, StateCodecConstants.HeaderMagic); // "STCT" little-endian when read forward
-        // B.1-gamma-T5: bumped 2 -> 3 for CombatState.LastSpentEnergy +
-        // ExhaustedShivCount (X-cost snapshot + Shiv-exhaust tracking).
-        Assert.Equal((ushort)3, StateCodecConstants.SchemaVersion);
+        // Wave-38/B: bumped 3 -> 4 for MonsterIntentPower.Target (i32 per entry)
+        // and MonsterIntent.SelfBlockGain (i32 after applies-loop).
+        Assert.Equal((ushort)4, StateCodecConstants.SchemaVersion);
         Assert.Equal(0x53544354u, StateCodecConstants.TrailerMagic);
         Assert.Equal((ushort)0xFFFF, StateCodecConstants.SectionTerminator);
     }

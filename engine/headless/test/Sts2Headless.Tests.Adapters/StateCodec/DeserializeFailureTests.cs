@@ -123,7 +123,7 @@ public class DeserializeFailureTests
         // the gap is).
         Assert.Contains("unsupported schema version 1", ex.Message);
         Assert.Contains($"this codec supports {StateCodecConstants.SchemaVersion}", ex.Message);
-        Assert.Equal(3, StateCodecConstants.SchemaVersion);
+        Assert.Equal(4, StateCodecConstants.SchemaVersion);
     }
 
     [Fact]
