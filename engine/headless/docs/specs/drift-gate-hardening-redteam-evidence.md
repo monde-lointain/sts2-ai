@@ -47,8 +47,11 @@ Gate correctly reports `q1=3 golden=2` naming the drift.
 
 ## §Louse Strength+1 CURL_AND_GROW (per-encounter parity)
 
+**Wave-45 status:** QUALIFIED (coverage gap; LouseProgenitorNormal had no action-sequence).
+**Wave-46 re-fire (2026-05-21):** PASS — gate now fires correctly after wave-46/Q1-A1 landed LouseProgenitorNormal action-sequence + 10 goldens.
+
 **Injection target file:**
-`engine/headless/src/Sts2Headless.Domain/Content/Monsters/Phase1Monsters.cs:174`
+`engine/headless/src/Sts2Headless.Domain/Content/Monsters/Phase1Monsters.cs:174` (line unchanged from wave-45 — wave-46/Q1-A1 cohort made no substrate edits per R1 baked decision).
 
 **Pre-injection value:** `public const int CurlStrength = 5;`
 
@@ -60,35 +63,29 @@ Gate correctly reports `q1=3 golden=2` naming the drift.
 
 **Gate command:** `cd engine/headless && make probe-upstream-mid-combat`
 
-**Gate output (verbatim):**
+**Gate output (verbatim, post-injection 2026-05-21):**
 ```
-==> probe-upstream-mid-combat (Phase-1 pool × 10 seeds; nightly/pre-merge)
-determinism-probe: mode=MidCombat encounters=14 seeds=10 goldensRoot=.../goldens-upstream/mid-combat
-  SKIP    LouseProgenitorNormal (no action-sequence; add to actionSeqIds to enable)
-  [... 12 other encounters skipped ...]
-determinism-probe: mid-combat summary — passed=10 diverged=0 skipped=130 errored=0 duration=0.10s
+determinism-probe: mid-combat summary — passed=60 diverged=10 skipped=70 errored=0 duration=0.12s
+-- LouseProgenitorNormal seed=42 outcome=Diverged
+   diff:  encounter=LouseProgenitorNormal seed=42 turn=2 side=enemy-end field=Enemy[0](LouseProgenitor).Powers[1](StrengthPower).Stacks q1=6 golden=5
+-- LouseProgenitorNormal seed=43 outcome=Diverged
+   diff:  encounter=LouseProgenitorNormal seed=43 turn=2 side=enemy-end field=Enemy[0](LouseProgenitor).Powers[1](StrengthPower).Stacks q1=6 golden=5
+-- LouseProgenitorNormal seed=44 outcome=Diverged
+   diff:  encounter=LouseProgenitorNormal seed=44 turn=2 side=enemy-end field=Enemy[0](LouseProgenitor).Powers[1](StrengthPower).Stacks q1=6 golden=5
+[... seeds 45-51 all diverged with same pattern: turn=2 side=enemy-end field=Enemy[0].Powers[1](StrengthPower).Stacks q1=6 golden=5 ...]
 ```
 
-**Result:** QUALIFIED — gate cannot fire at wave-45.
+**Result:** PASS (gate fires; all 10 seeds detect the +1 Strength stack divergence at turn=2 enemy-end snapshot — the first turn CURL_AND_GROW's StrengthPower applies).
 
-**Coverage gap explanation:**
-`LouseProgenitorNormal` is listed in the full mid-combat probe encounter pool
-(`Program.cs:432`) but has NO action-sequence registered in `actionSeqIds`
-(`Program.cs:450-453`). The probe engine skips encounters without an action
-sequence (`Program.cs:468-474`), so `CurlStrength=6` causes zero divergence
-signal. The probe returns `skipped=130` (13 encounters × 10 seeds) and
-`passed=10` (CultistsNormal × 10 seeds).
+**Notes:** Turn counter 1-indexed in probe output (plan §2.5 said turn=2; probe emits turn=2 because CURL_AND_GROW is move-index 1 in LouseProgenitor's 3-move rotation, fires on enemy turn 2's enemy-end snapshot — matches wave-45 cultist precedent for 1-indexed turn semantics). Field format `Enemy[0](LouseProgenitor).Powers[1](StrengthPower).Stacks` matches the cultist injection format from §Cultist Ritual+1. Gate correctly reports `q1=6 golden=5` naming the drift.
 
-This is the expected gap per plan §2.2 §fast-subset and §2.5 table note:
-"LouseProgenitor coverage deferred to wave-46/Q1-A2; gate cannot fire at wave-45."
+**Pre-injection baseline (wave-46 main HEAD bfa4229):** `passed=70 diverged=0 skipped=70 errored=0` (7 encounters × 10 seeds passing; 7 unstubbed encounters skipped).
 
-**Wave-46/Q1-A2 remediation:** Add `["LouseProgenitorNormal"] = "louse-progenitor-strategy.json"` to
-`actionSeqIds` map + commit a hand-authored action sequence for CURL_AND_GROW. Once the golden is
-captured, injection #2 will fully PASS.
+**Post-injection delta:** 60 PASS (-10) + 10 DIVERGED (+10) — exactly the 10 Louse seeds. Other 60 PASS retained (cultist + 5 other wave-46 cohort encounters). File-disjoint partition logic holds: wave-46 cohort merges + R.1 injection don't disturb other encounters' baselines.
 
 **Revert:** `git checkout HEAD -- engine/headless/src/Sts2Headless.Domain/Content/Monsters/Phase1Monsters.cs`
 
-**Revert verified:** `git diff --name-only` returns empty; Phase1Monsters.cs CurlStrength = 5.
+**Revert verified:** `git diff --name-only` returns empty; Phase1Monsters.cs CurlStrength = 5; full corpus back to 70 PASS / 0 diverged / 70 skipped.
 
 ---
 
@@ -304,17 +301,13 @@ Gate correctly identifies that `pinned_dll_sha256 = 0b571b…` does NOT match
 | # | Injection | Gate | Result |
 |---|---|---|---|
 | 1 | Cultist Ritual+1 (`CalcifiedCultist.cs:40`) | `make probe-upstream-mid-combat-smoke` | **PASS** |
-| 2 | Louse Strength+1 (`Phase1Monsters.cs:174`) | `make probe-upstream-mid-combat` | **QUALIFIED** (no action-seq at wave-45; coverage gap documented; remediation in wave-46/Q1-A2) |
+| 2 | Louse Strength+1 (`Phase1Monsters.cs:174`) | `make probe-upstream-mid-combat` | **PASS (wave-46 re-fire)** — wave-45 was QUALIFIED (no action-seq); wave-46/Q1-A1 landed LouseProgenitorNormal action-sequence + 10 goldens; wave-46/R.1 re-fire confirmed gate emits `Enemy[0](LouseProgenitor).Powers[1](StrengthPower).Stacks q1=6 golden=5` across all 10 seeds (turn=2 enemy-end) |
 | 3 | StrikeSilent Attack base+1 (`/tmp` disposable copy) | `extract_card_dsl.py` + `test_registry.py` | **PASS** (expected gap: extractor uses base_var, not literal; documented per plan §2.3) |
 | 4 | Analyzer comment-block (`WraithForm.cs:23`) | `dotnet build` STS2_UPSTREAM_001 count | **PASS** (214→212; WraithForm warning suppressed by comment) |
 | 5 | PinDllSha256 hex mutation (`upstream-pin.json`) | `UpstreamDriftGates.SyncStatePinGate` | **PASS** (DLL HASH DRIFT fired) |
 
-**R12 status:** DISCHARGE-READY.
+**R12 status:** DISCHARGED (wave-45 close + wave-46 close).
 
-4 injections PASS + 1 QUALIFIED (injection #2 — LouseProgenitor coverage gap
-documented above; wave-46/Q1-A2 remediation path identified). Per plan §2.5:
-"R12 only DISCHARGES on all five red-team validations completing successfully"
-and per evidence artifact schema (H9): "R12 status: DISCHARGED iff all 5 PASS
-(or 4 PASS + 1 QUALIFIED with documented coverage gap per injection #2)."
+**Wave-45 close (2026-05-21):** 4 PASS + 1 QUALIFIED (Louse coverage gap). Per plan §2.5 + H9: discharge condition met (4 PASS + 1 documented QUALIFIED).
 
-Condition met: 4 PASS + 1 QUALIFIED with documented coverage gap.
+**Wave-46 close (2026-05-21):** 5 PASS (all injections fire correctly; QUALIFIED Louse flipped to PASS after wave-46/Q1-A1 landed the LouseProgenitorNormal action-sequence + 10 goldens enabling the gate to fire). Mid-combat probe coverage expanded from cultist-only (wave-45) to 7 encounters (wave-46): CultistsNormal, LouseProgenitorNormal, GremlinMercNormal, CeremonialBeastBoss, ExoskeletonsNormal, LagavulinElite, KaiserCrabBoss. R12 mitigation surface 100% live; gate fires on its own coverage area.
