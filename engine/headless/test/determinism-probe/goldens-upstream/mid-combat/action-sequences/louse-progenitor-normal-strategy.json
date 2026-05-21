@@ -1,0 +1,28 @@
+{
+  "encounter": "LouseProgenitorNormal",
+  "version": 1,
+  "derivation": "Hand-authored representative strategy for LouseProgenitor mid-combat probe. NOT oracle-derived (Q2 oracle's principal-variation emitter is wave-47+ work). Sequence exercises Strike + Defend mechanics over enough turns to span LouseProgenitor's 3-move rotation (WEB_CANNON → CURL_AND_GROW → POUNCE) at least once. Target_creature_id = 1 (encounter-start enemy-order index 0-indexed; LouseProgenitor at slot 1; player at slot 0). Turn 1: enemy uses WEB_CANNON (9dmg + Frail 2 to player); player plays 2 Strikes to chip damage then Defend for block. Turn 2: enemy uses CURL_AND_GROW (14 block self + Strength +5); player plays 2 Strikes and Defend; Frail reduces block gain. Turn 3: enemy uses POUNCE (16+5Str=21 dmg); player Defends heavily then Strikes. Turns 4-7 repeat the rotation cycle. Strategy ensures full 3-move rotation is traversed at least twice, exercising all intent branches and Frail/Strength power interactions.",
+  "actions": [
+    {"turn": 1, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 1, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 1, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 2, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 2, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 2, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 3, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": false},
+    {"turn": 3, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 3, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": true},
+    {"turn": 4, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 4, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 4, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 5, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 5, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 5, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 6, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": false},
+    {"turn": 6, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 6, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": true},
+    {"turn": 7, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 7, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 7, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true}
+  ]
+}
