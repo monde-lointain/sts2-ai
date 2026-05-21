@@ -27,18 +27,13 @@ namespace Sts2Headless.Tests.Domain.Content.Cards;
 /// </summary>
 public class Phase1CardTests
 {
-    private static ExecutionContext NewCtx() =>
-        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
-
     private static IReadOnlyList<IAction> Play(CardModel card, string? target = null)
     {
-        ExecutionContext ctx = NewCtx();
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            card.OnPlay(ctx, target);
-            ctx.Queue.Drain(ctx);
-            return log;
-        }
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
+        card.OnPlay(ctx, target);
+        ctx.Queue.Drain(ctx);
+        return log;
     }
 
     [Fact]

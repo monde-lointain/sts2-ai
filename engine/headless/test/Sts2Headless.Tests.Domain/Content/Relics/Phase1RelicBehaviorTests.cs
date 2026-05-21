@@ -17,24 +17,19 @@ namespace Sts2Headless.Tests.Domain.Content.Relics;
 /// <summary>
 /// Stream-B-T2: behavior tests for the Phase-1 relic SubscribeHooks bodies
 /// extended in this stream. Each test installs the relic, fires its hook
-/// type, drains the action queue with an attached <see cref="EffectObserver"/>,
+/// type, drains the action queue with a <see cref="ListActionObserver"/> attached,
 /// and verifies the captured action shape matches upstream.
 /// </summary>
 public sealed class Phase1RelicBehaviorTests
 {
-    private static ExecutionContext NewCtx() =>
-        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
-
     private static IReadOnlyList<IAction> FireAndCollect(RelicModel relic, HookType hookType)
     {
-        ExecutionContext ctx = NewCtx();
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
         relic.OnAdded(ctx);
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            ctx.Hooks.Fire(hookType, new HookContext(ctx));
-            ctx.Queue.Drain(ctx);
-            return log;
-        }
+        ctx.Hooks.Fire(hookType, new HookContext(ctx));
+        ctx.Queue.Drain(ctx);
+        return log;
     }
 
     // ===== BronzeScales (upstream src/Core/Models/Relics/BronzeScales.cs) =====

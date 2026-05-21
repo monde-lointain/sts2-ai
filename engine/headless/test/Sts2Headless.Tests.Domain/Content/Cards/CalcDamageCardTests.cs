@@ -57,21 +57,20 @@ public sealed class CalcDamageCardTests
     [Fact]
     public void CalcDamageAction_records_into_observer()
     {
+        var obs = ListActionObserver.Create(out List<IAction> log);
         ExecutionContext ec = new(
             new LogicalClock(),
             new Rng(0u),
             new HookRegistry(),
-            new ActionQueue()
+            new ActionQueue(),
+            obs
         );
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            new CalcDamageAction(6, "attacks_played_this_turn", "m0").Execute(ec);
-            Assert.Single(log);
-            CalcDamageAction a = Assert.IsType<CalcDamageAction>(log[0]);
-            Assert.Equal(6, a.BaseDamage);
-            Assert.Equal("attacks_played_this_turn", a.MultiplierKey);
-            Assert.Equal("m0", a.Target);
-        }
+        new CalcDamageAction(6, "attacks_played_this_turn", "m0").Execute(ec);
+        Assert.Single(log);
+        CalcDamageAction a = Assert.IsType<CalcDamageAction>(log[0]);
+        Assert.Equal(6, a.BaseDamage);
+        Assert.Equal("attacks_played_this_turn", a.MultiplierKey);
+        Assert.Equal("m0", a.Target);
     }
 
     // ===== Finisher =====

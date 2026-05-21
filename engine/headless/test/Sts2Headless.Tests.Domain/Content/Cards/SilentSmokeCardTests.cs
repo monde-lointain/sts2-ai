@@ -12,7 +12,7 @@ namespace Sts2Headless.Tests.Domain.Content.Cards;
 
 /// <summary>
 /// Byte-exact value checks for every smoke-set card. Each test plays the card,
-/// drains the action queue with an attached <see cref="EffectObserver"/>, and
+/// drains the action queue with a <see cref="ListActionObserver"/> attached, and
 /// verifies the recorded actions match upstream values. Cross-reference upstream
 /// file paths per card (see each card's class doc-comment).
 ///
@@ -33,22 +33,17 @@ public class SilentSmokeCardTests
 {
     /// <summary>
     /// Play <paramref name="card"/> against a fresh context and return the actions it
-    /// enqueued (in execution order). Uses <see cref="EffectObserver"/> to capture
+    /// enqueued (in execution order). Uses <see cref="ListActionObserver"/> to capture
     /// during Drain — no peeking into <see cref="ActionQueue"/> internals.
     /// </summary>
     private static IReadOnlyList<IAction> Play(CardModel card, string? target = null)
     {
-        ExecutionContext ctx = NewCtx();
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            card.OnPlay(ctx, target);
-            ctx.Queue.Drain(ctx);
-            return log;
-        }
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
+        card.OnPlay(ctx, target);
+        ctx.Queue.Drain(ctx);
+        return log;
     }
-
-    private static ExecutionContext NewCtx() =>
-        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
 
     // ===== StrikeSilent (upstream: src/Core/Models/Cards/StrikeSilent.cs) =====
 

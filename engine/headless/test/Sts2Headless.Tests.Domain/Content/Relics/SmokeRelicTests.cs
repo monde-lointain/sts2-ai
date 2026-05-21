@@ -18,24 +18,19 @@ namespace Sts2Headless.Tests.Domain.Content.Relics;
 /// </summary>
 public class SmokeRelicTests
 {
-    private static ExecutionContext NewCtx() =>
-        new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue());
-
     /// <summary>
     /// Install <paramref name="relic"/>, fire <paramref name="hookType"/>, drain the
-    /// queue with an <see cref="EffectObserver"/> attached, and return the captured
+    /// queue with a <see cref="ListActionObserver"/> attached, and return the captured
     /// actions in execution order.
     /// </summary>
     private static IReadOnlyList<IAction> FireAndCollect(RelicModel relic, HookType hookType)
     {
-        ExecutionContext ctx = NewCtx();
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
         relic.OnAdded(ctx);
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            ctx.Hooks.Fire(hookType, new HookContext(ctx));
-            ctx.Queue.Drain(ctx);
-            return log;
-        }
+        ctx.Hooks.Fire(hookType, new HookContext(ctx));
+        ctx.Queue.Drain(ctx);
+        return log;
     }
 
     // ===== RingOfTheSnake (upstream: src/Core/Models/Relics/RingOfTheSnake.cs) =====
@@ -154,32 +149,28 @@ public class SmokeRelicTests
     [Fact]
     public void Relic_handler_unsubscribed_on_OnRemoved_does_not_fire()
     {
-        ExecutionContext ctx = NewCtx();
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
         RingOfTheSnake r = new();
         r.OnAdded(ctx);
         r.OnRemoved(ctx);
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            ctx.Hooks.Fire(HookType.ModifyHandDraw, new HookContext(ctx));
-            ctx.Queue.Drain(ctx);
-            Assert.Empty(log);
-        }
+        ctx.Hooks.Fire(HookType.ModifyHandDraw, new HookContext(ctx));
+        ctx.Queue.Drain(ctx);
+        Assert.Empty(log);
     }
 
     [Fact]
     public void Multiple_smoke_relics_can_subscribe_to_same_hook_without_conflict()
     {
         // RingOfTheSnake and BagOfPreparation both subscribe to BeforeHandDraw.
-        ExecutionContext ctx = NewCtx();
+        var obs = ListActionObserver.Create(out List<IAction> log);
+        ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
         new RingOfTheSnake().OnAdded(ctx);
         new BagOfPreparation().OnAdded(ctx);
-        using (EffectObserver.Attach(out List<IAction> log))
-        {
-            ctx.Hooks.Fire(HookType.ModifyHandDraw, new HookContext(ctx));
-            ctx.Queue.Drain(ctx);
-            // Both relics fire; both enqueue an ExtraHandDrawAction(2).
-            Assert.Equal(2, log.Count);
-            Assert.All(log, a => Assert.Equal(2, Assert.IsType<ExtraHandDrawAction>(a).Extra));
-        }
+        ctx.Hooks.Fire(HookType.ModifyHandDraw, new HookContext(ctx));
+        ctx.Queue.Drain(ctx);
+        // Both relics fire; both enqueue an ExtraHandDrawAction(2).
+        Assert.Equal(2, log.Count);
+        Assert.All(log, a => Assert.Equal(2, Assert.IsType<ExtraHandDrawAction>(a).Extra));
     }
 }
