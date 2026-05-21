@@ -866,3 +866,42 @@ Cross-link: Q2-ADR-016 §Cap-bust-case-B (full decision tree + G2–G5 amendment
 **Re-attempt path**: see Q2-ADR-017 §Re-attempt-path. Substrate retention means a future pin attempt can focus on the G2-G5 tractability menu without re-porting monster definitions or OnDeath primitives.
 
 Cross-link: Q2-ADR-017 (full decision document).
+
+## 24. §24 — 2026-05-21 R13 hotfix Q2-A1 (Z.0) — StateCodec v3→v4 reader widening + canonical_hash refresh
+
+**Outcome**: `make phase0-gate` GREEN on cold run @ 181s (commit `0027444`). R13 **DISCHARGED**. Q2 C++ adapter recovers from ~24h dormancy post wave-32 (ADR-032 StateCodec v3→v4 schema bump) + wave-38/B (fixture+metadata.json regen). Single-stream monolithic Z.0 per the plan's honest-payoff recommendation over the 3-stream parallel topology (Z.α/β/γ); ~75 LOC saving did not justify orchestration overhead at this scope.
+
+**Trigger**: wave-45/B.2 close (`50f9e98`) ran the canonical phase0-gate which exposed `header.schema unsupported (Q2 Phase-1A wants v3 minor)` reject at `state_blob.cc:197`. Developer gate `make q1-ci` (~11.5s) stayed green throughout, silently bypassing the canonical-gate divergence per the workflow observation surfaced in the directive. Project-lead deferred ADR-036 ratification (Option B per-quantum canonical signal vs Option A strict-subset) to a follow-up.
+
+**Pre/post**:
+- Main: `bd65bc0` → `0027444` (post wave-45 close ADR-034 R12 flip + redteam doc; both docs-only)
+- Diff: 4 files, +261 / −28 LOC
+
+**Changed (adapter layer)**:
+- `state_blob.h`: `kStateCodecSchemaV3 = 3U` → `kStateCodecSchemaV4 = 4U`. `ParsedMonsterIntent` widened — new `ParsedAppliesPower` struct (`power_id`, `stacks`, `target`) replaces the pair-vec; new `self_block_gain` i32 field. PowerTarget enum (ADR-032) Self=0 / Player=1; engine carries raw i32 + strict range-check throw on invalid (matches `applies_count < 0` defensive precedent).
+- `state_blob.cc`: `read_monster_intent` reads `Target` interleaved within the AppliesPowers loop after `Stacks`, and `SelfBlockGain` unconditionally between the loop and `MoveId`. Reject diagnostic message bumped to "v4 minor".
+- `test_state_blob.cc`: fixture-01 size pin `5708U` → `5762U` (verified via `wc -c`); schema constant ref updated. **Appended 2 synthetic-blob unit tests** `MonsterIntentV4Wire.AppliesCount1_TargetSelf_RoundTrips` + `AppliesCount2_TargetMix_SelfBlockGain_RoundTrips` exercising the new wire path explicitly (current 3 pinned-encounter fixtures have AppliesCount=0 for every intent → loop body otherwise untouched by fixture-driven tests).
+- `test_adapter_reject.cc`: refreshed 6 stale canonical_hash strings (fixtures 02/03/04/06/08/09) against current `metadata.json::expected_canonical_hash_hex` values; comment-block updated to cite wave-38/B regen (commit `f9cf308`).
+
+**Read-path-only architecture (load-bearing)**: projection `.cc` files (cultists / louse_progenitor / nibbits_weak) UNTOUCHED. Existing pinned encounters implement Ritual / CurlUp / Frail / Strength via `cr.powers` (Creature.PowerCount section) + transition.cc — none consume `intent.applies`. Wiring `AppliesPowers[]` into PowerInstance arrays would double-apply mechanics → pin break. `MonsterIntentKind.Status=7` round-trips at parse layer only (`ParsedMonsterIntent.kind = int32_t` raw); `EnemyState::kind_` is `MonsterKind` (creature species), not `MonsterIntentKind` — never projected for any value, consistent with v3 behavior.
+
+**algorithm_sha outcome**: PRESERVED at `2afffa3b28558d3ae1b3a14dc28dda57e8b2d521206b6da5133ad9ca9e26753d`. Pre/post byte-compare IDENTICAL. All 4 owned files (`state_blob.{h,cc}` + 2 test files) are absent from `cmake/AlgorithmSha.cmake:12-31` source list per Q2-ADR-005 amendment wave-20.β.
+
+**Cultist Zobrist BYTE outcome**: PRESERVED at `Lo=0x569115efa81a95dc / Hi=0x9a06f1e505846a80` (7th APPEND-ONLY validation across waves 22-fix-4 → 23 → 24 → 25 → 26 → 27 → Z.0). No zobrist.cc change. Cultist + LouseProgenitor + NibbitsWeak pin VALUES BIT-IDENTICAL (`Seed42Pin.PinnedAction` + `Seed42Pin.ExpectedHpPin` ran in default suite; Louse + NibbitsWeak DISABLED-prefix pin tests exercised via `--gtest_also_run_disabled_tests` inside phase0-gate sub-targets).
+
+**Side-effect re-bake (recurring pattern)**: this is the 2nd canonical_hash refresh in `test_adapter_reject.cc::reject_cases()` driven by an upstream fixture regen (1st: wave-27/N.α post wave-26 Q1.E roster bump; 2nd: Z.0 post wave-38/B v4 regen). Pattern suggests the hardcoded-string approach in C++ accumulates drift each time Q1 regenerates fixtures. Future-work consideration (NOT in scope of Z.0): teach `reject_cases()` to READ canonical hashes from `metadata.json` at test-time rather than hardcode — would eliminate the recurring refresh debt. Q2-lead to evaluate vs the JSON-parse-at-test-time runtime cost.
+
+**Verification**:
+- Default ctest sweep: 653/653 pass, 3 skipped, 9 disabled (engineer-side, on worktree pre-merge)
+- `Seed42Pin.PinnedAction` + `Seed42Pin.ExpectedHpPin` (cultist pin) GREEN in default suite
+- `LouseProgenitorSearchPins.LouseProgenitorNormalFixture5_PinnedAgreement` + `NibbitsWeakSearchPins.NibbitsWeakFixture7_PinnedAgreement` GREEN inside phase0-gate (disabled-test flag enabled in sub-target)
+- 2 new `MonsterIntentV4Wire` synthetic-blob tests GREEN
+- `algorithm_sha` byte-compare IDENTICAL pre/post
+- `make phase0-gate` cold run @ `0027444`: PASS in 181s; written to `.claude/state/last-gate.json`
+
+**Deferred to Z.1 follow-up (or punted)**:
+- Q2-ADR-019 documenting v4 acceptance + read-path-only-for-existing-encounters rationale (intent: prevent future engineer from blindly wiring projection consumers and breaking pins). Z.0 commit message carries the rationale-link breadcrumb pending ADR landing.
+- Workflow observation ratification (Option A strict-subset vs Option B per-quantum canonical) — orthogonal; project-lead to ratify as ADR-036.
+- `AdapterRoundtrip.DISABLED_Fixture1_AdapterPlusSearch_PinnedAgreement` stays DISABLED; re-enable decision orthogonal to Z.0.
+
+**Cross-references**: ADR-032 (StateCodec v3→v4 wire layout — authority for the new MonsterIntent fields). Q2-ADR-005 (algorithm_sha source list — pinned `state_blob.{h,cc}` exclusion ratified by Z.0 preservation outcome). Q2-ADR-014 (pin invariance discipline — Z.0 inherits). Q2-ADR-017 §Side-effect re-bake (precedent for canonical_hash refresh-from-metadata.json pattern). ADR-029 Path A campaign (orthogonal — no encounter port in this hotfix). [[reference_auto_worktree_base]] (engineer base SHA preflight verified `bd65bc0`). Plan file: `/home/clydew372/.claude/plans/directive-q2-c-fuzzy-sprout.md`.
