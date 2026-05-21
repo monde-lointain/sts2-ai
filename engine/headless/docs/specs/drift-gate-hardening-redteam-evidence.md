@@ -311,3 +311,85 @@ Gate correctly identifies that `pinned_dll_sha256 = 0b571b…` does NOT match
 **Wave-45 close (2026-05-21):** 4 PASS + 1 QUALIFIED (Louse coverage gap). Per plan §2.5 + H9: discharge condition met (4 PASS + 1 documented QUALIFIED).
 
 **Wave-46 close (2026-05-21):** 5 PASS (all injections fire correctly; QUALIFIED Louse flipped to PASS after wave-46/Q1-A1 landed the LouseProgenitorNormal action-sequence + 10 goldens enabling the gate to fire). Mid-combat probe coverage expanded from cultist-only (wave-45) to 7 encounters (wave-46): CultistsNormal, LouseProgenitorNormal, GremlinMercNormal, CeremonialBeastBoss, ExoskeletonsNormal, LagavulinElite, KaiserCrabBoss. R12 mitigation surface 100% live; gate fires on its own coverage area.
+
+**Retroactive correction (wave-49/A.1 + wave-49 close 2026-05-22):** wave-46 + wave-47a + wave-48 "10/10 PASS" reports were Q1-self-comparison; goldens were Q1-derived (not upstream-derived). Per ADR-035 Amendment #2: drift-gate has been theatrical for ~4 waves. Wave-49 ships first real upstream-vs-Q1 drift-gate (Phase-1 Turn-0 only); Phase-2 multi-turn = wave-50.
+
+---
+
+## §Wave-49/A.4 partial red-team re-fire (Phase-1 validation; 2026-05-22)
+
+**Context.** Wave-49/A.2 + A.5 (E6) ship the first real upstream-vs-Q1 drift-gate (Turn-0 single-snapshot mode). A.3 fixed LouseProgenitor PounceDamage 16→14 + Exoskeleton per-slot INIT. A.4 validates Phase-1 scope: per-slot INIT divergence class caught (Exoskeleton case); per-turn behavioral divergence (LouseProgenitor PounceDamage Turn-3 manifestation) Phase-2-deferred to wave-50.
+
+### §Exoskeleton slot-1 SKITTER collapse (Phase-1 PASS)
+
+**Injection target file:** `engine/headless/src/Sts2Headless.Domain/Content/Encounters/Phase1Encounters.cs:60`
+
+**Pre-injection value:** `(Exoskeleton.CanonicalId, Exoskeleton.MandiblesMoveId)` (per A.3 fix; slot-1 → MANDIBLES).
+
+**Diff applied (transient):**
+```diff
+-            (Exoskeleton.CanonicalId, Exoskeleton.MandiblesMoveId),
++            (Exoskeleton.CanonicalId, Exoskeleton.SkitterMoveId),
+```
+
+**Gate command:** `cd engine/headless && make probe-upstream-mid-combat`
+
+**Gate output (verbatim; all 10 seeds DIVERGE):**
+```
+determinism-probe: mid-combat summary — passed=60 diverged=30 skipped=70 errored=0
+-- ExoskeletonsNormal seed=42 outcome=Diverged
+   diff: encounter=ExoskeletonsNormal seed=42 turn=0 side=combat-start field=Enemy[1](Exoskeleton).MoveId q1=SKITTER_MOVE golden=MANDIBLES_MOVE
+-- ExoskeletonsNormal seed=43 outcome=Diverged
+   diff: encounter=ExoskeletonsNormal seed=43 turn=0 side=combat-start field=Enemy[1](Exoskeleton).MoveId q1=SKITTER_MOVE golden=MANDIBLES_MOVE
+[... seeds 44-51 all diverged with same Enemy[1](Exoskeleton).MoveId q1=SKITTER_MOVE golden=MANDIBLES_MOVE ...]
+```
+
+**Result:** **PASS** (Phase-1 gate fires correctly; all 10 ExoskeletonsNormal seeds detect slot-1 INIT divergence at turn=0 enemy-state snapshot). Phase-1 scope validates per-slot INIT divergence class catch.
+
+**Revert:** `git checkout HEAD -- engine/headless/src/Sts2Headless.Domain/Content/Encounters/Phase1Encounters.cs`. Revert verified: `git diff --name-only` returns empty; slot-1 back to MandiblesMoveId; full corpus back to baseline.
+
+### §LouseProgenitor PounceDamage=17 (Phase-2 deferred — DOCUMENTED NO-FIRE)
+
+**Injection target file:** `engine/headless/src/Sts2Headless.Domain/Content/Monsters/Phase1Monsters.cs:177`
+
+**Pre-injection value:** `public const int PounceDamage = 14;` (per A.3 fix; upstream A0 = 14).
+
+**Diff applied (transient):**
+```diff
+-    public const int PounceDamage = 14;
++    public const int PounceDamage = 17;
+```
+
+**Gate command:** `cd engine/headless && make probe-upstream-mid-combat`
+
+**Gate output (verbatim — NO new divergence introduced; LouseProgenitor untouched in DIVERGE list):**
+```
+determinism-probe: mid-combat summary — passed=70 diverged=20 skipped=70 errored=0
+[DIVERGE list: NibbitsWeak (10 seeds) + NibbitsNormal (10 seeds); pre-existing baseline divergences from wave-49/E6 first-run]
+[LouseProgenitorNormal: NOT in DIVERGE list — 10/10 PASS]
+```
+
+**Result:** **NO-FIRE (expected; Phase-2 deferred).**
+
+**Rationale (per C4 baked):** LouseProgenitor's INIT_MOVE = WEB_CANNON (move-index 0 in WEB→CURL→POUNCE rotation; verified via Phase1Monsters.cs:200 + upstream `GenerateMoveStateMachine`). At Turn=0 enemy-state capture, enemy[0]'s queued next-move = WEB_CANNON; intent.DmgPerHit = 9 (WEB damage), NOT 14/16/17 (POUNCE damage). PounceDamage is a move-3 effect that only manifests after turn 3+ of the rotation, beyond Phase-1 Turn-0 scope. Even with intent capture, POUNCE damage value never reaches the snapshot. Confirms Phase-1 scope limitation as designed.
+
+**Phase-2 validation plan (wave-50):**
+- Phase-2 will mock Godot singletons (LocalContext + RunManager.ActionQueueSynchronizer + NRunMusicController) + run upstream's full turn loop via reflection.
+- Multi-turn upstream goldens will capture turn-3 enemy intent values for LouseProgenitor.
+- Phase-2 red-team will inject PounceDamage=17 again + verify enhanced multi-turn probe catches `turn=3 enemy[0](LouseProgenitor).Intent.DmgPerHit q1=17 golden=14` (or equivalent).
+- R16 DISCHARGES on Phase-2 wave-50 close with full red-team validation.
+
+**Revert:** `git checkout HEAD -- engine/headless/src/Sts2Headless.Domain/Content/Monsters/Phase1Monsters.cs`. Revert verified: `git diff --name-only` returns empty; PounceDamage = 14.
+
+### §Wave-49 close — R16 PARTIAL_MITIGATED
+
+**Summary table addition:**
+
+| # | Injection | Gate | Result |
+|---|---|---|---|
+| 6 | Exoskeleton slot-1 SKITTER collapse | wave-49 Phase-1 mid-combat probe (Turn-0) | **PASS** (10/10 diverged; Enemy[1].MoveId q1=SKITTER golden=MANDIBLES) |
+| 7 | LouseProgenitor PounceDamage=17 | wave-49 Phase-1 mid-combat probe (Turn-0) | **PHASE-2-DEFERRED** (NO-FIRE expected; PounceDamage manifests turn 3+; Phase-1 Turn-0 scope doesn't reach) |
+
+**R16 status post-wave-49:** PARTIAL_MITIGATED. Phase-1 Turn-0 catches per-slot INIT divergence class (Exoskeleton + Nibbits cases). FULL discharge gates on wave-50 Phase-2 (multi-turn capture via mock layer; full red-team validation including PounceDamage=17 turn-3 catch).
+
+**Auxiliary E6 findings (R15 expansion):** Wave-49/E6 baseline full-corpus run surfaced 2 new substrate-divergence findings: NibbitsWeak Q1=BUTT_MOVE golden=HISS_MOVE + NibbitsNormal Q1=SLICE_MOVE golden=HISS_MOVE. Wave-47a/C's INIT_MOVE claim (IsAlone → BUTT, IsFront → SLICE) was Q1-self-confirmed wrong. R15 expansion: Nibbits substrate has divergent INIT_MOVE routing. Below C1 ≥3 threshold (2 encounters); proceed with A.4 + Z.0 per plan; document for future substrate-fix wave (post-wave-50).
