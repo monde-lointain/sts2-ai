@@ -154,7 +154,7 @@ public sealed class FuzzyWurmCrawler : MonsterModel
 /// <summary>
 /// Verbatim port of upstream <c>Monsters.LouseProgenitor</c>: WEB_CANNON (9 dmg
 /// + 2 Frail to player) → CURL_AND_GROW (gain 14 block + 5 Strength) → POUNCE
-/// (16 single attack) → WEB_CANNON → ... Initial move (per upstream's machine
+/// (14 single attack, A0) → WEB_CANNON → ... Initial move (per upstream's machine
 /// constructor) is WEB_CANNON. Upstream's <c>AfterAddedToRoom</c> stamps
 /// CurlUpPower(CurlBlock=14) on the louse — handled by the engine spawn-time
 /// power application list (Q1's monster-spawn pathway, B.1-gamma-T3).
@@ -172,7 +172,9 @@ public sealed class LouseProgenitor : MonsterModel
     public const int WebFrailStacks = 2;
     public const int CurlBlock = 14;
     public const int CurlStrength = 5;
-    public const int PounceDamage = 16;
+    // A0 value: upstream GetValueIfAscension(DeadlyEnemies, 16, 14) → A0 = 14.
+    // Pre-fix Q1 incorrectly used 16 (Ascension-1 value). wave-49/A.3.
+    public const int PounceDamage = 14;
 
     public const string WebCannonMoveId = "WEB_CANNON_MOVE";
     public const string CurlAndGrowMoveId = "CURL_AND_GROW_MOVE";

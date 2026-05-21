@@ -25,6 +25,14 @@ public sealed class ChompersNormal : EncounterModel
         : base(CanonicalId, new[] { Chomper.CanonicalId, Chomper.CanonicalId }) { }
 }
 
+/// <summary>
+/// Upstream Exoskeleton uses ConditionalBranchState("INIT_MOVE") keyed on
+/// <c>Creature.SlotName</c>: "first"→SKITTER, "second"→MANDIBLES,
+/// "third"→ENRAGE, "fourth"→RAND. ExoskeletonsNormal spawns exactly 3, so
+/// slots are first/second/third. Q1 handles per-slot override at encounter
+/// level via <see cref="EncounterModel.GenerateMonstersWithMoves"/> (Nibbit
+/// precedent). wave-49/A.3.
+/// </summary>
 public sealed class ExoskeletonsNormal : EncounterModel
 {
     public const string CanonicalId = "ExoskeletonsNormal";
@@ -34,6 +42,24 @@ public sealed class ExoskeletonsNormal : EncounterModel
             CanonicalId,
             new[] { Exoskeleton.CanonicalId, Exoskeleton.CanonicalId, Exoskeleton.CanonicalId }
         ) { }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Returns a fixed list; no Rng ticks.
+    /// Slot 0 ("first")  → SKITTER_MOVE; slot 1 ("second") → MANDIBLES_MOVE;
+    /// slot 2 ("third")  → ENRAGE_MOVE.
+    /// Matches upstream ConditionalBranchState("INIT_MOVE") for the 3-slot case.
+    /// </remarks>
+    public override IReadOnlyList<(
+        string MonsterId,
+        string? InitialMoveIdOverride
+    )> GenerateMonstersWithMoves(Rng rng) =>
+        new (string, string?)[]
+        {
+            (Exoskeleton.CanonicalId, Exoskeleton.SkitterMoveId),
+            (Exoskeleton.CanonicalId, Exoskeleton.MandiblesMoveId),
+            (Exoskeleton.CanonicalId, Exoskeleton.EnrageMoveId),
+        };
 }
 
 // B.1-final-T2a: deleted JawWormSolo (STS1-only monster JawWorm, no STS2 analogue).
