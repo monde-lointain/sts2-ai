@@ -10,7 +10,7 @@ namespace Sts2Headless.Domain.Content.Cards;
 /// are honored by the engine: <c>CardModel.IsXCost = true</c> tells
 /// <see cref="Sts2Headless.Domain.Combat.CombatEngine.PlayerPlayCard"/> to
 /// consume all available energy and snapshot the spent value into
-/// <see cref="Sts2Headless.Domain.Combat.CombatState.LastSpentEnergy"/>
+/// <see cref="Sts2Headless.Domain.Combat.TrailCounters.LastSpentEnergy"/>
 /// before <see cref="OnPlay"/> runs. The dispatcher's
 /// <see cref="XCostDamageAction"/> handler then deals 8 damage per snapshotted
 /// energy unit.

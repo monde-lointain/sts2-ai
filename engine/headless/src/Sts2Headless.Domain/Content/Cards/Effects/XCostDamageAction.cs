@@ -7,7 +7,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// B.1-gamma-T5: X-cost attack action. Deals
 /// <see cref="DamagePerHit"/> damage <c>X</c> times, where <c>X</c> is the
 /// most recently snapshotted spent energy (from
-/// <see cref="Sts2Headless.Domain.Combat.CombatState.LastSpentEnergy"/>).
+/// <see cref="Sts2Headless.Domain.Combat.TrailCounters.LastSpentEnergy"/>).
 /// Mirrors upstream <c>Skewer.OnPlay</c>:
 /// <c>DamageCmd.Attack(BaseDamage).WithHitCount(ResolveEnergyXValue())</c>.
 /// </summary>

@@ -165,7 +165,7 @@ public interface ICombatContext
     /// B.1-gamma-T5: amount of energy consumed by the most recently played
     /// X-cost card. Engine snapshots <see cref="CombatState.Energy"/> before
     /// consumption and writes it here so the card's <c>OnPlay</c> body can
-    /// read the value via <see cref="CombatState.LastSpentEnergy"/>. Mirrors
+    /// read the value via <see cref="TrailCounters.LastSpentEnergy"/>. Mirrors
     /// upstream <c>CardModel.ResolveEnergyXValue()</c>. Returns 0 if no
     /// X-cost card has been played in this combat.
     /// </summary>

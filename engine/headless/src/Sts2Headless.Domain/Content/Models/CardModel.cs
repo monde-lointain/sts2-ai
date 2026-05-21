@@ -43,7 +43,7 @@ public abstract class CardModel : ICardModel
     /// B.1-gamma-T5: true for X-cost cards (Skewer / Malaise). Upstream's
     /// <c>HasEnergyCostX</c> flag. When true, the engine consumes ALL the
     /// player's available energy on play and snapshots the spent amount to
-    /// <see cref="Sts2Headless.Domain.Combat.CombatState.LastSpentEnergy"/>
+    /// <see cref="Sts2Headless.Domain.Combat.TrailCounters.LastSpentEnergy"/>
     /// before invoking the card's <see cref="OnPlay"/>. Default false.
     /// </summary>
     public virtual bool IsXCost => false;

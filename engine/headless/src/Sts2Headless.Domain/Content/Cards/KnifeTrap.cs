@@ -9,7 +9,7 @@ namespace Sts2Headless.Domain.Content.Cards;
 /// each Shiv-tagged card in the player's exhaust pile (a "free Shiv burst");
 /// Q1's port simplifies to "deal <see cref="DamagePerShiv"/> damage per
 /// Shiv-tagged card in exhaust" — tracked by
-/// <see cref="Sts2Headless.Domain.Combat.CombatState.ExhaustedShivCount"/>.
+/// <see cref="Sts2Headless.Domain.Combat.TrailCounters.ExhaustedShivCount"/>.
 /// With zero Shivs in exhaust (current smoke set), the action deals 0 damage —
 /// KnifeTrap is metadata-correct regardless.
 /// </summary>
