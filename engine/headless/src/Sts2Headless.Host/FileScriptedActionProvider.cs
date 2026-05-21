@@ -137,13 +137,14 @@ public sealed class FileScriptedActionProvider : IScriptedActionProvider
                 if (d.TargetEnemyId.HasValue)
                 {
                     var matched = candidates.FirstOrDefault(pc =>
-                        pc.TargetEnemyId == d.TargetEnemyId.Value
+                        pc.TargetEnemyId.HasValue
+                        && pc.TargetEnemyId.Value.Value == d.TargetEnemyId.Value
                     );
                     if (matched is null)
                     {
                         throw new ScriptParseException(
                             $"line {d.Line}: card '{cardId}' target={d.TargetEnemyId.Value} not legal "
-                                + $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "self"))})."
+                                + $"(legal targets: {string.Join(",", candidates.Select(c => c.TargetEnemyId?.ToString() ?? "self"))})."
                         );
                     }
                     return matched;

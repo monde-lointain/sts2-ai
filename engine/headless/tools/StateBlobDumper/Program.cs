@@ -308,14 +308,14 @@ public static class Program
                 {
                     ["model_id"] = p.ModelId,
                     ["stacks"] = p.Stacks,
-                    ["source_creature_id"] = (long)p.SourceCreatureId,
+                    ["source_creature_id"] = (long)p.SourceCreatureId.Value,
                     ["just_applied"] = p.JustApplied,
                 }
             );
         }
         var summary = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["id"] = (long)c.Id,
+            ["id"] = (long)c.Id.Value,
             ["name"] = c.Name,
             ["current_hp"] = c.CurrentHp,
             ["max_hp"] = c.MaxHp,
