@@ -37,6 +37,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Reference the analyzer as a normal runtime assembly so test code can
+         instantiate UpstreamCommentAnalyzer directly (not OutputItemType=Analyzer). -->
+    <ProjectReference
+      Include="..\Sts2Headless.UpstreamCommentAnalyzer\Sts2Headless.UpstreamCommentAnalyzer.csproj"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 </Project>

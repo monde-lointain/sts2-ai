@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Roslyn analyzers must target netstandard2.0 to run inside the
+         compiler host, which may be any .NET version. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+
+    <!-- Suppress TreatWarningsAsErrors from Directory.Build.props for the
+         analyzer project itself — it must build cleanly with its own rules. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+
+    <!-- Do not copy to output — consumers reference the analyzer DLL directly. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+
+    <!-- RS2008: analyzer release-tracking. Internal analyzer; suppress rather
+         than adding a release-tracking AdditionalFile. -->
+    <NoWarn>RS2008</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Roslyn CSharp APIs. PrivateAssets=all: build-time only; not output. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

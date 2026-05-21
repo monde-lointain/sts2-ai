@@ -44,4 +44,28 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!--
+    STS2_UPSTREAM_001 Roslyn analyzer — wave-45/Q1-A3.
+    Fires on Sts2Headless.Domain only (the project that owns Domain.Content.*
+    types). Condition prevents the analyzer from being referenced by itself,
+    test projects, or tools projects.
+    OutputItemType=Analyzer + ReferenceOutputAssembly=false: injects the
+    compiled DLL as a compile-time analyzer without creating a runtime dep.
+
+    WarningsNotAsErrors keeps STS2_UPSTREAM_001 a Warning even under
+    TreatWarningsAsErrors=true — Phase 3a warn-only per ADR-024. Ratchet to
+    error (remove this entry) after 2 wave cycles green post-wave-45.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'Sts2Headless.Domain'">
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);STS2_UPSTREAM_001</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Sts2Headless.Domain'">
+    <ProjectReference
+      Include="$(MSBuildThisFileDirectory)test\Sts2Headless.UpstreamCommentAnalyzer\Sts2Headless.UpstreamCommentAnalyzer.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
 </Project>

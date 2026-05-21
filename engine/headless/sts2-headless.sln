@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sts2Q1ConsoleHost", "tools\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sts2Headless.Tests.UpstreamDriftGates", "test\Sts2Headless.Tests.UpstreamDriftGates\Sts2Headless.Tests.UpstreamDriftGates.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sts2Headless.UpstreamCommentAnalyzer", "test\Sts2Headless.UpstreamCommentAnalyzer\Sts2Headless.UpstreamCommentAnalyzer.csproj", "{C1D2E3F4-A5B6-7890-CDEF-012345678901}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -89,6 +91,10 @@ Global
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-012345678901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-012345678901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-012345678901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1D2E3F4-A5B6-7890-CDEF-012345678901}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B53AE57B-D349-4499-9F8F-F98EFD992409} = {F9B8689E-1E82-4419-88B5-F9D5500CFF4C}
@@ -103,5 +109,6 @@ Global
 		{46646162-8037-41BE-B4EB-96961513344C} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
 		{14B896F6-F99C-417E-B124-457BCAE97036} = {4EDDEADC-3A12-406F-B44A-4F8AA209010A}
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
+		{C1D2E3F4-A5B6-7890-CDEF-012345678901} = {6EEFFDE3-492F-4901-9447-782BDC4F6EAE}
 	EndGlobalSection
 EndGlobal
