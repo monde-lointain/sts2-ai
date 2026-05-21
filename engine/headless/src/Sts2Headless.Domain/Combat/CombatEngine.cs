@@ -256,8 +256,11 @@ public static class CombatEngine
                     // Stream-B-T3: stamp the initial move-id so multi-state monsters
                     // (Chomper et al.) start their per-creature cursor cleanly.
                     // Q1-ADR-014: honour per-slot override when non-null (NibbitsNormal).
+                    // Wave-38/B: pass the full MonsterMove so AppliesPowers+SelfBlockGain are read.
                     Intent: MonsterIntent.FromContentIntent(
-                        monsterModel.InitialIntent,
+                        monsterModel.GetMove(
+                            initialMoveIdOverride ?? monsterModel.InitialMoveId
+                        ),
                         initialMoveIdOverride ?? monsterModel.InitialMoveId
                     ),
                     IsPlayer: false
@@ -1064,8 +1067,8 @@ public static class CombatEngine
             string moveId = !string.IsNullOrEmpty(enemy.Intent?.MoveId)
                 ? enemy.Intent!.MoveId
                 : model.InitialMoveId;
-            Intent contentIntent = model.GetMove(moveId).Intent;
-            var monsterIntent = MonsterIntent.FromContentIntent(contentIntent, moveId);
+            // Wave-38/B: pass the full MonsterMove so AppliesPowers+SelfBlockGain populate.
+            var monsterIntent = MonsterIntent.FromContentIntent(model.GetMove(moveId), moveId);
             ctx.SetState(ctx.State.WithEnemy(enemy with { Intent = monsterIntent }));
         }
     }

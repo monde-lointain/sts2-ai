@@ -122,8 +122,9 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                                 MaxHp: sneakyHp,
                                 Block: 0,
                                 Powers: ImmutableList<PowerInstance>.Empty,
+                                // Wave-38/B: pass MonsterMove so AppliesPowers+SelfBlockGain populate.
                                 Intent: MonsterIntent.FromContentIntent(
-                                    sneakyModel.InitialIntent,
+                                    sneakyModel.GetMove(sneakyModel.InitialMoveId),
                                     sneakyModel.InitialMoveId
                                 ),
                                 IsPlayer: false
@@ -136,7 +137,7 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                                 Block: 0,
                                 Powers: ImmutableList<PowerInstance>.Empty,
                                 Intent: MonsterIntent.FromContentIntent(
-                                    fatModel.InitialIntent,
+                                    fatModel.GetMove(fatModel.InitialMoveId),
                                     fatModel.InitialMoveId
                                 ),
                                 IsPlayer: false

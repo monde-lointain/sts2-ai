@@ -135,68 +135,111 @@ public sealed record MonsterIntent(
     }
 
     /// <summary>
-    /// Build a runtime <see cref="MonsterIntent"/> from the catalog-layer
-    /// <see cref="Sts2Headless.Domain.Content.Models.Intent"/>. Smoke set covers
-    /// Attack and Buff; other kinds map by name (and ship empty powers — concrete
-    /// monsters configure power-application separately in S6's monster turn glue).
+    /// Build a runtime <see cref="MonsterIntent"/> from a catalog-layer
+    /// <see cref="MonsterMove"/>. Reads <c>move.Intent</c>, <c>move.AppliesPowers</c>,
+    /// and <c>move.SelfBlockGain</c> to produce the full executable payload.
     /// </summary>
-    public static MonsterIntent FromContentIntent(Intent source) =>
-        FromContentIntent(source, moveId: string.Empty);
+    public static MonsterIntent FromContentIntent(MonsterMove move) =>
+        FromContentIntent(move, string.Empty);
 
     /// <summary>
-    /// Build a runtime <see cref="MonsterIntent"/> with a recorded
-    /// <paramref name="moveId"/> for per-creature state-machine cursor
-    /// tracking (Stream-B-T3). See the constructor's <c>MoveId</c> remarks
-    /// for rationale.
+    /// Build a runtime <see cref="MonsterIntent"/> from a catalog-layer
+    /// <see cref="MonsterMove"/> with a recorded <paramref name="moveId"/> for
+    /// per-creature state-machine cursor tracking (Stream-B-T3). See the
+    /// constructor's <c>MoveId</c> remarks for rationale.
     /// </summary>
-    public static MonsterIntent FromContentIntent(Intent source, string moveId) =>
-        source.Kind switch
+    public static MonsterIntent FromContentIntent(MonsterMove move, string moveId)
+    {
+        ImmutableList<MonsterIntentPower> powers =
+            move.AppliesPowers ?? ImmutableList<MonsterIntentPower>.Empty;
+        Intent source = move.Intent;
+
+        return source.Kind switch
         {
-            // Honor the catalog-layer Intent.HitCount; default to 1 for legacy single-hit
-            // intents that pre-date the Stream-B-T3 HitCount addition.
+            // Attack + self-block → AttackDefend (hybrid)
+            IntentKind.Attack when move.SelfBlockGain > 0 => new(
+                MonsterIntentKind.AttackDefend,
+                source.Value,
+                source.HitCount > 0 ? source.HitCount : 1,
+                powers,
+                moveId,
+                move.SelfBlockGain
+            ),
+            // Pure attack
             IntentKind.Attack => new(
                 MonsterIntentKind.Attack,
                 source.Value,
                 source.HitCount > 0 ? source.HitCount : 1,
-                ImmutableList<MonsterIntentPower>.Empty,
-                moveId
+                powers,
+                moveId,
+                0
+            ),
+            // Defend: Intent.Value carries the declared block amount; SelfBlockGain can supplement.
+            IntentKind.Defend => new(
+                MonsterIntentKind.Defend,
+                0,
+                0,
+                powers,
+                moveId,
+                source.Value + move.SelfBlockGain
             ),
             IntentKind.Buff => new(
                 MonsterIntentKind.Buff,
                 0,
                 0,
-                ImmutableList<MonsterIntentPower>.Empty,
-                moveId
+                powers,
+                moveId,
+                0
             ),
             IntentKind.Debuff => new(
                 MonsterIntentKind.Debuff,
                 0,
                 0,
-                ImmutableList<MonsterIntentPower>.Empty,
-                moveId
-            ),
-            IntentKind.Defend => new(
-                MonsterIntentKind.Defend,
-                0,
-                0,
-                ImmutableList<MonsterIntentPower>.Empty,
-                moveId
+                powers,
+                moveId,
+                0
             ),
             IntentKind.Sleep => new(
                 MonsterIntentKind.Sleep,
                 0,
                 0,
                 ImmutableList<MonsterIntentPower>.Empty,
-                moveId
+                moveId,
+                0
             ),
-            // Status (card pollution) — coarse "Buff-shaped" for now; engine ignores it.
+            // Status (card pollution) — first-class Kind=Status; HitCount carries the
+            // card count (overloaded, no engine consumer yet). Engine payload deferred.
             IntentKind.Status => new(
-                MonsterIntentKind.Buff,
+                MonsterIntentKind.Status,
                 0,
-                0,
-                ImmutableList<MonsterIntentPower>.Empty,
-                moveId
+                source.Value,
+                powers,
+                moveId,
+                0
             ),
             _ => None,
         };
+    }
+
+    // ---- Back-compat overloads (Intent source) ----------------------------
+    // Kept so existing test sites (StatePrimitiveTests.cs:131,141) and the
+    // determinism-probe comparer (UpstreamInitialStateComparer.cs:241) compile
+    // unchanged. They build a synthetic MonsterMove with null AppliesPowers and
+    // zero SelfBlockGain, then delegate to the MonsterMove overload.
+
+    /// <summary>
+    /// Back-compat: builds a synthetic <see cref="MonsterMove"/> with no
+    /// <c>AppliesPowers</c> / zero <c>SelfBlockGain</c> and delegates to
+    /// <see cref="FromContentIntent(MonsterMove)"/>.
+    /// </summary>
+    public static MonsterIntent FromContentIntent(Intent source) =>
+        FromContentIntent(new MonsterMove(string.Empty, source, string.Empty));
+
+    /// <summary>
+    /// Back-compat: builds a synthetic <see cref="MonsterMove"/> with no
+    /// <c>AppliesPowers</c> / zero <c>SelfBlockGain</c> and delegates to
+    /// <see cref="FromContentIntent(MonsterMove, string)"/>.
+    /// </summary>
+    public static MonsterIntent FromContentIntent(Intent source, string moveId) =>
+        FromContentIntent(new MonsterMove(string.Empty, source, string.Empty), moveId);
 }
