@@ -1,0 +1,40 @@
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+  <!-- Spike csproj: orphaned from Sts2Headless.sln intentionally.
+       Targets: godot headless option-B feasibility investigation.
+       SDK mirrors upstream sts2.csproj (Godot.NET.Sdk/4.5.1).
+       References game-bundled assemblies from Steam install path.
+       Do NOT add to Sts2Headless.sln until project-lead decides post-spike.
+  -->
+  <PropertyGroup>
+    <AssemblyName>GodotHeadlessSpike</AssemblyName>
+    <EnableDynamicLoading>True</EnableDynamicLoading>
+    <TargetFramework>net90</TargetFramework>
+    <LangVersion>13.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <!-- Orphaned from solution: excluded from make q1-ci scope -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <STEAM_STS2>$(HOME)/snap/steam/common/.local/share/Steam/steamapps/common/Slay the Spire 2/data_sts2_linuxbsd_x86_64</STEAM_STS2>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Game-bundled GodotSharp (ABI-matched to SlayTheSpire2 engine binary) -->
+    <Reference Include="GodotSharp">
+      <HintPath>$(STEAM_STS2)/GodotSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Upstream STS2 game assembly (read-only behavioral reference) -->
+    <Reference Include="sts2">
+      <HintPath>$(STEAM_STS2)/sts2.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- HarmonyLib shipped with STS2 (criterion #5 patch support) -->
+    <Reference Include="0Harmony">
+      <HintPath>$(STEAM_STS2)/0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
