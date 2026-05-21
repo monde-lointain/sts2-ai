@@ -38,7 +38,7 @@ ADRs that shape `docs/specs/`. Each entry: Title, Status, Context, Decision, Con
 | ADR-032 | Consolidate Monster Move Payloads onto MonsterIntent.AppliesPowers + SelfBlockGain | Accepted |
 | ADR-033 | Typed Creature Ids Across the Domain Surface | Accepted |
 | ADR-034 | Q1 Substrate is C# Parallel-Implementation, Not Headless Port — Wave-6.5 Retrofit | Accepted (2026-05-21) |
-| ADR-035 | Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor | Accepted — Amended 2026-05-21 |
+| ADR-035 | Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor | Accepted — Amended 2026-05-21, 2026-05-22 |
 
 ---
 
@@ -1150,7 +1150,7 @@ R10 status flips OPEN → DISCHARGED on merge of wave-44/B (no falsified-positiv
 
 ## ADR-035 — Mid-Combat Behavioral Drift Detection via Reflective Per-Turn Probe + Q4 DSL Extractor
 
-**Status:** Accepted (2026-05-21) — Amended 2026-05-21 (Q4 pre-execution survey deltas; see Amendment §1–§4 below).
+**Status:** Accepted (2026-05-21) — Amended 2026-05-21 (Q4 pre-execution survey deltas; see Amendment §1–§4 below) — Amended 2026-05-22 (Phase-1/Phase-2 split + wave-46→48 retroactive correction; see Amendment #2 below).
 
 **Context.** ADR-034 closes the substrate question (parallel C# substrate is
 terminal operating mode) and surfaces R12 in §Future work: "mid-combat semantic
@@ -1415,3 +1415,87 @@ ratification at `a69b357`) of quantum-architect pre-execution survey covering
 the three deferred Q4 questions in plan-doc §2.6. Survey return identified
 the load-bearing pattern-table syntax error that would have shipped Q4-B1
 as a no-op extractor; correction applied here without re-ratifying ADR-035.
+
+---
+
+### Amendment #2 — Phase-1 / Phase-2 split + wave-46→48 retroactive correction (wave-49 close, 2026-05-22)
+
+#### §1 Wider Godot binding (architect-skip-list incomplete)
+
+Amendment #1's §1.1 skip-list verified `CombatState.GodotTimerTask` was NOT on the EndTurn critical path — a correct file-line-level finding. However, the wider Godot-singleton binding in upstream `CombatManager`'s turn loop was NOT enumerated by Amendment #1. Wave-49/A.2's pre-execution survey discovered the actual surface:
+
+| Upstream method | Required Godot singleton | Effect when called headless |
+|---|---|---|
+| `CombatManager.StartTurn` | `LocalContext`, `RunManager.ActionQueueSynchronizer` | Crashes on first call |
+| `CombatManager.EndPlayerTurnPhaseOneInternal` | `LocalContext`, `RunManager.ActionQueueSynchronizer` | Crashes |
+| `CombatManager.ExecuteEnemyTurn` | `LocalContext`, `RunManager.ActionQueueSynchronizer`, `NRunMusicController` | Crashes |
+
+The full upstream turn loop cannot run via reflection without a mock layer for these three singletons. Mock-layer construction is wave-50 scope (Phase-2; ~8-12h engineer-time estimate per project-lead's wave-49 surface response).
+
+#### §2 Phase-1 / Phase-2 split
+
+**Phase-1 (wave-49 close):** Upstream-derived Turn-0 capture only. Engineer stops after `MonsterModel.RollMove()` (which runs headless without Godot singletons) + emits single `Turn=0, Side="combat-start"` snapshot per (encounter, seed). Catches per-slot `INIT_MOVE` divergence class (e.g., Exoskeleton slot-0/1/2 routing, Nibbit `IsAlone`/`IsFront` routing). Does NOT catch per-turn behavioral divergence (e.g., LouseProgenitor turn-3 POUNCE damage).
+
+**Phase-2 (wave-50 scope):** LocalContext + RunManager.ActionQueueSynchronizer + NRunMusicController headless mock layer; extend `UpstreamDriver` to run `StartTurn → EndPlayerTurnPhaseOneInternal → ExecuteEnemyTurn` via reflection + mocks; re-capture goldens at multi-turn detail; `MidCombatComparer` redesign for full per-turn comparison; full red-team validation including LouseProgenitor PounceDamage=17 catch at turn 3.
+
+`MidCombatComparer` mode-detection (wave-49/A.5 / E6): detects single-record golden with `Side == "combat-start"` AND `Turn == 0` → dispatches to Phase-1 comparison branch (per-enemy `MoveId` only). Multi-record path preserved for Phase-2 forward-compat.
+
+#### §3 Retroactive correction — wave-46/47a/48 Q1-self-comparison
+
+**Wave-49/A.1 investigation finding:** wave-46 + wave-47a + wave-48 mid-combat "10/10 PASS" reports were Q1-self-comparison, NOT upstream-vs-Q1.
+
+Root cause: `make probe-upstream-mid-combat-capture` invoked `--project test/determinism-probe` (Q1-side driver), NOT `UpstreamDriver.CaptureMidCombat()`. `UpstreamDriver.CaptureMidCombat` existed as dead code (wave-45 engineer artifact that survived merge review). Golden `.bin` files in `goldens-upstream/mid-combat/` were captured by Q1's `Q1MidCombatCaptureDriver`; the compare run also used `Q1MidCombatCaptureDriver`. Every Q1 behavioral bug at golden-capture time was baked into the golden; re-running Q1 with the same bug produced identical output; comparer reported PASS.
+
+**Implications:**
+- LouseProgenitor `PounceDamage = 16` (Ascension-1 value; should be A0=14) — bug present in Q1 substrate since wave-26 era; wave-46 + wave-47a + wave-48 reported 10/10 PASS for LouseProgenitorNormal coverage. False positive.
+- Exoskeleton per-slot INIT_MOVE divergence — wave-46/A.3 deterministic-collapse covered only slot 0; slots 1+2 had wrong initial moves; reported 10/10 PASS. False positive.
+- Nibbits INIT_MOVE divergence (NibbitsWeak Q1=BUTT golden=HISS; NibbitsNormal slot 0 Q1=SLICE golden=HISS) — wave-47a/C's claim "IsAlone → BUTT, IsFront → SLICE" was Q1-self-confirmed wrong. False positive.
+- Exoskeleton encounter-shape divergence (R15 sub-class; see §6) — wave-48 audit classified Exoskeleton as monster-class-FULL but missed the encounter-wrapper-shape divergence (Q1 "ExoskeletonsNormal" = 3 monsters = upstream `ExoskeletonsWeak`; upstream `ExoskeletonsNormal` = 4 monsters, missing from Q1). False positive at encounter-name level.
+
+Honest framing: drift-gate has been theatrical for ~4 waves. Wave-49 ships the FIRST real upstream-vs-Q1 drift-gate (Turn-0 only); Phase-2 multi-turn at wave-50.
+
+#### §4 R12 / R16 reconciliation
+
+**R12 (mid-combat behavioral drift undetected) stays DISCHARGED at design level.** The gate exists; the mitigation surface design is correct. R12's discharge condition (per wave-45 §2.5) was "all 5 red-team validations pass on the designed gate" — that condition was met; the design was sound.
+
+**R16 (drift-gate false-negative class)** is the coverage-depth refinement of R12. PARTIAL_MITIGATED post-wave-49: Phase-1 Turn-0 catches per-slot INIT class; per-turn behavioral class deferred to Phase-2.
+
+R16 FULL DISCHARGE gates on wave-50 close (Phase-2 multi-turn capture + full red-team including LouseProgenitor PounceDamage=17 catch at turn 3).
+
+#### §5 Wave-50 forward path
+
+Per project-lead's wave-49 surface response (2026-05-22) — 4-substream Phase-2 wave:
+
+| Sub-stream | Scope | Estimate |
+|---|---|---|
+| wave-50/A.1 | LocalContext + RunManager.ActionQueueSynchronizer + NRunMusicController headless mock layer | ~8-12h |
+| wave-50/A.2 | Extend UpstreamDriver multi-turn reflection via mock layer | ~4-6h |
+| wave-50/A.3 | Re-capture multi-turn goldens; MidCombatComparer redesign for per-turn | ~3-4h |
+| wave-50/A.4 | Full red-team: LouseProgenitor PounceDamage=17 MUST FIRE diagnostic at turn 3+ | ~2-3h |
+
+Total ~16-24h engineer-time. Standard cohort dispatch; Q1 lead orchestrates post wave-49 close. R16 DISCHARGES on wave-50 close.
+
+#### §6 R15 sub-class addition — encounter-wrapper-shape divergence (Exoskeleton case)
+
+Wave-49/E6 first-corpus run surfaced 2 R15 substrate-divergence findings beyond the wave-48 audit's 6 STUBs:
+
+- NibbitsWeak: Q1 Nibbit INIT = `BUTT_MOVE` (Nibbit class default); upstream INIT_MOVE conditional resolves `IsAlone=true` → `HISS_MOVE`. Q1 port is wrong.
+- NibbitsNormal slot 0 (front): Q1 explicit override = `SLICE_MOVE`; upstream INIT_MOVE conditional resolves `IsFront=true` → `HISS_MOVE`. Q1 port is wrong.
+
+Q1-lead Exoskeleton-targeted audit (post-A.4) further surfaced:
+
+- **Encounter-wrapper-shape divergence:** Q1's `ExoskeletonsNormal` = 3 Exoskeletons (`first/second/third`) — actually matches upstream `ExoskeletonsWeak.cs` shape. Upstream's actual `ExoskeletonsNormal.cs` = 4 Exoskeletons (`first/second/third/fourth`); fourth-slot INIT is RNG-driven (SKITTER or MANDIBLES). Q1 has the 3-monster encounter mis-labeled; missing the 4-monster encounter entirely.
+
+**New R15 sub-class: encounter-wrapper-shape divergence.** Distinct from monster-class-shape (wave-48 audit lens) and per-move-table (E6 INIT routing). Wave-51+ substrate-fix cluster sequence addresses (rename Q1 "ExoskeletonsNormal" → "ExoskeletonsWeak"; add true 4-monster `ExoskeletonsNormal` with `fourth` slot RNG INIT).
+
+#### §7 R17 acknowledgment
+
+The wider Godot binding finding (Amendment §1 above) is the 4th instance of plan-time-assumption-correction this run:
+1. Wave-43 architect plan claimed 5-pattern Q4 DSL table; pre-execution Q4-architect survey corrected to 12-pattern.
+2. Wave-43 architect plan claimed `CombatState.GodotTimerTask` was option-B blocker; Q1 lead verified file-line-correct but wider binding unsurfaced.
+3. Wave-47b implementation surfaced HauntedShip 1-move ATTACK stub vs upstream 4-move RandomBranchState (via Step-0a 4-file read, not plan-time read).
+4. Wave-49 implementation surfaced wider Godot binding (LocalContext / RunManager / NRunMusicController) + Exoskeleton encounter-wrapper-shape divergence.
+
+R17 (architect-plan factual-claim drift pattern) registered at wave-49 mid-flight surface. Project-lead-side mitigation deferred to ADR-036 (survey-before-execution discipline ratification).
+
+**Origin of this amendment.** Wave-49 close (2026-05-22). Phase-1 mitigation accepted as honest partial coverage; Phase-2 mock-layer work scoped for wave-50 dispatch. ADR-035 Amendment #1 retains its correctness at the file-line level it claimed; Amendment #2 covers the wider Godot binding that Amendment #1's skip-list did not enumerate.
