@@ -20,6 +20,6 @@ public sealed record XCostApplyPowerAction(
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)
     {
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

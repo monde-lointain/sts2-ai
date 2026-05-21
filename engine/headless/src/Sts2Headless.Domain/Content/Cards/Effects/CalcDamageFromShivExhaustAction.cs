@@ -19,6 +19,6 @@ public sealed record CalcDamageFromShivExhaustAction(int BasePerShiv, string? Ta
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)
     {
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

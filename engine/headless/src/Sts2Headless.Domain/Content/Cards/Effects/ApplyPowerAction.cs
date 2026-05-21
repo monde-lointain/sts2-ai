@@ -16,6 +16,6 @@ public sealed record ApplyPowerAction(string PowerId, int Amount, string? Target
     public void Execute(ExecutionContext ctx)
     {
         // No-op until S6 wires combat-state mutations.
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

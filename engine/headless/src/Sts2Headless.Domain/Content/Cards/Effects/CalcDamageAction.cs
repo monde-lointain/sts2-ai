@@ -32,6 +32,6 @@ public sealed record CalcDamageAction(int BaseDamage, string MultiplierKey, stri
     public void Execute(ExecutionContext ctx)
     {
         // No-op until S6 wires combat-state mutations.
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

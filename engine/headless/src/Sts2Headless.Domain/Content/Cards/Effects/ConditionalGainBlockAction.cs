@@ -13,6 +13,6 @@ public sealed record ConditionalGainBlockAction(int Amount) : IAction
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)
     {
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

@@ -16,6 +16,6 @@ public sealed record XCostDamageAction(int DamagePerHit, string? Target) : IActi
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)
     {
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

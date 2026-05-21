@@ -14,6 +14,6 @@ public sealed record GainBlockAction(int Amount) : IAction
     public void Execute(ExecutionContext ctx)
     {
         // No-op until S6 wires combat-state mutations.
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }

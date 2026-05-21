@@ -24,6 +24,6 @@ public sealed record DealDamageAction(int Amount, string? Target) : IAction
     public void Execute(ExecutionContext ctx)
     {
         // No-op until S6 wires combat-state mutations.
-        EffectObserver.Record(this);
+        ctx.Observer?.Record(this);
     }
 }
