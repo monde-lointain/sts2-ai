@@ -110,16 +110,9 @@ public sealed class CombatContext : ICombatContext
         _state = state;
     }
 
-    // Wave A: plumbing is now required at ctor; fully wired from construction.
-    // Forwarding shims below preserve source-compat for engine callers until
-    // commit 3 rewrites them to use ctx.Plumbing.* directly.
+    // Wave A: plumbing is required at ctor; fully wired from construction.
+    // All engine consumers access hook plumbing via ctx.Plumbing.{Hooks,Queue,Context}.
     internal HookPlumbing Plumbing { get; }
-
-    // --- Temporary forwarding shims (removed in commit 4) ---
-    internal Sts2Headless.Domain.Actions.HookRegistry HookRegistryHandle => Plumbing.Hooks;
-    internal Sts2Headless.Domain.Actions.ActionQueue ActionQueueHandle => Plumbing.Queue;
-    internal Sts2Headless.Domain.Actions.ExecutionContext ExecutionContextHandle =>
-        Plumbing.Context;
 
     public void DealDamage(uint targetId, int amount, uint sourceId)
     {

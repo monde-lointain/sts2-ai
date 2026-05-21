@@ -37,7 +37,7 @@ namespace Sts2Headless.Tests.Domain.Combat;
 /// <para>
 /// Test-seam access: the persistent <see cref="HookRegistry"/> attached to a
 /// live <see cref="CombatContext"/> is internal (see
-/// <c>CombatContext.HookRegistryHandle</c>). Tests reach it via reflection
+/// <c>CombatContext.Plumbing.Hooks</c>). Tests reach it via reflection
 /// rather than adding an <c>InternalsVisibleTo</c> assembly attribute — the
 /// reflection touch is confined to this file and follows the pattern in
 /// <c>MonsterScriptTests</c>.
@@ -157,18 +157,24 @@ public sealed class CombatEngineDeathHookTests
 
     /// <summary>
     /// Reach the persistent <see cref="HookRegistry"/> attached to a started
-    /// <see cref="CombatContext"/> (see <c>StartCombat → AttachHookPlumbing</c>).
+    /// <see cref="CombatContext"/> (see <c>CombatContext.Plumbing.Hooks</c>).
     /// Internal property accessed via reflection — confined to this test file
     /// per the file's class-level docstring.
     /// </summary>
     private static HookRegistry GetPersistentRegistry(CombatContext ctx)
     {
-        PropertyInfo? prop = typeof(CombatContext).GetProperty(
-            "HookRegistryHandle",
+        // Wave A: plumbing now lives at CombatContext.Plumbing; access registry
+        // via the Plumbing property then its Hooks field.
+        PropertyInfo? plumbingProp = typeof(CombatContext).GetProperty(
+            "Plumbing",
             BindingFlags.Instance | BindingFlags.NonPublic
         );
-        Assert.NotNull(prop);
-        var registry = (HookRegistry?)prop!.GetValue(ctx);
+        Assert.NotNull(plumbingProp);
+        object? plumbing = plumbingProp!.GetValue(ctx);
+        Assert.NotNull(plumbing);
+        PropertyInfo? hooksProp = plumbing!.GetType().GetProperty("Hooks");
+        Assert.NotNull(hooksProp);
+        var registry = (HookRegistry?)hooksProp!.GetValue(plumbing);
         Assert.NotNull(registry);
         return registry!;
     }

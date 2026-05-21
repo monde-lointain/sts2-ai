@@ -8,7 +8,7 @@ namespace Sts2Headless.Domain.Combat;
 /// The trio of <see cref="HookRegistry"/>, <see cref="ActionQueue"/>, and
 /// <see cref="DomainExecutionContext"/> shared by the engine across one combat's
 /// turn lifecycle. Immutable; passed at ctor time so <see cref="CombatContext"/>
-/// is fully constructed (no post-construction <c>AttachHookPlumbing</c>).
+/// is fully constructed on construction.
 /// </summary>
 public sealed record HookPlumbing(HookRegistry Hooks, ActionQueue Queue, DomainExecutionContext Context)
 {
