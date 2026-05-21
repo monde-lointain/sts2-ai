@@ -1,2 +1,2 @@
-{"step":0,"event":"combat_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"b782d722b65f05c4d6f211efef465be13c8b1d49d2d1dc6bf49321b590fcdfbe"}
-{"step":1,"event":"turn_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"b782d722b65f05c4d6f211efef465be13c8b1d49d2d1dc6bf49321b590fcdfbe"}
+{"step":0,"event":"combat_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"91435166b96daef861a49be8998060c69042e82326b3503500e2197237599326"}
+{"step":1,"event":"turn_start","turn":1,"phase":"PlayerActing","player_hp":70,"energy":3,"enemy_count":2,"hash":"91435166b96daef861a49be8998060c69042e82326b3503500e2197237599326"}

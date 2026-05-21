@@ -2,6 +2,6 @@
   "seed": 1337,
   "encounter_id": "FossilStalkerElite",
   "role": "Seed variation \u2014 tests Q2 seed-dependence for same encounter.",
-  "expected_canonical_hash_hex": "31d58be7a67197f5b2c59ee1aaea17ed975c015c48a9c9204b2fa52ef90c13c4",
-  "blob_bytes": 5628
+  "expected_canonical_hash_hex": "d0a0bcaa1ae544fae5d863639a694d39d1f322fe286675173d75f49ffabf5423",
+  "blob_bytes": 5632
 }

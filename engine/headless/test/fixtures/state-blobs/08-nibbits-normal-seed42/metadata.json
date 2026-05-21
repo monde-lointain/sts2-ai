@@ -2,6 +2,6 @@
   "seed": 42,
   "encounter_id": "NibbitsNormal",
   "role": "Wave-24/K.q1 Nibbit port. 2-Nibbit encounter; slot-0=SLICE_MOVE, slot-1=HISS_MOVE. Q2 K.\u03B3_setup prerequisite.",
-  "expected_canonical_hash_hex": "324156fe4c21deaea39ad2b6bace0a5dc75750ac7f68ec0e7a1599548f3ce628",
-  "blob_bytes": 5680
+  "expected_canonical_hash_hex": "268ab0c6f261f854793b9aa82f561a9590df5df2137c48e3ae9c6de83aa9918f",
+  "blob_bytes": 5713
 }

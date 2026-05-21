@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Sts2Headless.Domain.Combat;
 using Sts2Headless.Domain.Content.Models;
 using Sts2Headless.Domain.Content.Powers;
 
@@ -108,6 +109,7 @@ public sealed class Exoskeleton : MonsterModel
                 new(MandiblesMoveId, Intent.Attack(MandiblesDamage), FollowUpMoveId: EnrageMoveId),
                 // ENRAGE → RAND (50/50 between SKITTER and MANDIBLES). After ENRAGE
                 // both moves are eligible since neither was just played.
+                // ENRAGE: Buff + Strength +2 to self.
                 new(
                     EnrageMoveId,
                     Intent.Buff(),
@@ -117,6 +119,9 @@ public sealed class Exoskeleton : MonsterModel
                             new RngBranchChoice(SkitterMoveId, 1f),
                             new RngBranchChoice(MandiblesMoveId, 1f)
                         )
+                    ),
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, EnrageStrengthAmount)
                     )
                 ),
             },
@@ -181,7 +186,15 @@ public sealed class LouseProgenitor : MonsterModel
             new MonsterMove[]
             {
                 new(WebCannonMoveId, Intent.Attack(WebDamage), FollowUpMoveId: CurlAndGrowMoveId),
-                new(CurlAndGrowMoveId, Intent.Defend(CurlBlock), FollowUpMoveId: PounceMoveId),
+                // CURL_AND_GROW: Defend (14 block from Intent.Defend) + Strength +5 to self.
+                new(
+                    CurlAndGrowMoveId,
+                    Intent.Defend(CurlBlock),
+                    FollowUpMoveId: PounceMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, CurlStrength)
+                    )
+                ),
                 new(PounceMoveId, Intent.Attack(PounceDamage), FollowUpMoveId: WebCannonMoveId),
             },
             initialMoveId: WebCannonMoveId,
@@ -260,12 +273,24 @@ public sealed class GremlinMerc : MonsterModel
                     Intent.MultiAttack(GimmeDamage, GimmeHitCount),
                     FollowUpMoveId: DoubleSmashMoveId
                 ),
+                // DOUBLE_SMASH: 6×2 multi-attack + Weak 2 to player.
                 new(
                     DoubleSmashMoveId,
                     Intent.MultiAttack(DoubleSmashDamage, DoubleSmashHitCount),
-                    FollowUpMoveId: HeheMoveId
+                    FollowUpMoveId: HeheMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Weak, DoubleSmashWeakStacks, PowerTarget.Player)
+                    )
                 ),
-                new(HeheMoveId, Intent.Attack(HeheDamage), FollowUpMoveId: GimmeMoveId),
+                // HEHE: 8×1 attack + Strength +2 to self.
+                new(
+                    HeheMoveId,
+                    Intent.Attack(HeheDamage),
+                    FollowUpMoveId: GimmeMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, HeheStrengthStacks)
+                    )
+                ),
             },
             initialMoveId: GimmeMoveId,
             // Upstream AfterAddedToRoom: SurprisePower(1) on self + ThieveryPower(20) on player.
@@ -351,7 +376,15 @@ public sealed class CeremonialBeast : MonsterModel
             {
                 // Pre-stun loop (upstream's initial state machine).
                 new(StampMoveId, Intent.Buff(), FollowUpMoveId: PlowMoveId),
-                new(PlowMoveId, Intent.Attack(PlowDamage), FollowUpMoveId: PlowMoveId),
+                // PLOW: 18 attack + Strength +2 to self.
+                new(
+                    PlowMoveId,
+                    Intent.Attack(PlowDamage),
+                    FollowUpMoveId: PlowMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, PlowStrengthGain)
+                    )
+                ),
                 // Post-stun cycle (reached only if Plow is stripped — deferred wiring).
                 new(BeastCryMoveId, Intent.Debuff(), FollowUpMoveId: StompMoveId),
                 new(StompMoveId, Intent.Attack(StompDamage), FollowUpMoveId: CrushMoveId),
@@ -820,7 +853,18 @@ public sealed class LagavulinMatriarch : MonsterModel
                     FollowUpMoveId: Slash2MoveId
                 ),
                 new(Slash2MoveId, Intent.Attack(Slash2Damage), FollowUpMoveId: SoulSiphonMoveId),
-                new(SoulSiphonMoveId, Intent.Debuff(), FollowUpMoveId: SlashMoveId),
+                // SOUL_SIPHON: Debuff + Strength +2 to self + StrengthDown 2 to player +
+                // DexterityLoss 2 to player. "StatsDown" upstream = StrengthDown + DexterityLoss.
+                new(
+                    SoulSiphonMoveId,
+                    Intent.Debuff(),
+                    FollowUpMoveId: SlashMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, SoulSiphonStrengthSelf),
+                        new MonsterIntentPower(PowerIds.StrengthDown, SoulSiphonStatsDownPlayer, PowerTarget.Player),
+                        new MonsterIntentPower(PowerIds.DexterityLoss, SoulSiphonStatsDownPlayer, PowerTarget.Player)
+                    )
+                ),
             },
             initialMoveId: SleepMoveId,
             // Upstream AfterAddedToRoom: Plating(12) + Asleep(3). Asleep elided per
@@ -921,16 +965,31 @@ public sealed class Crusher : MonsterModel
                     Intent.Attack(EnlargingStrikeDamage),
                     FollowUpMoveId: BugStingMoveId
                 ),
+                // BUG_STING: 6×2 multi-attack + Weak 2 to player + Frail 2 to player.
                 new(
                     BugStingMoveId,
                     Intent.MultiAttack(BugStingDamage, BugStingRepeats),
-                    FollowUpMoveId: AdaptMoveId
+                    FollowUpMoveId: AdaptMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Weak, BugStingWeakStacks, PowerTarget.Player),
+                        new MonsterIntentPower(PowerIds.Frail, BugStingFrailStacks, PowerTarget.Player)
+                    )
                 ),
-                new(AdaptMoveId, Intent.Buff(), FollowUpMoveId: GuardedStrikeMoveId),
+                // ADAPT: Buff + Strength +2 to self.
+                new(
+                    AdaptMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: GuardedStrikeMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, AdaptStrengthGain)
+                    )
+                ),
+                // GUARDED_STRIKE: 12 attack + self-block +18 (AttackDefend hybrid).
                 new(
                     GuardedStrikeMoveId,
                     Intent.Attack(GuardedStrikeDamage),
-                    FollowUpMoveId: ThrashMoveId
+                    FollowUpMoveId: ThrashMoveId,
+                    SelfBlockGain: GuardedStrikeBlock
                 ),
             },
             initialMoveId: ThrashMoveId,
@@ -994,7 +1053,15 @@ public sealed class Rocket : MonsterModel
                     Intent.Attack(PrecisionBeamDamage),
                     FollowUpMoveId: ChargeUpMoveId
                 ),
-                new(ChargeUpMoveId, Intent.Buff(), FollowUpMoveId: LaserMoveId),
+                // CHARGE_UP: Buff + Strength +2 to self.
+                new(
+                    ChargeUpMoveId,
+                    Intent.Buff(),
+                    FollowUpMoveId: LaserMoveId,
+                    AppliesPowers: ImmutableList.Create(
+                        new MonsterIntentPower(PowerIds.Strength, ChargeUpStrengthGain)
+                    )
+                ),
                 new(LaserMoveId, Intent.Attack(LaserDamage), FollowUpMoveId: RechargeMoveId),
                 new(RechargeMoveId, Intent.Buff(), FollowUpMoveId: TargetingReticleMoveId),
             },

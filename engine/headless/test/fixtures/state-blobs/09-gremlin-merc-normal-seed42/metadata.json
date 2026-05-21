@@ -2,6 +2,6 @@
   "seed": 42,
   "encounter_id": "GremlinMercNormal",
   "role": "Wave-26/Q1.E GremlinMerc port. Single-GremlinMerc at turn-1 with SurprisePower(1) \u002B ThieveryPower(20) spawn powers; SneakyGremlin \u002B FatGremlin substrate ratified Phase-1-3 of wave. Q2 M.\u03B3 prerequisite.",
-  "expected_canonical_hash_hex": "817bd40dc9d009c9db0b85375af6775eac1c46a36c1b79a0f78e7eac0a8a5e17",
-  "blob_bytes": 5676
+  "expected_canonical_hash_hex": "57404cad0d7999f52fc19bba916254989bd78ca54037cce641ae75de23a39054",
+  "blob_bytes": 5680
 }
