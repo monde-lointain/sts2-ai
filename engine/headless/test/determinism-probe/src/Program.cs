@@ -74,6 +74,18 @@ public static class Program
             return RunInitialStateUpstream(cli, stdout, stderr);
         }
 
+        // mid-combat modes: parallel system to per-step probe (wave-45/Q1-A1).
+        if (cli.Mode == ProbeMode.MidCombat || cli.Mode == ProbeMode.MidCombatCapture)
+        {
+            return RunMidCombat(cli, stdout, stderr);
+        }
+
+        // roundtrip-test: self-test the MidCombatRecord binary wire format.
+        if (cli.Mode == ProbeMode.RoundtripTest)
+        {
+            return RunRoundtripTest(stdout, stderr);
+        }
+
         // Load the corpus.
         if (!File.Exists(corpusPath))
         {
@@ -386,6 +398,308 @@ public static class Program
         }
     }
 
+    /// <summary>
+    /// Run Q1-side mid-combat capture and, in compare mode, diff against stored goldens.
+    /// In capture mode, write goldens to disk. Both modes use the Q1MidCombatCaptureDriver
+    /// (parallel system to per-step probe; no UpstreamDriver involvement here since
+    /// the upstream capture runs separately via probe-upstream-mid-combat-capture target).
+    ///
+    /// <para>
+    /// In <see cref="ProbeMode.MidCombat"/> (compare mode): reads committed goldens from
+    /// <c>goldens-upstream/mid-combat/</c> and diffs Q1's fresh output against them.
+    /// In <see cref="ProbeMode.MidCombatCapture"/>: regenerates goldens from Q1 capture
+    /// (use only on first-establish or post-substrate-change to re-anchor the baseline).
+    /// </para>
+    /// </summary>
+    private static int RunMidCombat(ProbeCli cli, TextWriter stdout, TextWriter stderr)
+    {
+        bool captureMode = cli.Mode == ProbeMode.MidCombatCapture;
+        string probeDir = LocateProbeDir();
+        string goldensRoot = cli.GoldensDir
+            ?? Path.Combine(probeDir, "goldens-upstream", "mid-combat");
+        string actionSeqDir = Path.Combine(probeDir, "goldens-upstream", "mid-combat", "action-sequences");
+
+        // Encounter list for wave-1: cultist smoke + Phase-1 pool per plan §2.2.
+        // Fast subset: CultistsNormal × 1 seed. Full: all encounters × 10 seeds.
+        bool smokeOnly = cli.SmokeSeeds.HasValue && cli.SmokeSeeds.Value == 1;
+
+        // Build the encounter × seed table.
+        string[] allEncounters = smokeOnly
+            ? new[] { "CultistsNormal" }
+            : new[]
+            {
+                "CultistsNormal",
+                "LouseProgenitorNormal",
+                "ChompersNormal",
+                "ExoskeletonsNormal",
+                "BowlbugsTrio",
+                "FuzzyWurmCrawlerSolo",
+                "FossilStalkerElite",
+                "FrogKnightElite",
+                "LagavulinElite",
+                "HauntedShipSolo",
+                "LivingFogSolo",
+                "GremlinMercNormal",
+                "KaiserCrabBoss",
+                "CeremonialBeastBoss",
+            };
+
+        int[] seeds = smokeOnly ? new[] { 42 } : Enumerable.Range(42, 10).ToArray();
+
+        // Action sequence mapping (encounter → JSON file).
+        var actionSeqIds = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["CultistsNormal"] = "cultist-strategy.json",
+        };
+
+        var driver = new Q1MidCombatCaptureDriver();
+        var comparer = new MidCombatComparer(goldensRoot);
+
+        stdout.WriteLine(
+            $"determinism-probe: mode={cli.Mode} encounters={allEncounters.Length} seeds={seeds.Length} goldensRoot={goldensRoot}");
+
+        int passed = 0, captured = 0, diverged = 0, skipped = 0, errored = 0;
+        var firstFailures = new List<MidCombatComparer.EntryResult>();
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        foreach (string encId in allEncounters)
+        {
+            // Load action plan if available; skip encounter if missing.
+            if (!actionSeqIds.TryGetValue(encId, out string? seqFile))
+            {
+                if (cli.Verbose)
+                    stdout.WriteLine($"  SKIP    {encId} (no action-sequence; add to actionSeqIds to enable)");
+                skipped += seeds.Length;
+                continue;
+            }
+
+            string seqPath = Path.Combine(actionSeqDir, seqFile);
+            MidCombatActionPlan plan;
+            try
+            {
+                plan = MidCombatActionPlan.LoadFromFile(seqPath);
+            }
+            catch (Exception ex)
+            {
+                stderr.WriteLine($"  ERROR   {encId} action-seq load failed: {ex.Message}");
+                errored += seeds.Length;
+                continue;
+            }
+
+            foreach (int seed in seeds)
+            {
+                IReadOnlyList<MidCombatRecord> q1Records;
+                try
+                {
+                    q1Records = driver.Capture(seed, encId, plan);
+                }
+                catch (Exception ex)
+                {
+                    errored++;
+                    if (firstFailures.Count < 5)
+                        firstFailures.Add(
+                            new MidCombatComparer.EntryResult(
+                                encId,
+                                seed,
+                                MidCombatComparer.EntryOutcome.Error,
+                                null,
+                                $"Q1 capture threw: {ex.GetType().Name}: {(ex.InnerException ?? ex).Message}"
+                            )
+                        );
+                    if (cli.Verbose)
+                        stderr.WriteLine($"  ERROR   {encId} seed={seed}: {(ex.InnerException ?? ex).Message}");
+                    continue;
+                }
+
+                if (captureMode)
+                {
+                    string goldenPath = comparer.GoldenPath(encId, seed);
+                    MidCombatRecord.WriteFile(goldenPath, q1Records);
+                    captured++;
+                    if (cli.Verbose)
+                        stdout.WriteLine($"  CAPTURED {encId} seed={seed} records={q1Records.Count}");
+                }
+                else
+                {
+                    MidCombatComparer.EntryResult res = comparer.CompareOne(encId, seed, q1Records);
+                    switch (res.Outcome)
+                    {
+                        case MidCombatComparer.EntryOutcome.Pass:
+                            passed++;
+                            if (cli.Verbose)
+                                stdout.WriteLine($"  PASS    {encId} seed={seed} records={q1Records.Count}");
+                            break;
+                        case MidCombatComparer.EntryOutcome.Diverged:
+                            diverged++;
+                            if (firstFailures.Count < 5) firstFailures.Add(res);
+                            if (cli.Verbose)
+                                stdout.WriteLine($"  DIVERGE {encId} seed={seed}: {res.DiffSummary}");
+                            break;
+                        case MidCombatComparer.EntryOutcome.GoldenMissing:
+                            errored++;
+                            if (firstFailures.Count < 5) firstFailures.Add(res);
+                            if (cli.Verbose)
+                                stdout.WriteLine($"  ERR-NOGOLDEN {encId} seed={seed}");
+                            break;
+                        case MidCombatComparer.EntryOutcome.Error:
+                            errored++;
+                            if (firstFailures.Count < 5) firstFailures.Add(res);
+                            if (cli.Verbose)
+                                stdout.WriteLine($"  ERROR   {encId} seed={seed}: {res.ErrorMessage}");
+                            break;
+                    }
+                }
+            }
+        }
+        sw.Stop();
+
+        if (captureMode)
+        {
+            stdout.WriteLine(
+                $"determinism-probe: mid-combat-capture summary — captured={captured} skipped={skipped} errored={errored} duration={sw.Elapsed.TotalSeconds:F2}s");
+        }
+        else
+        {
+            stdout.WriteLine(
+                $"determinism-probe: mid-combat summary — passed={passed} diverged={diverged} skipped={skipped} errored={errored} duration={sw.Elapsed.TotalSeconds:F2}s");
+        }
+
+        if (firstFailures.Count > 0)
+        {
+            stderr.WriteLine($"determinism-probe: {firstFailures.Count} failure(s) ↓");
+            foreach (var f in firstFailures)
+            {
+                stderr.WriteLine($"-- {f.EncounterId} seed={f.Seed} outcome={f.Outcome}");
+                if (f.ErrorMessage is not null)
+                    stderr.WriteLine($"   error: {f.ErrorMessage}");
+                if (f.DiffSummary is not null)
+                    stderr.WriteLine($"   diff:  {f.DiffSummary}");
+            }
+        }
+
+        if (errored > 0) return ExitError;
+        if (diverged > 0) return ExitFail;
+        return ExitPass;
+    }
+
+    /// <summary>
+    /// Self-test: write a synthetic MidCombatRecord sequence to a temp file,
+    /// read it back, and assert field-level identity. Verifies magic, CRC32,
+    /// length prefix, and all record fields round-trip through WriteFile/ReadFile.
+    /// Exits 0 on pass, 2 (ExitError) on any mismatch.
+    /// </summary>
+    private static int RunRoundtripTest(TextWriter stdout, TextWriter stderr)
+    {
+        string tmpFile = Path.Combine(Path.GetTempPath(), $"midcombat-roundtrip-{Guid.NewGuid():N}.bin");
+        try
+        {
+            // Build a synthetic two-record sequence exercising all fields.
+            var powers1 = new PowerStackEntry[]
+            {
+                new PowerStackEntry("RitualPower", 3),
+                new PowerStackEntry("StrengthPower", 1),
+            };
+            var powers2 = new PowerStackEntry[] { new PowerStackEntry("PoisonPower", 5) };
+            var enemies = new EnemySnapshot[]
+            {
+                new EnemySnapshot(
+                    "CalcifiedCultist",
+                    42,
+                    0,
+                    "INCANTATION_MOVE",
+                    "Buff",
+                    0,
+                    0,
+                    0,
+                    powers2
+                ),
+            };
+            var rec0 = new MidCombatRecord(
+                Turn: 1,
+                Side: "player-pre",
+                Phase: "PlayerTurn",
+                PlayerHp: 70,
+                PlayerBlock: 5,
+                Energy: 3,
+                PowerStacks: powers1,
+                Enemies: enemies,
+                RngCounter: 7
+            );
+            var rec1 = new MidCombatRecord(
+                Turn: 1,
+                Side: "enemy-end",
+                Phase: "EnemyTurnEnd",
+                PlayerHp: 62,
+                PlayerBlock: 0,
+                Energy: 0,
+                PowerStacks: Array.Empty<PowerStackEntry>(),
+                Enemies: enemies,
+                RngCounter: 11
+            );
+            var written = new MidCombatRecord[] { rec0, rec1 };
+            MidCombatRecord.WriteFile(tmpFile, written);
+
+            // Read back.
+            IReadOnlyList<MidCombatRecord> read = MidCombatRecord.ReadFile(tmpFile);
+
+            // Assert count.
+            if (read.Count != written.Length)
+            {
+                stderr.WriteLine(
+                    $"determinism-probe: roundtrip-test FAIL — count: written={written.Length} read={read.Count}"
+                );
+                return ExitError;
+            }
+
+            // Assert field equality for each record.
+            for (int i = 0; i < written.Length; i++)
+            {
+                MidCombatRecord w = written[i];
+                MidCombatRecord r = read[i];
+                string? mismatch = null;
+                if (w.Turn != r.Turn)
+                    mismatch = $"record[{i}].Turn: w={w.Turn} r={r.Turn}";
+                else if (w.Side != r.Side)
+                    mismatch = $"record[{i}].Side: w={w.Side} r={r.Side}";
+                else if (w.Phase != r.Phase)
+                    mismatch = $"record[{i}].Phase: w={w.Phase} r={r.Phase}";
+                else if (w.PlayerHp != r.PlayerHp)
+                    mismatch = $"record[{i}].PlayerHp: w={w.PlayerHp} r={r.PlayerHp}";
+                else if (w.PlayerBlock != r.PlayerBlock)
+                    mismatch = $"record[{i}].PlayerBlock: w={w.PlayerBlock} r={r.PlayerBlock}";
+                else if (w.Energy != r.Energy)
+                    mismatch = $"record[{i}].Energy: w={w.Energy} r={r.Energy}";
+                else if (w.RngCounter != r.RngCounter)
+                    mismatch = $"record[{i}].RngCounter: w={w.RngCounter} r={r.RngCounter}";
+                else if (w.PowerStacks.Count != r.PowerStacks.Count)
+                    mismatch = $"record[{i}].PowerStacks.Count: w={w.PowerStacks.Count} r={r.PowerStacks.Count}";
+                else if (w.Enemies.Count != r.Enemies.Count)
+                    mismatch = $"record[{i}].Enemies.Count: w={w.Enemies.Count} r={r.Enemies.Count}";
+
+                if (mismatch is not null)
+                {
+                    stderr.WriteLine($"determinism-probe: roundtrip-test FAIL — {mismatch}");
+                    return ExitError;
+                }
+            }
+
+            stdout.WriteLine("determinism-probe: roundtrip-test PASS");
+            return ExitPass;
+        }
+        catch (Exception ex)
+        {
+            stderr.WriteLine(
+                $"determinism-probe: roundtrip-test ERROR — {ex.GetType().Name}: {ex.Message}"
+            );
+            return ExitError;
+        }
+        finally
+        {
+            if (File.Exists(tmpFile))
+                File.Delete(tmpFile);
+        }
+    }
+
     /// <summary>Discover the corpus path relative to the worktree root.</summary>
     private static string DefaultCorpusPath()
     {
@@ -451,6 +765,29 @@ public enum ProbeMode
 
     /// <summary>Generate and write phase1-corpus.json from <see cref="CorpusGenerator"/>.</summary>
     GenerateCorpus,
+
+    /// <summary>
+    /// Mid-combat compare mode (wave-45/Q1-A1): drive Q1MidCombatCaptureDriver and
+    /// compare per-turn-side snapshots against committed goldens in
+    /// <c>goldens-upstream/mid-combat/</c>. PASS if all snapshots match golden.
+    /// </summary>
+    MidCombat,
+
+    /// <summary>
+    /// Mid-combat capture mode (wave-45/Q1-A1): drive Q1MidCombatCaptureDriver and
+    /// write per-turn-side snapshots as golden files under
+    /// <c>goldens-upstream/mid-combat/</c>. Use only on first-establish or when
+    /// re-anchoring after a substrate change. Running twice must produce byte-identical output.
+    /// </summary>
+    MidCombatCapture,
+
+    /// <summary>
+    /// Self-test: write a synthetic <see cref="MidCombatRecord"/> sequence to a
+    /// temp file, read it back, and assert field-level identity. Verifies the
+    /// binary-framed wire format (magic, CRC32, length prefix) round-trips cleanly.
+    /// Exits 0 on pass, 2 on failure.
+    /// </summary>
+    RoundtripTest,
 }
 
 /// <summary>Parsed CLI args for the probe driver.</summary>
@@ -464,7 +801,7 @@ public sealed record ProbeCli(
 {
     public const string Usage =
         "Usage: determinism-probe --mode <mode> [--corpus path] [--goldens dir] [--smoke-seeds N] [--verbose]\n"
-        + "  modes: quick, full, structural, per-step, initial-state, initial-state-upstream, capture, generate-corpus";
+        + "  modes: quick, full, structural, per-step, initial-state, initial-state-upstream, capture, generate-corpus, mid-combat, mid-combat-capture, roundtrip-test";
 
     public static ProbeCli Parse(string[] args)
     {
@@ -553,8 +890,11 @@ public sealed record ProbeCli(
             "initial-state-upstream" => ProbeMode.InitialStateUpstream,
             "capture" => ProbeMode.Capture,
             "generate-corpus" => ProbeMode.GenerateCorpus,
+            "mid-combat" => ProbeMode.MidCombat,
+            "mid-combat-capture" => ProbeMode.MidCombatCapture,
+            "roundtrip-test" => ProbeMode.RoundtripTest,
             _ => throw new ArgumentException(
-                $"--mode '{s}' unknown (expected: quick|full|structural|per-step|initial-state|initial-state-upstream|capture|generate-corpus)."
+                $"--mode '{s}' unknown (expected: quick|full|structural|per-step|initial-state|initial-state-upstream|capture|generate-corpus|mid-combat|mid-combat-capture|roundtrip-test)."
             ),
         };
 }

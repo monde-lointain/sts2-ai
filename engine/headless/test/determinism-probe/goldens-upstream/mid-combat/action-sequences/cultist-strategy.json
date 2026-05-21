@@ -1,0 +1,22 @@
+{
+  "encounter": "CultistsNormal",
+  "version": 1,
+  "derivation": "Hand-authored representative cultist strategy. NOT oracle-derived — Q2 (engine/cpp/) does not currently emit principal-variation output (see Q1-lead's wave-45 plan G2 finding). Future hardening wave may add a Q2-side PV emitter; until then, this is a representative sequence that exercises Strike + Defend mechanics deterministically. Strategy: Strike enemies on turns 1-3 to kill Cultists before Ritual stacks compound; Defend on final action each turn for block.",
+  "actions": [
+    {"turn": 1, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 1, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 1, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 2, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 2, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 1, "end_turn": false},
+    {"turn": 2, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 3, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 3, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 3, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 4, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 4, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 4, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true},
+    {"turn": 5, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 5, "side": "player", "card_id": "StrikeSilent", "target_creature_id": 2, "end_turn": false},
+    {"turn": 5, "side": "player", "card_id": "DefendSilent", "target_creature_id": null, "end_turn": true}
+  ]
+}

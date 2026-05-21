@@ -55,7 +55,13 @@ public static class EncounterCatalog
         IReadOnlyList<string?> Slots,
         PlanKind Kind,
         string? Reason,
-        string? UpstreamTypeName = null
+        string? UpstreamTypeName = null,
+        /// <summary>
+        /// Optional filename (relative to <c>goldens-upstream/mid-combat/action-sequences/</c>)
+        /// of the scripted action sequence used by the mid-combat probe (wave-45/Q1-A1 §2.2).
+        /// Null for encounters that have no mid-combat golden yet.
+        /// </summary>
+        string? MidCombatActionSequenceId = null
     );
 
     /// <summary>
@@ -104,7 +110,8 @@ public static class EncounterCatalog
                 new[] { "CalcifiedCultist", "DampCultist" },
                 new string?[] { null, null },
                 PlanKind.UpstreamComparable,
-                null
+                null,
+                MidCombatActionSequenceId: "cultist-strategy.json"
             ),
             "ChompersNormal" => new EncounterPlan(
                 id,

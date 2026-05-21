@@ -5,6 +5,7 @@ export PATH := /usr/bin:$(PATH)
 .PHONY: build test tripwire ci clean probe probe-quick probe-full probe-build probe-capture probe-generate-corpus probe-upstream-capture probe-upstream-initial-state gc-measurement consolehost-smoke
 .PHONY: tools-restore format format-check format-whitespace format-whitespace-check inspect quality
 .PHONY: drift-gates-ci drift-gates-build
+.PHONY: probe-upstream-mid-combat-smoke probe-upstream-mid-combat probe-upstream-mid-combat-capture q1-ci
 
 # Canonical Steam install path for sts2.dll on the Q1 build host. Caller can
 # override via STS2_DLL=... (e.g. on a teammate's machine).
@@ -191,3 +192,41 @@ drift-gates-ci: drift-gates-build
 	  --logger "console;verbosity=normal" \
 	  -- RunConfiguration.FailFast=false; true
 	@echo "==> drift-gates-ci done (exit 0 suppressed; check output above for FAIL/SKIP)"
+
+# === wave-45/Q1-A1 mid-combat behavioral probe ================================
+#
+# Three targets per G6 baked decision:
+#   probe-upstream-mid-combat-smoke   — cultist × 1 seed, ~8s; in q1-ci
+#   probe-upstream-mid-combat         — full Phase-1 encounter set × 10 seeds
+#   probe-upstream-mid-combat-capture — regenerates goldens (pin advance / first-establish only)
+#
+# These targets use the Q1-side MidCombatCaptureDriver (parallel system; does NOT
+# require Steam sts2.dll — unlike probe-upstream-capture). Golden files live at
+# test/determinism-probe/goldens-upstream/mid-combat/{encounter}/{seed}.bin.
+
+probe-upstream-mid-combat-smoke: probe-build
+	@echo "==> probe-upstream-mid-combat-smoke (CultistsNormal × 1 seed; ~8s)"
+	dotnet run --project test/determinism-probe -c Debug --no-build -- \
+	  --mode mid-combat --smoke-seeds 1
+
+probe-upstream-mid-combat: probe-build
+	@echo "==> probe-upstream-mid-combat (Phase-1 pool × 10 seeds; nightly/pre-merge)"
+	dotnet run --project test/determinism-probe -c Debug --no-build -- \
+	  --mode mid-combat
+
+probe-upstream-mid-combat-capture: probe-build
+	@echo "==> probe-upstream-mid-combat-capture (regenerate goldens; run twice to verify idempotence)"
+	dotnet run --project test/determinism-probe -c Debug --no-build -- \
+	  --mode mid-combat-capture
+
+# === q1-ci: fast CI gate (≤60s budget) =======================================
+#
+# Runs: dotnet build + dotnet test + mid-combat smoke (cultist × 1 seed).
+# probe-upstream-initial-state (≥5min) is NOT in q1-ci; run separately pre-merge.
+
+q1-ci: probe-build
+	@echo "==> q1-ci: build + test + mid-combat smoke"
+	dotnet build sts2-headless.sln -c Debug
+	dotnet test sts2-headless.sln -c Debug --no-build
+	$(MAKE) probe-upstream-mid-combat-smoke
+	@echo "==> q1-ci green"
