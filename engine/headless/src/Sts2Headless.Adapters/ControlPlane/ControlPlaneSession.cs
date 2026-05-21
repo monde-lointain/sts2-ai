@@ -113,6 +113,7 @@ public sealed class ControlPlaneSession
         // and routes `ctx.Rng` to `.Shuffle` internally. The session's RunRng
         // is the source of truth; the legacy `_rng` field is kept as the
         // back-compat handle that mirrors `RunRng.Shuffle`.
+        // Wave A: snapshot/restore context — no live hook subscribers needed.
         _context = new CombatContext(
             state,
             RunRng,
@@ -121,7 +122,8 @@ public sealed class ControlPlaneSession
             Relics,
             Powers,
             Monsters,
-            Encounters
+            Encounters,
+            HookPlumbing.Empty(Clock, RunRng.Shuffle)
         );
     }
 
@@ -166,7 +168,8 @@ public sealed class ControlPlaneSession
             Relics,
             Powers,
             Monsters,
-            Encounters
+            Encounters,
+            HookPlumbing.Empty(Clock, RunRng.Shuffle)
         );
     }
 
@@ -195,7 +198,8 @@ public sealed class ControlPlaneSession
             Relics,
             Powers,
             Monsters,
-            Encounters
+            Encounters,
+            HookPlumbing.Empty(Clock, RunRng.Shuffle)
         );
     }
 }

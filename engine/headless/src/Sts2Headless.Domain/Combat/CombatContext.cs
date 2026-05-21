@@ -58,6 +58,14 @@ public sealed class CombatContext : ICombatContext
     /// <c>CardPileCmd.Shuffle</c> line 795). Bucket-aware consumers route
     /// through <see cref="RunRng"/> directly.
     /// </para>
+    ///
+    /// <para>
+    /// <b>Wave A:</b> <paramref name="plumbing"/> is required at construction
+    /// time so the context is fully wired. Pass <see cref="HookPlumbing.Empty"/>
+    /// for snapshot / inspection contexts (ControlPlaneSession state restore,
+    /// hand-constructed unit tests) — see <see cref="HookPlumbing.Empty"/> for
+    /// constraints on using the resulting context.
+    /// </para>
     /// </summary>
     public CombatContext(
         CombatState initialState,
@@ -67,7 +75,8 @@ public sealed class CombatContext : ICombatContext
         RelicCatalog relics,
         PowerCatalog powers,
         MonsterCatalog monsters,
-        EncounterCatalog encounters
+        EncounterCatalog encounters,
+        HookPlumbing plumbing
     )
     {
         ArgumentNullException.ThrowIfNull(initialState);
@@ -78,6 +87,7 @@ public sealed class CombatContext : ICombatContext
         ArgumentNullException.ThrowIfNull(powers);
         ArgumentNullException.ThrowIfNull(monsters);
         ArgumentNullException.ThrowIfNull(encounters);
+        ArgumentNullException.ThrowIfNull(plumbing);
 
         _state = initialState;
         RunRng = runRng;
@@ -91,6 +101,7 @@ public sealed class CombatContext : ICombatContext
         Powers = powers;
         Monsters = monsters;
         Encounters = encounters;
+        Plumbing = plumbing;
     }
 
     public void SetState(CombatState state)
@@ -99,27 +110,16 @@ public sealed class CombatContext : ICombatContext
         _state = state;
     }
 
-    // B.1-gamma-T4: persistent hook plumbing so the engine can fire mid-combat
-    // hooks (AfterPlayerTurnStart, BeforeTurnEnd, etc.) without rebuilding the
-    // relic subscriptions per phase.
-    internal Sts2Headless.Domain.Actions.HookRegistry? HookRegistryHandle { get; private set; }
-    internal Sts2Headless.Domain.Actions.ActionQueue? ActionQueueHandle { get; private set; }
-    internal Sts2Headless.Domain.Actions.ExecutionContext? ExecutionContextHandle
-    {
-        get;
-        private set;
-    }
+    // Wave A: plumbing is now required at ctor; fully wired from construction.
+    // Forwarding shims below preserve source-compat for engine callers until
+    // commit 3 rewrites them to use ctx.Plumbing.* directly.
+    internal HookPlumbing Plumbing { get; }
 
-    internal void AttachHookPlumbing(
-        Sts2Headless.Domain.Actions.HookRegistry hooks,
-        Sts2Headless.Domain.Actions.ActionQueue queue,
-        Sts2Headless.Domain.Actions.ExecutionContext execCtx
-    )
-    {
-        HookRegistryHandle = hooks;
-        ActionQueueHandle = queue;
-        ExecutionContextHandle = execCtx;
-    }
+    // --- Temporary forwarding shims (removed in commit 4) ---
+    internal Sts2Headless.Domain.Actions.HookRegistry HookRegistryHandle => Plumbing.Hooks;
+    internal Sts2Headless.Domain.Actions.ActionQueue ActionQueueHandle => Plumbing.Queue;
+    internal Sts2Headless.Domain.Actions.ExecutionContext ExecutionContextHandle =>
+        Plumbing.Context;
 
     public void DealDamage(uint targetId, int amount, uint sourceId)
     {
@@ -195,28 +195,24 @@ public sealed class CombatContext : ICombatContext
 
         // Wave-26/Q1.D OnApplied bridge: notify the power model that a new
         // PowerInstance was attached to a creature so it can subscribe hooks.
-        // Only fires when the hook plumbing is attached (StartCombat path);
-        // hand-constructed CombatContext in legacy tests has null plumbing → no-op.
-        // The base OnApplied default is a no-op for existing powers (they do not
-        // override SubscribeHooks), so BitIdenticalRoundtripTests are unaffected.
-        if (HookRegistryHandle is not null)
+        // Wave A: Plumbing is now always present; empty plumbing (snapshot
+        // contexts) has a real-but-inert HookRegistry with zero subscribers —
+        // OnApplied/SubscribeHooks are no-ops on pure-metadata powers regardless.
+        if (existingIndex < 0)
         {
-            if (existingIndex < 0)
-            {
-                // Fresh attachment: call OnApplied which creates the handle slot
-                // and calls SubscribeHooks (no-op for pure-metadata powers).
-                model.OnApplied(targetId, HookRegistryHandle);
+            // Fresh attachment: call OnApplied which creates the handle slot
+            // and calls SubscribeHooks (no-op for pure-metadata powers).
+            model.OnApplied(targetId, Plumbing.Hooks);
 
-                // ICombatAwarePowerModel opt-in: powers that need ICombatContext
-                // (e.g., SurprisePower) subscribe their hooks here with the live ctx.
-                if (model is ICombatAwarePowerModel cam)
-                    cam.OnAppliedWithContext(targetId, HookRegistryHandle, this);
-            }
-            // Note: re-application (existingIndex >= 0) does NOT call OnApplied again.
-            // Per PowerModel doc: "double-apply without a prior remove is a caller bug".
-            // For Counter-stack re-applications, the subscription from the first
-            // OnApplied call is still active — no re-subscribe needed.
+            // ICombatAwarePowerModel opt-in: powers that need ICombatContext
+            // (e.g., SurprisePower) subscribe their hooks here with the live ctx.
+            if (model is ICombatAwarePowerModel cam)
+                cam.OnAppliedWithContext(targetId, Plumbing.Hooks, this);
         }
+        // Note: re-application (existingIndex >= 0) does NOT call OnApplied again.
+        // Per PowerModel doc: "double-apply without a prior remove is a caller bug".
+        // For Counter-stack re-applications, the subscription from the first
+        // OnApplied call is still active — no re-subscribe needed.
     }
 
     public void Heal(uint targetId, int amount)

@@ -50,15 +50,18 @@ public sealed class CombatContextTests
 
     private static CombatContext NewContext(CombatState state, RunRngSet? runRng = null)
     {
+        var rng = runRng ?? new RunRngSet("seed-0");
+        var clock = new LogicalClock();
         return new CombatContext(
             initialState: state,
-            runRng: runRng ?? new RunRngSet("seed-0"),
-            clock: new LogicalClock(),
+            runRng: rng,
+            clock: clock,
             cards: SmokeContent.BuildCardCatalog(),
             relics: SmokeContent.BuildRelicCatalog(),
             powers: SmokeContent.BuildPowerCatalog(),
             monsters: SmokeContent.BuildMonsterCatalog(),
-            encounters: SmokeContent.BuildEncounterCatalog()
+            encounters: SmokeContent.BuildEncounterCatalog(),
+            plumbing: HookPlumbing.Empty(clock, rng.Shuffle)
         );
     }
 

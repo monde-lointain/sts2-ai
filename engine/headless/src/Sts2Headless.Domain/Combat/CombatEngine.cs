@@ -148,6 +148,14 @@ public static class CombatEngine
             MonsterRngCounter: 0
         );
 
+        // Wave A: build plumbing first so CombatContext is fully wired at ctor.
+        // The Rng the plumbing uses is runRng.Shuffle — same bucket the context
+        // exposes via ctx.Rng; both wire through the same IRngSource object.
+        var hookRegistry = new HookRegistry();
+        var actionQueue = new ActionQueue();
+        var execCtx = new DomainExecutionContext(clock, runRng.Shuffle, hookRegistry, actionQueue);
+        var plumbing = new HookPlumbing(hookRegistry, actionQueue, execCtx);
+
         var ctx = new CombatContext(
             initial,
             runRng,
@@ -156,12 +164,10 @@ public static class CombatEngine
             catalogs.Relics,
             catalogs.Powers,
             catalogs.Monsters,
-            catalogs.Encounters
+            catalogs.Encounters,
+            plumbing
         );
 
-        var hookRegistry = new HookRegistry();
-        var actionQueue = new ActionQueue();
-        var execCtx = new DomainExecutionContext(clock, ctx.Rng, hookRegistry, actionQueue);
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: null,
@@ -185,10 +191,6 @@ public static class CombatEngine
             dispatch,
             player.BaseEnergyPerTurn
         );
-
-        // Stash the hook plumbing onto the context so subsequent turn/phase
-        // boundaries can fire hooks without reconstructing the wiring.
-        ctx.AttachHookPlumbing(hookRegistry, actionQueue, execCtx);
 
         return ctx;
     }

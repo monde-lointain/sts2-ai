@@ -60,17 +60,22 @@ public sealed class AddEnemiesApiTests
             MonsterRngCounter: 0
         );
 
-    private static CombatContext NewContext(CombatState state) =>
-        new(
+    private static CombatContext NewContext(CombatState state)
+    {
+        var rng = new RunRngSet("test-seed");
+        var clock = new LogicalClock();
+        return new CombatContext(
             initialState: state,
-            runRng: new RunRngSet("test-seed"),
-            clock: new LogicalClock(),
+            runRng: rng,
+            clock: clock,
             cards: SmokeContent.BuildCardCatalog(),
             relics: SmokeContent.BuildRelicCatalog(),
             powers: SmokeContent.BuildPowerCatalog(),
             monsters: SmokeContent.BuildMonsterCatalog(),
-            encounters: SmokeContent.BuildEncounterCatalog()
+            encounters: SmokeContent.BuildEncounterCatalog(),
+            plumbing: HookPlumbing.Empty(clock, rng.Shuffle)
         );
+    }
 
     // =========================================================================
     // CombatState.WithSpawnedEnemies — base state API
