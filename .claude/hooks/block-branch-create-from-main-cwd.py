@@ -17,18 +17,22 @@ Empirical context:
 - Wave-46: 0/4 cohorts violated (R7-mitigation language in dispatch briefs alone).
 - Wave-47a: 0/1 cohort violated (R7-mitigation language unchanged).
 
-Hook behavior — Phase 3a (warn-only):
-  - Fires stderr warning when:
+Hook behavior — Phase 3b (BLOCK; ratcheted 2026-05-22 wave-49/B):
+  - BLOCKS (exit 2) with stderr message when:
       (a) tool is Bash
       (b) command matches write-to-branch-state regex (NOT `branch -d/--list/...`)
       (c) CWD is the main repo path (NOT a worktree subdirectory)
       (d) target branch != `main`
       (e) STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH env var is NOT set to "1"
-  - Exit 0 (warn-only); does NOT block the operation.
+  - Exit 2 (BLOCK); orchestrators bypass via STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH=1 prefix.
 
-Phase 3b (block; ratchet after ≥2 wave cycles green with zero recurrence):
-  - Same predicate, exit 2 (block) instead of 0.
-  - Promotion gated on project-lead approval + ADR-024 promotion-window precedent.
+Phase 3a (warn-only; superseded 2026-05-22):
+  - Original install (wave-47b/A 2026-05-21) ran exit 0 + stderr warning.
+  - Ratcheted to Phase 3b after 4 consecutive clean wave cycles
+    (wave-46, wave-47a, wave-47b, wave-48) per project-lead approval
+    at wave-48 close response (2026-05-22) + ADR-024 promotion-window precedent.
+
+R7 discharge: 1 more clean wave cycle in Phase 3b (block-mode active).
 
 Carve-out env var: `STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH=1`
   Orchestrators (Q1 lead, project-lead) set this when doing legitimate
@@ -133,9 +137,11 @@ def main() -> int:
         if target == "main":
             return 0
 
-        # Warn-mode (Phase 3a) — stderr + exit 0.
+        # Phase 3b — BLOCK (project-lead-approved wave-49/B 2026-05-22).
+        # Ratcheted from Phase 3a (warn-only) after 4 consecutive clean wave cycles
+        # (wave-46, wave-47a, wave-47b, wave-48). Stderr + exit 2 (BLOCK).
         sys.stderr.write(
-            "WARN by block-branch-create-from-main-cwd hook: "
+            "BLOCKED by block-branch-create-from-main-cwd hook: "
             "git branch-switch invoked from main repo CWD targeting non-main branch.\n"
             f"  CWD: {cwd}\n"
             f"  command: {command}\n"
@@ -144,10 +150,10 @@ def main() -> int:
             "their own worktrees should rename branches via `git branch -m` from the "
             "worktree CWD, not by checkout/switch/branch-create from main CWD. "
             f"Set {ALLOW_ENV_VAR}=1 to bypass for orchestrator-intentional switches.\n"
-            "Phase 3a: warn-only; does not block. "
-            "Phase 3b ratchet (block) after ≥2 wave cycles of no R7 recurrence.\n"
+            "Phase 3b: BLOCKS the operation (exit 2). "
+            "R7 discharge gate: 1 more clean wave cycle in Phase 3b.\n"
         )
-        return 0
+        return 2
 
     except Exception as exc:  # fail-OPEN per V5
         sys.stderr.write(

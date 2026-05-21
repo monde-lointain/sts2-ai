@@ -30,14 +30,16 @@ The hook fills the gap left by existing worktree-discipline hooks (`block-merge-
 4. Target branch != `main` (best-effort heuristic regex).
 5. Env var `STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH` is NOT set to `1` (orchestrator carve-out).
 
-**Behavior — Phase 3a (warn-only, initial install state):**
-- Stderr warning with: CWD, command, best-effort target branch, memory-rule reference, carve-out instructions.
-- Exit 0 (does NOT block).
+**Behavior — Phase 3b (BLOCK; ratcheted 2026-05-22 wave-49/B):**
+- Stderr message with: CWD, command, best-effort target branch, memory-rule reference, carve-out instructions.
+- Exit 2 (BLOCKS the operation). Orchestrators bypass via `STS2_ALLOW_MAIN_CWD_BRANCH_SWITCH=1` prefix for legitimate workflows.
 
-**Phase 3b (ratchet — block):**
-- Same predicate, exit 2 (block).
-- Promotion gated on ≥2 wave cycles green with zero R7 recurrence + project-lead approval.
-- ADR-024 promotion-window convention precedent (warn → block after observable adoption period).
+**Phase 3a (warn-only, original install state — superseded 2026-05-22):**
+- Original wave-47b/A install (2026-05-21) ran exit 0 + stderr warning only.
+- Ratcheted to Phase 3b after 4 consecutive clean wave cycles (wave-46, wave-47a, wave-47b, wave-48) per project-lead approval at wave-48 close response.
+- ADR-024 promotion-window convention precedent honored.
+
+**R7 discharge gate:** 1 more clean wave cycle in Phase 3b (block-mode active). If block-mode causes legitimate orchestrator workflow friction (forgot env-var carve-out), surface to project lead — ratchet back to Phase 3a if needed.
 
 ## 3 — Self-test (3 scenarios)
 
