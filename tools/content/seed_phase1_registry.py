@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+LEGACY: pre-ADR-035 stub-DSL seeder. Output shape (phase1-silent.0 /
+schema {0,0}) is incompatible with the current committed registry shape
+(phase1-silent.1 / {0,1}) produced by tools/content/extract_card_dsl.py
+--reseed. This script is retained only for historical reference; it MUST
+NOT be invoked from any gate target. Slated for removal in a future
+cleanup wave. For upstream-pin-advance reseeds, use
+`tools/content/extract_card_dsl.py --reseed`.
+"""
+
 from __future__ import annotations
 
 import hashlib

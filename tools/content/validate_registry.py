@@ -59,8 +59,8 @@ def validate(registry: dict) -> list[str]:
 def validate_schema_version(registry: dict) -> list[str]:
     errors: list[str] = []
     minor = _schema_minor(registry)
-    if minor not in (0, 1):
-        errors.append(f"schema_version.minor must be 0 or 1, got {minor}")
+    if minor != 1:
+        errors.append(f"schema_version.minor must be 1 (post-wave-45/B.1 baseline); got {minor}")
     return errors
 
 

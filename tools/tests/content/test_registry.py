@@ -5,8 +5,6 @@ import sys
 import unittest
 import warnings
 
-import pytest
-
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "tools" / "content"))
 
@@ -106,8 +104,7 @@ def test_dsl_coherence():
     """
     registry = load_registry()
     minor = _schema_minor(registry)
-    if minor == 0:
-        pytest.skip("pre-Q4-B1 fan-in; DSL is stub")
+    assert minor == 1, f"schema_version.minor must be 1 (post-wave-45/B.1 baseline); got {minor}"
     errors = validate_registry.validate(registry)
     coherence_errors = [e for e in errors if e.startswith("dsl_coherence:")]
     assert coherence_errors == [], coherence_errors
@@ -120,8 +117,7 @@ def test_no_stub_dsl():
     """
     registry = load_registry()
     minor = _schema_minor(registry)
-    if minor == 0:
-        pytest.skip("pre-fan-in; stub ops expected at minor==0")
+    assert minor == 1, f"schema_version.minor must be 1 (post-wave-45/B.1 baseline); got {minor}"
     stub_count = sum(
         1
         for record in registry.get("card_dsl", [])
@@ -138,8 +134,7 @@ def test_unknown_count_bounded():
     """
     registry = load_registry()
     minor = _schema_minor(registry)
-    if minor == 0:
-        pytest.skip("pre-fan-in; unknown count not meaningful at minor==0")
+    assert minor == 1, f"schema_version.minor must be 1 (post-wave-45/B.1 baseline); got {minor}"
     unknown_count = sum(
         1
         for record in registry.get("card_dsl", [])
@@ -158,8 +153,7 @@ def test_coverage_field_present():
     """
     registry = load_registry()
     minor = _schema_minor(registry)
-    if minor == 0:
-        pytest.skip("pre-fan-in; coverage field not expected at minor==0")
+    assert minor == 1, f"schema_version.minor must be 1 (post-wave-45/B.1 baseline); got {minor}"
     missing = [
         record.get("token", "<unknown>")
         for record in registry.get("card_dsl", [])

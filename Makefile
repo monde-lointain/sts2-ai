@@ -1,4 +1,4 @@
-.PHONY: help build test q2-ci run clean distclean reconfig q1-ci q3-ci q10-ci schema-codegen schema-test services-smoke content-registry content-test phase0-gate
+.PHONY: help build test q2-ci run clean distclean reconfig q1-ci q3-ci q10-ci schema-codegen schema-test services-smoke content-test phase0-gate
 .PHONY: format format-patch
 .PHONY: cppcheck cppcheck-xml scan-build tidy
 .PHONY: complexity complexity-full complexity-xml
@@ -180,10 +180,7 @@ schema-test: schema-codegen
 services-smoke:
 	@$(VENV)/bin/python pipeline/tests/smoke_services.py
 
-content-registry:
-	@$(VENV)/bin/python tools/content/seed_phase1_registry.py
-
-content-test: content-registry
+content-test:
 	@$(VENV)/bin/python -m unittest tools.tests.content.test_registry
 
 phase0-gate: test q1-ci schema-test services-smoke content-test q3-ci q10-ci
