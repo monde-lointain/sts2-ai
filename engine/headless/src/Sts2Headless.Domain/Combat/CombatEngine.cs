@@ -619,11 +619,11 @@ public static class CombatEngine
         // BEFORE OnPlay drains so multi-target / multi-hit cards that kill
         // several enemies in one drain fire AfterDeath once per id.
         ImmutableArray<uint> aliveBeforePlay = SnapshotAliveIds(ctx);
-
-        using (EffectObserver.Attach(out List<IAction> log))
         {
-            cardModel.OnPlay(execCtx, targetString);
-            actionQueue.Drain(execCtx);
+            var obs = ListActionObserver.Create(out List<IAction> log);
+            var execCtxObs = new DomainExecutionContext(execCtx.Clock, execCtx.Rng, execCtx.Hooks, execCtx.Queue, obs);
+            cardModel.OnPlay(execCtxObs, targetString);
+            actionQueue.Drain(execCtxObs);
             foreach (IAction action in log)
             {
                 EffectDispatcher.Apply(action, ctx, dispatch);
@@ -951,16 +951,22 @@ public static class CombatEngine
             bool nowDead = c is null || c.IsDead;
             if (!nowDead)
                 continue;
-
-            using (EffectObserver.Attach(out List<IAction> log))
             {
+                var obs = ListActionObserver.Create(out List<IAction> log);
+                var execCtxObs = new DomainExecutionContext(
+                    ctx.Plumbing.Context.Clock,
+                    ctx.Plumbing.Context.Rng,
+                    ctx.Plumbing.Context.Hooks,
+                    ctx.Plumbing.Context.Queue,
+                    obs
+                );
                 var hookCtx = new HookContext(
-                    ctx.Plumbing.Context,
+                    execCtxObs,
                     dyingCreatureId: id,
                     deferCombatEnd: null
                 );
                 ctx.Plumbing.Hooks.Fire(HookType.AfterDeath, hookCtx);
-                ctx.Plumbing.Queue.Drain(ctx.Plumbing.Context);
+                ctx.Plumbing.Queue.Drain(execCtxObs);
                 foreach (IAction action in log)
                 {
                     EffectDispatcher.Apply(action, ctx, dispatch);
@@ -980,10 +986,11 @@ public static class CombatEngine
         EffectDispatcher.DispatchContext dispatch
     )
     {
-        using (EffectObserver.Attach(out List<IAction> log))
         {
-            hookRegistry.Fire(type, new HookContext(execCtx));
-            actionQueue.Drain(execCtx);
+            var obs = ListActionObserver.Create(out List<IAction> log);
+            var execCtxObs = new DomainExecutionContext(execCtx.Clock, execCtx.Rng, execCtx.Hooks, execCtx.Queue, obs);
+            hookRegistry.Fire(type, new HookContext(execCtxObs));
+            actionQueue.Drain(execCtxObs);
             foreach (IAction action in log)
             {
                 EffectDispatcher.Apply(action, combatCtx, dispatch);
