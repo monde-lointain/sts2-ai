@@ -13,7 +13,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 public sealed record XCostApplyPowerAction(
     string PowerId,
     int SignMultiplier,
-    string? Target,
+    Sts2Headless.Domain.Combat.CreatureId? Target,
     int Bonus = 0
 ) : IAction
 {

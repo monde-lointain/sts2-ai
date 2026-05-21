@@ -23,7 +23,7 @@ public sealed class Malaise : CardModel
     /// <inheritdoc />
     public override bool IsXCost => true;
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // -X StrengthPower stacks (Q1 uses StrengthDown power id for the

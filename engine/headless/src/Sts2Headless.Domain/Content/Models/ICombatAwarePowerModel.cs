@@ -45,7 +45,7 @@ public interface ICombatAwarePowerModel
     /// <param name="registry">Active hook registry for this combat.</param>
     /// <param name="combatCtx">Live combat context (AddEnemies, ApplyPower, etc.).</param>
     void OnAppliedWithContext(
-        uint ownerCreatureId,
+        CreatureId ownerCreatureId,
         HookRegistry registry,
         ICombatContext combatCtx
     );

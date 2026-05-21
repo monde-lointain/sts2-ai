@@ -18,7 +18,7 @@ public sealed class Haze : CardModel
     public Haze()
         : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.AllEnemies) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new ApplyPowerAction(PowerIds.Poison, BasePoison, target));

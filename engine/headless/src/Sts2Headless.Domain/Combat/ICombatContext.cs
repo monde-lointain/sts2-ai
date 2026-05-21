@@ -96,12 +96,12 @@ public interface ICombatContext
     /// modifiers are applied by the engine before this call (so callers pass
     /// post-modifier damage).
     /// </summary>
-    void DealDamage(uint targetId, int amount, uint sourceId);
+    void DealDamage(CreatureId targetId, int amount, CreatureId sourceId);
 
     /// <summary>
     /// Grant <paramref name="amount"/> block to <paramref name="targetId"/>.
     /// </summary>
-    void GainBlock(uint targetId, int amount);
+    void GainBlock(CreatureId targetId, int amount);
 
     /// <summary>
     /// Apply <paramref name="stacks"/> of <paramref name="powerId"/> to
@@ -109,13 +109,13 @@ public interface ICombatContext
     /// stacks combine per the power's <c>StackType</c>. Source ID is recorded
     /// on the new <see cref="PowerInstance"/>.
     /// </summary>
-    void ApplyPower(uint targetId, string powerId, int stacks, uint sourceId);
+    void ApplyPower(CreatureId targetId, string powerId, int stacks, CreatureId sourceId);
 
     /// <summary>
     /// Heal <paramref name="amount"/> HP on <paramref name="targetId"/>, clamped
     /// at their <c>MaxHp</c>.
     /// </summary>
-    void Heal(uint targetId, int amount);
+    void Heal(CreatureId targetId, int amount);
 
     /// <summary>Draw <paramref name="count"/> cards into hand.</summary>
     void DrawCards(int count);

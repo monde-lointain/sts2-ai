@@ -25,7 +25,7 @@ public sealed class KnifeTrap : CardModel
     public KnifeTrap()
         : base(CanonicalId, 2, CardType.Skill, CardRarity.Rare, TargetType.AnyEnemy) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new CalcDamageFromShivExhaustAction(DamagePerShiv, target));

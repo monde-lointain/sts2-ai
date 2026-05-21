@@ -13,5 +13,5 @@ public sealed class Slimed : CardModel
     public Slimed()
         : base(CanonicalId, 1, CardType.Status, CardRarity.Status, TargetType.None) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target) { }
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target) { }
 }

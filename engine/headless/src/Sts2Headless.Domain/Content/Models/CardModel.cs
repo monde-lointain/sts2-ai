@@ -113,7 +113,8 @@ public abstract class CardModel : ICardModel
     /// <param name="ctx">Active execution context.</param>
     /// <param name="target">
     /// Optional target id (null for self-target / random-target / no-target cards).
-    /// String for now; S6 may replace with a richer creature reference.
+    /// Typed <see cref="Sts2Headless.Domain.Combat.CreatureId"/> (wave-42 typification);
+    /// action implementations resolve this against the dispatch context.
     /// </param>
-    public abstract void OnPlay(ExecutionContext ctx, string? target);
+    public abstract void OnPlay(ExecutionContext ctx, Sts2Headless.Domain.Combat.CreatureId? target);
 }

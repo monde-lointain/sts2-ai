@@ -18,7 +18,7 @@ public sealed class BulletTime : CardModel
     public BulletTime()
         : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Modify-hand-cost is a hook-only effect; smoke records nothing (intentional).

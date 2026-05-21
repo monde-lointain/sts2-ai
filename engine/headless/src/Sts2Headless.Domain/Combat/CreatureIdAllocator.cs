@@ -37,11 +37,11 @@ public sealed class CreatureIdAllocator
         ArgumentNullException.ThrowIfNull(state);
 
         // Start above the highest id currently in the state.
-        uint maxId = state.Player.Id;
+        uint maxId = state.Player.Id.Value;
         for (int i = 0; i < state.Enemies.Count; i++)
         {
-            if (state.Enemies[i].Id > maxId)
-                maxId = state.Enemies[i].Id;
+            if (state.Enemies[i].Id.Value > maxId)
+                maxId = state.Enemies[i].Id.Value;
         }
         _next = maxId + 1;
     }
@@ -50,5 +50,5 @@ public sealed class CreatureIdAllocator
     /// Mint the next unique creature id. Ids are allocated monotonically; each
     /// call returns a value strictly greater than the previous one.
     /// </summary>
-    public uint Next() => _next++;
+    public CreatureId Next() => new(_next++);
 }

@@ -13,5 +13,5 @@ public sealed class Regret : CardModel
     public Regret()
         : base(CanonicalId, -1, CardType.Curse, CardRarity.Curse, TargetType.None) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target) { }
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target) { }
 }

@@ -18,7 +18,7 @@ public sealed class Tracking : CardModel
     public Tracking()
         : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new ApplyPowerAction(PowerIds.Tracking, 1, null));

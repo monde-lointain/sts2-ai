@@ -18,7 +18,7 @@ public sealed class Shiv : CardModel
 
     protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Shiv);
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new DealDamageAction(Damage, target));

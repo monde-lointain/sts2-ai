@@ -22,12 +22,6 @@ namespace Sts2Headless.Domain.Combat;
 /// </summary>
 public static class CombatEngine
 {
-    /// <summary>Player creature id (always 0 in Phase 1 — single-player).</summary>
-    public const uint PlayerId = 0u;
-
-    /// <summary>First enemy id (allocated sequentially in spawn order).</summary>
-    public const uint FirstEnemyId = 1u;
-
     /// <summary>Upstream <c>CombatManager.baseHandDrawCount</c>.</summary>
     public const int BaseHandDrawCount = 5;
 
@@ -36,6 +30,12 @@ public static class CombatEngine
 
     /// <summary>Upstream Silent max HP (Ascension 0).</summary>
     public const int BaseMaxHpSilent = 70;
+
+    /// <summary>Player creature id (always 0 in Phase 1 — single-player).</summary>
+    public static readonly CreatureId PlayerId = CreatureId.Player;
+
+    /// <summary>First enemy id (allocated sequentially in spawn order).</summary>
+    public static readonly CreatureId FirstEnemyId = CreatureId.FirstEnemy;
 
     /// <inheritdoc cref="CombatStarter.Start"/>
     public static CombatContext StartCombat(
@@ -52,7 +52,7 @@ public static class CombatEngine
         TurnRunner.StartPlayerTurn(ctx);
 
     /// <inheritdoc cref="CardPlayer.PlayCard"/>
-    public static void PlayerPlayCard(CombatContext ctx, uint cardInstanceId, uint? targetEnemyId) =>
+    public static void PlayerPlayCard(CombatContext ctx, uint cardInstanceId, CreatureId? targetEnemyId) =>
         CardPlayer.PlayCard(ctx, cardInstanceId, targetEnemyId);
 
     /// <inheritdoc cref="TurnRunner.EndPlayerTurn"/>

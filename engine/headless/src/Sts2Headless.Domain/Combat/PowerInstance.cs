@@ -33,6 +33,6 @@ namespace Sts2Headless.Domain.Combat;
 public sealed record PowerInstance(
     string ModelId,
     int Stacks,
-    uint SourceCreatureId,
+    CreatureId SourceCreatureId,
     bool JustApplied
 );

@@ -7,6 +7,7 @@
 // the struct itself stays readonly so a `HookContext` value can't be silently
 // reassigned mid-iteration.
 
+using Sts2Headless.Domain.Combat;
 using ExecutionContext = Sts2Headless.Domain.Actions.ExecutionContext;
 
 namespace Sts2Headless.Domain.Actions;
@@ -48,7 +49,7 @@ public readonly struct HookContext
     /// <see cref="HookType.AfterDeath"/> (or the reserved
     /// <see cref="HookType.BeforeDeath"/>). <c>null</c> for non-death hooks.
     /// </summary>
-    public uint? DyingCreatureId { get; }
+    public CreatureId? DyingCreatureId { get; }
 
     /// <summary>
     /// Boolean-aggregation veto flag for
@@ -69,7 +70,7 @@ public readonly struct HookContext
     /// </summary>
     public HookContext(
         ExecutionContext execution,
-        uint? dyingCreatureId = null,
+        CreatureId? dyingCreatureId = null,
         bool[]? deferCombatEnd = null
     )
     {

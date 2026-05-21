@@ -27,7 +27,7 @@ public sealed class Murder : CardModel
     public Murder()
         : base(CanonicalId, 3, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new CalcDamageAction(BaseDamagePerDraw, MultiplierKey, target));

@@ -22,7 +22,7 @@ internal static class CardPlayer
     /// <param name="targetEnemyId">
     /// Id of the chosen target (null for self-target / no-target cards).
     /// </param>
-    internal static void PlayCard(CombatContext ctx, uint cardInstanceId, uint? targetEnemyId)
+    internal static void PlayCard(CombatContext ctx, uint cardInstanceId, CreatureId? targetEnemyId)
     {
         ArgumentNullException.ThrowIfNull(ctx);
         if (ctx.State.Phase != CombatPhase.PlayerActing)
@@ -109,9 +109,6 @@ internal static class CardPlayer
         var hookRegistry = new HookRegistry();
         var actionQueue = new ActionQueue();
         var execCtx = new DomainExecutionContext(ctx.Clock, ctx.Rng, hookRegistry, actionQueue);
-        string? targetString = targetEnemyId?.ToString(
-            System.Globalization.CultureInfo.InvariantCulture
-        );
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: CombatEngine.PlayerId,
             PrimaryTargetId: targetEnemyId,
@@ -122,7 +119,7 @@ internal static class CardPlayer
         // card's effects fan out to AfterDeath subscribers. We snapshot
         // BEFORE OnPlay drains so multi-target / multi-hit cards that kill
         // several enemies in one drain fire AfterDeath once per id.
-        ImmutableArray<uint> aliveBeforePlay = DeathBroadcaster.SnapshotAliveIds(ctx);
+        ImmutableArray<CreatureId> aliveBeforePlay = DeathBroadcaster.SnapshotAliveIds(ctx);
         // Note: card-play uses a fresh per-play HookPlumbing (not ctx.Plumbing)
         // for the OnPlay invocation. We wrap it into a transient HookPlumbing
         // so HookFireSession can be used here as well.
@@ -131,7 +128,7 @@ internal static class CardPlayer
             cardPlumbing,
             dispatch,
             ctx,
-            execCtxObs => cardModel.OnPlay(execCtxObs, targetString)
+            execCtxObs => cardModel.OnPlay(execCtxObs, targetEnemyId)
         );
         // ADR-030 §1 fire-site: announce any deaths caused by this card
         // before the per-turn-attack counter bump and the combat-end check.

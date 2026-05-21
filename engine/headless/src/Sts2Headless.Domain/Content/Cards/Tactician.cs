@@ -17,7 +17,7 @@ public sealed class Tactician : CardModel
     public Tactician()
         : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Sly — energy gained on discard, not on play. Smoke records nothing.

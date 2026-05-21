@@ -14,9 +14,9 @@ internal static class DeathBroadcaster
     /// ascending order. Used as the pre-image for
     /// <see cref="FireAfterDeathForNewDeaths"/>'s set-diff.
     /// </summary>
-    internal static ImmutableArray<uint> SnapshotAliveIds(CombatContext ctx)
+    internal static ImmutableArray<CreatureId> SnapshotAliveIds(CombatContext ctx)
     {
-        var builder = ImmutableArray.CreateBuilder<uint>();
+        var builder = ImmutableArray.CreateBuilder<CreatureId>();
         if (!ctx.State.Player.IsDead)
             builder.Add(ctx.State.Player.Id);
         foreach (Creature enemy in ctx.State.Enemies)
@@ -60,7 +60,7 @@ internal static class DeathBroadcaster
     /// </summary>
     internal static void FireAfterDeathForNewDeaths(
         CombatContext ctx,
-        ImmutableArray<uint> aliveBefore
+        ImmutableArray<CreatureId> aliveBefore
     )
     {
         if (aliveBefore.IsDefaultOrEmpty)
@@ -75,9 +75,9 @@ internal static class DeathBroadcaster
             PrimaryTargetId: null,
             SourceCreatureId: CombatEngine.PlayerId
         );
-        foreach (uint id in aliveBefore)
+        foreach (CreatureId id in aliveBefore)
         {
-            Creature? c = id == CombatEngine.PlayerId
+            Creature? c = id.Equals(CombatEngine.PlayerId)
                 ? ctx.State.Player
                 : ctx.State.FindEnemy(id);
             // A creature that vanished entirely (id no longer in state) is

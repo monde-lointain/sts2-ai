@@ -68,7 +68,7 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
     /// </summary>
     protected override void SubscribeHooks(
         HookRegistry hooks,
-        uint ownerCreatureId,
+        CreatureId ownerCreatureId,
         System.Collections.Generic.List<HookSubscriptionHandle> handleSink
     ) { }
 
@@ -78,7 +78,7 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
     /// handlers that capture <paramref name="combatCtx"/> in their closures.
     /// </summary>
     public void OnAppliedWithContext(
-        uint ownerCreatureId,
+        CreatureId ownerCreatureId,
         HookRegistry registry,
         ICombatContext combatCtx
     )
@@ -101,8 +101,8 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
 
                     // Allocate ids strictly above all current creature ids.
                     var alloc = new CreatureIdAllocator(combatCtx.State);
-                    uint sneakyId = alloc.Next();
-                    uint fatId = alloc.Next();
+                    CreatureId sneakyId = alloc.Next();
+                    CreatureId fatId = alloc.Next();
 
                     var sneakyContent = combatCtx.Monsters.Get(SneakyGremlin.CanonicalId);
                     var sneakyModel = (MonsterModel)sneakyContent;
@@ -146,7 +146,7 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                     );
                 },
                 priority: 0,
-                ownerCreatureId: (ulong)ownerCreatureId
+                ownerCreatureId: ownerCreatureId.Value
             )
         );
 
@@ -165,7 +165,7 @@ public sealed class SurprisePower : PowerModel, ICombatAwarePowerModel
                     }
                 },
                 priority: 0,
-                ownerCreatureId: (ulong)ownerCreatureId
+                ownerCreatureId: ownerCreatureId.Value
             )
         );
     }

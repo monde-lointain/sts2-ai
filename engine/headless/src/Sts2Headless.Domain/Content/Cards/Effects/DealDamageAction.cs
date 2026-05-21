@@ -1,4 +1,5 @@
 using Sts2Headless.Domain.Actions;
+using Sts2Headless.Domain.Combat;
 using ExecutionContext = Sts2Headless.Domain.Actions.ExecutionContext;
 
 namespace Sts2Headless.Domain.Content.Cards.Effects;
@@ -18,7 +19,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// arrive without errors.
 /// </para>
 /// </summary>
-public sealed record DealDamageAction(int Amount, string? Target) : IAction
+public sealed record DealDamageAction(int Amount, CreatureId? Target) : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

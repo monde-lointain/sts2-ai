@@ -23,7 +23,7 @@ public sealed class DefendSilent : CardModel
 
     protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Defend);
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new GainBlockAction(BaseBlock));

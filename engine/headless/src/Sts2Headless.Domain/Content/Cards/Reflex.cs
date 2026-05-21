@@ -18,7 +18,7 @@ public sealed class Reflex : CardModel
     public Reflex()
         : base(CanonicalId, 3, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Sly card — draws on discard, not on play. Smoke records nothing on play.

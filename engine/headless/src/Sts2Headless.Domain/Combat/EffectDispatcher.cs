@@ -29,10 +29,11 @@ namespace Sts2Headless.Domain.Combat;
 /// </para>
 ///
 /// <para>
-/// <b>Targeting:</b> some actions specify a string target (e.g., DealDamage).
-/// The engine resolves the string to a creature id when constructing the
-/// action's dispatch context; <see cref="DispatchContext.PlayerId"/> and
-/// <see cref="DispatchContext.PrimaryTargetId"/> drive the resolution.
+/// <b>Targeting:</b> some actions specify a typed <see cref="CreatureId"/>?
+/// target (e.g., DealDamage). Null target on attack-shape actions resolves to
+/// the player (self-target / no-target semantics); a non-null target resolves
+/// directly to the named creature. The <see cref="DispatchContext"/> carries
+/// the surrounding play context (player id, source id, primary target).
 /// </para>
 /// </summary>
 public static class EffectDispatcher
@@ -40,13 +41,12 @@ public static class EffectDispatcher
     /// <summary>
     /// Per-card-play / per-hook dispatch context. Names a "default target" for
     /// the player (self-target effects) and a "primary enemy" (the card's
-    /// chosen target, if any). String-id targets emitted by S5 actions resolve
-    /// against these.
+    /// chosen target, if any).
     /// </summary>
     public readonly record struct DispatchContext(
-        uint PlayerId,
-        uint? PrimaryTargetId,
-        uint SourceCreatureId
+        CreatureId PlayerId,
+        CreatureId? PrimaryTargetId,
+        CreatureId SourceCreatureId
     );
 
     /// <summary>
@@ -64,7 +64,7 @@ public static class EffectDispatcher
         {
             case DealDamageAction dmg:
             {
-                uint? target = ResolveTarget(dmg.Target, dispatch);
+                CreatureId? target = ResolveTarget(dmg.Target, dispatch);
                 if (target is null)
                     return;
                 int modified = DamageModifier.Modify(
@@ -83,7 +83,7 @@ public static class EffectDispatcher
 
             case ApplyPowerAction pwr:
             {
-                uint? target = ResolveTarget(pwr.Target, dispatch);
+                CreatureId? target = ResolveTarget(pwr.Target, dispatch);
                 if (target is null)
                     return;
                 ctx.ApplyPower(target.Value, pwr.PowerId, pwr.Amount, dispatch.SourceCreatureId);
@@ -95,13 +95,13 @@ public static class EffectDispatcher
                 // Snapshot enemy ids to avoid mid-iteration list mutation, then
                 // apply to every living enemy in spawn order. Matches upstream's
                 // PowerCmd.Apply(HittableEnemies, ...) shape.
-                var enemyIds = new List<uint>(ctx.State.Enemies.Count);
+                var enemyIds = new List<CreatureId>(ctx.State.Enemies.Count);
                 foreach (Creature e in ctx.State.Enemies)
                 {
                     if (!e.IsDead)
                         enemyIds.Add(e.Id);
                 }
-                foreach (uint eid in enemyIds)
+                foreach (CreatureId eid in enemyIds)
                 {
                     ctx.ApplyPower(eid, allPwr.PowerId, allPwr.Amount, dispatch.SourceCreatureId);
                 }
@@ -113,13 +113,13 @@ public static class EffectDispatcher
                 // Snapshot enemy ids; deal damage in spawn order. Each target's
                 // damage goes through the modifier pipeline independently so
                 // per-target Vulnerable applies per enemy.
-                var enemyIds = new List<uint>(ctx.State.Enemies.Count);
+                var enemyIds = new List<CreatureId>(ctx.State.Enemies.Count);
                 foreach (Creature e in ctx.State.Enemies)
                 {
                     if (!e.IsDead)
                         enemyIds.Add(e.Id);
                 }
-                foreach (uint eid in enemyIds)
+                foreach (CreatureId eid in enemyIds)
                 {
                     int modified = DamageModifier.Modify(
                         ctx.State,
@@ -148,7 +148,7 @@ public static class EffectDispatcher
                 int hits = ctx.State.Trail.LastSpentEnergy;
                 if (hits <= 0)
                     return;
-                uint? target = ResolveTarget(xDmg.Target, dispatch);
+                CreatureId? target = ResolveTarget(xDmg.Target, dispatch);
                 if (target is null)
                     return;
                 for (int i = 0; i < hits; i++)
@@ -178,7 +178,7 @@ public static class EffectDispatcher
                 int total = (x + xPwr.Bonus) * xPwr.SignMultiplier;
                 if (total == 0)
                     return;
-                uint? target = ResolveTarget(xPwr.Target, dispatch);
+                CreatureId? target = ResolveTarget(xPwr.Target, dispatch);
                 if (target is null)
                     return;
                 ctx.ApplyPower(target.Value, xPwr.PowerId, total, dispatch.SourceCreatureId);
@@ -192,7 +192,7 @@ public static class EffectDispatcher
                 int raw = shivDmg.BasePerShiv * ctx.State.Trail.ExhaustedShivCount;
                 if (raw <= 0)
                     return;
-                uint? target = ResolveTarget(shivDmg.Target, dispatch);
+                CreatureId? target = ResolveTarget(shivDmg.Target, dispatch);
                 if (target is null)
                     return;
                 int modified = DamageModifier.Modify(
@@ -210,7 +210,7 @@ public static class EffectDispatcher
                 // Stream-B-T4: resolve the formula multiplier against the live
                 // CombatState aggregate, then route through the standard
                 // damage pipeline (Strength / Vulnerable / Weak modifiers).
-                uint? target = ResolveTarget(calcDmg.Target, dispatch);
+                CreatureId? target = ResolveTarget(calcDmg.Target, dispatch);
                 if (target is null)
                     return;
                 int multiplier = ResolveCalcMultiplier(ctx.State, calcDmg.MultiplierKey);
@@ -266,25 +266,25 @@ public static class EffectDispatcher
     }
 
     /// <summary>
-    /// Translate the S5 action's string target (null = self) into a creature
-    /// id. Null target on attack-shape actions in non-self-target cards is
-    /// possible only when no enemy was chosen; we return null and the caller
-    /// no-ops the action.
+    /// Translate the S5 action's typed <see cref="CreatureId"/>? target (null
+    /// = self / no-target) into the resolved creature id. Null resolves to the
+    /// dispatch context's <see cref="DispatchContext.PlayerId"/> (self-target
+    /// semantics for player-issued actions).
+    ///
+    /// <para>
+    /// Wave-42 / ADR-033 removed the non-numeric string fallback that
+    /// previously masked miss-targeting bugs (the smoke set never emitted
+    /// non-numeric ids; the path was dead).
+    /// </para>
     /// </summary>
-    private static uint? ResolveTarget(string? targetString, DispatchContext dispatch)
+    private static CreatureId? ResolveTarget(CreatureId? target, DispatchContext dispatch)
     {
-        if (targetString is null)
+        if (target is null)
         {
             // null = self / no-target. Use player id.
             return dispatch.PlayerId;
         }
-        if (uint.TryParse(targetString, out uint parsedId))
-        {
-            return parsedId;
-        }
-        // Fallback to the dispatch context's primary target if the string is
-        // a non-numeric placeholder (smoke set never emits non-numeric ids).
-        return dispatch.PrimaryTargetId;
+        return target;
     }
 
     /// <summary>

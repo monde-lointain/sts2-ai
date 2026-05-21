@@ -23,7 +23,7 @@ public sealed class DodgeAndRoll : CardModel
     public DodgeAndRoll()
         : base(CanonicalId, cost: 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // S12 will enqueue an additional ApplyPower(BlockNextTurn, BaseBlock) here once

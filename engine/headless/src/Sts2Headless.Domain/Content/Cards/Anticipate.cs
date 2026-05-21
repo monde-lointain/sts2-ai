@@ -18,7 +18,7 @@ public sealed class Anticipate : CardModel
     public Anticipate()
         : base(CanonicalId, 0, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new ApplyPowerAction(PowerIds.Dexterity, BaseDex, null));

@@ -21,7 +21,7 @@ public sealed class LegSweep : CardModel
     public LegSweep()
         : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.AnyEnemy) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new GainBlockAction(BaseBlock));

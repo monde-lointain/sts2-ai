@@ -114,7 +114,7 @@ public sealed class CombatContext : ICombatContext
     // All engine consumers access hook plumbing via ctx.Plumbing.{Hooks,Queue,Context}.
     internal HookPlumbing Plumbing { get; }
 
-    public void DealDamage(uint targetId, int amount, uint sourceId)
+    public void DealDamage(CreatureId targetId, int amount, CreatureId sourceId)
     {
         if (amount <= 0)
             return;
@@ -130,7 +130,7 @@ public sealed class CombatContext : ICombatContext
         _state = WriteCreature(updated);
     }
 
-    public void GainBlock(uint targetId, int amount)
+    public void GainBlock(CreatureId targetId, int amount)
     {
         if (amount <= 0)
             return;
@@ -139,7 +139,7 @@ public sealed class CombatContext : ICombatContext
         _state = WriteCreature(updated);
     }
 
-    public void ApplyPower(uint targetId, string powerId, int stacks, uint sourceId)
+    public void ApplyPower(CreatureId targetId, string powerId, int stacks, CreatureId sourceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(powerId);
         Creature target = ResolveTarget(targetId);
@@ -208,7 +208,7 @@ public sealed class CombatContext : ICombatContext
         // OnApplied call is still active — no re-subscribe needed.
     }
 
-    public void Heal(uint targetId, int amount)
+    public void Heal(CreatureId targetId, int amount)
     {
         if (amount <= 0)
             return;
@@ -295,7 +295,7 @@ public sealed class CombatContext : ICombatContext
     /// Resolve a creature by id — returns the player when <paramref name="targetId"/>
     /// matches the player's id, else searches enemies. Throws when not found.
     /// </summary>
-    private Creature ResolveTarget(uint targetId)
+    private Creature ResolveTarget(CreatureId targetId)
     {
         if (_state.Player.Id == targetId)
             return _state.Player;

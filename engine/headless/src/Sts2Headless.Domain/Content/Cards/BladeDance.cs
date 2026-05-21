@@ -18,7 +18,7 @@ public sealed class BladeDance : CardModel
     public BladeDance()
         : base(CanonicalId, 1, CardType.Skill, CardRarity.Common, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Shiv-creation modelled as draw — S6+ replaces with create-card-in-hand action.

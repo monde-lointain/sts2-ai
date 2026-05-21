@@ -19,7 +19,7 @@ public sealed class NoxiousFumes : CardModel
     public NoxiousFumes()
         : base(CanonicalId, 1, CardType.Power, CardRarity.Uncommon, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Hook-only effect; smoke records nothing.

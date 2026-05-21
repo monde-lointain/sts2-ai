@@ -1,4 +1,5 @@
 using Sts2Headless.Domain.Actions;
+using Sts2Headless.Domain.Combat;
 using ExecutionContext = Sts2Headless.Domain.Actions.ExecutionContext;
 
 namespace Sts2Headless.Domain.Content.Cards.Effects;
@@ -10,7 +11,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// "apply to self" (the playing player). See <see cref="DealDamageAction"/> for why
 /// Execute is a no-op in S5.
 /// </summary>
-public sealed record ApplyPowerAction(string PowerId, int Amount, string? Target) : IAction
+public sealed record ApplyPowerAction(string PowerId, int Amount, CreatureId? Target) : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

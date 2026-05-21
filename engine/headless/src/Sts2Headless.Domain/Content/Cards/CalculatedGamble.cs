@@ -15,7 +15,7 @@ public sealed class CalculatedGamble : CardModel
     public CalculatedGamble()
         : base(CanonicalId, 0, CardType.Skill, CardRarity.Uncommon, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Discard hand + draw same — combat-state dependent; smoke records no-op.

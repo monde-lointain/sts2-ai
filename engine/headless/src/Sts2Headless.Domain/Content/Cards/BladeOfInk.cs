@@ -17,7 +17,7 @@ public sealed class BladeOfInk : CardModel
     public BladeOfInk()
         : base(CanonicalId, 1, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new DrawCardsAction(BaseCards));

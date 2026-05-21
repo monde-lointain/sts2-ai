@@ -11,7 +11,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// Mirrors upstream <c>Skewer.OnPlay</c>:
 /// <c>DamageCmd.Attack(BaseDamage).WithHitCount(ResolveEnergyXValue())</c>.
 /// </summary>
-public sealed record XCostDamageAction(int DamagePerHit, string? Target) : IAction
+public sealed record XCostDamageAction(int DamagePerHit, Sts2Headless.Domain.Combat.CreatureId? Target) : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

@@ -46,7 +46,7 @@ namespace Sts2Headless.Domain.Combat;
 /// </param>
 /// <param name="IsPlayer">True for the player; false for monsters.</param>
 public sealed record Creature(
-    uint Id,
+    CreatureId Id,
     string Name,
     int CurrentHp,
     int MaxHp,
@@ -76,7 +76,7 @@ public sealed record Creature(
             return false;
         if (ReferenceEquals(this, other))
             return true;
-        if (Id != other.Id || Name != other.Name)
+        if (!Id.Equals(other.Id) || Name != other.Name)
             return false;
         if (CurrentHp != other.CurrentHp || MaxHp != other.MaxHp || Block != other.Block)
             return false;

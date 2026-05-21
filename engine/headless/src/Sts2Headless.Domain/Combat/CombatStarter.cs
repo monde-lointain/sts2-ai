@@ -130,7 +130,7 @@ internal static class CombatStarter
             encounter.GenerateMonstersWithMoves(encounterRng);
 
         var enemies = ImmutableList.CreateBuilder<Creature>();
-        uint nextEnemyId = CombatEngine.FirstEnemyId;
+        CreatureId nextEnemyId = CombatEngine.FirstEnemyId;
         foreach ((string monsterId, string? initialMoveIdOverride) in spawnList)
         {
             var monsterModel = (MonsterModel)monsters.Get(monsterId);
@@ -174,7 +174,7 @@ internal static class CombatStarter
                     IsPlayer: false
                 )
             );
-            nextEnemyId++;
+            nextEnemyId = new CreatureId(nextEnemyId.Value + 1);
         }
         return enemies.ToImmutable();
     }

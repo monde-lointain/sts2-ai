@@ -18,7 +18,7 @@ public sealed class Nightmare : CardModel
     public Nightmare()
         : base(CanonicalId, 3, CardType.Skill, CardRarity.Rare, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         // Card-selection effect; combat-state dependent. Smoke records no-op.

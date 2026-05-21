@@ -14,7 +14,7 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 /// resolves to zero damage — KnifeTrap is in the catalog as metadata
 /// regardless.
 /// </summary>
-public sealed record CalcDamageFromShivExhaustAction(int BasePerShiv, string? Target) : IAction
+public sealed record CalcDamageFromShivExhaustAction(int BasePerShiv, Sts2Headless.Domain.Combat.CreatureId? Target) : IAction
 {
     /// <inheritdoc />
     public void Execute(ExecutionContext ctx)

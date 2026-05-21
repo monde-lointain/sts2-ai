@@ -16,7 +16,7 @@ public static class DamageModifier
     /// <c>ModifyDamageAdditive</c> + <c>ModifyDamageMultiplicative</c> hook
     /// order. Non-positive <paramref name="raw"/> is returned unchanged.
     /// </summary>
-    public static int Modify(CombatState state, uint sourceId, uint targetId, int raw)
+    public static int Modify(CombatState state, CreatureId sourceId, CreatureId targetId, int raw)
     {
         if (raw <= 0)
             return raw;

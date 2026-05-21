@@ -17,7 +17,7 @@ public sealed class TheHunt : CardModel
     public TheHunt()
         : base(CanonicalId, 1, CardType.Attack, CardRarity.Rare, TargetType.AnyEnemy) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new DealDamageAction(BaseDamage, target));

@@ -18,7 +18,7 @@ public sealed class Envenom : CardModel
     public Envenom()
         : base(CanonicalId, 2, CardType.Power, CardRarity.Rare, TargetType.Self) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         ctx.Queue.Enqueue(new ApplyPowerAction(PowerIds.Envenom, BaseAmount, null));

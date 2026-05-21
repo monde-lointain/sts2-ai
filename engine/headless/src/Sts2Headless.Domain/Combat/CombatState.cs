@@ -90,7 +90,7 @@ public sealed record CombatState(
     /// content code that needs to mutate a specific enemy without writing the
     /// LINQ search inline.
     /// </summary>
-    public Creature? FindEnemy(uint id)
+    public Creature? FindEnemy(CreatureId id)
     {
         for (int i = 0; i < Enemies.Count; i++)
         {
@@ -105,7 +105,7 @@ public sealed record CombatState(
     /// id must exist (e.g., card-play resolution with a target validated by the
     /// legal-action enumerator).
     /// </summary>
-    public Creature GetEnemy(uint id)
+    public Creature GetEnemy(CreatureId id)
     {
         Creature? enemy = FindEnemy(id);
         if (enemy is null)
@@ -120,7 +120,7 @@ public sealed record CombatState(
     /// <summary>
     /// Find the creature with the given id (player or enemy). Throws if unknown.
     /// </summary>
-    public Creature GetCreature(uint id)
+    public Creature GetCreature(CreatureId id)
     {
         if (Player.Id == id)
             return Player;
@@ -175,7 +175,7 @@ public sealed record CombatState(
         ArgumentNullException.ThrowIfNull(spawned);
 
         // Collect existing ids for collision check.
-        System.Collections.Generic.HashSet<uint> existing = new(Enemies.Count + 1);
+        System.Collections.Generic.HashSet<CreatureId> existing = new(Enemies.Count + 1);
         existing.Add(Player.Id);
         for (int i = 0; i < Enemies.Count; i++)
             existing.Add(Enemies[i].Id);

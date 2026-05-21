@@ -123,8 +123,8 @@ internal static class TurnRunner
 
         // Each enemy acts in spawn order. We snapshot ids to avoid skipping
         // due to mid-loop list mutation; dead enemies do nothing.
-        ImmutableArray<uint> enemyIds = ctx.State.Enemies.Select(e => e.Id).ToImmutableArray();
-        foreach (uint id in enemyIds)
+        ImmutableArray<CreatureId> enemyIds = ctx.State.Enemies.Select(e => e.Id).ToImmutableArray();
+        foreach (CreatureId id in enemyIds)
         {
             Creature? enemy = ctx.State.FindEnemy(id);
             if (enemy is null || enemy.IsDead)
@@ -138,7 +138,7 @@ internal static class TurnRunner
             // AfterDeath. (Only the Poison-owner can die here; ascending-id
             // ordering across multiple poisoned enemies is preserved by the
             // outer foreach.)
-            ImmutableArray<uint> aliveBeforePoison = DeathBroadcaster.SnapshotAliveIds(ctx);
+            ImmutableArray<CreatureId> aliveBeforePoison = DeathBroadcaster.SnapshotAliveIds(ctx);
             ApplyPoisonAtTurnStart(ctx, id);
             DeathBroadcaster.FireAfterDeathForNewDeaths(ctx, aliveBeforePoison);
             CheckCombatEnd(ctx);
@@ -163,7 +163,7 @@ internal static class TurnRunner
             // kills the player (or — future-friendly — kills the acting
             // enemy itself via reflection / Thorns) announces AfterDeath
             // BEFORE the next enemy acts.
-            ImmutableArray<uint> aliveBeforeMove = DeathBroadcaster.SnapshotAliveIds(ctx);
+            ImmutableArray<CreatureId> aliveBeforeMove = DeathBroadcaster.SnapshotAliveIds(ctx);
             ResolveMove(ctx, aliveEnemy.Id);
             DeathBroadcaster.FireAfterDeathForNewDeaths(ctx, aliveBeforeMove);
 
@@ -200,7 +200,7 @@ internal static class TurnRunner
         }
 
         // --- Tick down enemy debuff durations ----------------------------
-        foreach (uint id in enemyIds)
+        foreach (CreatureId id in enemyIds)
         {
             Creature? enemy = ctx.State.FindEnemy(id);
             if (enemy is null || enemy.IsDead)
@@ -371,7 +371,7 @@ internal static class TurnRunner
     /// Flat dispatch off <c>intent.Kind</c>, <c>intent.SelfBlockGain</c>, and
     /// <c>intent.AppliesPowers</c> — no per-monster switch. Wave-38/B.
     /// </summary>
-    private static void ResolveMove(CombatContext ctx, uint enemyId)
+    private static void ResolveMove(CombatContext ctx, CreatureId enemyId)
     {
         // Read the live intent that was stamped during ResolveEnemyIntents.
         // The creature is alive at this point (caller checked); use a local var
@@ -415,7 +415,7 @@ internal static class TurnRunner
         for (int i = 0; i < intent.AppliesPowers.Count; i++)
         {
             MonsterIntentPower p = intent.AppliesPowers[i];
-            uint target = p.Target == PowerTarget.Player ? CombatEngine.PlayerId : enemyId;
+            CreatureId target = p.Target == PowerTarget.Player ? CombatEngine.PlayerId : enemyId;
             ctx.ApplyPower(target, p.PowerId, p.Stacks, enemyId);
         }
 
@@ -473,9 +473,9 @@ internal static class TurnRunner
     /// <c>Amount</c> (current stacks), then <c>Decrement</c>. Phase 1 smoke
     /// runs this for enemies (player can apply Poison via DeadlyPoison).
     /// </summary>
-    private static void ApplyPoisonAtTurnStart(CombatContext ctx, uint ownerId)
+    private static void ApplyPoisonAtTurnStart(CombatContext ctx, CreatureId ownerId)
     {
-        Creature? owner = ownerId == CombatEngine.PlayerId
+        Creature? owner = ownerId.Equals(CombatEngine.PlayerId)
             ? ctx.State.Player
             : ctx.State.FindEnemy(ownerId);
         if (owner is null || owner.IsDead)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Sts2Headless.Domain.Actions;
+using Sts2Headless.Domain.Combat;
 
 namespace Sts2Headless.Domain.Content.Models;
 
@@ -63,7 +64,7 @@ public abstract class PowerModel : IPowerModel
     /// The dictionary is sized for typical combat (2–6 creatures) and never exceeds
     /// one entry per alive creature at a time.
     /// </summary>
-    private readonly Dictionary<uint, List<HookSubscriptionHandle>> _handlesByCreature = new();
+    private readonly Dictionary<CreatureId, List<HookSubscriptionHandle>> _handlesByCreature = new();
 
     /// <summary>Stable string id matching upstream <c>ModelId.Entry</c>.</summary>
     public string Id { get; }
@@ -109,7 +110,7 @@ public abstract class PowerModel : IPowerModel
     /// Thrown if this power is already attached to <paramref name="ownerCreatureId"/>
     /// (double-apply without a prior remove is a caller bug).
     /// </exception>
-    public virtual void OnApplied(uint ownerCreatureId, HookRegistry registry)
+    public virtual void OnApplied(CreatureId ownerCreatureId, HookRegistry registry)
     {
         System.ArgumentNullException.ThrowIfNull(registry);
         if (_handlesByCreature.ContainsKey(ownerCreatureId))
@@ -131,7 +132,7 @@ public abstract class PowerModel : IPowerModel
     /// </summary>
     /// <param name="ownerCreatureId">Id of the creature this instance is being detached from.</param>
     /// <param name="registry">Active <see cref="HookRegistry"/> for this combat.</param>
-    public virtual void OnRemoved(uint ownerCreatureId, HookRegistry registry)
+    public virtual void OnRemoved(CreatureId ownerCreatureId, HookRegistry registry)
     {
         System.ArgumentNullException.ThrowIfNull(registry);
         if (!_handlesByCreature.TryGetValue(ownerCreatureId, out var handles))
@@ -160,7 +161,7 @@ public abstract class PowerModel : IPowerModel
     /// <param name="handleSink">Handle list to append to (managed by base; do not clear).</param>
     protected virtual void SubscribeHooks(
         HookRegistry hooks,
-        uint ownerCreatureId,
+        CreatureId ownerCreatureId,
         List<HookSubscriptionHandle> handleSink
     ) { }
 
@@ -180,7 +181,7 @@ public abstract class PowerModel : IPowerModel
         List<HookSubscriptionHandle> handleSink,
         HookType type,
         HookHandler handler,
-        uint ownerCreatureId = 0,
+        CreatureId ownerCreatureId = default,
         int priority = 0
     )
     {
@@ -189,7 +190,7 @@ public abstract class PowerModel : IPowerModel
         System.ArgumentNullException.ThrowIfNull(handler);
         HookSubscriptionHandle handle = hooks.Subscribe(
             type,
-            new HookRegistration(handler, priority, ownerCreatureId)
+            new HookRegistration(handler, priority, ownerCreatureId.Value)
         );
         handleSink.Add(handle);
     }

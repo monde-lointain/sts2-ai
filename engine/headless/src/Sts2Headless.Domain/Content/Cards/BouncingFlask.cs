@@ -20,7 +20,7 @@ public sealed class BouncingFlask : CardModel
     public BouncingFlask()
         : base(CanonicalId, 2, CardType.Skill, CardRarity.Uncommon, TargetType.RandomEnemy) { }
 
-    public override void OnPlay(ExecutionContext ctx, string? target)
+    public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
     {
         System.ArgumentNullException.ThrowIfNull(ctx);
         for (int i = 0; i < BaseRepeat; i++)

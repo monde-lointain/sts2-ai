@@ -30,7 +30,7 @@ public abstract record PlayerAction
     private PlayerAction() { }
 
     /// <summary>"Play this card (optionally at this enemy)." Sealed; only one subclass per discriminator.</summary>
-    public sealed record PlayCard(uint CardInstanceId, uint? TargetEnemyId) : PlayerAction;
+    public sealed record PlayCard(uint CardInstanceId, CreatureId? TargetEnemyId) : PlayerAction;
 
     /// <summary>"End my turn." Sentinel; no payload.</summary>
     public sealed record EndTurn : PlayerAction
