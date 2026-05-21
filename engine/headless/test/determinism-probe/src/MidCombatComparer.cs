@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Sts2Headless.DeterminismProbe;
@@ -146,6 +147,19 @@ public sealed class MidCombatComparer
     /// On first divergence returns a human-readable summary naming
     /// (encounter, seed, turn, side, field) with Q1 and golden values.
     /// Modeled on <c>UpstreamInitialStateComparer.BuildDiffSummary</c>.
+    ///
+    /// <para>
+    /// <b>Wave-49/E6 Turn-0 mode detection:</b> when the upstream golden is a
+    /// single-record snapshot with <c>Side == "combat-start"</c> and
+    /// <c>Turn == 0</c> (per wave-49/A.2 Phase-1 capture: post-SetUpCombat
+    /// post-RollMove with INIT_MOVE resolved; no Godot turn loop run), the
+    /// comparer dispatches to <see cref="BuildTurn0DiffSummary"/> which
+    /// compares Q1's first <c>Side == "player-pre"</c> Turn=1 record's
+    /// per-enemy MoveId against the golden. ADR-035 Amendment #2 codifies
+    /// the Phase-1 / Phase-2 split. Phase-2 (multi-turn capture via mock
+    /// layer) is wave-50 scope; existing multi-record branch below
+    /// (functional but unused post-A.2) remains for forward-compat.
+    /// </para>
     /// </summary>
     private static string? BuildDiffSummary(
         string encounterId,
@@ -154,6 +168,18 @@ public sealed class MidCombatComparer
         IReadOnlyList<MidCombatRecord> golden
     )
     {
+        // Wave-49/E6: Turn-0 single-snapshot mode detection (per C2 baked).
+        // Upstream goldens captured via UpstreamDriver.CaptureMidCombat() are
+        // single-record with Side="combat-start" Turn=0. Dispatch to Turn-0
+        // comparison branch (compares per-enemy MoveId only; full multi-turn
+        // comparison gates on wave-50 Phase-2 mock layer).
+        if (golden.Count == 1 && golden[0].Side == "combat-start" && golden[0].Turn == 0)
+        {
+            return BuildTurn0DiffSummary(encounterId, seed, q1, golden[0]);
+        }
+
+        // Existing multi-record path (legacy; functional but no goldens use it
+        // post-wave-49/A.2 Phase-1 deviation; preserved for wave-50 Phase-2).
         if (q1.Count != golden.Count)
         {
             return $"encounter={encounterId} seed={seed}: record count mismatch q1={q1.Count} golden={golden.Count}";
@@ -277,6 +303,59 @@ public sealed class MidCombatComparer
         }
 
         return null; // full match
+    }
+
+    /// <summary>
+    /// Wave-49/E6 Turn-0 single-snapshot comparison. Compares Q1's first
+    /// <c>Side == "player-pre"</c> Turn=1 record (= post-SetUpCombat post-RollMove
+    /// pre-action state) against upstream golden's <c>Side == "combat-start"</c>
+    /// Turn=0 record (same semantic state; UpstreamDriver.CaptureMidCombat output
+    /// per wave-49/A.2 Phase-1).
+    ///
+    /// <para>
+    /// Compares per-enemy <c>MoveId</c> field only. Phase-1 scope catches the
+    /// per-slot INIT_MOVE divergence class (e.g., Exoskeleton slot-1 SKITTER
+    /// vs MANDIBLES; Nibbit IsFront routing). Mid-combat per-turn behavioral
+    /// divergence (e.g., LouseProgenitor PounceDamage Turn-3 manifestation)
+    /// requires Phase-2 multi-turn capture via mock layer (wave-50 scope).
+    /// </para>
+    /// </summary>
+    private static string? BuildTurn0DiffSummary(
+        string encounterId,
+        int seed,
+        IReadOnlyList<MidCombatRecord> q1,
+        MidCombatRecord golden
+    )
+    {
+        // Locate Q1's first post-SetUpCombat snapshot (Side="player-pre" Turn=1).
+        // Q1MidCombatCaptureDriver emits this as the very first record per its
+        // capture loop (line ~106); FirstOrDefault is defensive.
+        MidCombatRecord? q1First = q1.FirstOrDefault(r => r.Side == "player-pre" && r.Turn == 1);
+        if (q1First is null)
+        {
+            return $"encounter={encounterId} seed={seed} turn=0 side=combat-start: " +
+                   "Q1 sequence missing first 'player-pre' Turn=1 snapshot " +
+                   $"(records={q1.Count}; expected Side=='player-pre' Turn==1 first record)";
+        }
+
+        if (q1First.Enemies.Count != golden.Enemies.Count)
+        {
+            return $"encounter={encounterId} seed={seed} turn=0 side=combat-start " +
+                   $"field=Enemy.Count q1={q1First.Enemies.Count} golden={golden.Enemies.Count}";
+        }
+
+        for (int ei = 0; ei < q1First.Enemies.Count; ei++)
+        {
+            EnemySnapshot qe = q1First.Enemies[ei];
+            EnemySnapshot ge = golden.Enemies[ei];
+            if (qe.MoveId != ge.MoveId)
+            {
+                return $"encounter={encounterId} seed={seed} turn=0 side=combat-start " +
+                       $"field=Enemy[{ei}]({qe.Name}).MoveId q1={qe.MoveId} golden={ge.MoveId}";
+            }
+        }
+
+        return null; // All enemy MoveIds match Turn-0 upstream golden.
     }
 
     private static string? DiffPowerLists(

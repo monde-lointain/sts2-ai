@@ -237,13 +237,16 @@ probe-upstream-mid-combat-capture:
 
 # === q1-ci: fast CI gate (≤60s budget) =======================================
 #
-# Runs: dotnet build + dotnet test.
+# Runs: dotnet build + dotnet test + mid-combat smoke (wave-49/E6 re-add).
 # probe-upstream-initial-state (≥5min) is NOT in q1-ci; run separately pre-merge.
-# probe-upstream-mid-combat-smoke excluded until wave-49/A.2 comparer update lands
-# (upstream golden format = Turn=0 "combat-start" ≠ Q1 Turn=1..N multi-side format).
+# probe-upstream-mid-combat-smoke RE-ADDED wave-49/E6: MidCombatComparer now
+# detects Side=="combat-start" Turn-0 single-snapshot upstream goldens + compares
+# Q1 first-snapshot (Side=="player-pre" Turn==1) per-enemy MoveId. Phase-1 scope
+# (per ADR-035 Amendment #2); Phase-2 multi-turn comparison gates on wave-50.
 
 q1-ci: probe-build
-	@echo "==> q1-ci: build + test"
+	@echo "==> q1-ci: build + test + mid-combat smoke"
 	dotnet build sts2-headless.sln -c Debug
 	dotnet test sts2-headless.sln -c Debug --no-build
+	$(MAKE) probe-upstream-mid-combat-smoke
 	@echo "==> q1-ci green"
