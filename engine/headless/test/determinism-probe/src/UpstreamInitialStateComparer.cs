@@ -232,7 +232,7 @@ public sealed class UpstreamInitialStateComparer
             int hp = monsterModel.RollUniqueInitialHp(runRng.Niche, takenHps);
             enemies.Add(
                 new Creature(
-                    Id: nextEnemyId,
+                    Id: new CreatureId(nextEnemyId),
                     Name: monsterId,
                     CurrentHp: hp,
                     MaxHp: hp,
@@ -379,7 +379,7 @@ public sealed class UpstreamInitialStateComparer
             bw.Write(idBytes.Length);
             bw.Write(idBytes);
             bw.Write(p.Stacks);
-            bw.Write(p.SourceCreatureId);
+            bw.Write(p.SourceCreatureId.Value);
             bw.Write(p.JustApplied);
         }
     }
