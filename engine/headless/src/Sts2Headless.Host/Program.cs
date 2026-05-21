@@ -25,8 +25,9 @@ namespace Sts2Headless.Host;
 /// server (if enabled) and graceful-shutdown signal subscriptions run on
 /// background threads, but combat decisions stay on this thread. S9 will need
 /// to revisit this when the control-plane IPC adapter arrives, since the
-/// thread-static <c>EffectObserver</c> wired by S5/S6 assumes the engine runs
-/// on a single thread.
+/// per-context <c>IActionObserver</c> (wave-39 replacement for the legacy
+/// <c>EffectObserver</c> thread-static) is consistent with single-threaded
+/// decision per Q1-ADR-008.
 /// </para>
 /// </summary>
 public static class Program

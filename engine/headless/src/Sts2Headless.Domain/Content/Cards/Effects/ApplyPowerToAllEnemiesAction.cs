@@ -11,7 +11,8 @@ namespace Sts2Headless.Domain.Content.Cards.Effects;
 ///
 /// <para>
 /// S5 layer is fenced from CombatState; the action records itself into the
-/// thread-static <see cref="EffectObserver"/> log, and S6's
+/// per-context <see cref="Sts2Headless.Domain.Actions.IActionObserver"/>
+/// (attached via <c>ExecutionContext.Observer</c>), and S6's
 /// <c>EffectDispatcher.Apply</c> walks the live enemy list per call.
 /// </para>
 /// </summary>

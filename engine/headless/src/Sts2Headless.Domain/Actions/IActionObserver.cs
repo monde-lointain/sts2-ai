@@ -8,8 +8,8 @@ namespace Sts2Headless.Domain.Actions;
 ///
 /// <para>
 /// Per-context (not thread-static) — multiple concurrent contexts each have
-/// their own observer. Replaces the legacy <c>EffectObserver._log</c>
-/// thread-static slot (deleted in wave-39 stream C.3).
+/// their own observer. Replaces the legacy thread-static observer slot
+/// (removed in wave-39 stream C.3).
 /// </para>
 /// </summary>
 public interface IActionObserver

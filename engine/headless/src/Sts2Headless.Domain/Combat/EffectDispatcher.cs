@@ -13,16 +13,19 @@ namespace Sts2Headless.Domain.Combat;
 ///
 /// <para>
 /// <b>Why a separate dispatcher:</b> S5's effect-action records have no-op
-/// <c>Execute</c> bodies (they only record into <c>EffectObserver</c>) because
-/// S5 was fenced from CombatState. S6 is the first stage with real state — so
-/// the translation lives here, not in S5 source.
+/// <c>Execute</c> bodies (they only record into <c>ctx.Observer</c> (an
+/// <c>IActionObserver</c> per-execution-context, replacing the legacy
+/// <c>EffectObserver</c> thread-static)) because S5 was fenced from CombatState.
+/// S6 is the first stage with real state — so the translation lives here, not
+/// in S5 source.
 /// </para>
 ///
 /// <para>
-/// <b>Usage:</b> the engine attaches an <c>EffectObserver</c> scope around its
-/// content invocations (card OnPlay, relic hooks). After the queue drains —
-/// during which the S5 actions accumulate in the observer log as no-ops — the
-/// engine iterates the log and calls <see cref="Apply"/> per action.
+/// <b>Usage:</b> the engine attaches an <c>IActionObserver</c> to the
+/// <c>ExecutionContext</c> it passes around its content invocations (card OnPlay,
+/// relic hooks). After the queue drains — during which the S5 actions accumulate
+/// in the observer log as no-ops — the engine iterates the log and calls
+/// <see cref="Apply"/> per action.
 /// </para>
 ///
 /// <para>
