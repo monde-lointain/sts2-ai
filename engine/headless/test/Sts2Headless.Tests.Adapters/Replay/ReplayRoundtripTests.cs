@@ -50,7 +50,7 @@ public class ReplayRoundtripTests
         return (idx % 3) switch
         {
             0 => PlayerAction.EndTurn.Instance,
-            1 => new PlayerAction.PlayCard(checked((uint)(100 + idx)), 1u),
+            1 => new PlayerAction.PlayCard(checked((uint)(100 + idx)), new global::Sts2Headless.Domain.Combat.CreatureId(1u)),
             _ => new PlayerAction.PlayCard(checked((uint)(200 + idx)), null),
         };
     }

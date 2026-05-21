@@ -68,22 +68,22 @@ public sealed class StatePrimitiveTests
         var p = new PowerInstance(
             ModelId: "PoisonPower",
             Stacks: 3,
-            SourceCreatureId: 5u,
+            SourceCreatureId: new global::Sts2Headless.Domain.Combat.CreatureId(5u),
             JustApplied: true
         );
         var ticked = p with { Stacks = 2, JustApplied = false };
 
         Assert.Equal("PoisonPower", ticked.ModelId);
         Assert.Equal(2, ticked.Stacks);
-        Assert.Equal(5u, ticked.SourceCreatureId);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId(5u), ticked.SourceCreatureId);
         Assert.False(ticked.JustApplied);
     }
 
     [Fact]
     public void PowerInstance_Equal_Records_Are_Structurally_Equal()
     {
-        var a = new PowerInstance("PoisonPower", 3, 5u, false);
-        var b = new PowerInstance("PoisonPower", 3, 5u, false);
+        var a = new PowerInstance("PoisonPower", 3, new global::Sts2Headless.Domain.Combat.CreatureId(5u), false);
+        var b = new PowerInstance("PoisonPower", 3, new global::Sts2Headless.Domain.Combat.CreatureId(5u), false);
 
         Assert.Equal(a, b);
     }
@@ -149,7 +149,7 @@ public sealed class StatePrimitiveTests
     public void Creature_With_Roundtrip_Preserves_Fields()
     {
         var c = new Creature(
-            Id: 1u,
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             Name: "Player",
             CurrentHp: 70,
             MaxHp: 70,
@@ -161,7 +161,7 @@ public sealed class StatePrimitiveTests
 
         var damaged = c with { CurrentHp = 65 };
 
-        Assert.Equal(1u, damaged.Id);
+        Assert.Equal(1u, damaged.Id.Value);
         Assert.Equal("Player", damaged.Name);
         Assert.Equal(65, damaged.CurrentHp);
         Assert.Equal(70, damaged.MaxHp);
@@ -173,7 +173,7 @@ public sealed class StatePrimitiveTests
     public void Creature_Add_Power_Returns_New_Instance()
     {
         var c = new Creature(
-            1u,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "Player",
             70,
             70,
@@ -184,7 +184,7 @@ public sealed class StatePrimitiveTests
         );
         var withPower = c with
         {
-            Powers = c.Powers.Add(new PowerInstance("StrengthPower", 1, 1u, false)),
+            Powers = c.Powers.Add(new PowerInstance("StrengthPower", 1, new global::Sts2Headless.Domain.Combat.CreatureId(1u), false)),
         };
 
         Assert.Empty(c.Powers);
@@ -196,7 +196,7 @@ public sealed class StatePrimitiveTests
     public void Creature_IsAlive_True_When_Hp_Positive()
     {
         var c = new Creature(
-            1u,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "Cultist",
             38,
             38,
@@ -212,7 +212,7 @@ public sealed class StatePrimitiveTests
     public void Creature_IsAlive_False_When_Hp_Zero_Or_Negative()
     {
         var c = new Creature(
-            1u,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "Cultist",
             0,
             38,
@@ -228,7 +228,7 @@ public sealed class StatePrimitiveTests
     public void Creature_Records_Equal_When_Fields_Equal()
     {
         var a = new Creature(
-            1u,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "Player",
             70,
             70,
@@ -238,7 +238,7 @@ public sealed class StatePrimitiveTests
             true
         );
         var b = new Creature(
-            1u,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "Player",
             70,
             70,

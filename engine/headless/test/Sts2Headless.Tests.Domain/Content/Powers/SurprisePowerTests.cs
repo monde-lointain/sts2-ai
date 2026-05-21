@@ -82,7 +82,7 @@ public sealed class SurprisePowerTests
     public void Killing_GremlinMerc_spawns_SneakyGremlin_and_FatGremlin()
     {
         CombatContext ctx = BootGremlinMercNormal();
-        uint gremlinId = ctx.State.Enemies.Single().Id;
+        global::Sts2Headless.Domain.Combat.CreatureId gremlinId = ctx.State.Enemies.Single().Id;
 
         // Drop GremlinMerc to 1 HP so a single Strike kills it.
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
@@ -105,7 +105,7 @@ public sealed class SurprisePowerTests
     public void Spawned_gremlins_have_valid_hp_and_correct_initial_intent()
     {
         CombatContext ctx = BootGremlinMercNormal("gremlin-spawn-hp-seed");
-        uint gremlinId = ctx.State.Enemies.Single().Id;
+        global::Sts2Headless.Domain.Combat.CreatureId gremlinId = ctx.State.Enemies.Single().Id;
 
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
@@ -134,7 +134,7 @@ public sealed class SurprisePowerTests
     public void Spawned_gremlins_have_unique_ids_greater_than_dead_GremlinMerc()
     {
         CombatContext ctx = BootGremlinMercNormal("gremlin-id-seed");
-        uint gremlinId = ctx.State.Enemies.Single().Id;
+        global::Sts2Headless.Domain.Combat.CreatureId gremlinId = ctx.State.Enemies.Single().Id;
 
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));
@@ -150,10 +150,10 @@ public sealed class SurprisePowerTests
         // Ids must be distinct and greater than the dead GremlinMerc's id.
         Assert.NotEqual(sneaky.Id, fat.Id);
         Assert.True(
-            sneaky.Id > gremlinId,
+            sneaky.Id.Value > gremlinId.Value,
             $"SneakyGremlin id {sneaky.Id} <= GremlinMerc id {gremlinId}"
         );
-        Assert.True(fat.Id > gremlinId, $"FatGremlin id {fat.Id} <= GremlinMerc id {gremlinId}");
+        Assert.True(fat.Id.Value > gremlinId.Value, $"FatGremlin id {fat.Id} <= GremlinMerc id {gremlinId}");
     }
 
     // =========================================================================
@@ -164,7 +164,7 @@ public sealed class SurprisePowerTests
     public void Combat_does_not_end_immediately_when_GremlinMerc_killed()
     {
         CombatContext ctx = BootGremlinMercNormal("gremlin-no-end-seed");
-        uint gremlinId = ctx.State.Enemies.Single().Id;
+        global::Sts2Headless.Domain.Combat.CreatureId gremlinId = ctx.State.Enemies.Single().Id;
 
         Creature gremlin = ctx.State.GetEnemy(gremlinId);
         ctx.SetState(ctx.State.WithEnemy(gremlin with { CurrentHp = 1, Block = 0 }));

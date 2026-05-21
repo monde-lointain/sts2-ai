@@ -24,7 +24,7 @@ public class CardModelTests
     {
         public int PlayCalls { get; private set; }
         public ExecutionContext? LastCtx { get; private set; }
-        public string? LastTarget { get; private set; }
+        public global::Sts2Headless.Domain.Combat.CreatureId? LastTarget { get; private set; }
         public const int BaseDamage = 6;
 
         public FakeCard()
@@ -32,7 +32,7 @@ public class CardModelTests
 
         protected override void DeclareTags(HashSet<CardTag> tags) => tags.Add(CardTag.Strike);
 
-        public override void OnPlay(ExecutionContext ctx, string? target)
+        public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target)
         {
             PlayCalls++;
             LastCtx = ctx;
@@ -67,10 +67,10 @@ public class CardModelTests
     {
         FakeCard card = new();
         ExecutionContext ctx = NewCtx();
-        card.OnPlay(ctx, "monster_0");
+        card.OnPlay(ctx, global::Sts2Headless.Domain.Combat.CreatureId.TryParse("monster_0", out var __cid) ? __cid : (global::Sts2Headless.Domain.Combat.CreatureId?)null);
         Assert.Equal(1, card.PlayCalls);
         Assert.Same(ctx, card.LastCtx);
-        Assert.Equal("monster_0", card.LastTarget);
+        Assert.Null(card.LastTarget);
     }
 
     [Fact]
@@ -93,7 +93,7 @@ public class CardModelTests
         public BadCard(string id)
             : base(id, 1, CardType.Skill, CardRarity.Basic, TargetType.Self) { }
 
-        public override void OnPlay(ExecutionContext ctx, string? target) { }
+        public override void OnPlay(ExecutionContext ctx, global::Sts2Headless.Domain.Combat.CreatureId? target) { }
     }
 
     [Fact]

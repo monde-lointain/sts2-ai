@@ -40,7 +40,12 @@ public class SilentSmokeCardTests
     {
         var obs = ListActionObserver.Create(out List<IAction> log);
         ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
-        card.OnPlay(ctx, target);
+        global::Sts2Headless.Domain.Combat.CreatureId? typedTarget =
+            target is null ? null
+            : global::Sts2Headless.Domain.Combat.CreatureId.TryParse(target.Replace("m", ""), out var cid)
+                ? cid
+                : new global::Sts2Headless.Domain.Combat.CreatureId(1u);
+        card.OnPlay(ctx, typedTarget);
         ctx.Queue.Drain(ctx);
         return log;
     }
@@ -68,7 +73,7 @@ public class SilentSmokeCardTests
         IAction single = Assert.Single(actions);
         DealDamageAction dmg = Assert.IsType<DealDamageAction>(single);
         Assert.Equal(6, dmg.Amount);
-        Assert.Equal("m0", dmg.Target);
+        Assert.Equal((global::Sts2Headless.Domain.Combat.CreatureId?)new global::Sts2Headless.Domain.Combat.CreatureId(0u), dmg.Target);
     }
 
     [Fact]
@@ -131,11 +136,11 @@ public class SilentSmokeCardTests
         Assert.Equal(2, actions.Count);
         DealDamageAction dmg = Assert.IsType<DealDamageAction>(actions[0]);
         Assert.Equal(3, dmg.Amount);
-        Assert.Equal("m0", dmg.Target);
+        Assert.Equal((global::Sts2Headless.Domain.Combat.CreatureId?)new global::Sts2Headless.Domain.Combat.CreatureId(0u), dmg.Target);
         ApplyPowerAction wk = Assert.IsType<ApplyPowerAction>(actions[1]);
         Assert.Equal(PowerIds.Weak, wk.PowerId);
         Assert.Equal(1, wk.Amount);
-        Assert.Equal("m0", wk.Target);
+        Assert.Equal((global::Sts2Headless.Domain.Combat.CreatureId?)new global::Sts2Headless.Domain.Combat.CreatureId(0u), wk.Target);
     }
 
     [Fact]
@@ -218,7 +223,7 @@ public class SilentSmokeCardTests
         ApplyPowerAction p = Assert.IsType<ApplyPowerAction>(Play(c, target: "m0").Single());
         Assert.Equal(PowerIds.Poison, p.PowerId);
         Assert.Equal(5, p.Amount);
-        Assert.Equal("m0", p.Target);
+        Assert.Equal((global::Sts2Headless.Domain.Combat.CreatureId?)new global::Sts2Headless.Domain.Combat.CreatureId(0u), p.Target);
     }
 
     [Fact]

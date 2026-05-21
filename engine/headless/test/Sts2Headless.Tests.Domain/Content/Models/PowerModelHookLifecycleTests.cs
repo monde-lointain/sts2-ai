@@ -34,17 +34,17 @@ public class PowerModelHookLifecycleTests
     private sealed class FakePower : PowerModel
     {
         // Counts indexed by ownerCreatureId for multi-attach test isolation.
-        private readonly Dictionary<uint, int> _fireCounts = new();
+        private readonly Dictionary<global::Sts2Headless.Domain.Combat.CreatureId, int> _fireCounts = new();
 
         public FakePower()
             : base("fake_power", PowerType.Buff, PowerStackType.Counter) { }
 
-        public int GetFireCount(uint creatureId) =>
+        public int GetFireCount(global::Sts2Headless.Domain.Combat.CreatureId creatureId) =>
             _fireCounts.TryGetValue(creatureId, out int c) ? c : 0;
 
         protected override void SubscribeHooks(
             HookRegistry hooks,
-            uint ownerCreatureId,
+            global::Sts2Headless.Domain.Combat.CreatureId ownerCreatureId,
             List<HookSubscriptionHandle> handleSink
         )
         {
@@ -81,7 +81,7 @@ public class PowerModelHookLifecycleTests
 
         protected override void SubscribeHooks(
             HookRegistry hooks,
-            uint ownerCreatureId,
+            global::Sts2Headless.Domain.Combat.CreatureId ownerCreatureId,
             List<HookSubscriptionHandle> handleSink
         )
         {
@@ -105,7 +105,7 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
         ctx.Hooks.Fire(HookType.AfterDeath, new HookContext(ctx));
@@ -118,7 +118,7 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
         power.OnRemoved(creature, ctx.Hooks);
@@ -133,7 +133,7 @@ public class PowerModelHookLifecycleTests
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
         // Must not throw — idempotent.
-        power.OnRemoved(42u, ctx.Hooks);
+        power.OnRemoved(new global::Sts2Headless.Domain.Combat.CreatureId(42u), ctx.Hooks);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
 
@@ -158,8 +158,8 @@ public class PowerModelHookLifecycleTests
         // Same PowerModel singleton attached to two different creatures.
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creatureA = 10u;
-        const uint creatureB = 20u;
+        global::Sts2Headless.Domain.Combat.CreatureId creatureA = new global::Sts2Headless.Domain.Combat.CreatureId(10u);
+        global::Sts2Headless.Domain.Combat.CreatureId creatureB = new global::Sts2Headless.Domain.Combat.CreatureId(20u);
 
         power.OnApplied(creatureA, ctx.Hooks);
         power.OnApplied(creatureB, ctx.Hooks);
@@ -176,8 +176,8 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creatureA = 10u;
-        const uint creatureB = 20u;
+        global::Sts2Headless.Domain.Combat.CreatureId creatureA = new global::Sts2Headless.Domain.Combat.CreatureId(10u);
+        global::Sts2Headless.Domain.Combat.CreatureId creatureB = new global::Sts2Headless.Domain.Combat.CreatureId(20u);
 
         power.OnApplied(creatureA, ctx.Hooks);
         power.OnApplied(creatureB, ctx.Hooks);
@@ -200,7 +200,7 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
         power.OnRemoved(creature, ctx.Hooks);
@@ -217,7 +217,7 @@ public class PowerModelHookLifecycleTests
     {
         FakePower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
         power.OnRemoved(creature, ctx.Hooks);
@@ -241,7 +241,7 @@ public class PowerModelHookLifecycleTests
         // This is the pattern Q1.C CheckCombatEnd will follow in production.
         DeferCombatEndPower power = new();
         ExecutionContext ctx = NewCtx();
-        const uint creature = 1u;
+        global::Sts2Headless.Domain.Combat.CreatureId creature = new global::Sts2Headless.Domain.Combat.CreatureId(1u);
 
         power.OnApplied(creature, ctx.Hooks);
 
@@ -261,8 +261,8 @@ public class PowerModelHookLifecycleTests
         DeferCombatEndPower powerB = new();
         ExecutionContext ctx = NewCtx();
 
-        powerA.OnApplied(1u, ctx.Hooks);
-        powerB.OnApplied(2u, ctx.Hooks);
+        powerA.OnApplied(new global::Sts2Headless.Domain.Combat.CreatureId(1u), ctx.Hooks);
+        powerB.OnApplied(new global::Sts2Headless.Domain.Combat.CreatureId(2u), ctx.Hooks);
 
         ctx.Hooks.Fire(HookType.ShouldStopCombatFromEnding, new HookContext(ctx));
 

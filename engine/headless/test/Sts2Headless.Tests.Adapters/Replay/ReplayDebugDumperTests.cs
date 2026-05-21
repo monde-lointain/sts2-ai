@@ -41,7 +41,7 @@ public class ReplayDebugDumperTests
         byte[] bytes = RecordFor(
             fixtureIndex,
             PlayerAction.EndTurn.Instance,
-            new PlayerAction.PlayCard(10u, 1u),
+            new PlayerAction.PlayCard(10u, new global::Sts2Headless.Domain.Combat.CreatureId(1u)),
             new PlayerAction.PlayCard(20u, null)
         );
 
@@ -105,7 +105,7 @@ public class ReplayDebugDumperTests
             rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
             rec.AppendStep(
                 f.State,
-                new PlayerAction.PlayCard(99u, 5u),
+                new PlayerAction.PlayCard(99u, new global::Sts2Headless.Domain.Combat.CreatureId(5u)),
                 f.RunRng,
                 f.PlayerRng,
                 f.Tokens
@@ -156,7 +156,7 @@ public class ReplayDebugDumperTests
         byte[] bytes = RecordFor(
             0,
             PlayerAction.EndTurn.Instance,
-            new PlayerAction.PlayCard(10u, 1u),
+            new PlayerAction.PlayCard(10u, new global::Sts2Headless.Domain.Combat.CreatureId(1u)),
             new PlayerAction.PlayCard(20u, null)
         );
 

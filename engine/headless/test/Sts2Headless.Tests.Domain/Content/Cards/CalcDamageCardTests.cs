@@ -22,7 +22,7 @@ namespace Sts2Headless.Tests.Domain.Content.Cards;
 /// </summary>
 public sealed class CalcDamageCardTests
 {
-    private static (CombatContext ctx, uint enemyId) StartBasicCombat(uint seed)
+    private static (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) StartBasicCombat(uint seed)
     {
         CardCatalog cards = Phase1Content.BuildCardCatalog();
         RelicCatalog relics = Phase1Content.BuildRelicCatalog();
@@ -65,12 +65,12 @@ public sealed class CalcDamageCardTests
             new ActionQueue(),
             obs
         );
-        new CalcDamageAction(6, "attacks_played_this_turn", "m0").Execute(ec);
+        new CalcDamageAction(6, "attacks_played_this_turn", new global::Sts2Headless.Domain.Combat.CreatureId(1u)).Execute(ec);
         Assert.Single(log);
         CalcDamageAction a = Assert.IsType<CalcDamageAction>(log[0]);
         Assert.Equal(6, a.BaseDamage);
         Assert.Equal("attacks_played_this_turn", a.MultiplierKey);
-        Assert.Equal("m0", a.Target);
+        Assert.Equal((global::Sts2Headless.Domain.Combat.CreatureId?)new global::Sts2Headless.Domain.Combat.CreatureId(1u), a.Target);
     }
 
     // ===== Finisher =====
@@ -81,7 +81,7 @@ public sealed class CalcDamageCardTests
         // Force a Finisher to be the first attack played: target enemy takes 0 damage.
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartBasicCombat(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartBasicCombat(seed);
             CardInstance? finisher = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
@@ -111,7 +111,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartBasicCombat(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartBasicCombat(seed);
             CardInstance? finisher = null;
             var strikes = new List<CardInstance>();
             foreach (CardInstance c in ctx.State.HandPile.Cards)
@@ -146,7 +146,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartBasicCombat(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartBasicCombat(seed);
             CardInstance? murder = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
@@ -177,7 +177,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartBasicCombat(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartBasicCombat(seed);
             CardInstance? mirage = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
@@ -222,7 +222,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartBasicCombat(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartBasicCombat(seed);
             CardInstance? strike = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {
@@ -250,7 +250,7 @@ public sealed class CalcDamageCardTests
 
     // ===== B.1-gamma-T5: X-cost cards =====
 
-    private static (CombatContext ctx, uint enemyId, CardInstance xCardOrNull) StartCombatWithXCard(
+    private static (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance xCardOrNull) StartCombatWithXCard(
         uint seed,
         string cardId
     )
@@ -294,7 +294,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? skewer) = StartCombatWithXCard(
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance? skewer) = StartCombatWithXCard(
                 seed,
                 Skewer.CanonicalId
             );
@@ -319,7 +319,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? skewer) = StartCombatWithXCard(
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance? skewer) = StartCombatWithXCard(
                 seed,
                 Skewer.CanonicalId
             );
@@ -353,7 +353,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? malaise) = StartCombatWithXCard(
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance? malaise) = StartCombatWithXCard(
                 seed,
                 Malaise.CanonicalId
             );
@@ -383,7 +383,7 @@ public sealed class CalcDamageCardTests
     {
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? trap) = StartCombatWithXCard(
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance? trap) = StartCombatWithXCard(
                 seed,
                 KnifeTrap.CanonicalId
             );
@@ -406,7 +406,7 @@ public sealed class CalcDamageCardTests
         // Manually set ExhaustedShivCount on the state to simulate Shivs in exhaust.
         for (uint seed = 1; seed < 200; seed++)
         {
-            (CombatContext ctx, uint enemyId, CardInstance? trap) = StartCombatWithXCard(
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId, CardInstance? trap) = StartCombatWithXCard(
                 seed,
                 KnifeTrap.CanonicalId
             );

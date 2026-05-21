@@ -13,12 +13,12 @@ public sealed class LegalActionsTests
     private static CardCatalog Cards => SmokeContent.BuildCardCatalog();
 
     private static Creature Player(int energy = 3) =>
-        new(0u, "Silent", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
+        new(global::Sts2Headless.Domain.Combat.CreatureId.Player, "Silent", 70, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
 
-    private static Creature EnemyAlive(uint id, string name = "CalcifiedCultist") =>
+    private static Creature EnemyAlive(global::Sts2Headless.Domain.Combat.CreatureId id, string name = "CalcifiedCultist") =>
         new(id, name, 38, 38, 0, ImmutableList<PowerInstance>.Empty, MonsterIntent.None, false);
 
-    private static Creature EnemyDead(uint id, string name = "CalcifiedCultist") =>
+    private static Creature EnemyDead(global::Sts2Headless.Domain.Combat.CreatureId id, string name = "CalcifiedCultist") =>
         new(id, name, 0, 38, 0, ImmutableList<PowerInstance>.Empty, MonsterIntent.None, false);
 
     private static CombatState State(
@@ -33,7 +33,7 @@ public sealed class LegalActionsTests
             Phase: phase,
             Player: Player(),
             Enemies: ImmutableList.CreateRange(
-                enemies ?? new[] { EnemyAlive(1u), EnemyAlive(2u, "DampCultist") }
+                enemies ?? new[] { EnemyAlive(new global::Sts2Headless.Domain.Combat.CreatureId(1u)), EnemyAlive(new global::Sts2Headless.Domain.Combat.CreatureId(2u), "DampCultist") }
             ),
             Energy: energy,
             BaseEnergyPerTurn: 3,
@@ -91,13 +91,13 @@ public sealed class LegalActionsTests
     {
         var s = State(
             hand: new[] { new CardInstance(1u, StrikeSilent.CanonicalId, 0, null) },
-            enemies: new[] { EnemyAlive(1u), EnemyDead(2u) }
+            enemies: new[] { EnemyAlive(new global::Sts2Headless.Domain.Combat.CreatureId(1u)), EnemyDead(new global::Sts2Headless.Domain.Combat.CreatureId(2u)) }
         );
         var actions = LegalActions.Enumerate(s, Cards);
 
         var playCards = actions.OfType<PlayerAction.PlayCard>().ToList();
         Assert.Single(playCards);
-        Assert.Equal(1u, playCards[0].TargetEnemyId);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId(1u), playCards[0].TargetEnemyId);
     }
 
     [Fact]

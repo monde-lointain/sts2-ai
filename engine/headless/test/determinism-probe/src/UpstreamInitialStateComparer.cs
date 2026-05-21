@@ -249,7 +249,7 @@ public sealed class UpstreamInitialStateComparer
         }
 
         var player = new Creature(
-            Id: 0u, // CombatEngine.PlayerId
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(0u), // CombatEngine.PlayerId
             Name: "Silent",
             CurrentHp: 70, // CombatEngine.BaseMaxHpSilent
             MaxHp: 70,

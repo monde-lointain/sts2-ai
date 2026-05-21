@@ -21,7 +21,7 @@ public sealed class CombatContextTests
         ImmutableList<PowerInstance>? powers = null
     ) =>
         new(
-            Id: 0u,
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(0u),
             Name: "Silent",
             CurrentHp: hp,
             MaxHp: 70,
@@ -32,7 +32,7 @@ public sealed class CombatContextTests
         );
 
     private static Creature EnemyWith(
-        uint id,
+        global::Sts2Headless.Domain.Combat.CreatureId id,
         int hp = 38,
         int block = 0,
         ImmutableList<PowerInstance>? powers = null
@@ -87,11 +87,11 @@ public sealed class CombatContextTests
     [Fact]
     public void DealDamage_Reduces_Block_First_Then_Hp()
     {
-        var enemy = EnemyWith(1u, hp: 30, block: 5);
+        var enemy = EnemyWith(new global::Sts2Headless.Domain.Combat.CreatureId(1u), hp: 30, block: 5);
         var ctx = NewContext(NewState(null, enemy));
-        ctx.DealDamage(1u, amount: 8, sourceId: 0u);
+        ctx.DealDamage(new global::Sts2Headless.Domain.Combat.CreatureId(1u), amount: 8, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(0u));
 
-        var updated = ctx.State.GetEnemy(1u);
+        var updated = ctx.State.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u));
         Assert.Equal(0, updated.Block);
         Assert.Equal(27, updated.CurrentHp); // 30 - (8-5)
     }
@@ -99,11 +99,11 @@ public sealed class CombatContextTests
     [Fact]
     public void DealDamage_All_Absorbed_By_Block_Leaves_Hp_Untouched()
     {
-        var enemy = EnemyWith(1u, hp: 30, block: 10);
+        var enemy = EnemyWith(new global::Sts2Headless.Domain.Combat.CreatureId(1u), hp: 30, block: 10);
         var ctx = NewContext(NewState(null, enemy));
-        ctx.DealDamage(1u, amount: 5, sourceId: 0u);
+        ctx.DealDamage(new global::Sts2Headless.Domain.Combat.CreatureId(1u), amount: 5, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(0u));
 
-        var updated = ctx.State.GetEnemy(1u);
+        var updated = ctx.State.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u));
         Assert.Equal(5, updated.Block);
         Assert.Equal(30, updated.CurrentHp);
     }
@@ -111,23 +111,23 @@ public sealed class CombatContextTests
     [Fact]
     public void DealDamage_Cannot_Reduce_Hp_Below_Zero()
     {
-        var enemy = EnemyWith(1u, hp: 3, block: 0);
+        var enemy = EnemyWith(new global::Sts2Headless.Domain.Combat.CreatureId(1u), hp: 3, block: 0);
         var ctx = NewContext(NewState(null, enemy));
-        ctx.DealDamage(1u, amount: 100, sourceId: 0u);
+        ctx.DealDamage(new global::Sts2Headless.Domain.Combat.CreatureId(1u), amount: 100, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(0u));
 
-        Assert.Equal(0, ctx.State.GetEnemy(1u).CurrentHp);
+        Assert.Equal(0, ctx.State.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u)).CurrentHp);
     }
 
     [Fact]
     public void DealDamage_Zero_Or_Negative_Is_NoOp()
     {
-        var enemy = EnemyWith(1u, hp: 30, block: 5);
+        var enemy = EnemyWith(new global::Sts2Headless.Domain.Combat.CreatureId(1u), hp: 30, block: 5);
         var ctx = NewContext(NewState(null, enemy));
-        ctx.DealDamage(1u, 0, 0u);
-        ctx.DealDamage(1u, -5, 0u);
+        ctx.DealDamage(new global::Sts2Headless.Domain.Combat.CreatureId(1u), 0, new global::Sts2Headless.Domain.Combat.CreatureId(0u));
+        ctx.DealDamage(new global::Sts2Headless.Domain.Combat.CreatureId(1u), -5, new global::Sts2Headless.Domain.Combat.CreatureId(0u));
 
-        Assert.Equal(5, ctx.State.GetEnemy(1u).Block);
-        Assert.Equal(30, ctx.State.GetEnemy(1u).CurrentHp);
+        Assert.Equal(5, ctx.State.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u)).Block);
+        Assert.Equal(30, ctx.State.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u)).CurrentHp);
     }
 
     // === GainBlock ========================================================
@@ -136,8 +136,8 @@ public sealed class CombatContextTests
     public void GainBlock_Adds_To_Existing_Block()
     {
         var ctx = NewContext(NewState());
-        ctx.GainBlock(0u, 5);
-        ctx.GainBlock(0u, 3);
+        ctx.GainBlock(new global::Sts2Headless.Domain.Combat.CreatureId(0u), 5);
+        ctx.GainBlock(new global::Sts2Headless.Domain.Combat.CreatureId(0u), 3);
         Assert.Equal(8, ctx.State.Player.Block);
     }
 
@@ -147,8 +147,8 @@ public sealed class CombatContextTests
     public void ApplyPower_Counter_Stacks_Add_To_Existing()
     {
         var ctx = NewContext(NewState());
-        ctx.ApplyPower(0u, PowerIds.Strength, 1, sourceId: 0u);
-        ctx.ApplyPower(0u, PowerIds.Strength, 2, sourceId: 0u);
+        ctx.ApplyPower(new global::Sts2Headless.Domain.Combat.CreatureId(0u), PowerIds.Strength, 1, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(0u));
+        ctx.ApplyPower(new global::Sts2Headless.Domain.Combat.CreatureId(0u), PowerIds.Strength, 2, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(0u));
 
         var p = ctx.State.Player.Powers.Single(x => x.ModelId == PowerIds.Strength);
         Assert.Equal(3, p.Stacks);
@@ -158,12 +158,12 @@ public sealed class CombatContextTests
     public void ApplyPower_Adds_New_Instance_When_Absent()
     {
         var ctx = NewContext(NewState());
-        ctx.ApplyPower(0u, PowerIds.Poison, 5, sourceId: 1u);
+        ctx.ApplyPower(new global::Sts2Headless.Domain.Combat.CreatureId(0u), PowerIds.Poison, 5, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(1u));
 
         var p = ctx.State.Player.Powers.Single();
         Assert.Equal(PowerIds.Poison, p.ModelId);
         Assert.Equal(5, p.Stacks);
-        Assert.Equal(1u, p.SourceCreatureId);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId(1u), p.SourceCreatureId);
         Assert.True(p.JustApplied);
     }
 
@@ -171,7 +171,7 @@ public sealed class CombatContextTests
     public void ApplyPower_Marks_JustApplied()
     {
         var ctx = NewContext(NewState());
-        ctx.ApplyPower(0u, PowerIds.Ritual, 2, sourceId: 1u);
+        ctx.ApplyPower(new global::Sts2Headless.Domain.Combat.CreatureId(0u), PowerIds.Ritual, 2, sourceId: new global::Sts2Headless.Domain.Combat.CreatureId(1u));
         Assert.True(ctx.State.Player.Powers.Single().JustApplied);
     }
 
@@ -182,7 +182,7 @@ public sealed class CombatContextTests
     {
         var player = PlayerWith(hp: 65);
         var ctx = NewContext(NewState(player));
-        ctx.Heal(0u, 100);
+        ctx.Heal(new global::Sts2Headless.Domain.Combat.CreatureId(0u), 100);
         Assert.Equal(70, ctx.State.Player.CurrentHp);
     }
 
@@ -191,7 +191,7 @@ public sealed class CombatContextTests
     {
         var player = PlayerWith(hp: 65);
         var ctx = NewContext(NewState(player));
-        ctx.Heal(0u, 2);
+        ctx.Heal(new global::Sts2Headless.Domain.Combat.CreatureId(0u), 2);
         Assert.Equal(67, ctx.State.Player.CurrentHp);
     }
 

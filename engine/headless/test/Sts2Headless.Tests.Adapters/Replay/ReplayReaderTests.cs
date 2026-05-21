@@ -25,7 +25,7 @@ public class ReplayReaderTests
         rec.AppendStep(f.State, PlayerAction.EndTurn.Instance, f.RunRng, f.PlayerRng, f.Tokens);
         rec.AppendStep(
             f.State,
-            new PlayerAction.PlayCard(10u, 1u),
+            new PlayerAction.PlayCard(10u, new global::Sts2Headless.Domain.Combat.CreatureId(1u)),
             f.RunRng,
             f.PlayerRng,
             f.Tokens
@@ -87,7 +87,7 @@ public class ReplayReaderTests
         );
         var pc1 = Assert.IsType<PlayerAction.PlayCard>(a1);
         Assert.Equal(10u, pc1.CardInstanceId);
-        Assert.Equal(1u, pc1.TargetEnemyId);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId(1u), pc1.TargetEnemyId);
 
         // Entry 2: PlayCard without target.
         PlayerAction a2 = ReplayActionCodec.Decode(

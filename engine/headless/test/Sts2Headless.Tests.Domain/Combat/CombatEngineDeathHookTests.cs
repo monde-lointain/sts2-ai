@@ -56,20 +56,20 @@ public sealed class CombatEngineDeathHookTests
     /// </summary>
     private sealed class RecordingDeathPower : PowerModel
     {
-        public readonly List<uint?> ObservedDeaths = new();
+        public readonly List<global::Sts2Headless.Domain.Combat.CreatureId?> ObservedDeaths = new();
 
         public RecordingDeathPower()
             : base("test_recording_death_power", PowerType.Buff, PowerStackType.Single) { }
 
         protected override void SubscribeHooks(
             HookRegistry hooks,
-            uint ownerCreatureId,
+            global::Sts2Headless.Domain.Combat.CreatureId ownerCreatureId,
             List<HookSubscriptionHandle> handleSink
         )
         {
             // Capture the receiver list (this.ObservedDeaths) by ref-identity;
             // each Fire records the DyingCreatureId payload.
-            List<uint?> sink = ObservedDeaths;
+            List<global::Sts2Headless.Domain.Combat.CreatureId?> sink = ObservedDeaths;
             Subscribe(
                 hooks,
                 handleSink,
@@ -97,7 +97,7 @@ public sealed class CombatEngineDeathHookTests
 
         protected override void SubscribeHooks(
             HookRegistry hooks,
-            uint ownerCreatureId,
+            global::Sts2Headless.Domain.Combat.CreatureId ownerCreatureId,
             List<HookSubscriptionHandle> handleSink
         )
         {
@@ -180,7 +180,7 @@ public sealed class CombatEngineDeathHookTests
     }
 
     /// <summary>Force a target enemy to 1 HP so a Strike (6 dmg) is a guaranteed kill.</summary>
-    private static void DropEnemyToOneHp(CombatContext ctx, uint enemyId)
+    private static void DropEnemyToOneHp(CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId)
     {
         Creature enemy = ctx.State.GetEnemy(enemyId);
         ctx.SetState(ctx.State.WithEnemy(enemy with { CurrentHp = 1, Block = 0 }));
@@ -199,11 +199,11 @@ public sealed class CombatEngineDeathHookTests
         var ctx = BootSilentVsCultists();
         HookRegistry hooks = GetPersistentRegistry(ctx);
 
-        uint victimId = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId victimId = ctx.State.Enemies[0].Id;
         var power = new RecordingDeathPower();
         // Attach the recording power to the OTHER (still-alive) enemy so the
         // subscription survives the death of `victimId`.
-        uint subscriberId = ctx.State.Enemies[1].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId subscriberId = ctx.State.Enemies[1].Id;
         power.OnApplied(subscriberId, hooks);
 
         DropEnemyToOneHp(ctx, victimId);
@@ -225,8 +225,8 @@ public sealed class CombatEngineDeathHookTests
         // to pre-Q1.C behavior (no exceptions, no extra side-effects).
         var ctx = BootSilentVsCultists();
 
-        uint victimId = ctx.State.Enemies[0].Id;
-        uint otherId = ctx.State.Enemies[1].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId victimId = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId otherId = ctx.State.Enemies[1].Id;
         DropEnemyToOneHp(ctx, victimId);
         CardInstance strike = FindStrikeInHand(ctx);
 
@@ -335,8 +335,8 @@ public sealed class CombatEngineDeathHookTests
         var ctx = BootSilentVsCultists();
         HookRegistry hooks = GetPersistentRegistry(ctx);
 
-        uint enemy0 = ctx.State.Enemies[0].Id;
-        uint enemy1 = ctx.State.Enemies[1].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId enemy0 = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId enemy1 = ctx.State.Enemies[1].Id;
 
         var powerA = new RecordingDeathPower();
         var powerB = new RecordingDeathPower();
@@ -346,8 +346,8 @@ public sealed class CombatEngineDeathHookTests
         // Both powers have priority=0 and ownerContentId=0 (default), so the
         // ownerCreatureId asc tiebreaker drives. We use 1000 < 2000 so power
         // A's handler fires before power B's for any single AfterDeath event.
-        powerA.OnApplied(1000u, hooks);
-        powerB.OnApplied(2000u, hooks);
+        powerA.OnApplied(new global::Sts2Headless.Domain.Combat.CreatureId(1000u), hooks);
+        powerB.OnApplied(new global::Sts2Headless.Domain.Combat.CreatureId(2000u), hooks);
 
         // First Strike: kill enemy0.
         DropEnemyToOneHp(ctx, enemy0);
@@ -360,8 +360,8 @@ public sealed class CombatEngineDeathHookTests
         CombatEngine.PlayerPlayCard(ctx, strike1.InstanceId, enemy1);
 
         // Both subscribers observed both deaths in kill order.
-        Assert.Equal(new uint?[] { enemy0, enemy1 }, powerA.ObservedDeaths);
-        Assert.Equal(new uint?[] { enemy0, enemy1 }, powerB.ObservedDeaths);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId?[] { enemy0, enemy1 }, powerA.ObservedDeaths);
+        Assert.Equal(new global::Sts2Headless.Domain.Combat.CreatureId?[] { enemy0, enemy1 }, powerB.ObservedDeaths);
     }
 
     // =========================================================================
@@ -377,8 +377,8 @@ public sealed class CombatEngineDeathHookTests
         var ctx = BootSilentVsCultists();
         HookRegistry hooks = GetPersistentRegistry(ctx);
 
-        uint victimId = ctx.State.Enemies[0].Id;
-        uint otherId = ctx.State.Enemies[1].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId victimId = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId otherId = ctx.State.Enemies[1].Id;
 
         var power = new RecordingDeathPower();
         // Subscribe under the OTHER enemy's id so the subscription survives
@@ -395,6 +395,6 @@ public sealed class CombatEngineDeathHookTests
         CombatEngine.EnemyTurn(ctx);
 
         Assert.True(ctx.State.GetEnemy(victimId).IsDead);
-        Assert.Contains(victimId, power.ObservedDeaths.Select(x => x ?? uint.MaxValue));
+        Assert.Contains(victimId, power.ObservedDeaths.Select(x => x ?? new global::Sts2Headless.Domain.Combat.CreatureId(uint.MaxValue)));
     }
 }

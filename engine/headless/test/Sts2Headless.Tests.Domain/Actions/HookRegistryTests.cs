@@ -112,8 +112,8 @@ public class HookRegistryTests
             new HookRegistration(
                 (h) => log.Add("b"),
                 priority: 0,
-                ownerCreatureId: 1,
-                ownerContentId: 200,
+                ownerCreatureId: 1UL,
+                ownerContentId: 200u,
                 sourcePosition: 0
             )
         );
@@ -122,8 +122,8 @@ public class HookRegistryTests
             new HookRegistration(
                 (h) => log.Add("a"),
                 priority: 0,
-                ownerCreatureId: 1,
-                ownerContentId: 100,
+                ownerCreatureId: 1UL,
+                ownerContentId: 100u,
                 sourcePosition: 0
             )
         );
@@ -141,8 +141,8 @@ public class HookRegistryTests
             new HookRegistration(
                 (h) => log.Add("second"),
                 priority: 0,
-                ownerCreatureId: 1,
-                ownerContentId: 1,
+                ownerCreatureId: 1UL,
+                ownerContentId: 1u,
                 sourcePosition: 7
             )
         );
@@ -151,8 +151,8 @@ public class HookRegistryTests
             new HookRegistration(
                 (h) => log.Add("first"),
                 priority: 0,
-                ownerCreatureId: 1,
-                ownerContentId: 1,
+                ownerCreatureId: 1UL,
+                ownerContentId: 1u,
                 sourcePosition: 3
             )
         );

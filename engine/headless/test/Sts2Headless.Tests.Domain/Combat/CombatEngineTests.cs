@@ -430,7 +430,7 @@ public sealed class CombatEngineTests
         CardInstance strike = ctx.State.HandPile.Cards.First(c =>
             c.ModelId == StrikeSilent.CanonicalId
         );
-        uint enemyId = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId enemyId = ctx.State.Enemies[0].Id;
         int hpBefore = ctx.State.Enemies[0].CurrentHp;
 
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, enemyId);
@@ -488,7 +488,7 @@ public sealed class CombatEngineTests
     {
         var ctx = BootSilentVsCultists();
         Assert.Throws<InvalidOperationException>(() =>
-            CombatEngine.PlayerPlayCard(ctx, cardInstanceId: 9999u, targetEnemyId: 1u)
+            CombatEngine.PlayerPlayCard(ctx, cardInstanceId: 9999u, targetEnemyId: new global::Sts2Headless.Domain.Combat.CreatureId(1u))
         );
     }
 
@@ -513,7 +513,7 @@ public sealed class CombatEngineTests
         CardInstance strike = ctx.State.HandPile.Cards.First(c =>
             c.ModelId == StrikeSilent.CanonicalId
         );
-        uint enemyId = ctx.State.Enemies[0].Id;
+        global::Sts2Headless.Domain.Combat.CreatureId enemyId = ctx.State.Enemies[0].Id;
         int hpBefore = ctx.State.GetEnemy(enemyId).CurrentHp;
 
         CombatEngine.PlayerPlayCard(ctx, strike.InstanceId, enemyId);

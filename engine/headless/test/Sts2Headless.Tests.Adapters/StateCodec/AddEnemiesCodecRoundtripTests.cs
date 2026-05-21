@@ -31,7 +31,7 @@ public sealed class AddEnemiesCodecRoundtripTests
 
     private static Creature MakePlayer() =>
         new(
-            Id: 0u,
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(0u),
             Name: "Silent",
             CurrentHp: 70,
             MaxHp: 70,
@@ -41,7 +41,7 @@ public sealed class AddEnemiesCodecRoundtripTests
             IsPlayer: true
         );
 
-    private static Creature MakeEnemy(uint id, string name, int hp) =>
+    private static Creature MakeEnemy(global::Sts2Headless.Domain.Combat.CreatureId id, string name, int hp) =>
         new(
             Id: id,
             Name: name,
@@ -140,7 +140,7 @@ public sealed class AddEnemiesCodecRoundtripTests
     [Fact]
     public void State_with_1_initial_enemy_spawning_2_yields_3_and_roundtrips()
     {
-        var merc = MakeEnemy(1u, "GremlinMerc", 30);
+        var merc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc", 30);
         var state = BaseState(merc);
 
         var allocator = new CreatureIdAllocator(state);
@@ -157,7 +157,7 @@ public sealed class AddEnemiesCodecRoundtripTests
     public void Dead_merc_plus_2_spawns_3_enemy_state_roundtrips()
     {
         // Dead enemy (hp=0) stays in list per CombatState dead-enemy contract.
-        var mercDead = MakeEnemy(1u, "GremlinMerc", 0) with
+        var mercDead = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc", 0) with
         {
             CurrentHp = 0,
         };
@@ -177,7 +177,7 @@ public sealed class AddEnemiesCodecRoundtripTests
     public void Allocator_determinism_same_state_same_ids_after_roundtrip()
     {
         // Simulate what happens after a real serialize/deserialize cycle.
-        var merc = MakeEnemy(1u, "GremlinMerc", 30);
+        var merc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc", 30);
         var state = BaseState(merc);
 
         byte[] blob = global::Sts2Headless.Adapters.StateCodec.StateCodec.Serialize(

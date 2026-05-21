@@ -21,7 +21,7 @@ public class ActionObserverTests
     {
         ExecutionContext ctx = NewCtx();
         // No observer attached; Execute should be a no-op for observation.
-        new DealDamageAction(6, "m0").Execute(ctx);
+        new DealDamageAction(6, new global::Sts2Headless.Domain.Combat.CreatureId(1u)).Execute(ctx);
         // No exception, nothing to assert except absence of crash.
     }
 
@@ -30,7 +30,7 @@ public class ActionObserverTests
     {
         var obs = ListActionObserver.Create(out List<IAction> log);
         ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
-        new DealDamageAction(6, "m0").Execute(ctx);
+        new DealDamageAction(6, new global::Sts2Headless.Domain.Combat.CreatureId(1u)).Execute(ctx);
         new GainBlockAction(5).Execute(ctx);
         new DrawCardsAction(2).Execute(ctx);
         Assert.Equal(3, log.Count);
@@ -49,7 +49,7 @@ public class ActionObserverTests
         var obs2 = ListActionObserver.Create(out List<IAction> log2);
         ExecutionContext ctx2 = new(new LogicalClock(), new Rng(1u), new HookRegistry(), new ActionQueue(), obs2);
 
-        new DealDamageAction(6, "m0").Execute(ctx1);
+        new DealDamageAction(6, new global::Sts2Headless.Domain.Combat.CreatureId(1u)).Execute(ctx1);
         new GainBlockAction(5).Execute(ctx2);
         new DrawCardsAction(2).Execute(ctx1);
 

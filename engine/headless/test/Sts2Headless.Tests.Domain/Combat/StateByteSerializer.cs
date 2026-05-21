@@ -84,7 +84,7 @@ internal static class StateByteSerializer
             bw.Write(idBytes.Length);
             bw.Write(idBytes);
             bw.Write(p.Stacks);
-            bw.Write(p.SourceCreatureId);
+            bw.Write(p.SourceCreatureId.Value);
             bw.Write(p.JustApplied);
         }
     }
@@ -92,7 +92,7 @@ internal static class StateByteSerializer
     /// <summary>Stand-in creature for missing enemy slots in the smoke spec's 2-enemy schema.</summary>
     private static Creature EmptyCreaturePadding(int slotIndex) =>
         new(
-            Id: 0xFFFFFFFFu,
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(0xFFFFFFFFu),
             Name: $"__pad_{slotIndex}",
             CurrentHp: 0,
             MaxHp: 0,

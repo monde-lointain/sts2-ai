@@ -312,7 +312,7 @@ public class EndToEndRoundtripTests
                         break;
                     var model = (Sts2Headless.Domain.Content.Models.CardModel)
                         ctx.Cards.Get(playable.ModelId);
-                    uint? target =
+                    global::Sts2Headless.Domain.Combat.CreatureId? target =
                         (
                             model.Target == Sts2Headless.Domain.Content.Models.TargetType.AnyEnemy
                             || model.Target

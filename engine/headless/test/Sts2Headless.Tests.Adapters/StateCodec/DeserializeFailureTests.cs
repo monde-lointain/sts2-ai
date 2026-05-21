@@ -27,7 +27,7 @@ public class DeserializeFailureTests
             TurnCounter: 0,
             Phase: CombatPhase.CombatStart,
             Player: new Creature(
-                0,
+                new global::Sts2Headless.Domain.Combat.CreatureId(0u),
                 "Silent",
                 70,
                 70,

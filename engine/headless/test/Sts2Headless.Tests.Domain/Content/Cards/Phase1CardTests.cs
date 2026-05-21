@@ -31,7 +31,12 @@ public class Phase1CardTests
     {
         var obs = ListActionObserver.Create(out List<IAction> log);
         ExecutionContext ctx = new(new LogicalClock(), new Rng(0u), new HookRegistry(), new ActionQueue(), obs);
-        card.OnPlay(ctx, target);
+        global::Sts2Headless.Domain.Combat.CreatureId? typedTarget =
+            target is null ? null
+            : global::Sts2Headless.Domain.Combat.CreatureId.TryParse(target.Replace("m", ""), out var cid)
+                ? cid
+                : new global::Sts2Headless.Domain.Combat.CreatureId(1u);
+        card.OnPlay(ctx, typedTarget);
         ctx.Queue.Drain(ctx);
         return log;
     }

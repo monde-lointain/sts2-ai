@@ -27,7 +27,7 @@ public class SectionWriterTests
             TurnCounter: 0,
             Phase: CombatPhase.CombatStart,
             Player: new Creature(
-                0,
+                new global::Sts2Headless.Domain.Combat.CreatureId(0u),
                 "Silent",
                 70,
                 70,
@@ -92,24 +92,24 @@ public class SectionWriterTests
     public void Serialize_state_with_enemies_and_powers_roundtrips()
     {
         Creature player = new(
-            0,
+            global::Sts2Headless.Domain.Combat.CreatureId.Player,
             "Silent",
             70,
             80,
             5,
-            ImmutableList.Create(new PowerInstance("StrengthPower", 2, 0u, false)),
+            ImmutableList.Create(new PowerInstance("StrengthPower", 2, new global::Sts2Headless.Domain.Combat.CreatureId(0u), false)),
             null,
             IsPlayer: true
         );
         Creature enemy = new(
-            1,
+            new global::Sts2Headless.Domain.Combat.CreatureId(1u),
             "CalcifiedCultist",
             50,
             50,
             3,
             ImmutableList.Create(
-                new PowerInstance("RitualPower", 3, 1u, false),
-                new PowerInstance("PoisonPower", 7, 0u, true)
+                new PowerInstance("RitualPower", 3, new global::Sts2Headless.Domain.Combat.CreatureId(1u), false),
+                new PowerInstance("PoisonPower", 7, new global::Sts2Headless.Domain.Combat.CreatureId(0u), true)
             ),
             new MonsterIntent(
                 MonsterIntentKind.Attack,

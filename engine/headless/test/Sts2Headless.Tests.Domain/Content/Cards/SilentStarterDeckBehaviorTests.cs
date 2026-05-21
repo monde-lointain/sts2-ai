@@ -33,7 +33,7 @@ namespace Sts2Headless.Tests.Domain.Content.Cards;
 /// </summary>
 public sealed class SilentStarterDeckBehaviorTests
 {
-    private static (CombatContext ctx, uint enemyId) StartSilentVsChomper(uint seed)
+    private static (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) StartSilentVsChomper(uint seed)
     {
         CardCatalog cards = Phase1Content.BuildCardCatalog();
         RelicCatalog relics = Phase1Content.BuildRelicCatalog();
@@ -69,7 +69,7 @@ public sealed class SilentStarterDeckBehaviorTests
     [Fact]
     public void Strike_played_through_engine_damages_target_by_6()
     {
-        (CombatContext ctx, uint enemyId) = StartSilentVsChomper(seed: 1u);
+        (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartSilentVsChomper(seed: 1u);
         // Force a Strike into hand. The engine drew 7 cards (5 base + 2 RingOfTheSnake);
         // statistically likely to include a Strike but for determinism let's check
         // — if hand has no Strike, the test is irrelevant for this seed.
@@ -120,7 +120,7 @@ public sealed class SilentStarterDeckBehaviorTests
         // Try multiple seeds until we find one where Neutralize is in the opening hand.
         for (uint seed = 1; seed < 100; seed++)
         {
-            (CombatContext ctx, uint enemyId) = StartSilentVsChomper(seed);
+            (CombatContext ctx, global::Sts2Headless.Domain.Combat.CreatureId enemyId) = StartSilentVsChomper(seed);
             CardInstance? neut = null;
             foreach (CardInstance c in ctx.State.HandPile.Cards)
             {

@@ -118,7 +118,7 @@ public sealed class ReferenceCombatSmokeTests
                 CardInstance? playable = PickPlayable(ctx);
                 if (playable is null)
                     break;
-                uint? targetId = NeedsEnemyTarget(ctx, playable)
+                global::Sts2Headless.Domain.Combat.CreatureId? targetId = NeedsEnemyTarget(ctx, playable)
                     ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id
                     : null;
                 if (NeedsEnemyTarget(ctx, playable) && targetId is null)
@@ -217,7 +217,7 @@ public sealed class ReferenceCombatSmokeTests
                 CardInstance? playable = PickPlayable(ctx);
                 if (playable is null)
                     break;
-                uint? targetId = NeedsEnemyTarget(ctx, playable)
+                global::Sts2Headless.Domain.Combat.CreatureId? targetId = NeedsEnemyTarget(ctx, playable)
                     ? ctx.State.Enemies.FirstOrDefault(e => e.IsAlive)?.Id
                     : null;
                 if (NeedsEnemyTarget(ctx, playable) && targetId is null)

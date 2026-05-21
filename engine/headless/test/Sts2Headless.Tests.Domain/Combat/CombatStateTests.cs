@@ -10,9 +10,9 @@ namespace Sts2Headless.Tests.Domain.Combat;
 public sealed class CombatStateTests
 {
     private static Creature MakePlayer(int hp = 70) =>
-        new(0u, "Silent", hp, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
+        new(global::Sts2Headless.Domain.Combat.CreatureId.Player, "Silent", hp, 70, 0, ImmutableList<PowerInstance>.Empty, null, true);
 
-    private static Creature MakeEnemy(uint id, string name, int hp) =>
+    private static Creature MakeEnemy(global::Sts2Headless.Domain.Combat.CreatureId id, string name, int hp) =>
         new(id, name, hp, hp, 0, ImmutableList<PowerInstance>.Empty, MonsterIntent.None, false);
 
     private static CombatState MakeState(Creature? player = null, params Creature[] enemies)
@@ -57,20 +57,20 @@ public sealed class CombatStateTests
     [Fact]
     public void FindEnemy_Returns_Match_Or_Null()
     {
-        var calc = MakeEnemy(1u, "CalcifiedCultist", 38);
-        var damp = MakeEnemy(2u, "DampCultist", 51);
+        var calc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "CalcifiedCultist", 38);
+        var damp = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(2u), "DampCultist", 51);
         var s = MakeState(null, calc, damp);
 
-        Assert.Equal(calc, s.FindEnemy(1u));
-        Assert.Equal(damp, s.FindEnemy(2u));
-        Assert.Null(s.FindEnemy(99u));
+        Assert.Equal(calc, s.FindEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u)));
+        Assert.Equal(damp, s.FindEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(2u)));
+        Assert.Null(s.FindEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(99u)));
     }
 
     [Fact]
     public void GetEnemy_Throws_When_Missing()
     {
         var s = MakeState();
-        Assert.Throws<InvalidOperationException>(() => s.GetEnemy(99u));
+        Assert.Throws<InvalidOperationException>(() => s.GetEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(99u)));
     }
 
     [Fact]
@@ -87,8 +87,8 @@ public sealed class CombatStateTests
     [Fact]
     public void WithEnemy_Replaces_Single_Enemy_Preserving_Order()
     {
-        var calc = MakeEnemy(1u, "CalcifiedCultist", 38);
-        var damp = MakeEnemy(2u, "DampCultist", 51);
+        var calc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "CalcifiedCultist", 38);
+        var damp = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(2u), "DampCultist", 51);
         var s = MakeState(null, calc, damp);
 
         var calcDamaged = calc with { CurrentHp = 30 };
@@ -98,15 +98,15 @@ public sealed class CombatStateTests
         Assert.Equal(30, s2.Enemies[0].CurrentHp);
         Assert.Equal(51, s2.Enemies[1].CurrentHp);
         // Order preserved.
-        Assert.Equal(1u, s2.Enemies[0].Id);
-        Assert.Equal(2u, s2.Enemies[1].Id);
+        Assert.Equal(1u, s2.Enemies[0].Id.Value);
+        Assert.Equal(2u, s2.Enemies[1].Id.Value);
     }
 
     [Fact]
     public void WithPlayer_Throws_If_Given_Non_Player()
     {
         var s = MakeState();
-        var monster = MakeEnemy(99u, "monster", 10);
+        var monster = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(99u), "monster", 10);
         Assert.Throws<ArgumentException>(() => s.WithPlayer(monster));
     }
 
@@ -129,7 +129,7 @@ public sealed class CombatStateTests
     [Fact]
     public void PlayerWon_True_When_All_Enemies_Dead_And_Phase_End()
     {
-        var calc = MakeEnemy(1u, "CalcifiedCultist", 38);
+        var calc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "CalcifiedCultist", 38);
         var dead = calc with { CurrentHp = 0 };
         var s = MakeState(null, dead);
         var ended = s with { Phase = CombatPhase.CombatEnd };

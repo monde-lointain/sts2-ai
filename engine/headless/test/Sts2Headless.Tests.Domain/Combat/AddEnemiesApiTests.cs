@@ -21,7 +21,7 @@ public sealed class AddEnemiesApiTests
 
     private static Creature MakePlayer(int hp = 70) =>
         new(
-            Id: 0u,
+            Id: new global::Sts2Headless.Domain.Combat.CreatureId(0u),
             Name: "Silent",
             CurrentHp: hp,
             MaxHp: 70,
@@ -31,7 +31,7 @@ public sealed class AddEnemiesApiTests
             IsPlayer: true
         );
 
-    private static Creature MakeEnemy(uint id, string name = "Enemy", int hp = 20) =>
+    private static Creature MakeEnemy(global::Sts2Headless.Domain.Combat.CreatureId id, string name = "Enemy", int hp = 20) =>
         new(
             Id: id,
             Name: name,
@@ -84,7 +84,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void WithSpawnedEnemies_1_plus_2_yields_3_enemies()
     {
-        var gremlinMerc = MakeEnemy(1u, "GremlinMerc", 30);
+        var gremlinMerc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc", 30);
         var state = MakeState(null, gremlinMerc);
 
         var allocator = new CreatureIdAllocator(state);
@@ -94,7 +94,7 @@ public sealed class AddEnemiesApiTests
         var after = state.WithSpawnedEnemies(new[] { sneaky, fat });
 
         Assert.Equal(3, after.Enemies.Count);
-        Assert.Equal(1u, after.Enemies[0].Id); // GremlinMerc unchanged
+        Assert.Equal(1u, after.Enemies[0].Id.Value); // GremlinMerc unchanged
         Assert.Equal("SneakyGremlin", after.Enemies[1].Name);
         Assert.Equal("FatGremlin", after.Enemies[2].Name);
     }
@@ -117,7 +117,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void WithSpawnedEnemies_does_not_mutate_original_state()
     {
-        var enemy = MakeEnemy(1u, "GremlinMerc");
+        var enemy = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc");
         var original = MakeState(null, enemy);
 
         var allocator = new CreatureIdAllocator(original);
@@ -130,7 +130,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void WithSpawnedEnemies_empty_sequence_returns_same_enemy_list()
     {
-        var enemy = MakeEnemy(1u, "GremlinMerc");
+        var enemy = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc");
         var state = MakeState(null, enemy);
 
         var after = state.WithSpawnedEnemies(Array.Empty<Creature>());
@@ -151,11 +151,11 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void WithSpawnedEnemies_throws_on_id_collision_with_existing_enemy()
     {
-        var enemy = MakeEnemy(1u, "GremlinMerc");
+        var enemy = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc");
         var state = MakeState(null, enemy);
 
         // Deliberately use id=1 again — must throw.
-        var duplicate = MakeEnemy(1u, "SneakyGremlin");
+        var duplicate = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "SneakyGremlin");
 
         Assert.Throws<ArgumentException>(() => state.WithSpawnedEnemies(new[] { duplicate }));
     }
@@ -166,7 +166,7 @@ public sealed class AddEnemiesApiTests
         var state = MakeState(); // player.Id = 0
 
         // id=0 is the player — must throw.
-        var collidesWithPlayer = MakeEnemy(0u, "Bad");
+        var collidesWithPlayer = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(0u), "Bad");
 
         Assert.Throws<ArgumentException>(() =>
             state.WithSpawnedEnemies(new[] { collidesWithPlayer })
@@ -180,17 +180,17 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void Allocator_mints_ids_above_all_existing_ids()
     {
-        var e1 = MakeEnemy(1u, "A");
-        var e2 = MakeEnemy(2u, "B");
+        var e1 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "A");
+        var e2 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(2u), "B");
         var state = MakeState(null, e1, e2);
 
         var allocator = new CreatureIdAllocator(state);
-        uint id1 = allocator.Next();
-        uint id2 = allocator.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id1 = allocator.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id2 = allocator.Next();
 
         // Must be strictly greater than max existing id (2).
-        Assert.True(id1 > 2u, $"Expected id1 > 2 but got {id1}");
-        Assert.True(id2 > id1, $"Expected id2 > id1 but got {id2} vs {id1}");
+        Assert.True(id1.Value > 2u, $"Expected id1 > 2 but got {id1}");
+        Assert.True(id2.Value > id1.Value, $"Expected id2 > id1 but got {id2} vs {id1}");
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public sealed class AddEnemiesApiTests
         var state = MakeState(); // player.Id = 0, no enemies
 
         var allocator = new CreatureIdAllocator(state);
-        uint id = allocator.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id = allocator.Next();
 
         Assert.NotEqual(state.Player.Id, id);
     }
@@ -207,7 +207,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void Allocator_is_deterministic_for_same_state()
     {
-        var e1 = MakeEnemy(1u, "A");
+        var e1 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "A");
         var state = MakeState(null, e1);
 
         var a1 = new CreatureIdAllocator(state);
@@ -221,14 +221,14 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void Allocator_repeated_calls_yield_unique_ids()
     {
-        var e1 = MakeEnemy(1u, "A");
+        var e1 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "A");
         var state = MakeState(null, e1);
         var allocator = new CreatureIdAllocator(state);
 
-        var ids = new System.Collections.Generic.HashSet<uint>();
+        var ids = new System.Collections.Generic.HashSet<global::Sts2Headless.Domain.Combat.CreatureId>();
         for (int i = 0; i < 10; i++)
         {
-            uint id = allocator.Next();
+            global::Sts2Headless.Domain.Combat.CreatureId id = allocator.Next();
             Assert.True(ids.Add(id), $"Duplicate id {id} at iteration {i}");
         }
     }
@@ -238,8 +238,8 @@ public sealed class AddEnemiesApiTests
     {
         // Allocator derives entirely from state fields — serializing and
         // rebuilding the state must yield the same allocation sequence.
-        var e1 = MakeEnemy(3u, "Enemy3");
-        var e2 = MakeEnemy(5u, "Enemy5"); // non-contiguous ids
+        var e1 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(3u), "Enemy3");
+        var e2 = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(5u), "Enemy5"); // non-contiguous ids
         var state = MakeState(null, e1, e2);
 
         // Simulate a serialize/deserialize cycle by cloning via with-expression.
@@ -251,10 +251,10 @@ public sealed class AddEnemiesApiTests
         var allocator1 = new CreatureIdAllocator(state);
         var allocator2 = new CreatureIdAllocator(restored);
 
-        uint id1a = allocator1.Next();
-        uint id1b = allocator1.Next();
-        uint id2a = allocator2.Next();
-        uint id2b = allocator2.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id1a = allocator1.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id1b = allocator1.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id2a = allocator2.Next();
+        global::Sts2Headless.Domain.Combat.CreatureId id2b = allocator2.Next();
 
         Assert.Equal(id1a, id2a);
         Assert.Equal(id1b, id2b);
@@ -267,7 +267,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void Context_AddEnemies_appends_to_live_state()
     {
-        var merc = MakeEnemy(1u, "GremlinMerc");
+        var merc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc");
         var initialState = MakeState(null, merc);
         var ctx = NewContext(initialState);
 
@@ -286,7 +286,7 @@ public sealed class AddEnemiesApiTests
     [Fact]
     public void Context_AddEnemies_spawned_ids_unique_vs_player_and_existing()
     {
-        var merc = MakeEnemy(1u, "GremlinMerc");
+        var merc = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc");
         var initialState = MakeState(null, merc);
         var ctx = NewContext(initialState);
 
@@ -317,7 +317,7 @@ public sealed class AddEnemiesApiTests
     public void Surprise_scenario_merc_dead_plus_2_spawns_yields_3_enemy_state()
     {
         // GremlinMerc dies (HP=0, stays in list per dead-enemy-stability contract).
-        var mercDead = MakeEnemy(1u, "GremlinMerc", hp: 0);
+        var mercDead = MakeEnemy(new global::Sts2Headless.Domain.Combat.CreatureId(1u), "GremlinMerc", hp: 0);
         var state = MakeState(null, mercDead);
 
         var allocator = new CreatureIdAllocator(state);

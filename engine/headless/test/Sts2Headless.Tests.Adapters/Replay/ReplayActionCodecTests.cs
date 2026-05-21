@@ -22,7 +22,7 @@ public class ReplayActionCodecTests
     [Fact]
     public void PlayCard_with_target_uses_9_byte_payload()
     {
-        var pc = new PlayerAction.PlayCard(0x01020304u, 0x05060708u);
+        var pc = new PlayerAction.PlayCard(0x01020304u, new global::Sts2Headless.Domain.Combat.CreatureId(0x05060708u));
         var (type, data) = ReplayActionCodec.Encode(pc);
         Assert.Equal(ReplayActionType.PlayCard, type);
         Assert.Equal(9, data.Length);

@@ -131,7 +131,7 @@ public static class StateCodecFixtures
         params PowerInstance[] powers
     ) =>
         new(
-            0,
+            CreatureId.Player,
             "Silent",
             hp,
             maxHp,
@@ -153,7 +153,7 @@ public static class StateCodecFixtures
         params PowerInstance[] powers
     ) =>
         new(
-            id,
+            new CreatureId(id),
             name,
             hp,
             maxHp,
@@ -304,7 +304,7 @@ public static class StateCodecFixtures
                             50,
                             0,
                             Attack(6),
-                            new PowerInstance("RitualPower", 3, 1u, false)
+                            new PowerInstance("RitualPower", 3, new CreatureId(1u), false)
                         ),
                         BuildEnemy(2, "DampCultist", 35, 48, 0, Attack(8))
                     ),
@@ -390,7 +390,7 @@ public static class StateCodecFixtures
                             50,
                             0,
                             Attack(6),
-                            new PowerInstance("PoisonPower", 99, 0u, false)
+                            new PowerInstance("PoisonPower", 99, new CreatureId(0u), false)
                         )
                     ),
                     Energy: 3,
@@ -711,7 +711,7 @@ public static class StateCodecFixtures
                     TurnCounter: 0,
                     Phase: CombatPhase.CombatStart,
                     Player: new Creature(
-                        0,
+                        CreatureId.Player,
                         "",
                         0,
                         0,
@@ -749,11 +749,11 @@ public static class StateCodecFixtures
                         50,
                         70,
                         10,
-                        new PowerInstance("StrengthPower", 3, 0u, false),
-                        new PowerInstance("VulnerablePower", 2, 1u, false),
-                        new PowerInstance("WeakPower", 1, 1u, true),
-                        new PowerInstance("PoisonPower", 5, 1u, false),
-                        new PowerInstance("RitualPower", 1, 0u, false)
+                        new PowerInstance("StrengthPower", 3, new CreatureId(0u), false),
+                        new PowerInstance("VulnerablePower", 2, new CreatureId(1u), false),
+                        new PowerInstance("WeakPower", 1, new CreatureId(1u), true),
+                        new PowerInstance("PoisonPower", 5, new CreatureId(1u), false),
+                        new PowerInstance("RitualPower", 1, new CreatureId(0u), false)
                     ),
                     Enemies: ImmutableList.Create(
                         BuildEnemy(1, "CalcifiedCultist", 30, 50, 0, Attack(6))
@@ -861,7 +861,7 @@ public static class StateCodecFixtures
                     TurnCounter: 0,
                     Phase: CombatPhase.CombatStart,
                     Player: new Creature(
-                        0,
+                        CreatureId.Player,
                         "Silent — δ Class",
                         70,
                         70,
