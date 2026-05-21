@@ -1020,3 +1020,61 @@ string MoveId
   player discard) is not yet implemented; the rotation advances correctly, payload is a no-op.
 - **Positive:** Engine has zero per-monster switch logic. New monsters with custom effects
   only touch their own catalog class.
+
+
+---
+
+## ADR-033 — Typed Creature Ids Across the Domain Surface
+
+**Status:** Accepted.
+**Date:** 2026-05-21.
+**References:** detect-smells audit; plan at `/home/clydew372/.claude/plans/plan-your-refactors-for-silly-pretzel.md` §Wave 3.
+
+### Context
+
+The Q1 domain surface used bare `uint` for creature ids alongside bare `uint` for unrelated id spaces (card-instance ids, message-bus correlation ids). Concretely:
+
+- `CombatEngine.PlayerPlayCard(ctx, uint cardId, uint? targetEnemyId)` — `cardId` is a `CardInstance.InstanceId` (deck namespace, starts at 100); `targetEnemyId` is a creature id (0=player, 1+=enemies). The two id spaces never collide at runtime, but the type system happily allowed swapping them.
+- `CardModel.OnPlay(ExecutionContext ctx, string? target)` — accepted a *stringified* creature id (`targetEnemyId?.ToString(InvariantCulture)` at `CombatEngine.cs:608`) and parsed back via `uint.TryParse` at `EffectDispatcher.cs:281`. The producer and consumer agreed on a string round-trip with no type contract, and a non-numeric string silently fell through to the dispatch context's primary target — masking miss-targeting bugs.
+
+### Decision
+
+Introduce `readonly record struct CreatureId(uint Value)` and propagate it through the full Domain surface:
+
+1. **`Creature.Id`** and **`PowerInstance.SourceCreatureId`** retype from `uint` to `CreatureId`.
+2. **`ICombatContext` mutation methods** (`DealDamage`, `GainBlock`, `ApplyPower`, `Heal`) retype target/source params from `uint` to `CreatureId`. Single implementer (`CombatContext`) confirmed by audit.
+3. **`CombatState`** query methods (`FindEnemy`, `GetEnemy`, `GetCreature`) retype.
+4. **`DamageModifier.Modify`** retypes `source`/`target`.
+5. **`CardModel.OnPlay`** signature changes from `(ExecutionContext, string?)` to `(ExecutionContext, CreatureId?)`. 98 card subclasses follow mechanically.
+6. **`EffectDispatcher.ResolveTarget`** + `DispatchContext` retype. The non-numeric string fallback at `EffectDispatcher.cs:286` (documented as "smoke set never emits non-numeric ids") is **deleted** — it was dead code that masked bugs.
+7. **`ICombatAwarePowerModel.OnAppliedWithContext`** + `SurprisePower` retype.
+8. **`PlayerAction.TargetEnemyId`** retypes from `uint?` to `CreatureId?`.
+
+**Stays `uint` (DO NOT typify):** `CardInstance.InstanceId`, `CardPlayer.PlayCard`'s `cardId` param, `CardPile.Remove`'s instance-id lookup, `ActionQueue` / `HookRegistration` correlation ids. These are deck-side or message-bus identifiers in a separate id space.
+
+**No implicit ops on `uint`.** The whole point of the type is to refuse mixing — implicit conversions defeat the purpose. Explicit `.Value` accessor when actual uint is needed (codec wire emission, deck-side comparisons against `CardInstance.InstanceId`).
+
+### Wire contracts preserved
+
+- **Binary codec (`StateCodec`, `ReplayActionCodec`):** still emits `u32` little-endian via `.Value` on write and wraps via `new CreatureId(r.ReadU32())` on read. No bytes change. No schema-version bump.
+- **JSON-RPC (`ControlPlaneRpcHandlers`):** `CreatureId` carries `[JsonConverter(typeof(CreatureIdJsonConverter))]` that emits/reads a bare uint JSON number. `apply_action` RPC's `TargetEnemyId` wire shape unchanged. `Nullable<CreatureId>` handled automatically by `JsonSerializer` (null round-trips as JSON `null`).
+- **JSON-line logs (`MainLoop`, `JsonLineLogger`):** `id = e.Id` lines preserve bare uint shape via the same converter.
+
+### CombatEngine constant downgrade
+
+`CombatEngine.PlayerId = 0u` and `FirstEnemyId = 1u` were `public const uint`. They are downgraded to `public static readonly CreatureId` (record-struct cannot be `const`). Sole impact: callers cannot use them in `switch case` arms or attribute arguments. Pre-commit grep `grep -rn "case CombatEngine\.\(Player\|FirstEnemy\)Id"` returned zero hits — confirmed safe.
+
+### Consequences (negative first)
+
+- **`Creature.GetHashCode()` numeric value changes.** Auto-generated `record struct` GetHashCode is `HashCode.Combine(Value)`, not `uint.GetHashCode()`. Downstream: `CombatState.GetHashCode()` shifts too. Determinism gates pin SHA-256 of codec bytes (Q1-ADR-002), NOT .NET runtime hash, so unaffected. `CanonicalHashTests` confirmed to pin codec output only.
+- **98 card subclasses touched.** Mechanical signature update; most bodies forward `target` unchanged. The few that called `uint.TryParse(target, ...)` collapse to direct typed access.
+- **Dead-code removal.** `EffectDispatcher.ResolveTarget`'s non-numeric fallback path is deleted. Any caller that was passing a non-numeric string would now silently target the dispatch primary instead of the malformed value — but the audit grep found zero such callers.
+- **Positive:** card-instance id vs creature id confusion is now a compile error. The string round-trip via `CardModel.OnPlay(ctx, string?)` → `EffectDispatcher.ResolveTarget` → `uint.TryParse` collapses to a single typed `CreatureId?` parameter end-to-end.
+
+### Backward compatibility
+
+All three waves of the smell-refactor preserve binary wire bytes. Old replay files (recorded pre-wave) remain readable; old state blobs remain deserializable. No migration step required.
+
+### Origin
+
+`/detect-smells` audit (2026-05-21) identified Primitive Obsession as smell #2 of the top-3-pungent set. Plan ratified after 3 rounds of "what's unclear" iteration; user approval at `plan-your-refactors-for-silly-pretzel.md` ExitPlanMode.
