@@ -128,7 +128,7 @@ public static class EncounterCatalog
             "ExoskeletonsNormal" => new EncounterPlan(
                 id,
                 new[] { "Exoskeleton", "Exoskeleton", "Exoskeleton" },
-                new string?[] { null, null, null },
+                new string?[] { "first", "second", "third" },
                 PlanKind.UpstreamComparable,
                 null,
                 MidCombatActionSequenceId: "exoskeletons-normal-strategy.json"

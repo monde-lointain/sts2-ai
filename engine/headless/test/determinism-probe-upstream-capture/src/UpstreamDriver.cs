@@ -959,35 +959,38 @@ public sealed class UpstreamDriver
         _modelDbInitialized = true;
     }
 
-    // ===== Mid-combat capture (wave-45/Q1-A1) ===============================
+    // ===== Mid-combat capture (wave-49/A.2) ===================================
 
     /// <summary>
-    /// Capture mid-combat turn-side snapshots for one (seed, plan) tuple by
-    /// replaying upstream's turn loop via reflection, skipping
-    /// audio/banner/scene-tree/action-queue lines per plan §1.1 skip list.
+    /// Capture the post-SetUpCombat initial combat state for one (seed, plan)
+    /// tuple. Runs <c>CombatManager.AddCreature</c> (which calls
+    /// <c>MonsterModel.SetUpForCombat</c> → <c>GenerateMoveStateMachine</c>)
+    /// then calls <c>MonsterModel.RollMove</c> on each enemy monster — the
+    /// exact same sequence as <c>CombatManager.AfterCreatureAdded</c> — to
+    /// resolve <c>INIT_MOVE</c> conditional branches into the actual first
+    /// <c>MoveState</c> (e.g. SKITTER/MANDIBLES/ENRAGE for Exoskeleton,
+    /// BUTT/SLICE/HISS for Nibbit) before any turn loop runs.
     ///
     /// <para>
-    /// <b>Skip list (wave-45 plan §1.1):</b>
-    /// <list type="bullet">
-    ///   <item>Audio/banner/<c>Cmd.CustomScaledWait(…)</c> — visual pacing</item>
-    ///   <item><c>NCombatRoom.Instance?.AddChildSafely(…)</c> — scene-tree adds</item>
-    ///   <item><c>RunManager.Instance.ActionExecutor.Unpause()</c> — action-queue pump</item>
-    ///   <item><c>RunManager.Instance.ActionQueueSynchronizer.SetCombatState(…)</c></item>
-    ///   <item><c>NRunMusicController.Instance?.PlayCustomMusic(…)</c></item>
-    /// </list>
-    /// The hook-call chain (<c>Hook.BeforeSideTurnStart</c>,
-    /// <c>Hook.AfterBlockCleared</c>, <c>Hook.BeforeTurnEnd</c>,
-    /// <c>Hook.AfterAutoPostPlayPhaseEntered</c>) is driven directly via
-    /// reflection. Post-turn state is read from <c>_state</c> exactly as
-    /// the wave-6 SetUpCombat shim does at lines 605-609.
+    /// <b>Godot barrier:</b> upstream <c>CombatManager.StartTurn</c>,
+    /// <c>EndPlayerTurnPhaseOneInternal</c>, and <c>ExecuteEnemyTurn</c> all
+    /// require Godot scene-tree singletons (<c>LocalContext</c>,
+    /// <c>RunManager.Instance.ActionQueueSynchronizer</c>,
+    /// <c>NRunMusicController.Instance</c>) and crash headless on first call.
+    /// We intentionally stop after <c>RollMove</c> and emit a single
+    /// <c>Turn=0, Side="combat-start"</c> snapshot per (seed, plan).
+    /// This captures the per-slot INIT_MOVE routing (the R16 false-negative
+    /// class) without requiring any Godot infrastructure.
     /// </para>
     ///
     /// <para>
-    /// <b>Async pattern (H4):</b> upstream's CombatManager StartTurn /
-    /// ExecuteEnemyTurn are synchronous (no <c>await</c> in the critical-path
-    /// methods as verified by reflection inspection of the sts2.dll call graph).
-    /// We invoke them synchronously via reflection with no Task.Wait or
-    /// GetAwaiter().GetResult() needed.
+    /// <b>E5 note:</b> the snapshot emitted here (Turn=0, "combat-start") does
+    /// not match Q1's turn-sequence format (Turn=1..N, "player-pre"/"enemy-end").
+    /// The MidCombatComparer will report count-mismatch on every golden.
+    /// A future wave must either: (a) redesign the comparer to compare only
+    /// the initial EnemySnapshot.MoveId from the first Q1 "player-pre" against
+    /// the golden "combat-start", or (b) implement a mock Godot context to
+    /// enable the full turn loop. See wave-49/A.2 re-surface note.
     /// </para>
     /// </summary>
     public IReadOnlyList<Sts2Headless.DeterminismProbe.MidCombatRecord> CaptureMidCombat(
@@ -998,7 +1001,10 @@ public sealed class UpstreamDriver
     )
     {
         ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(actionPlan);
+        // actionPlan not used: turn loop replaced by RollMove-only initial snapshot (wave-49/A.2).
+        _ = actionPlan;
+        // maxTurns not used: single Turn=0 snapshot emitted.
+        _ = maxTurns;
 
         // ---- Phase 1: re-run the same pre-combat setup as Capture() ----
         Type testModeType = TypeOrThrow("MegaCrit.Sts2.Core.TestSupport.TestMode");
@@ -1200,98 +1206,80 @@ public sealed class UpstreamDriver
         foreach (object c in (System.Collections.IEnumerable)creaturesList)
             addCreatureMi.Invoke(combatManagerInstance, new object[] { c });
 
-        // ---- Phase 3: Per-turn reflection loop ----
-        // Read CombatManager._state field after each phase-drive for snapshots.
+        // ---- Phase 3: RollMove (AfterCreatureAdded equivalent, headless-safe) ----
+        // upstream CombatManager.AfterCreatureAdded calls monster.RollMove(playerCreatures)
+        // which drives the INIT_MOVE ConditionalBranchState using Creature.SlotName to
+        // resolve the first MoveState. This is pure domain code — no Godot singletons.
+        //
+        // We cannot drive the Godot-bound turn loop (StartTurn / EndPlayerTurnPhaseOneInternal
+        // / ExecuteEnemyTurn all require LocalContext + RunManager.Instance singletons).
+        // See wave-49/A.2 doc comment above for rationale and future-wave escalation path.
+
         FieldInfo stateField = combatManagerType
             .GetField("_state", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        object currentState = stateField.GetValue(combatManagerInstance)!;
 
-        var records = new List<Sts2Headless.DeterminismProbe.MidCombatRecord>();
+        // Build player creature list for RollMove — CombatState.PlayerCreatures
+        // is populated by AddPlayer (already called above).
+        object? playerCreaturesObj = GetProperty(currentState, "PlayerCreatures");
+        var playerCreatureList = playerCreaturesObj is System.Collections.IEnumerable pcEnum
+            ? pcEnum.Cast<object>().ToList()
+            : new List<object>();
 
-        for (int turn = 1; turn <= maxTurns; turn++)
+        // Build the IEnumerable<Creature> arg for RollMove via a boxed List<object>
+        // (reflection doesn't need the generic type — RollMove takes IEnumerable<Creature>
+        // and List<object> implements IEnumerable, but the parameter is typed.
+        // We need a typed list. We build it reflectively from the actual Creature type.)
+        Type? creatureType = _sts2.GetType("MegaCrit.Sts2.Core.Entities.Creatures.Creature");
+        object typedPlayerList;
+        if (creatureType is not null && playerCreatureList.Count > 0)
         {
-            // --- StartTurn: drive CombatManager.StartTurn via reflection.
-            // skip list: audio/banner/Cmd.CustomScaledWait/scene-tree/ActionExecutor/ActionQueueSynchronizer/Music
-            // We drive only the data-path methods that map to domain state changes.
-            object? startTurnMi = combatManagerType
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(m => m.Name == "StartTurn" && m.GetParameters().Length == 0);
-            if (startTurnMi is null)
-                startTurnMi = combatManagerType
-                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(m => m.Name.Contains("StartTurn"));
+            Type listOfCreature = typeof(List<>).MakeGenericType(creatureType);
+            typedPlayerList = Activator.CreateInstance(listOfCreature)!;
+            MethodInfo listAddMi = listOfCreature.GetMethod("Add")!;
+            foreach (object pc in playerCreatureList)
+                listAddMi.Invoke(typedPlayerList, new[] { pc });
+        }
+        else
+        {
+            // Fallback: empty list — RollMove still works (INIT_MOVE branches only
+            // need Creature.SlotName, not targets).
+            typedPlayerList = Array.Empty<object>();
+        }
 
-            // Drive StartTurn if available; fall through if missing (edge case on DLL version).
-            try
+        // Call RollMove on each enemy monster.
+        Type monsterModelType2 = TypeOrThrow("MegaCrit.Sts2.Core.Models.MonsterModel");
+        MethodInfo rollMoveMi = monsterModelType2.GetMethod(
+            "RollMove",
+            BindingFlags.Public | BindingFlags.Instance)!;
+        object? enemiesObj = GetProperty(currentState, "Enemies");
+        if (enemiesObj is System.Collections.IEnumerable enemiesEnum)
+        {
+            foreach (object ec in enemiesEnum)
             {
-                ((MethodInfo)startTurnMi!).Invoke(combatManagerInstance, null);
-            }
-            catch (TargetInvocationException tie) when (tie.InnerException is not null)
-            {
-                // If StartTurn throws due to unresolved scene-tree singletons,
-                // surface as capture error.
-                throw new InvalidOperationException(
-                    $"CaptureMidCombat: StartTurn failed on turn {turn}: {tie.InnerException.Message}", tie.InnerException);
-            }
-
-            object currentState = stateField.GetValue(combatManagerInstance)!;
-            records.Add(SnapshotUpstream(currentState, turn, "player-pre"));
-
-            // --- Scripted player actions.
-            IReadOnlyList<Sts2Headless.DeterminismProbe.MidCombatAction> actions =
-                actionPlan.ActionsForTurn(turn);
-            foreach (Sts2Headless.DeterminismProbe.MidCombatAction action in actions)
-            {
-                if (action.EndTurn)
-                    break;
-                // Play card via CombatManager or CardPlayer reflection.
-                // For wave-1 cultist (no actual card-play needed for data-path parity check),
-                // we skip card play on upstream side — intent/HP comparison is the gate.
-                // Card-play reflection is complex (requires card instance lookup in upstream CardPile).
-                // Document: this is a known simplification for wave-1; per-action smoke is opt-in.
-            }
-
-            // --- EndPlayerTurn.
-            MethodInfo? endTurnMi = combatManagerType
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(m => m.Name == "EndPlayerTurn" && m.GetParameters().Length == 0)
-                ?? combatManagerType
-                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(m => m.Name.Contains("EndPlayerTurn") || m.Name.Contains("AfterAllPlayersReady"));
-            if (endTurnMi is not null)
-            {
-                try { endTurnMi.Invoke(combatManagerInstance, null); }
-                catch (TargetInvocationException) { /* absorb non-critical; state still snapshotted */ }
-            }
-
-            currentState = stateField.GetValue(combatManagerInstance)!;
-            records.Add(SnapshotUpstream(currentState, turn, "player-end"));
-
-            // --- ExecuteEnemyTurn.
-            MethodInfo? enemyTurnMi = combatManagerType
-                .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .FirstOrDefault(m => m.Name == "ExecuteEnemyTurn" && m.GetParameters().Length == 0)
-                ?? combatManagerType
-                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(m => m.Name.Contains("EnemyTurn") || m.Name.Contains("HandleEnemy"));
-            if (enemyTurnMi is not null)
-            {
-                try { enemyTurnMi.Invoke(combatManagerInstance, null); }
-                catch (TargetInvocationException) { /* absorb */ }
-            }
-
-            currentState = stateField.GetValue(combatManagerInstance)!;
-            records.Add(SnapshotUpstream(currentState, turn, "enemy-end"));
-
-            // Check combat-end (upstream CombatState.IsOver / Phase).
-            object? phaseObj = GetProperty(currentState, "Phase") ?? GetProperty(currentState, "CurrentSide");
-            if (phaseObj is not null)
-            {
-                string phaseName = phaseObj.ToString() ?? "";
-                if (phaseName.Contains("End", StringComparison.OrdinalIgnoreCase)
-                    || phaseName.Contains("Over", StringComparison.OrdinalIgnoreCase))
-                    break;
+                object? monsterObj = GetProperty(ec, "Monster");
+                if (monsterObj is null)
+                    continue;
+                try
+                {
+                    rollMoveMi.Invoke(monsterObj, new[] { typedPlayerList });
+                }
+                catch (TargetInvocationException tie)
+                {
+                    Console.Error.WriteLine(
+                        $"warn: CaptureMidCombat: RollMove failed for encounter={plan.EncounterId}: "
+                        + $"{(tie.InnerException ?? tie).Message}");
+                }
             }
         }
+
+        // Emit one "combat-start" snapshot at Turn=0 capturing the post-RollMove initial state.
+        // EnemySnapshot.MoveId is now the resolved first MoveState id (SKITTER_MOVE, BUTT_MOVE, etc.)
+        // rather than the INIT_MOVE branch-node id — this is the correct upstream initial intent.
+        var records = new List<Sts2Headless.DeterminismProbe.MidCombatRecord>
+        {
+            SnapshotUpstream(currentState, turn: 0, side: "combat-start"),
+        };
 
         return records;
     }
@@ -1351,39 +1339,115 @@ public sealed class UpstreamDriver
                 int eHp = ToInt(GetProperty(actualCreature, "CurrentHp") ?? 0);
                 int eBlock = ToInt(GetProperty(actualCreature, "Block") ?? 0);
 
-                // MoveId from upstream monster state.
+                // MoveId from upstream: read Creature.Monster.NextMove.Id.
+                // This is set by MonsterModel.RollMove (called in Phase 3 above) which
+                // resolves INIT_MOVE ConditionalBranchState into the actual first MoveState.
+                // E4 (wave-49/A.2): guard on null monster / null NextMove; warn on empty
+                // so reflection misses don't silently mask INIT_MOVE divergences.
                 string moveId = "";
-                object? monsterState = GetProperty(ec, "MonsterState") ?? GetProperty(ec, "State");
-                if (monsterState is not null)
+                object? monsterForMove = GetProperty(actualCreature, "Monster")
+                    ?? GetProperty(ec, "Monster");
+                if (monsterForMove is not null)
                 {
-                    object? currentMoveId = GetProperty(monsterState, "CurrentMoveId")
-                        ?? GetProperty(monsterState, "MoveId");
-                    moveId = currentMoveId?.ToString() ?? "";
+                    object? nextMoveObj = GetProperty(monsterForMove, "NextMove");
+                    if (nextMoveObj is not null)
+                    {
+                        moveId = GetProperty(nextMoveObj, "Id")?.ToString() ?? "";
+                        if (moveId.Length == 0)
+                        {
+                            Console.Error.WriteLine(
+                                $"warn: SnapshotUpstream: NextMove.Id empty for enemy "
+                                + $"at turn={turn} side={side} "
+                                + $"(NextMove type={nextMoveObj.GetType().Name})");
+                        }
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine(
+                            $"warn: SnapshotUpstream: Monster.NextMove is null for enemy "
+                            + $"at turn={turn} side={side}");
+                    }
+                }
+                else
+                {
+                    Console.Error.WriteLine(
+                        $"warn: SnapshotUpstream: Creature.Monster is null for enemy "
+                        + $"at turn={turn} side={side}; MoveId will be empty.");
                 }
 
-                // Intent.
+                // Intent: read from Monster.NextMove.Intents[0] (upstream AbstarctIntent).
+                // IntentType is the enum; DamageCalc() gives raw damage; Repeats gives hit count.
+                // DefendIntent / BuffIntent have no DamageCalc — guard accordingly.
                 string intentKind = "Unknown";
                 int dmgPerHit = 0, hitCount = 0, selfBlock = 0;
-                object? intentObj = GetProperty(ec, "Intent") ?? GetProperty(actualCreature, "Intent");
-                if (intentObj is not null)
+                if (monsterForMove is not null)
                 {
-                    object? kindObj = GetProperty(intentObj, "Kind") ?? GetProperty(intentObj, "IntentType");
-                    intentKind = kindObj?.ToString() ?? "Unknown";
-                    object? dmgObj = GetProperty(intentObj, "DamagePerHit") ?? GetProperty(intentObj, "Damage");
-                    if (dmgObj is not null) dmgPerHit = ToInt(dmgObj);
-                    object? hitsObj = GetProperty(intentObj, "HitCount") ?? GetProperty(intentObj, "Hits");
-                    if (hitsObj is not null) hitCount = ToInt(hitsObj);
-                    object? sbObj = GetProperty(intentObj, "SelfBlockGain") ?? GetProperty(intentObj, "BlockGain");
-                    if (sbObj is not null) selfBlock = ToInt(sbObj);
+                    object? nextMoveObj2 = GetProperty(monsterForMove, "NextMove");
+                    if (nextMoveObj2 is not null)
+                    {
+                        object? intentsObj = GetProperty(nextMoveObj2, "Intents");
+                        if (intentsObj is System.Collections.IEnumerable intentsEnum)
+                        {
+                            object? firstIntent = intentsEnum.Cast<object>().FirstOrDefault();
+                            if (firstIntent is not null)
+                            {
+                                object? intentTypeObj = GetProperty(firstIntent, "IntentType");
+                                intentKind = intentTypeObj?.ToString() ?? "Unknown";
+
+                                // DamageCalc: Func<decimal>? property — invoke if present.
+                                object? dmgCalcFn = GetProperty(firstIntent, "DamageCalc");
+                                if (dmgCalcFn is not null)
+                                {
+                                    try
+                                    {
+                                        object? rawDmg = dmgCalcFn.GetType()
+                                            .GetMethod("Invoke")!
+                                            .Invoke(dmgCalcFn, null);
+                                        if (rawDmg is not null)
+                                            dmgPerHit = (int)(decimal)Convert.ChangeType(rawDmg, typeof(decimal));
+                                    }
+                                    catch { /* DamageCalc may be null-delegate on non-attack intents */ }
+                                }
+
+                                // Repeats: int property on MultiAttackIntent / SingleAttackIntent.
+                                object? repeatsObj = GetProperty(firstIntent, "Repeats");
+                                if (repeatsObj is not null)
+                                    hitCount = ToInt(repeatsObj);
+
+                                // SelfBlockGain: DefendIntent.BlockGain or similar.
+                                object? sbObj = GetProperty(firstIntent, "BlockGain")
+                                    ?? GetProperty(firstIntent, "SelfBlockGain");
+                                if (sbObj is not null)
+                                    selfBlock = ToInt(sbObj);
+                            }
+                        }
+                    }
                 }
 
+                // Enemy name: read from creature's Model.Id.Entry to avoid calling
+                // Creature.Name (which requires Godot LocString and crashes headless).
                 string eName = "";
-                object? nameObj = GetProperty(ec, "Id") ?? GetProperty(actualCreature, "Name");
-                if (nameObj is not null)
+                object? modelObj = GetProperty(actualCreature, "Model");
+                if (modelObj is not null)
                 {
-                    // ModelId property or Entry field on upstream ModelId type.
-                    object? entryObj = GetProperty(nameObj, "Entry") ?? GetProperty(nameObj, "Id");
-                    eName = entryObj?.ToString() ?? nameObj.ToString() ?? "";
+                    object? modelId = GetProperty(modelObj, "Id");
+                    if (modelId is not null)
+                    {
+                        object? entryObj = GetProperty(modelId, "Entry");
+                        eName = entryObj?.ToString() ?? modelId.ToString() ?? "";
+                    }
+                    if (eName.Length == 0)
+                        eName = modelObj.GetType().Name;
+                }
+                else
+                {
+                    // Fallback: try Creature.Id (ModelId on the creature itself).
+                    object? creatureId = GetProperty(ec, "Id");
+                    if (creatureId is not null)
+                    {
+                        object? entryObj = GetProperty(creatureId, "Entry");
+                        eName = entryObj?.ToString() ?? creatureId.ToString() ?? "";
+                    }
                 }
 
                 var ePowers = ExtractUpstreamPowers(actualCreature);
@@ -1400,8 +1464,12 @@ public sealed class UpstreamDriver
             rngCounter = ToInt(rngCounterObj);
 
         return new Sts2Headless.DeterminismProbe.MidCombatRecord(
-            Turn: turn, Side: side, Phase: phase,
-            PlayerHp: playerHp, PlayerBlock: playerBlock, Energy: energy,
+            Turn: turn,
+            Side: side,
+            Phase: phase,
+            PlayerHp: playerHp,
+            PlayerBlock: playerBlock,
+            Energy: energy,
             PowerStacks: playerPowers,
             Enemies: enemies,
             RngCounter: rngCounter

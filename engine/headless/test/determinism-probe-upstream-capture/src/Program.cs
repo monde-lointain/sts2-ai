@@ -27,6 +27,7 @@ namespace Sts2Headless.UpstreamCapture;
 /// </para>
 /// <code>
 ///   dotnet run -- --seed N --encounter id --out path
+///   dotnet run -- --mode mid-combat-capture [--golden-out DIR]
 /// </code>
 /// </summary>
 public static class Program
@@ -47,6 +48,12 @@ public static class Program
             if (cli.Diagnose)
             {
                 return DiagnoseDll();
+            }
+            // wave-49/A.2 E1: mid-combat-capture mode — regenerate
+            // goldens-upstream/mid-combat/ from upstream via UpstreamDriver.CaptureMidCombat().
+            if (cli.Mode == CliMode.MidCombatCapture)
+            {
+                return RunMidCombatCapture(cli);
             }
             if (cli.BatchOutDir is not null)
             {
@@ -196,6 +203,155 @@ public static class Program
         return 0;
     }
 
+    /// <summary>
+    /// Mid-combat-capture mode (wave-49/A.2 E1): iterate all encounters with a
+    /// <c>MidCombatActionSequenceId</c> in <see cref="EncounterCatalog"/>, drive
+    /// <see cref="UpstreamDriver.CaptureMidCombat"/> for seeds 42–51, and write
+    /// <see cref="Sts2Headless.DeterminismProbe.MidCombatRecord"/> binary files to
+    /// <c>goldens-upstream/mid-combat/{encounter}/{seed}.bin</c>.
+    ///
+    /// <para>
+    /// Output directory defaults to the probe project's
+    /// <c>goldens-upstream/mid-combat/</c> (resolved by walking up from AppContext.BaseDirectory
+    /// looking for the probe .csproj). Override with <c>--golden-out DIR</c>.
+    /// </para>
+    ///
+    /// <para>
+    /// The action-sequence JSON files are read from the same probe project's
+    /// <c>goldens-upstream/mid-combat/action-sequences/</c> directory.
+    /// </para>
+    /// </summary>
+    private static int RunMidCombatCapture(CliArgs cli)
+    {
+        string probeDir = LocateProbeDir();
+        string midCombatDir = cli.GoldenOutDir
+            ?? Path.Combine(probeDir, "goldens-upstream", "mid-combat");
+        string actionSeqDir = Path.Combine(probeDir, "goldens-upstream", "mid-combat", "action-sequences");
+
+        if (!Directory.Exists(actionSeqDir))
+        {
+            Console.Error.WriteLine(
+                $"upstream-capture: action-sequences dir not found: {actionSeqDir}. "
+                + "Ensure the probe project is present at the expected relative path."
+            );
+            return 2;
+        }
+
+        int[] seeds = Enumerable.Range(42, 10).ToArray();
+        var driver = new UpstreamDriver();
+        int captured = 0, skipped = 0, errored = 0;
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        Console.Out.WriteLine(
+            $"==> upstream-capture mid-combat-capture: goldensDir={midCombatDir} seeds={seeds.Length}"
+        );
+
+        foreach (string encId in EncounterCatalog.AllKnownIds())
+        {
+            EncounterCatalog.EncounterPlan plan = EncounterCatalog.Resolve(encId);
+
+            // Only process encounters that have a mid-combat action sequence.
+            if (plan.MidCombatActionSequenceId is null)
+            {
+                Console.Out.WriteLine($"  SKIP    {encId} (no action-sequence)");
+                skipped += seeds.Length;
+                continue;
+            }
+
+            string seqPath = Path.Combine(actionSeqDir, plan.MidCombatActionSequenceId);
+            if (!File.Exists(seqPath))
+            {
+                Console.Out.WriteLine(
+                    $"  SKIP    {encId} (action-seq file not found: {plan.MidCombatActionSequenceId})"
+                );
+                skipped += seeds.Length;
+                continue;
+            }
+
+            Sts2Headless.DeterminismProbe.MidCombatActionPlan actionPlan;
+            try
+            {
+                actionPlan = Sts2Headless.DeterminismProbe.MidCombatActionPlan.LoadFromFile(seqPath);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(
+                    $"  ERROR   {encId}: failed to load action-seq '{seqPath}': {ex.Message}"
+                );
+                errored += seeds.Length;
+                continue;
+            }
+
+            string encDir = Path.Combine(midCombatDir, encId);
+            Directory.CreateDirectory(encDir);
+
+            foreach (int seed in seeds)
+            {
+                string goldenPath = Path.Combine(encDir, $"{seed}.bin");
+                try
+                {
+                    driver.ResetCombatManagerState();
+                    IReadOnlyList<Sts2Headless.DeterminismProbe.MidCombatRecord> records =
+                        driver.CaptureMidCombat(seed, plan, actionPlan);
+                    Sts2Headless.DeterminismProbe.MidCombatRecord.WriteFile(goldenPath, records);
+                    captured++;
+                    Console.Out.WriteLine(
+                        $"  ok      {encId} seed={seed} records={records.Count} ({new FileInfo(goldenPath).Length} bytes)"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    errored++;
+                    string errPath = goldenPath + ".error";
+                    File.WriteAllText(
+                        errPath,
+                        $"{ex.GetType().Name}: {(ex.InnerException ?? ex).Message}\n{ex}"
+                    );
+                    Console.Error.WriteLine(
+                        $"  ERROR   {encId} seed={seed}: {(ex.InnerException ?? ex).Message}"
+                    );
+                }
+            }
+        }
+
+        sw.Stop();
+        Console.Out.WriteLine(
+            $"upstream-capture: mid-combat-capture summary — "
+            + $"captured={captured} skipped={skipped} errored={errored} "
+            + $"duration={sw.Elapsed.TotalSeconds:F1}s goldens={midCombatDir}"
+        );
+        return errored > 0 ? 5 : 0;
+    }
+
+    /// <summary>
+    /// Locate the determinism-probe project directory by walking up from the
+    /// running assembly's AppContext.BaseDirectory. Used to resolve default
+    /// golden + action-sequence paths for mid-combat-capture mode.
+    /// </summary>
+    private static string LocateProbeDir()
+    {
+        string? dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 12 && dir is not null; i++)
+        {
+            if (File.Exists(Path.Combine(dir, "Sts2Headless.DeterminismProbe.csproj")))
+                return dir;
+            dir = Path.GetDirectoryName(dir);
+        }
+        // Fallback: look for probe relative to upstream-capture project location.
+        string? capDir = AppContext.BaseDirectory;
+        for (int i = 0; i < 6 && capDir is not null; i++)
+        {
+            string candidate = Path.Combine(capDir, "test", "determinism-probe");
+            if (Directory.Exists(candidate))
+                return candidate;
+            string candidate2 = Path.Combine(capDir, "determinism-probe");
+            if (Directory.Exists(candidate2))
+                return candidate2;
+            capDir = Path.GetDirectoryName(capDir);
+        }
+        return Directory.GetCurrentDirectory();
+    }
+
     private static int RunCapture(CliArgs cli)
     {
         if (cli.OutputPath is null)
@@ -247,6 +403,19 @@ public static class Program
     }
 }
 
+/// <summary>CLI operation mode for upstream-capture.</summary>
+public enum CliMode
+{
+    /// <summary>Default: single (seed, encounter) capture to --out path.</summary>
+    SingleCapture,
+
+    /// <summary>
+    /// wave-49/A.2 E1: iterate encounters with MidCombatActionSequenceId, drive
+    /// UpstreamDriver.CaptureMidCombat, write goldens-upstream/mid-combat/ goldens.
+    /// </summary>
+    MidCombatCapture,
+}
+
 /// <summary>Parsed CLI args.</summary>
 public sealed record CliArgs(
     int Seed,
@@ -256,12 +425,15 @@ public sealed record CliArgs(
     bool Diagnose,
     string? BatchOutDir,
     int[]? BatchSeeds,
-    string[]? BatchEncounters
+    string[]? BatchEncounters,
+    CliMode Mode = CliMode.SingleCapture,
+    string? GoldenOutDir = null
 )
 {
     public const string Usage =
         "Usage: upstream-capture --seed N --encounter ID --out PATH\n"
         + "       upstream-capture --batch-out DIR [--seeds 42,43,...] [--encounters ID,ID,...]\n"
+        + "       upstream-capture --mode mid-combat-capture [--golden-out DIR]\n"
         + "       upstream-capture --list-encounters\n"
         + "       upstream-capture --diagnose";
 
@@ -276,6 +448,8 @@ public sealed record CliArgs(
         string? batchOutDir = null;
         int[]? batchSeeds = null;
         string[]? batchEncounters = null;
+        CliMode mode = CliMode.SingleCapture;
+        string? goldenOutDir = null;
         for (int i = 0; i < args.Length; i++)
         {
             string flag = args[i];
@@ -313,6 +487,9 @@ public sealed record CliArgs(
                 case "--batch-out":
                     batchOutDir = Take();
                     break;
+                case "--golden-out":
+                    goldenOutDir = Take();
+                    break;
                 case "--seeds":
                 {
                     string v = Take();
@@ -341,6 +518,16 @@ public sealed record CliArgs(
                     batchEncounters = v.Split(',', StringSplitOptions.RemoveEmptyEntries);
                     break;
                 }
+                case "--mode":
+                {
+                    string v = Take();
+                    mode = v switch
+                    {
+                        "mid-combat-capture" => CliMode.MidCombatCapture,
+                        _ => throw new ArgumentException($"--mode: unknown mode '{v}' (supported: mid-combat-capture)."),
+                    };
+                    break;
+                }
                 case "--list-encounters":
                     listEncounters = true;
                     break;
@@ -361,6 +548,21 @@ public sealed record CliArgs(
         if (diagnose)
         {
             return new CliArgs(0, null, null, false, true, null, null, null);
+        }
+        if (mode == CliMode.MidCombatCapture)
+        {
+            return new CliArgs(
+                0,
+                null,
+                null,
+                false,
+                false,
+                null,
+                null,
+                null,
+                Mode: CliMode.MidCombatCapture,
+                GoldenOutDir: goldenOutDir
+            );
         }
         if (batchOutDir is not null)
         {
