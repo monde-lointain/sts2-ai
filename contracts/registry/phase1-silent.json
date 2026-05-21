@@ -2,1179 +2,1493 @@
   "card_dsl": [
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:StrikeSilent",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:DefendSilent",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Neutralize",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "WeakPower",
+          "target": "single",
+          "base_var": "Weak"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Survivor",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Slice",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:DeadlyPoison",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PoisonPower",
+          "target": "single",
+          "base_var": "Poison"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Backflip",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        },
+        {
+          "op": "draw",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Acrobatics",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "draw",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:DodgeAndRoll",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Abrasive",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "DexterityPower",
+          "target": "self",
+          "base_var": "Dexterity"
+        },
+        {
+          "op": "apply_power",
+          "power": "ThornsPower",
+          "target": "self",
+          "base_var": "ThornsPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Accelerant",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "AccelerantPower",
+          "target": "self",
+          "base_var": "Accelerant"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Accuracy",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "AccuracyPower",
+          "target": "self",
+          "base_var": "AccuracyPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Adrenaline",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "gain_energy",
+          "base_var": "Energy"
+        },
+        {
+          "op": "draw",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Afterimage",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "AfterimagePower",
+          "target": "self",
+          "base_var": "AfterimagePower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Anticipate",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "AnticipatePower",
+          "target": "self",
+          "base_var": "Dexterity"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Assassinate",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "VulnerablePower",
+          "target": "single",
+          "base_var": "Vulnerable"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Backstab",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:BladeOfInk",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "create_shivs",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:BladeDance",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "create_shivs",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Blur",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        },
+        {
+          "op": "apply_power",
+          "power": "BlurPower",
+          "target": "self",
+          "base_var": "Blur"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:BouncingFlask",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 37
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:BubbleBubble",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PoisonPower",
+          "target": "single",
+          "base_var": "Poison"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:BulletTime",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "NoDrawPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Burst",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "BurstPower",
+          "target": "self",
+          "base_var": "Skills"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:CalculatedGamble",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 19
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:CloakAndDagger",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        },
+        {
+          "op": "create_shivs",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:CorrosiveWave",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "CorrosiveWavePower",
+          "target": "self",
+          "base_var": "CorrosiveWave"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:DaggerSpray",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "hits": 2,
+          "target": "all_enemies"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:DaggerThrow",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "draw",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Dash",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        },
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Deflect",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:EchoingSlash",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 23
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Envenom",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "EnvenomPower",
+          "target": "self",
+          "base_var": "EnvenomPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:EscapePlan",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "draw",
+          "base": 1
+        },
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Expertise",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 20
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Expose",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 33
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:FanOfKnives",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "FanOfKnivesPower",
+          "target": "self",
+          "base": 1
+        },
+        {
+          "op": "create_shivs",
+          "base_var": "Shivs"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Finisher",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "hits_var": "Calculated",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Flanking",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "FlankingPower",
+          "target": "single",
+          "base": 2
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Flechettes",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "hits_var": "Calculated",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:FlickFlack",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "all_enemies"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:FollowThrough",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single",
+          "hits_var": "Calculated"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Footwork",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "DexterityPower",
+          "target": "self",
+          "base_var": "Dexterity"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:GrandFinale",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "all_enemies"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:HandTrick",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Haze",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PoisonPower",
+          "target": "all_enemies",
+          "base_var": "Poison"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:HiddenDaggers",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "create_shivs",
+          "base_var": "Shivs"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:InfiniteBlades",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "InfiniteBladesPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:KnifeTrap",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 33
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:LeadingStrike",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "create_shivs",
+          "base_var": "Shivs"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:LegSweep",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        },
+        {
+          "op": "apply_power",
+          "power": "WeakPower",
+          "target": "single",
+          "base_var": "Weak"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Malaise",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 31
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:MasterPlanner",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "MasterPlannerPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:MementoMori",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 30
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Mirage",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 35
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Murder",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 30
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Nightmare",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "NightmarePower",
+          "target": "self",
+          "base": 3
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:NoxiousFumes",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "NoxiousFumesPower",
+          "target": "self",
+          "base_var": "PoisonPerTurn"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Outbreak",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "OutbreakPower",
+          "target": "self",
+          "base_var": "OutbreakPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:PhantomBlades",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PhantomBladesPower",
+          "target": "self",
+          "base_var": "PhantomBladesPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:PiercingWail",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PiercingWailPower",
+          "target": "all_enemies",
+          "base_var": "StrengthLoss"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Pinpoint",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:PoisonedStab",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "PoisonPower",
+          "target": "single",
+          "base_var": "Poison"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Pounce",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "FreeSkillPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:PreciseCut",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 36
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Predator",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "DrawCardsNextTurnPower",
+          "target": "self",
+          "base": 2
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Prepared",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 20
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Reflex",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "draw",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Ricochet",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "hits_var": "Repeat",
+          "target": "random_enemies"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:SerpentForm",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "SerpentFormPower",
+          "target": "self",
+          "base_var": "SerpentFormPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:ShadowStep",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "ShadowStepPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Shadowmeld",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "ShadowmeldPower",
+          "target": "self",
+          "base_var": "Power"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Shiv",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "all_enemies"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Skewer",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "hits_var": "EnergyX",
+          "target": "single"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Snakebite",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "PoisonPower",
+          "target": "single",
+          "base_var": "Poison"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Sneaky",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "SneakyPower",
+          "target": "self",
+          "base_var": "SneakyPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Speedster",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "SpeedsterPower",
+          "target": "self",
+          "base_var": "SpeedsterPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:StormOfSteel",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "unknown_dominant",
+      "effects": [
+        {
+          "op": "unknown",
+          "source": "card-extractor",
+          "upstream_line": 20
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Strangle",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "StranglePower",
+          "target": "single",
+          "base_var": "StranglePower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:SuckerPunch",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "WeakPower",
+          "target": "single",
+          "base_var": "Weak"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Suppress",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "WeakPower",
+          "target": "single",
+          "base_var": "Weak"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Tactician",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "gain_energy",
+          "base_var": "Energy"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:TheHunt",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "attack",
+          "base_var": "Damage",
+          "target": "single"
+        },
+        {
+          "op": "apply_power",
+          "power": "TheHuntPower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:ToolsOfTheTrade",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "ToolsOfTheTradePower",
+          "target": "self",
+          "base": 1
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Tracking",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "TrackingPower",
+          "target": "self",
+          "base": 1
+        },
+        {
+          "op": "apply_power",
+          "power": "TrackingPower",
+          "target": "self",
+          "base": 2
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Untouchable",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "block_self",
+          "base_var": "Block"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:UpMySleeve",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "create_shivs",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:WellLaidPlans",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "WellLaidPlansPower",
+          "target": "self",
+          "base_var": "RetainAmount"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:WraithForm",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "apply_power",
+          "power": "IntangiblePower",
+          "target": "self",
+          "base_var": "IntangiblePower"
+        },
+        {
+          "op": "apply_power",
+          "power": "WraithFormPower",
+          "target": "self",
+          "base_var": "WraithFormPower"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Wound",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Slimed",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "extracted",
+      "effects": [
+        {
+          "op": "draw",
+          "base_var": "Cards"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Burn",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Dazed",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:AscendersBane",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Clumsy",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Doubt",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Regret",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     },
     {
       "cost": "unknown",
-      "effects": [
-        {
-          "op": "stub",
-          "source": "phase1-seed"
-        }
-      ],
       "target": "unknown",
       "token": "card:Injury",
-      "type": "stub"
+      "type": "stub",
+      "coverage": "noop",
+      "effects": [
+        {
+          "op": "noop"
+        }
+      ]
     }
   ],
   "deprecation_log": [
@@ -1203,7 +1517,7 @@
     "parent_version": "phase1-silent.0",
     "schema_version": {
       "major": 0,
-      "minor": 0
+      "minor": 1
     },
     "source_fixture": "engine/headless/test/fixtures/q4-manifest-phase1.json",
     "upstream_source": "/home/clydew372/development/projects/godot/sts2/src",

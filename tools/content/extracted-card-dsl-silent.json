@@ -1,0 +1,1100 @@
+{
+  "card:StrikeSilent": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:DefendSilent": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Neutralize": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "WeakPower",
+        "target": "single",
+        "base_var": "Weak"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Survivor": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Slice": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:DeadlyPoison": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PoisonPower",
+        "target": "single",
+        "base_var": "Poison"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Backflip": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      },
+      {
+        "op": "draw",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Acrobatics": {
+    "effects": [
+      {
+        "op": "draw",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:DodgeAndRoll": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Abrasive": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "DexterityPower",
+        "target": "self",
+        "base_var": "Dexterity"
+      },
+      {
+        "op": "apply_power",
+        "power": "ThornsPower",
+        "target": "self",
+        "base_var": "ThornsPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Accelerant": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "AccelerantPower",
+        "target": "self",
+        "base_var": "Accelerant"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Accuracy": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "AccuracyPower",
+        "target": "self",
+        "base_var": "AccuracyPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Adrenaline": {
+    "effects": [
+      {
+        "op": "gain_energy",
+        "base_var": "Energy"
+      },
+      {
+        "op": "draw",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Afterimage": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "AfterimagePower",
+        "target": "self",
+        "base_var": "AfterimagePower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Anticipate": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "AnticipatePower",
+        "target": "self",
+        "base_var": "Dexterity"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Assassinate": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "VulnerablePower",
+        "target": "single",
+        "base_var": "Vulnerable"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Backstab": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:BladeOfInk": {
+    "effects": [
+      {
+        "op": "create_shivs",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:BladeDance": {
+    "effects": [
+      {
+        "op": "create_shivs",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Blur": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      },
+      {
+        "op": "apply_power",
+        "power": "BlurPower",
+        "target": "self",
+        "base_var": "Blur"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:BouncingFlask": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 37
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:BubbleBubble": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PoisonPower",
+        "target": "single",
+        "base_var": "Poison"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:BulletTime": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "NoDrawPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Burst": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "BurstPower",
+        "target": "self",
+        "base_var": "Skills"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:CalculatedGamble": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 19
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:CloakAndDagger": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      },
+      {
+        "op": "create_shivs",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:CorrosiveWave": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "CorrosiveWavePower",
+        "target": "self",
+        "base_var": "CorrosiveWave"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:DaggerSpray": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "hits": 2,
+        "target": "all_enemies"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:DaggerThrow": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "draw",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Dash": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      },
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Deflect": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:EchoingSlash": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 23
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Envenom": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "EnvenomPower",
+        "target": "self",
+        "base_var": "EnvenomPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:EscapePlan": {
+    "effects": [
+      {
+        "op": "draw",
+        "base": 1
+      },
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Expertise": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 20
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Expose": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 33
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:FanOfKnives": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "FanOfKnivesPower",
+        "target": "self",
+        "base": 1
+      },
+      {
+        "op": "create_shivs",
+        "base_var": "Shivs"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Finisher": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "hits_var": "Calculated",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Flanking": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "FlankingPower",
+        "target": "single",
+        "base": 2
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Flechettes": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "hits_var": "Calculated",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:FlickFlack": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "all_enemies"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:FollowThrough": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single",
+        "hits_var": "Calculated"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Footwork": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "DexterityPower",
+        "target": "self",
+        "base_var": "Dexterity"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:GrandFinale": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "all_enemies"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:HandTrick": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Haze": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PoisonPower",
+        "target": "all_enemies",
+        "base_var": "Poison"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:HiddenDaggers": {
+    "effects": [
+      {
+        "op": "create_shivs",
+        "base_var": "Shivs"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:InfiniteBlades": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "InfiniteBladesPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:KnifeTrap": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 33
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:LeadingStrike": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "create_shivs",
+        "base_var": "Shivs"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:LegSweep": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      },
+      {
+        "op": "apply_power",
+        "power": "WeakPower",
+        "target": "single",
+        "base_var": "Weak"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Malaise": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 31
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:MasterPlanner": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "MasterPlannerPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:MementoMori": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 30
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Mirage": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 35
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Murder": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 30
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Nightmare": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "NightmarePower",
+        "target": "self",
+        "base": 3
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:NoxiousFumes": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "NoxiousFumesPower",
+        "target": "self",
+        "base_var": "PoisonPerTurn"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Outbreak": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "OutbreakPower",
+        "target": "self",
+        "base_var": "OutbreakPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:PhantomBlades": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PhantomBladesPower",
+        "target": "self",
+        "base_var": "PhantomBladesPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:PiercingWail": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PiercingWailPower",
+        "target": "all_enemies",
+        "base_var": "StrengthLoss"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Pinpoint": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:PoisonedStab": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "PoisonPower",
+        "target": "single",
+        "base_var": "Poison"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Pounce": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "FreeSkillPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:PreciseCut": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 36
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Predator": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "DrawCardsNextTurnPower",
+        "target": "self",
+        "base": 2
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Prepared": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 20
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Reflex": {
+    "effects": [
+      {
+        "op": "draw",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Ricochet": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "hits_var": "Repeat",
+        "target": "random_enemies"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:SerpentForm": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "SerpentFormPower",
+        "target": "self",
+        "base_var": "SerpentFormPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:ShadowStep": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "ShadowStepPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Shadowmeld": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "ShadowmeldPower",
+        "target": "self",
+        "base_var": "Power"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Shiv": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "all_enemies"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Skewer": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "hits_var": "EnergyX",
+        "target": "single"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Snakebite": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "PoisonPower",
+        "target": "single",
+        "base_var": "Poison"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Sneaky": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "SneakyPower",
+        "target": "self",
+        "base_var": "SneakyPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Speedster": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "SpeedsterPower",
+        "target": "self",
+        "base_var": "SpeedsterPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:StormOfSteel": {
+    "effects": [
+      {
+        "op": "unknown",
+        "source": "card-extractor",
+        "upstream_line": 20
+      }
+    ],
+    "coverage": "unknown_dominant"
+  },
+  "card:Strangle": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "StranglePower",
+        "target": "single",
+        "base_var": "StranglePower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:SuckerPunch": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "WeakPower",
+        "target": "single",
+        "base_var": "Weak"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Suppress": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "WeakPower",
+        "target": "single",
+        "base_var": "Weak"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Tactician": {
+    "effects": [
+      {
+        "op": "gain_energy",
+        "base_var": "Energy"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:TheHunt": {
+    "effects": [
+      {
+        "op": "attack",
+        "base_var": "Damage",
+        "target": "single"
+      },
+      {
+        "op": "apply_power",
+        "power": "TheHuntPower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:ToolsOfTheTrade": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "ToolsOfTheTradePower",
+        "target": "self",
+        "base": 1
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Tracking": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "TrackingPower",
+        "target": "self",
+        "base": 1
+      },
+      {
+        "op": "apply_power",
+        "power": "TrackingPower",
+        "target": "self",
+        "base": 2
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Untouchable": {
+    "effects": [
+      {
+        "op": "block_self",
+        "base_var": "Block"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:UpMySleeve": {
+    "effects": [
+      {
+        "op": "create_shivs",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:WellLaidPlans": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "WellLaidPlansPower",
+        "target": "self",
+        "base_var": "RetainAmount"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:WraithForm": {
+    "effects": [
+      {
+        "op": "apply_power",
+        "power": "IntangiblePower",
+        "target": "self",
+        "base_var": "IntangiblePower"
+      },
+      {
+        "op": "apply_power",
+        "power": "WraithFormPower",
+        "target": "self",
+        "base_var": "WraithFormPower"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Wound": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Slimed": {
+    "effects": [
+      {
+        "op": "draw",
+        "base_var": "Cards"
+      }
+    ],
+    "coverage": "extracted"
+  },
+  "card:Burn": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Dazed": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:AscendersBane": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Clumsy": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Doubt": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Regret": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  },
+  "card:Injury": {
+    "effects": [
+      {
+        "op": "noop"
+      }
+    ],
+    "coverage": "noop"
+  }
+}
