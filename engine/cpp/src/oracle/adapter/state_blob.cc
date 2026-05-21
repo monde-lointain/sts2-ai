@@ -11,7 +11,7 @@
 
 // M1 binary state-blob reader. Wire layout pinned by
 // engine/headless/docs/specs/modules/state-codec.md §Section-table layout
-// (schema v3). The C# reference is
+// (schema v4, ADR-032). The C# reference is
 // src/Sts2Headless.Adapters/StateCodec/StateCodec.cs; we mirror Read* helpers
 // here. Failures throw StateCodecError loudly — never a partially-decoded
 // ParsedStateBlob.
@@ -50,15 +50,23 @@ ParsedMonsterIntent read_monster_intent(BinaryCursor& c) {
   if (applies_count < 0) {
     throw StateCodecError("MonsterIntent.AppliesCount negative");
   }
-  intent.applies.reserve(static_cast<std::size_t>(applies_count));
+  intent.applies_powers.reserve(static_cast<std::size_t>(applies_count));
   for (std::int32_t i = 0; i < applies_count; ++i) {
-    std::string power_id = c.read_lp_string<StateCodecError, std::uint32_t>(
+    ParsedAppliesPower ap;
+    ap.power_id = c.read_lp_string<StateCodecError, std::uint32_t>(
         "MonsterIntent.Applies.PowerId");
-    const std::int32_t stacks =
-        c.read_i32<StateCodecError>("MonsterIntent.Applies.Stacks");
-    intent.applies.emplace_back(std::move(power_id), stacks);
+    ap.stacks = c.read_i32<StateCodecError>("MonsterIntent.Applies.Stacks");
+    ap.target = c.read_i32<StateCodecError>("MonsterIntent.Applies.Target");
+    // PowerTarget enum (ADR-032): Self=0, Player=1.
+    if (ap.target != 0 && ap.target != 1) {
+      throw StateCodecError(
+          "MonsterIntent.Applies.Target out of PowerTarget enum range");
+    }
+    intent.applies_powers.push_back(std::move(ap));
   }
-  // MoveId appended at v2 (Stream-B-T3). Required for schema v3.
+  intent.self_block_gain =
+      c.read_i32<StateCodecError>("MonsterIntent.SelfBlockGain");
+  // MoveId appended at v2 (Stream-B-T3). Required for schema v3+.
   intent.move_id =
       c.read_lp_string<StateCodecError, std::uint32_t>("MonsterIntent.MoveId");
   return intent;
@@ -194,9 +202,9 @@ ParsedStateBlob read_state_blob(std::span<const std::uint8_t> bytes) {
     throw StateCodecError("header.magic mismatch (expected 0x53435443)");
   }
   blob.schema = c.read_u16<StateCodecError>("header.schema");
-  if (blob.schema != kStateCodecSchemaV3) {
+  if (blob.schema != kStateCodecSchemaV4) {
     throw StateCodecError(
-        "header.schema unsupported (Q2 Phase-1A wants v3 minor)");
+        "header.schema unsupported (Q2 Phase-1A wants v4 minor)");
   }
   const std::uint16_t header_size =
       c.read_u16<StateCodecError>("header.header_size");

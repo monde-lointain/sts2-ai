@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-// M1 binary state-blob reader (per state-codec.md, schema v3).
+// M1 binary state-blob reader (per state-codec.md, schema v4).
 //
 // Q2 consumes the `payload` bytes of a StateBlobEnvelope (or, for D3 fixture
 // .blob files, the raw blob bytes themselves) via `read_state_blob`. The
@@ -27,7 +27,7 @@ namespace sts2::oracle::adapter {
 // Hard-coded wire constants pinned by state-codec.md.
 inline constexpr std::uint32_t kStateCodecMagic = 0x53435443U;         // "STCT"
 inline constexpr std::uint32_t kStateCodecTrailerMagic = 0x53544354U;  // "TCTS"
-inline constexpr std::uint16_t kStateCodecSchemaV3 = 3U;  // (0<<8)|3
+inline constexpr std::uint16_t kStateCodecSchemaV4 = 4U;  // (0<<8)|4
 inline constexpr std::uint16_t kSectionTerminator = 0xFFFFU;
 inline constexpr std::size_t kStateCodecTrailerSizeBytes = 36U;
 
@@ -52,15 +52,24 @@ struct ParsedPowerInstance {
   bool just_applied = false;
 };
 
+// Per state-codec.md §Per-section codecs `MonsterIntent.AppliesPowers[]`.
+// PowerTarget enum (ADR-032): Self=0, Player=1.
+struct ParsedAppliesPower {
+  std::string power_id;  // lp-utf8 (u32 prefix)
+  std::int32_t stacks = 0;
+  std::int32_t target = 0;  // PowerTarget enum; NEW at v4
+};
+
 // Per state-codec.md §Per-section codecs `MonsterIntent`.
 // MoveId was appended at v2 (Stream-B-T3).
+// AppliesPowers[].Target + SelfBlockGain added at v4 (ADR-032).
 struct ParsedMonsterIntent {
   std::int32_t kind = 0;
   std::int32_t damage_per_hit = 0;
   std::int32_t hit_count = 0;
-  // applies: count-prefixed (PowerId lp-utf8, stacks i32) pairs
-  std::vector<std::pair<std::string, std::int32_t>> applies;
-  std::string move_id;  // lp-utf8 (u32 prefix)
+  std::vector<ParsedAppliesPower> applies_powers;
+  std::int32_t self_block_gain = 0;  // NEW at v4
+  std::string move_id;               // lp-utf8 (u32 prefix)
 };
 
 // Per state-codec.md §Per-section codecs `Creature`.
@@ -86,7 +95,8 @@ struct ParsedCardInstance {
 };
 
 // Per state-codec.md §Per-section codecs `CombatState`. Field order pinned
-// at schema v3. Future minor bumps append fields tail-side.
+// at schema v3; MonsterIntent widened at v4 (ADR-032). Future minor bumps
+// append fields tail-side.
 struct ParsedCombatState {
   std::int32_t turn_counter = 0;
   std::int32_t phase = 0;
