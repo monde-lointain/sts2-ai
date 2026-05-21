@@ -929,3 +929,94 @@ Stat-table widening: `kMaxHp` 256→1024, `kMaxBlock` 256→1024, `kMaxStacks` 1
 `generate_table()` refactored to extract `fill_enemy_slot(rng, slot)` helper, reducing the function body by ~25 lines without changing any mt19937_64 output or consumption order. Table dimensions and fill sequence are semantically identical to M.β; the refactor is pure structural. The cultist Zobrist BYTE rotates as a consequence of the helper extraction altering compiler codegen / inlining decisions (implementation-defined reordering within the same logical sequence). Pin file `cultist_zobrist_pin.h` re-stamped: Lo=`0xa5d5769283d589b5`, Hi=`0x403677d8cd214204`. Cultist + Louse + slime + Nibbit SEARCH pin VALUES remain BIT-IDENTICAL (search semantics invariant within reachable stat ranges).
 
 **Origin.** Wave-26 plan §M.gamma sub-stream Q1.docs. Triggered by `GremlinMerc` port (`~/development/projects/godot/sts2/src/Core/Models/Monsters/GremlinMerc.cs`) demanding `SurprisePower` (`~/development/projects/godot/sts2/src/Core/Models/Powers/SurprisePower.cs`); ratifies the substrate decisions Q1.A and Q1.B already shipped and the Q1.C wiring scheduled for Phase-2.
+
+---
+
+## ADR-032 — Consolidate Monster Move Payloads onto MonsterIntent.AppliesPowers + SelfBlockGain
+
+**Status:** Accepted.
+**Date:** 2026-05-20.
+**References:** detect-smells audit; plan at `/home/clydew372/.claude/plans/plan-your-refactors-for-linear-pebble.md` §Wave B.
+
+### Context
+
+`CombatEngine.ExtractBuffEffect` and `ExtractAttackSelfBlock` pattern-matched on concrete
+monster types (`model is CalcifiedCultist`, `model is Nibbit`, etc.) to supply power-application
+and self-block data at resolve time. This was Feature Envy + Shotgun Surgery: every new
+monster with custom effects required edits to the engine god-class.
+
+The codebase already contained partially-wired mechanisms: `MonsterIntent.AppliesPowers`
+(declared, never populated), `MonsterIntentKind.AttackDefend` (in enum, never produced),
+and `Intent.Defend(N)` (silently dropped by the mapping). `MonsterIntentKind.Status` was
+missing entirely.
+
+### Decision
+
+**Finish the half-built mechanisms rather than adding a new interface.**
+
+1. **`PowerTarget { Self = 0, Player = 1 }`** added to `MonsterIntentPower` as a trailing
+   optional positional param. `Self = 0` preserves backward decode behaviour.
+2. **`int SelfBlockGain = 0`** appended to both `MonsterMove` (catalog) and `MonsterIntent`
+   (runtime). Used for `Defend(N)` (now wired: `N` maps to `SelfBlockGain`) and
+   `AttackDefend` hybrids (attack + self-block in one intent).
+3. **`MonsterIntentKind.Status`** added as ordinal 7 (append-only). Status card-pollution
+   intents are no longer aliased to `Buff`; `HitCount` carries the card count. Engine
+   payload deferred.
+4. **`FromContentIntent(MonsterMove)`** replaces the old `(Intent)` primary overload.
+   Reads `move.AppliesPowers`, `move.SelfBlockGain`, and `move.Intent` to produce a fully
+   populated `MonsterIntent`. Back-compat `(Intent)` and `(Intent, string)` shims remain for
+   test sites that construct bare `Intent` values.
+5. **`CombatEngine.ResolveMove`** rewritten to flat-dispatch off `aliveEnemy.Intent`:
+   damage path, `SelfBlockGain` self-block path, `AppliesPowers` loop with `PowerTarget`
+   routing. `ExtractBuffEffect` and `ExtractAttackSelfBlock` deleted.
+
+### Wired monsters (Wave-38/B)
+
+| Monster | Move | Payload |
+|---|---|---|
+| Nibbit | SLICE | `SelfBlockGain = 5` (AttackDefend) |
+| Nibbit | HISS | `AppliesPowers = [Strength+2 Self]` |
+| CalcifiedCultist | INCANTATION | `AppliesPowers = [Ritual+2 Self]` |
+| DampCultist | INCANTATION | `AppliesPowers = [Ritual+5 Self]` |
+| GremlinMerc | DOUBLE_SMASH | `AppliesPowers = [Weak+2 Player]` |
+| GremlinMerc | HEHE | `AppliesPowers = [Strength+2 Self]` |
+| LouseProgenitor | CURL_AND_GROW | `AppliesPowers = [Strength+5 Self]` (block from Defend already wired) |
+| Exoskeleton | ENRAGE | `AppliesPowers = [Strength+2 Self]` |
+| CeremonialBeast | PLOW | `AppliesPowers = [Strength+2 Self]` |
+| Crusher | BUG_STING | `AppliesPowers = [Weak+2 Player, Frail+2 Player]` |
+| Crusher | ADAPT | `AppliesPowers = [Strength+2 Self]` |
+| Crusher | GUARDED_STRIKE | `SelfBlockGain = 18` (AttackDefend) |
+| Rocket | CHARGE_UP | `AppliesPowers = [Strength+2 Self]` |
+| LagavulinMatriarch | SOUL_SIPHON | `AppliesPowers = [Strength+2 Self, StrengthDown+2 Player, DexterityLoss+2 Player]` |
+
+**Note on SOUL_SIPHON:** upstream "StatsDown" debuff is split into `StrengthDownPower` +
+`DexterityLossPower` in the Q1 catalog (both already existed in `Phase1Powers.cs`). Two
+separate `MonsterIntentPower` entries are used.
+
+### StateCodec schema bump (C# binary codec)
+
+`StateCodecConstants.SchemaVersion` bumped **3 → 4**. This is a C# binary codec bump
+distinct from protobuf-schema bumps (which use the `bumping-a-schema-version` skill and
+live under `contracts/schemas/`). Convention: bump when `WriteMonsterIntent` /
+`ReadMonsterIntent` wire layout changes; regenerate `test/determinism-probe/goldens/` via
+`make probe-capture` and `test/fixtures/state-blobs/` via the `STS2_REGEN_STATE_BLOB_FIXTURES=1`
+env-gated test.
+
+New v4 wire layout for MonsterIntent (additions **bolded**):
+```
+i32 Kind, i32 DamagePerHit, i32 HitCount,
+i32 AppliesCount, AppliesCount * (string PowerId, i32 Stacks, i32 Target),
+i32 SelfBlockGain,
+string MoveId
+```
+
+### Consequences (negative first)
+
+- **Breaking schema change.** Old state blobs (v3) are rejected at deserialization.
+  Acceptable per user mandate (no training data exists; no live consumers).
+- **Behavior shifts.** Monsters that previously no-oped now apply powers and/or grant
+  self-block. Determinism probe goldens regenerated; future regressions will be caught.
+- **`Status` kind engine payload deferred.** Status card-pollution (adding Dazed/Wound to
+  player discard) is not yet implemented; the rotation advances correctly, payload is a no-op.
+- **Positive:** Engine has zero per-monster switch logic. New monsters with custom effects
+  only touch their own catalog class.
