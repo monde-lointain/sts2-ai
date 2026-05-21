@@ -854,22 +854,16 @@ public static class CombatEngine
         // Victory branch: consult ShouldStopCombatFromEnding subscribers. If
         // any veto, skip the transition this tick — the next CheckCombatEnd
         // call (driven by the engine's existing post-mutation checks) will
-        // re-poll. If no plumbing is attached (legacy engine-tests that
-        // hand-construct CombatContext), there are no subscribers anyway —
-        // transition unconditionally.
-        if (ctx.HookRegistryHandle is null || ctx.ExecutionContextHandle is null)
-        {
-            ctx.SetState(ctx.State with { Phase = CombatPhase.CombatEnd });
-            return;
-        }
-
+        // re-poll. Wave A: plumbing is always present; empty plumbing has zero
+        // subscribers so deferFlag stays false and we transition unconditionally,
+        // preserving the prior snapshot-context behavior without a null check.
         bool[] deferFlag = new bool[1];
         var hookCtx = new HookContext(
-            ctx.ExecutionContextHandle,
+            ctx.Plumbing.Context,
             dyingCreatureId: null,
             deferCombatEnd: deferFlag
         );
-        ctx.HookRegistryHandle.Fire(HookType.ShouldStopCombatFromEnding, hookCtx);
+        ctx.Plumbing.Hooks.Fire(HookType.ShouldStopCombatFromEnding, hookCtx);
         if (deferFlag[0])
             return; // a subscriber vetoed; re-poll on the next CheckCombatEnd
 
@@ -922,10 +916,9 @@ public static class CombatEngine
     /// </para>
     ///
     /// <para>
-    /// <b>No-op when no plumbing:</b> legacy engine tests that hand-construct
-    /// a <see cref="CombatContext"/> without <see cref="StartCombat"/> have
-    /// no hook registry attached; this method short-circuits, preserving the
-    /// pre-Q1.C death path byte-for-byte.
+    /// <b>Wave A:</b> plumbing is always present. Empty plumbing (snapshot
+    /// contexts) has no subscribers — Fire and Drain are no-ops, preserving
+    /// the prior null-guard short-circuit behavior without a null check.
     /// </para>
     /// </summary>
     private static void FireAfterDeathForNewDeaths(
@@ -933,14 +926,6 @@ public static class CombatEngine
         ImmutableArray<uint> aliveBefore
     )
     {
-        if (
-            ctx.HookRegistryHandle is null
-            || ctx.ActionQueueHandle is null
-            || ctx.ExecutionContextHandle is null
-        )
-        {
-            return; // no subscribers possible; preserve pre-Q1.C behavior
-        }
         if (aliveBefore.IsDefaultOrEmpty)
             return;
 
@@ -967,12 +952,12 @@ public static class CombatEngine
             using (EffectObserver.Attach(out List<IAction> log))
             {
                 var hookCtx = new HookContext(
-                    ctx.ExecutionContextHandle,
+                    ctx.Plumbing.Context,
                     dyingCreatureId: id,
                     deferCombatEnd: null
                 );
-                ctx.HookRegistryHandle.Fire(HookType.AfterDeath, hookCtx);
-                ctx.ActionQueueHandle.Drain(ctx.ExecutionContextHandle);
+                ctx.Plumbing.Hooks.Fire(HookType.AfterDeath, hookCtx);
+                ctx.Plumbing.Queue.Drain(ctx.Plumbing.Context);
                 foreach (IAction action in log)
                 {
                     EffectDispatcher.Apply(action, ctx, dispatch);
@@ -1004,29 +989,22 @@ public static class CombatEngine
     }
 
     /// <summary>
-    /// B.1-gamma-T4: fire a hook through the context's persisted plumbing
-    /// (attached by StartCombat). No-op if plumbing isn't attached (legacy
-    /// engine tests that hand-construct CombatContext without StartCombat).
+    /// Fire a hook through the context's plumbing. Wave A: plumbing is always
+    /// present; empty plumbing (snapshot contexts) has zero subscribers so
+    /// Fire and Drain are no-ops, preserving the prior guard behavior without
+    /// a null check.
     /// </summary>
     private static void FirePersistedHook(CombatContext ctx, HookType type)
     {
-        if (
-            ctx.HookRegistryHandle is null
-            || ctx.ActionQueueHandle is null
-            || ctx.ExecutionContextHandle is null
-        )
-        {
-            return;
-        }
         var dispatch = new EffectDispatcher.DispatchContext(
             PlayerId: PlayerId,
             PrimaryTargetId: null,
             SourceCreatureId: PlayerId
         );
         FireHookAndDrain(
-            ctx.HookRegistryHandle,
-            ctx.ActionQueueHandle,
-            ctx.ExecutionContextHandle,
+            ctx.Plumbing.Hooks,
+            ctx.Plumbing.Queue,
+            ctx.Plumbing.Context,
             type,
             ctx,
             dispatch
@@ -1339,14 +1317,13 @@ public static class CombatEngine
                 owner.IsPlayer ? ctx.State.WithPlayer(updated) : ctx.State.WithEnemy(updated)
             );
             // Notify each stripped PowerModel so it can un-subscribe its hooks.
-            // HookRegistryHandle is null during hand-constructed legacy tests — skip.
-            if (ctx.HookRegistryHandle is not null)
+            // Wave A: plumbing is always present; empty plumbing has a real-but-
+            // inert registry — PowerModel.OnRemoved is idempotent on zero-subscriber
+            // registry (PowerModel.cs:138-141), so unconditional call is safe.
+            foreach (PowerInstance pi in stripped)
             {
-                foreach (PowerInstance pi in stripped)
-                {
-                    if (ctx.Powers.TryGet(pi.ModelId, out var raw) && raw is PowerModel pm)
-                        pm.OnRemoved(owner.Id, ctx.HookRegistryHandle);
-                }
+                if (ctx.Powers.TryGet(pi.ModelId, out var raw) && raw is PowerModel pm)
+                    pm.OnRemoved(owner.Id, ctx.Plumbing.Hooks);
             }
         }
     }
