@@ -138,6 +138,12 @@ Exit: 0  (no stderr; correctly distinguishes write-to-branch-state from read-onl
 - Shell aliases (`gco`, `gsw`, `gb`) — hook's regex matches `git` literally.
 - Chained commands (`git checkout main && git checkout other-branch`) — only the first match in the string is analyzed (best-effort).
 
+**Known false-positives** (Phase 3b BLOCK-mode discovered; wave-50/A.4 + wave-50 post-close):
+- `git checkout HEAD -- <file>` — file-discard idiom; the regex's `(?!\s+--)` negative-lookahead requires `--` IMMEDIATELY after `checkout`, but the intermediate `HEAD` arg breaks the lookahead. Hook FIRES even though semantically equivalent to the excluded `git checkout -- <file>` form. **Workaround:** use `git restore <file>` instead — not matched by the regex; same semantics; cleaner Git idiom.
+- `git checkout <ref> -- <file>` (where `<ref>` is a tag or non-main branch, e.g. `git checkout wave-49-close -- engine/headless/<file>`) — same root cause; intermediate arg between `checkout` and `--`. **Workaround:** use `git show <ref>:<file>` to inspect a file at a tagged/branched commit without triggering the hook. `git show` is a different command (not in the regex) and is the right primitive for read-only inspection.
+
+These false-positives are ACCEPTABLE — the workarounds (`git restore` and `git show`) are equivalent or better idioms. Tighten regex (`(?!\s+(?:HEAD|--)\s+)` style) when adjacent R7 hook work surfaces.
+
 These gaps are ACCEPTABLE in Phase 3a (warn-only) — they're false-negatives, not false-positives. Engineers using `-C` flags / aliases are typically orchestrators with intent; hook would warn-spam them otherwise.
 
 ## 5 — Failure modes
