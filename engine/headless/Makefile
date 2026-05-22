@@ -237,16 +237,20 @@ probe-upstream-mid-combat-capture:
 
 # === q1-ci: fast CI gate (≤60s budget) =======================================
 #
-# Runs: dotnet build + dotnet test + mid-combat smoke (wave-49/E6 re-add).
-# probe-upstream-initial-state (≥5min) is NOT in q1-ci; run separately pre-merge.
-# probe-upstream-mid-combat-smoke RE-ADDED wave-49/E6: MidCombatComparer now
-# detects Side=="combat-start" Turn-0 single-snapshot upstream goldens + compares
-# Q1 first-snapshot (Side=="player-pre" Turn==1) per-enemy MoveId. Phase-1 scope
-# (per ADR-035 Amendment #2); Phase-2 multi-turn comparison gates on wave-50.
+# Runs: dotnet build + dotnet test. probe-upstream-initial-state (≥5min) is
+# NOT in q1-ci; run separately pre-merge.
+#
+# probe-upstream-mid-combat-smoke REVERTED from q1-ci (wave-50 post-close;
+# project-lead-authorized 2026-05-22). Reason: Phase-2 multi-turn gate now
+# honestly surfaces R15-class substrate divergences (cultist record-count
+# mismatch q1=15 golden=18; turn-count differs Q1 vs upstream). Keeping
+# smoke in q1-ci would break fast dev-loop gate for ~5-8 waves of R15
+# substrate-fix campaign duration. Deeper gate available via direct
+# `make probe-upstream-mid-combat[-smoke]` invocation at wave-close +
+# nightly cadence. Re-promote into q1-ci after R15 closes (wave-58-ish).
 
 q1-ci: probe-build
-	@echo "==> q1-ci: build + test + mid-combat smoke"
+	@echo "==> q1-ci: build + test"
 	dotnet build sts2-headless.sln -c Debug
 	dotnet test sts2-headless.sln -c Debug --no-build
-	$(MAKE) probe-upstream-mid-combat-smoke
 	@echo "==> q1-ci green"
