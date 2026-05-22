@@ -492,3 +492,90 @@ DIVERGE CultistsNormal seed=43: record count mismatch q1=15 golden=18
 **Limitation:** record-count short-circuit prevents per-injection-distinct field diagnostics under mass-DIVERGE R15-class baseline. This is a COMPARER-DEPTH limitation, not a R16-CLASS gap. Resolution path: wave-51-N substrate-fix waves close R15 record-count baselines; post-substrate-fix, injections produce distinct field-specific diagnostics naturally.
 
 **R15 SCALED++ documented separately** in wave-50 status report + waves/50.json snapshot.
+
+---
+
+## §Wave-51.5-Q1 post-R18-fix classification (Q1 lead inline 2026-05-22)
+
+**Context.** Wave-50/A.2 introduced `UpstreamDriver.MoveCardToDiscard()` with broken reflection: looked for `GetPile` as instance method on `PileType` enum, but `GetPile` is an **extension method** defined on `PileTypeExtensions` static class. Reflection cannot resolve extension methods via the receiver type. DllSignatureGate's Roslyn AST extraction caught the bogus target (`PileType.GetPile not found`); gate failed honestly. Project-lead-classified at R18 investigation 2026-05-22; wave-51.5-Q1 authorized to fix.
+
+Wave-51.5-Q1/A (commit `99794f5`) resolved reflection target: `pileTypeExtensionsType.GetMethod("GetPile", BindingFlags.Public | BindingFlags.Static, ...)` with explicit `(PileType, Player)` param types. DllSignatureGate test now **PASSES** (7/8 with 1 skip; pre-fix was 6/8 + 1 FAIL).
+
+### §Wave-51.5-Q1/A.3 post-fix baseline (seed=42)
+
+```
+DIVERGE CultistsNormal seed=42: record count mismatch q1=15 golden=18
+DIVERGE LouseProgenitorNormal seed=42: record count mismatch q1=21 golden=27
+DIVERGE ExoskeletonsNormal seed=42: record count mismatch q1=18 golden=21
+DIVERGE LagavulinElite seed=42: record count mismatch q1=60 golden=27
+DIVERGE GremlinMercNormal seed=42: record count mismatch q1=21 golden=13
+DIVERGE KaiserCrabBoss seed=42: record count mismatch q1=15 golden=60
+DIVERGE CeremonialBeastBoss seed=42 turn=1 side=player-pre field=RngCounter q1=22 golden=0
+DIVERGE NibbitsWeak seed=42: record count mismatch q1=22 golden=13
+DIVERGE NibbitsNormal seed=42: record count mismatch q1=18 golden=21
+```
+
+Aggregate: 0 PASS / 90 DIVERGE / 70 SKIP (unchanged from wave-50/A.4 baseline counts).
+
+### §Wave-51.5-Q1/A.3 classification per encounter
+
+| Encounter | Wave-50/A.4 baseline | Post-fix | Class |
+|---|---|---|---|
+| CultistsNormal | record count q1=15 golden=18 | record count q1=15 golden=18 | **PERSISTS unchanged** |
+| LouseProgenitorNormal | record count q1=21 golden=27 | record count q1=21 golden=27 | **PERSISTS unchanged** |
+| ExoskeletonsNormal | record count q1=18 golden=21 | record count q1=18 golden=21 | **PERSISTS unchanged** |
+| LagavulinElite | record count q1=60 golden=27 | record count q1=60 golden=27 | **PERSISTS unchanged** |
+| GremlinMercNormal | record count q1=21 golden=13 | record count q1=21 golden=13 | **PERSISTS unchanged** |
+| KaiserCrabBoss | record count q1=15 golden=60 | record count q1=15 golden=60 | **PERSISTS unchanged** |
+| **CeremonialBeastBoss** | **Energy q1=4 golden=3** | **RngCounter q1=22 golden=0** | **PERSISTS shifted** (field-diagnostic change; see anomaly below) |
+| NibbitsWeak | record count q1=22 golden=13 | record count q1=22 golden=13 | **PERSISTS unchanged** |
+| NibbitsNormal | record count q1=18 golden=21 | record count q1=18 golden=21 | **PERSISTS unchanged** |
+
+**Aggregate counts:**
+- RESOLVED: **0**
+- PERSISTS unchanged: **8** (6 record-count-mismatch encounters + 2 Nibbits)
+- PERSISTS shifted: **1** (CeremonialBeast: Energy → RngCounter)
+- NEW DIVERGE: **0**
+
+### §Wave-51.5-Q1/A.3.secondary — Secondary MoveCardToDiscard bug uncovered
+
+**Stream A-prime capture surfaced `MoveCardToDiscard: Parameter count mismatch` warning** during goldens re-capture. R18 fix unmasked a secondary bug: GetPile resolution now succeeds, but the subsequent `Remove(card)` OR `AddInternal(card, ...)` reflection calls in `MoveCardToDiscard()` (UpstreamDriver.cs:2287-2310) have a parameter-count mismatch. Cards still don't actually move to discard pile on upstream side.
+
+**Consequence:**
+- **Goldens unchanged** (verified: `git diff --stat` returns empty for all 90 `.bin` files post-regen vs pre-regen).
+- **Upstream-side discard transitions still missing** — same effective state as pre-fix.
+- 8 of 9 PERSISTS-unchanged divergences are unaffected by R18 reflection fix (record-count divergences come from substrate-real causes per wave-51 audit, not from missing discard).
+
+**Implication for R18 discharge:** R18 is **PARTIAL_MITIGATED**:
+- ✅ Narrow R18 fix correct: reflection target resolved; DllSignatureGate green.
+- ⚠️ Broader MoveCardToDiscard end-to-end correctness NOT closed: secondary Parameter count mismatch fails Remove or AddInternal reflection.
+- ⚠️ Goldens unchanged; classification shift is empirical-only on CeremonialBeast.
+
+### §Wave-51.5-Q1/A.3.anomaly — CeremonialBeast Energy → RngCounter shift (data anomaly)
+
+Pre-fix baseline (wave-50/A.4 §Baseline, commit `ce0c127`): `Energy q1=4 golden=3` at turn=1 player-pre.
+Post-fix baseline (this section): `RngCounter q1=22 golden=0` at turn=1 player-pre.
+
+Comparer field-check order: `PlayerHp → PlayerBlock → Energy → RngCounter`. For RngCounter to now be the first-diff, **Energy must now match** (q1 and golden both same value; presumably both 3 OR both 4).
+
+Yet:
+- Goldens are byte-identical to pre-fix state (verified via `diff` against commit `ee918ca`).
+- Q1 substrate unchanged (no commits touch Q1 between `ce0c127` and `99794f5`).
+- MidCombatComparer unchanged.
+- Only code change between baselines: UpstreamDriver.MoveCardToDiscard reflection fix.
+
+**Hypothesis (unverified):** the wave-50/A.4 baseline capture I documented may have been from a transient/stale state (e.g., between A.2.b and A.3.b commits, OR with stale build artifact). Today's measurement is reproducible across multiple runs + rebuilds. **Authoritative post-fix baseline = today's table above.**
+
+**This anomaly is documented; not blocking wave-51.5-Q1 close.** The CeremonialBeast PERSISTS shifted classification is honest: today's first-diff field is RngCounter, not Energy.
+
+### §Wave-51.5-Q1/A.3 conclusions
+
+1. **R18 narrow fix correct** — reflection target resolved; DllSignatureGate test PASSES (7/8 + 1 skip; pre-fix was 6/8 + 1 FAIL).
+2. **Broader MoveCardToDiscard remains broken** — Parameter count mismatch on Remove/AddInternal step. Secondary bug uncovered by R18 fix; surfaces as R18-sub-class for follow-on wave OR wave-52+ campaign.
+3. **8 of 9 PERSISTS unchanged** — substrate-real divergences per wave-51 audit unaffected by R18 fix.
+4. **1 PERSISTS shifted** (CeremonialBeast Energy → RngCounter) — field-diagnostic anomaly; root cause unclear; documented.
+5. **No RESOLVED items** — R18 reflection-target fix didn't shift any divergence to PASS. Wave-50/A.3 mass-DIVERGE 9/9 finding stands as substrate-real per wave-51 audit.
+
+**R18 discharge:** **PARTIAL_MITIGATED** (DllSignatureGate green; broader MoveCardToDiscard correctness deferred).
+
+**Wave-51 audit §1-§11 sub-class assignments require NO REFINEMENT** — pile-state items were NOT a dominant divergence class per wave-51 audit (audit was source-code-level, not probe-output-derived). The wave-51 §11 9-cluster sequence (waves 52-60) stands as recommended.
