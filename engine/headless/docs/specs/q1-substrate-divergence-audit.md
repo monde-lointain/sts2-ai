@@ -899,4 +899,49 @@ Root cause: Q1's MonsterMove data model supports exactly 1 intent kind; upstream
 
 4. **Suggested refinements:** For encounters with power-removal-keyed transitions or complex spawn-power semantics, add the specific 3-hop class name explicitly in the "STOPPED at 2 hops" line (already done in §6 and §7 in this audit). This costs nothing at audit time and significantly accelerates wave-52+ fixers.
 
-(§11 to be authored by Q1 lead A.2 inline.)
+## §11 Wave-52+ Cluster-Shape Recommendation (A.2; Q1 lead inline)
+
+**Authored by:** Q1 lead inline (A.2; wave-51) based on A.1.α/β §10 cross-encounter pattern analysis.
+
+### §11.1 Cluster Sequence (Priority-Ordered)
+
+Per §10.6 ROI ordering + Phase-1.5 timeline pacing per R11. Each cluster = 1 wave; substrate fix scoped to close a coherent sub-class subset. ~5-8 waves total to close R15 in-scope items.
+
+| Wave | Cluster | Sub-class | Scope | Affected encounters | Estimated LOC | Priority rationale |
+|---|---|---|---|---|---|---|
+| **52** | **A: BaseEnergyPerTurnSilent** | 1E | `CombatEngine.BaseEnergyPerTurnSilent` 4 → 3 | All Silent-player combats (system-wide impact); closes §7 field divergence | ~1 LOC | Highest ROI: 1 LOC closes §7's only divergence + improves baseline signal across all 9 encounters' player-pre state |
+| **53** | **B: Nibbits INIT_MOVE routing** | 1D | `NibbitsWeak.initialMoveId` BUTT → HISS; `NibbitsNormal` slot-0 override → HISS | §8, §9 | ~5-10 LOC | Closes 2 HIGH-severity encounters; localized substrate-only fix; no engine work |
+| **54** | **C: Escape mechanic + FatGremlin FLEE_MOVE** | 1D | Implement `CreatureCmd.Escape()` + wire FatGremlin FLEE_MOVE to escape (kills self-loop) | §5 GremlinMerc | ~medium engine + monster | Closes §5 HIGH; novel engine mechanic (CreatureCmd.Escape) needed by FatGremlin |
+| **55** | **D: AsleepPower + power-removal event** | 1D | Implement AsleepPower class; subscribe to power-removal event in CombatEngine; wire to Lagavulin wake-condition | §4 LagavulinElite | ~medium engine + power | Closes §4 HIGH (122% delta — most severe); largest individual-encounter win; depends on PowerEvent infrastructure |
+| **56** | **E: ExoskeletonsNormal 4-monster shape + Exoskeleton rename** | 1B | Rename Q1's `ExoskeletonsNormal` → `ExoskeletonsWeak`; add true 4-monster `ExoskeletonsNormal` with 4th-slot RNG INIT | §3 (+ R15 sub-class 1B closure) | ~small encounter file work | Closes §3 HIGH; corrects encounter-naming gap discovered wave-49 |
+| **57** | **F: Intent.Sleep() factory + 2 caller updates** | 1C | Add `public static Intent Sleep() => new Intent(IntentKind.Sleep, 0)` to `Intent.cs`; update §4 LagavulinMatriarch.SleepMove + §6 Rocket.RechargeMove callers | §4, §6 | ~2 LOC factory + 2 caller LOC | Trivial factory gap; bundle with Wave-55 (which already touches §4) OR Wave-58 (which touches §6 catalog) |
+| **58** | **G: Spawn-power catalog — 8 missing PowerIds** | 1C-β | Add 8 missing PowerIds + stub/implement: HardToKillPower (§3), CrabRagePower + BackAttackLeftPower + BackAttackRightPower + SurroundedPower (§6), PlowPower + RingingPower (§7); fix `PowerIds.Plated` string `"PlatedArmorPower"` → `"PlatingPower"` (§4) | §3, §4, §6, §7 | ~medium power-catalog work | Closes §6 HIGH (300% delta primary driver); medium scope; many power-class stubs |
+| **59** | **H: Composite intents data-model + 13-move re-port** | 1C-α | Add `SecondaryIntents` collection to `MonsterMove`; re-port 13 affected moves with composite intents (across §2, §4, §5, §6, §7, §8, §9) | 7 of 9 encounters | ~medium data-model + per-move port | Largest scope; Q1 data-model limitation root cause; affects all visual-correctness probe signals (Intent.Kind diff) |
+| **60** | **I: Ritual/Strength multi-turn CombatEngine hook** | 1E | Verify + fix Ritual → Strength turn-end hook timing; StrengthPower → attack damage multiplication | §1 (implied), §2 (implied) | ~medium engine work | Closes §1/§2 implied 1E (multi-turn record-count gap); lowest-confidence cluster (implied, not field-diagnosed); defer to last |
+
+**Total: 9 substrate-fix waves (52-60) to close R15 in-scope items.** Aligns with project-lead's 5-8-wave estimate (slightly over due to additional 1E sub-class surfaced by A.1.β).
+
+### §11.2 Cluster Pacing + Phase-1.5 Timeline
+
+Per R11 permanent-treadmill mode + project-lead's +2-3 week Phase-1.5 extension authorization (wave-50/A.3 surface response §5):
+
+- **Waves 52-56 (5 waves):** primary HIGH-severity closures. ~2-3 weeks at current cadence (1-3 days per wave). Close 6 of 9 HIGH-severity items (§3, §4, §5, §7, §8, §9). After wave-56: 3 HIGH remaining in §6.
+- **Waves 57-60 (4 waves):** medium-severity + data-model + engine-hook closures. ~2-3 weeks at current cadence. Close §6 HIGH (wave-58) + remaining composite-intent + implied 1E items.
+- **Total: ~4-6 weeks calendar to R15 full discharge.** Wave-58-or-after = mid-combat-smoke re-promotion to q1-ci (cultist should pass post-wave-60 1E fixes; per wave-50 post-close decision).
+
+### §11.3 Cross-Cluster Dependencies
+
+- **Wave-52-A** is precondition for clean §7 audit signal in any subsequent wave (Energy noise blocks per-field probe analysis on §7 encounter).
+- **Wave-55-D** (AsleepPower) requires PowerEvent subscription infrastructure. If not present, Wave-55 dispatch includes engine-layer preconditions.
+- **Wave-59-H** (composite-intents data model) is structural; affects MonsterMove serialization wire format. Possibly warrants schema-bump per ADR-001 (TBD at wave-59 plan-time).
+- **Wave-57-F** Intent.Sleep() factory can be bundled into Wave-55-D (both touch §4) OR Wave-58-G (both touch §6) for efficiency. Engineer chooses at wave-57 plan-time.
+
+### §11.4 Out-of-Scope Items (Deferred Beyond Wave-60)
+
+- **Out-of-scope monster audit** (13 monsters; presumed 1-move ATTACK stubs per wave-48 audit; NOT in current 9-encounter probed set). Wave-N+ project-lead-decided scope expansion.
+- **3-hop deferred items** (per §10.9): CrabRagePower internal semantics (§6); confirm at wave-58 implementation time.
+- **ConditionalBranchState flag-timing live test** (§8/§9 ambiguity per A.1.β discoveries): resolve at wave-53 implementation time.
+
+### §11.5 Self-Assessment for Wave-52+ Ratification
+
+This cluster-shape recommendation is **plan-time scaffolding**, not project-lead-ratified. Each cluster's exact LOC + dependencies will refine at its own wave's plan-mode iteration. Project-lead-class decision at wave-51 close: ratify the 9-cluster sequence OR adjust priority/scope before wave-52 dispatch.
