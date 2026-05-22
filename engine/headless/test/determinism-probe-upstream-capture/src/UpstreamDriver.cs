@@ -2257,14 +2257,27 @@ public sealed class UpstreamDriver
     {
         try
         {
-            // Get Discard pile via PileType.Discard.GetPile(player).
-            MethodInfo? getPileMi = pileTypeEnum.GetMethod(
+            // PileType.GetPile is a STATIC EXTENSION METHOD on PileTypeExtensions
+            // (MegaCrit.Sts2.Core.Entities.Cards.PileTypeExtensions); reflection cannot
+            // resolve extension methods via the receiver type. Wave-50/A.2 bug:
+            // looked for instance method on the PileType enum -> null -> silent no-op.
+            // Wave-51.5-Q1/A R18 fix: resolve as static method on PileTypeExtensions
+            // class with explicit (PileType, Player) parameter types.
+            Type? pileTypeExtensionsType = pileTypeEnum.Assembly.GetType(
+                "MegaCrit.Sts2.Core.Entities.Cards.PileTypeExtensions"
+            );
+            if (pileTypeExtensionsType is null)
+                return;
+            MethodInfo? getPileMi = pileTypeExtensionsType.GetMethod(
                 "GetPile",
-                BindingFlags.Public | BindingFlags.Instance
+                BindingFlags.Public | BindingFlags.Static,
+                binder: null,
+                types: new Type[] { pileTypeEnum, player.GetType() },
+                modifiers: null
             );
             if (getPileMi is null)
                 return;
-            object discardPile = getPileMi.Invoke(pileTypeDiscard, new object[] { player })!;
+            object discardPile = getPileMi.Invoke(null, new object[] { pileTypeDiscard, player })!;
 
             // Remove from current pile (if any).
             object? currentPile = GetProperty(cardModel, "Pile");
