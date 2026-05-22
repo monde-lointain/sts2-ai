@@ -2323,6 +2323,11 @@ public sealed class UpstreamDriver
             playerCreature = playerProp!;
 
         // For upstream, Player has a Creature property or IS a creature.
+        // Preserve the Player object before overwriting playerCreature with the Creature —
+        // PlayerCombatState (which holds Energy) lives on Player, not Creature.
+        // wave-50/A.2.b: without playerObj, GetProperty(playerCreature, "PlayerCombatState")
+        // returns null (Creature doesn't carry that property) → Energy reads as 0 every turn.
+        object playerObj = playerCreature;
         object? creatureObj = GetProperty(playerCreature, "Creature");
         if (creatureObj is not null)
             playerCreature = creatureObj;
@@ -2330,9 +2335,9 @@ public sealed class UpstreamDriver
         int playerHp = ToInt(GetProperty(playerCreature, "CurrentHp") ?? 0);
         int playerBlock = ToInt(GetProperty(playerCreature, "Block") ?? 0);
 
-        // Player combat state for energy.
-        object? playerCombatState = GetProperty(playerCreature, "PlayerCombatState")
-            ?? GetProperty(playerProp!, "PlayerCombatState");
+        // Player combat state for energy: read from Player (playerObj), not from Creature.
+        object? playerCombatState = GetProperty(playerObj, "PlayerCombatState")
+            ?? GetProperty(playerCreature, "PlayerCombatState");
         int energy = playerCombatState is not null
             ? ToInt(GetProperty(playerCombatState, "Energy") ?? 0)
             : 0;
